@@ -189,17 +189,19 @@ module.exports = async function handler(req, res) {
 
   // ── DELETE ─────────────────────────────────────────────────────
   if (action === 'delete' && req.method === 'DELETE') {
-    const session = await requireAdmin(req, res);
-    if (!session) return;
     if (!id) return res.status(400).json({ error: 'id required' });
     const mode = req.query.mode;
     if (mode === 'permanent') {
-      // Hard delete — only allowed for already-trashed articles
+      // Hard delete — STRICTLY requires Admin role with live DB check
+      const session = await requireAdmin(req, res);
+      if (!session) return;
       const { error } = await sb().from('articles').delete().eq('id', id);
       if (error) return res.status(500).json({ error: error.message });
       return res.status(200).json({ success: true, permanent: true });
     }
-    // Soft delete — move to trash
+    // Soft delete — move to trash (allowed for authenticated staff)
+    const session = requireAuth(req, res);
+    if (!session) return;
     const { error } = await sb().from('articles')
       .update({ is_deleted: true, deleted_at: new Date().toISOString() })
       .eq('id', id);
