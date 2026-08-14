@@ -65,6 +65,12 @@ body.menu-open .site-header {
   box-shadow: 0 2px 14px rgba(0,0,0,0.15) !important;
 }
 
+#site-header-mount {
+  display: block;
+  min-height: 92px;
+  background: var(--bg-white);
+}
+
 /* HEADER */
 .site-header { 
   position: sticky; 
