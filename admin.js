@@ -1053,7 +1053,17 @@ const DEFAULT_HEADER_SUBSECTIONS = [
   { id: 'sub-4', label: 'EVENTS', href: 'index.html#events-section', icon: 'calendar', enabled: true }
 ];
 
-function loadHeaderSettings() {
+async function loadHeaderSettings() {
+  try {
+    const data = await _apiGet('/api/sections?action=header');
+    if (data && typeof data === 'object') {
+      if (!data.subsections) data.subsections = DEFAULT_HEADER_SUBSECTIONS.map(s => ({...s}));
+      try { localStorage.setItem(HEADER_SETTINGS_KEY, JSON.stringify(data)); } catch(e) {}
+      return data;
+    }
+  } catch(err) {
+    console.warn('[Admin] loadHeaderSettings API failed (using cache):', err.message);
+  }
   try {
     const raw = localStorage.getItem(HEADER_SETTINGS_KEY);
     if (raw) {
@@ -1070,9 +1080,16 @@ function loadHeaderSettings() {
   };
 }
 
-function saveHeaderSettings(hs) {
+async function saveHeaderSettings(hs) {
   hs.updatedAt = new Date().toISOString();
-  localStorage.setItem(HEADER_SETTINGS_KEY, JSON.stringify(hs));
+  try {
+    localStorage.setItem(HEADER_SETTINGS_KEY, JSON.stringify(hs));
+  } catch(e) {}
+  try {
+    await _apiPost('/api/sections?action=header', hs);
+  } catch(err) {
+    console.warn('[Admin] saveHeaderSettings API error:', err.message);
+  }
 }
 
 // ── Logo card ───────────────────────────────────────────────────
@@ -1110,7 +1127,7 @@ function renderHsLogoCard(hs) {
 
   const applyBtn = document.getElementById('hs-logo-apply-btn');
   if (applyBtn) {
-    applyBtn.addEventListener('click', () => {
+    applyBtn.addEventListener('click', async () => {
       const svgVal = svgInput ? svgInput.value.trim() : '';
       const h = parseInt(slider ? slider.value : 80);
       // Validate SVG
@@ -1119,20 +1136,20 @@ function renderHsLogoCard(hs) {
       }
       hs.logoSvg = svgVal || null;
       hs.logoHeight = h;
-      saveHeaderSettings(hs);
+      await saveHeaderSettings(hs);
       refreshPreview();
-      showToast('success', 'Logo saved! Refresh the main site to see changes.');
+      showToast('success', 'Logo saved to database & applied!');
     });
   }
 
   const resetBtn = document.getElementById('hs-logo-reset-btn');
   if (resetBtn) {
-    resetBtn.addEventListener('click', () => {
+    resetBtn.addEventListener('click', async () => {
       if (svgInput) svgInput.value = '';
       if (slider) { slider.value = 80; if (heightVal) heightVal.textContent = '80'; }
       hs.logoSvg = null;
       hs.logoHeight = 80;
-      saveHeaderSettings(hs);
+      await saveHeaderSettings(hs);
       refreshPreview('', 80);
       showToast('success', 'Logo reset to default.');
     });
@@ -1322,7 +1339,7 @@ function bindHsAddForm(hs) {
 function bindHsSaveBtn(hs) {
   const saveBtn = document.getElementById('hs-save-btn');
   if (!saveBtn) return;
-  saveBtn.addEventListener('click', () => {
+  saveBtn.addEventListener('click', async () => {
     // Collect enabled nav sections
     hs.enabledNavSections = getEnabledNavSections();
     // Collect logo
@@ -1331,21 +1348,27 @@ function bindHsSaveBtn(hs) {
     if (svgInput) hs.logoSvg = svgInput.value.trim() || null;
     if (slider) hs.logoHeight = parseInt(slider.value) || 80;
 
-    saveHeaderSettings(hs);
-
     const orig = saveBtn.innerHTML;
-    saveBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" width="15" height="15"><polyline points="20 6 9 17 4 12"/></svg> Changes Applied!`;
-    saveBtn.style.background = 'var(--success, #1a7a4a)';
     saveBtn.disabled = true;
-    setTimeout(() => { saveBtn.innerHTML = orig; saveBtn.style.background = ''; saveBtn.disabled = false; }, 2500);
-    showToast('success', 'Header settings saved! Refresh the main site to see changes.');
+    saveBtn.innerHTML = `Saving to database...`;
+
+    try {
+      await saveHeaderSettings(hs);
+      saveBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" width="15" height="15"><polyline points="20 6 9 17 4 12"/></svg> Changes Applied!`;
+      saveBtn.style.background = 'var(--success, #1a7a4a)';
+      showToast('success', 'Header settings saved to database & applied!');
+    } catch(err) {
+      showToast('error', 'Failed to save header settings.');
+    } finally {
+      setTimeout(() => { saveBtn.innerHTML = orig; saveBtn.style.background = ''; saveBtn.disabled = false; }, 2500);
+    }
   });
 }
 
 let _hsInstance = null;
 
-function initHeaderPage() {
-  _hsInstance = loadHeaderSettings();
+async function initHeaderPage() {
+  _hsInstance = await loadHeaderSettings();
   renderHsLogoCard(_hsInstance);
   renderHsNavSections(_hsInstance);
   renderHsSubsections(_hsInstance);

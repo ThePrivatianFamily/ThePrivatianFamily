@@ -143,6 +143,85 @@ module.exports = async function handler(req, res) {
     }
   }
 
+  // ── HEADER CONFIGURATION (GET / POST) ───────────────────────────────────
+  if (action === 'header') {
+    const DEFAULT_HEADER_CONFIG = {
+      logoSvg: null,
+      logoHeight: 80,
+      enabledNavSections: null,
+      subsections: [
+        { id: 'sub-1', label: 'FAMILY LEGACY', href: 'section.html?slug=community-heritage', icon: null, enabled: true },
+        { id: 'sub-2', label: 'EXPERIENCE', href: 'section.html?slug=culture', icon: null, enabled: true },
+        { id: 'sub-3', label: 'THE PRIVATIAN READS', href: 'section.html?slug=findings', icon: null, enabled: true },
+        { id: 'sub-4', label: 'EVENTS', href: 'index.html#events-section', icon: 'calendar', enabled: true }
+      ]
+    };
+
+    if (req.method === 'GET') {
+      try {
+        const { data } = await sb.from('site_settings').select('value').eq('key', 'site_header_config').maybeSingle();
+        if (data && data.value) return res.status(200).json(data.value);
+      } catch(e) {}
+
+      // Fallback read from sections table
+      try {
+        const { data: sData } = await sb.from('sections').select('name').eq('admin_id', '__header_config__').maybeSingle();
+        if (sData && sData.name) {
+          const parsed = JSON.parse(sData.name);
+          if (parsed && typeof parsed === 'object') return res.status(200).json(parsed);
+        }
+      } catch(e) {}
+
+      return res.status(200).json(DEFAULT_HEADER_CONFIG);
+    }
+
+    if (req.method === 'POST') {
+      const session = await requireAuth(req, res);
+      if (!session) return;
+      const headerConfig = req.body || {};
+
+      let saved = false;
+      try {
+        const { error } = await sb.from('site_settings').upsert({
+          key: 'site_header_config',
+          value: headerConfig,
+          updated_at: new Date().toISOString()
+        }, { onConflict: 'key' });
+        if (!error) saved = true;
+      } catch(err) {}
+
+      if (!saved) {
+        // Fallback save in sections table
+        try {
+          const { data: existing } = await sb.from('sections').select('id').eq('admin_id', '__header_config__').maybeSingle();
+          if (existing) {
+            await sb.from('sections').update({
+              name: JSON.stringify(headerConfig),
+              slug: '__header_config__',
+              display_order: 9998,
+              is_active: false,
+              locked: true,
+              is_deleted: true
+            }).eq('admin_id', '__header_config__');
+          } else {
+            await sb.from('sections').insert({
+              admin_id: '__header_config__',
+              name: JSON.stringify(headerConfig),
+              slug: '__header_config__',
+              display_order: 9998,
+              is_active: false,
+              locked: true,
+              is_deleted: true
+            });
+          }
+        } catch(err) {
+          console.warn('[DB fallback header save error]:', err.message);
+        }
+      }
+      return res.status(200).json({ ok: true, data: headerConfig });
+    }
+  }
+
   // ── GET ─────────────────────────────────────────────────────────────────
   if (req.method === 'GET') {
     const statusParam = (req.query && req.query.status) || 'active';
@@ -160,7 +239,7 @@ module.exports = async function handler(req, res) {
     const { data, error } = await query;
     if (error) return res.status(500).json({ error: error.message });
 
-    const rows = (data || []).filter(r => r.admin_id !== '__menu_config__');
+    const rows = (data || []).filter(r => r.admin_id !== '__menu_config__' && r.admin_id !== '__header_config__');
 
     if (statusParam === 'all' && session) {
       // Admin format: full section objects

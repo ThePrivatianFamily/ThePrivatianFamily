@@ -794,7 +794,31 @@
       });
     });
   }
+
+  function fetchHeaderSettingsFromAPI() {
+    if (window.location.protocol === 'file:') return;
+    fetch('/api/sections?action=header')
+      .then(function(res) {
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        return res.json();
+      })
+      .then(function(data) {
+        if (data && typeof data === 'object') {
+          try {
+            localStorage.setItem(HEADER_SETTINGS_KEY, JSON.stringify(data));
+          } catch(e) {}
+          applyLogoSettings();
+          populateSections();
+          populateSubHeader();
+        }
+      })
+      .catch(function(err) {
+        console.warn('[Components] fetchHeaderSettingsFromAPI failed (using cache):', err.message);
+      });
+  }
+
   function fetchMenuFromAPI() {
+    if (window.location.protocol === 'file:') return;
     fetch('/api/sections?action=menu')
       .then(function(res) {
         if (!res.ok) throw new Error('HTTP ' + res.status);
@@ -833,8 +857,9 @@
   function init() {
     initHeader();
     renderFooter();
-    fetchSectionsFromAPI(); // async: update nav + All News labels from live DB
-    fetchMenuFromAPI();     // async: update Menu Overlay from live DB
+    fetchSectionsFromAPI();       // async: update nav + All News labels from live DB
+    fetchHeaderSettingsFromAPI(); // async: update logo, subsections, and nav visibility from live DB
+    fetchMenuFromAPI();           // async: update Menu Overlay from live DB
   }
 
   // Expose immediate initializer for instant rendering right after mount tag
@@ -843,6 +868,11 @@
 
   // Try immediate execution if mount element already exists in DOM
   initHeader();
+
+  // Also kick off background DB sync immediately
+  fetchSectionsFromAPI();
+  fetchHeaderSettingsFromAPI();
+  fetchMenuFromAPI();
 
   if (document.readyState === 'complete' || document.readyState === 'interactive') {
     init();
