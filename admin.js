@@ -3909,6 +3909,30 @@ const DEFAULT_FOOTER_CONFIG = {
   ]
 };
 
+const FT_ICONS = {
+  sections: `<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" style="display:inline-block;vertical-align:-2px;margin-right:4px;"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>`,
+  explore:  `<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" style="display:inline-block;vertical-align:-2px;margin-right:4px;"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>`,
+  series:   `<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" style="display:inline-block;vertical-align:-2px;margin-right:4px;"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>`,
+  social:   `<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" style="display:inline-block;vertical-align:-2px;margin-right:4px;"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>`,
+  brand:    `<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" style="display:inline-block;vertical-align:-2px;margin-right:4px;"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>`,
+  legal:    `<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" style="display:inline-block;vertical-align:-2px;margin-right:4px;"><path d="M12 3v18"/><line x1="4" y1="7" x2="20" y2="7"/><path d="M6 7l-3 6a3 3 0 0 0 6 0l-3-6"/><path d="M18 7l-3 6a3 3 0 0 0 6 0l-3-6"/></svg>`,
+  settings: `<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" style="display:inline-block;vertical-align:-1px;margin-right:2px;"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>`,
+  pencil:   `<svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" style="display:inline-block;vertical-align:-1px;"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`,
+  upArrow:  `<svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="18 15 12 9 6 15"/></svg>`,
+  downArrow:`<svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>`
+};
+
+function formatSvgWithSize(svgCode, height) {
+  const rawSvg = (svgCode && svgCode.trim().indexOf('<svg') !== -1) ? svgCode.trim() : FOOTER_LOGO_DEFAULT_SVG;
+  const h = parseInt(height) || 80;
+  return rawSvg.replace(/<svg\b([^>]*)>/i, function(match, attrs) {
+    const cleanAttrs = attrs
+      .replace(/\b(height|width)=["'][^"']*["']/gi, '')
+      .replace(/\bstyle=["'][^"']*["']/gi, '');
+    return '<svg ' + cleanAttrs.trim() + ' height="' + h + '" style="height:' + h + 'px;max-width:100%;width:auto;display:block;">';
+  });
+}
+
 let appliedFooterConfig = null;
 let footerDraftConfig = null;
 let footerUndoStack = [];
@@ -3928,13 +3952,10 @@ function getSocialIconSvgForAdmin(platform) {
 }
 
 async function initFooterPage() {
-  const saveStatus = document.getElementById('ft-save-status');
-  if (saveStatus) { saveStatus.textContent = 'Loading footer settings...'; saveStatus.style.color = 'var(--text-muted)'; }
+  updateGlobalSyncStatus('syncing', 'Loading footer settings...');
 
   try {
-    const res = await fetch('/api/sections?action=footer');
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    const data = await res.json();
+    const data = await _apiGet('/api/sections?action=footer');
     if (data && typeof data === 'object') {
       appliedFooterConfig = JSON.parse(JSON.stringify(data));
       footerDraftConfig = JSON.parse(JSON.stringify(data));
@@ -3958,7 +3979,7 @@ async function initFooterPage() {
   footerUndoStack = [];
   footerRedoStack = [];
   updateFooterUndoRedoButtons();
-  updateFooterSaveStatus();
+  updateGlobalSyncStatus('synced', 'Synced with database');
   switchFooterTab(_activeFooterTab || 'preview');
 }
 
@@ -3971,7 +3992,7 @@ function recordFooterState(desc) {
   if (footerUndoStack.length > 50) footerUndoStack.shift();
   footerRedoStack = [];
   updateFooterUndoRedoButtons();
-  updateFooterSaveStatus();
+  updateGlobalSyncStatus();
 }
 
 function undoFooterAction() {
@@ -3981,7 +4002,7 @@ function undoFooterAction() {
   footerRedoStack.push({ state: currentSnapshot, desc: prev.desc });
   footerDraftConfig = prev.state;
   updateFooterUndoRedoButtons();
-  updateFooterSaveStatus();
+  updateGlobalSyncStatus();
   refreshActiveFooterTab();
   showToast('warning', `Undo: ${prev.desc || 'Action'}`);
 }
@@ -3993,7 +4014,7 @@ function redoFooterAction() {
   footerUndoStack.push({ state: currentSnapshot, desc: next.desc });
   footerDraftConfig = next.state;
   updateFooterUndoRedoButtons();
-  updateFooterSaveStatus();
+  updateGlobalSyncStatus();
   refreshActiveFooterTab();
   showToast('success', `Redo: ${next.desc || 'Action'}`);
 }
@@ -4008,22 +4029,6 @@ function updateFooterUndoRedoButtons() {
 function isFooterModified() {
   if (!appliedFooterConfig || !footerDraftConfig) return false;
   return JSON.stringify(appliedFooterConfig) !== JSON.stringify(footerDraftConfig);
-}
-
-function updateFooterSaveStatus() {
-  const statusEl = document.getElementById('ft-save-status');
-  const statusWrap = document.getElementById('ft-save-status-wrap');
-  const dotEl = document.getElementById('ft-status-dot');
-  if (!statusEl) return;
-  if (isFooterModified()) {
-    statusEl.textContent = 'Unsaved changes';
-    if (statusWrap) { statusWrap.className = 'ft-header-badge unsaved'; }
-    if (dotEl) { dotEl.className = 'ft-pulse-dot unsaved'; }
-  } else {
-    statusEl.textContent = 'Synced with database';
-    if (statusWrap) { statusWrap.className = 'ft-header-badge synced'; }
-    if (dotEl) { dotEl.className = 'ft-pulse-dot'; }
-  }
 }
 
 function switchFooterTab(tab) {
@@ -4055,7 +4060,7 @@ function onFooterTitleInput(key, value) {
   if (!footerDraftConfig) return;
   recordFooterState(`Update ${key}`);
   footerDraftConfig[key] = value;
-  updateFooterSaveStatus();
+  updateGlobalSyncStatus();
   if (key === 'tagline' || key === 'copyright') {
     updateFooterLogoPreview();
   }
@@ -4081,9 +4086,9 @@ function renderFooterPreview() {
       <!-- Col 1: Sections -->
       <div class="ft-interactive-col">
         <div class="ft-col-header-bar">
-          <span class="ft-col-title-badge">📑 ${escapeHtml(cfg.sectionsTitle || 'Sections')}</span>
+          <span class="ft-col-title-badge">${FT_ICONS.sections}${escapeHtml(cfg.sectionsTitle || 'Sections')}</span>
           <button type="button" class="ft-col-quick-btn" onclick="switchFooterTab('sections')">
-            ⚙️ Edit (${displaySecs.length})
+            ${FT_ICONS.settings}Edit (${displaySecs.length})
           </button>
         </div>
         <div style="display:flex;flex-direction:column;gap:5px;">
@@ -4100,7 +4105,7 @@ function renderFooterPreview() {
       <!-- Col 2: Explore Links -->
       <div class="ft-interactive-col">
         <div class="ft-col-header-bar">
-          <span class="ft-col-title-badge">🔗 ${escapeHtml(cfg.exploreTitle || 'Explore')}</span>
+          <span class="ft-col-title-badge">${FT_ICONS.explore}${escapeHtml(cfg.exploreTitle || 'Explore')}</span>
           <div style="display:flex;gap:4px;">
             <button type="button" class="ft-col-quick-btn" onclick="openFooterExploreModal()" title="Add Explore Link">+ Add</button>
             <button type="button" class="ft-col-quick-btn" onclick="switchFooterTab('explore')" title="Manage Explore List">List</button>
@@ -4113,7 +4118,7 @@ function renderFooterPreview() {
               <span style="font-size:13px;font-weight:500;color:#f1f5f9;">${escapeHtml(e.label || 'Untitled')}</span>
               <div style="display:flex;align-items:center;gap:6px;">
                 <span style="font-size:10.5px;color:#94a3b8;font-family:monospace;">${escapeHtml(e.href || '/')}</span>
-                <span style="color:#38bdf8;font-size:11px;">✏️</span>
+                <span style="color:#38bdf8;font-size:11px;">${FT_ICONS.pencil}</span>
               </div>
             </div>
           `).join('')}
@@ -4123,7 +4128,7 @@ function renderFooterPreview() {
       <!-- Col 3: Recent Series -->
       <div class="ft-interactive-col">
         <div class="ft-col-header-bar">
-          <span class="ft-col-title-badge">📖 ${escapeHtml(cfg.seriesTitle || 'Our recent series')}</span>
+          <span class="ft-col-title-badge">${FT_ICONS.series}${escapeHtml(cfg.seriesTitle || 'Our recent series')}</span>
           <div style="display:flex;gap:4px;">
             <button type="button" class="ft-col-quick-btn" onclick="openFooterSeriesModal()" title="Add Series">+ Add</button>
             <button type="button" class="ft-col-quick-btn" onclick="switchFooterTab('series')" title="Manage Series List">List</button>
@@ -4135,7 +4140,7 @@ function renderFooterPreview() {
             <div class="ft-visual-series-card ${s.enabled === false ? 'disabled' : ''}" onclick="openFooterSeriesModal('${s.id}')" title="Click to edit series">
               <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px;">
                 <div style="font-family:var(--font-serif);font-size:14px;font-weight:700;color:#ffffff;">${escapeHtml(s.title || 'Untitled Series')}</div>
-                <span style="color:#38bdf8;font-size:11px;">✏️</span>
+                <span style="color:#38bdf8;font-size:11px;">${FT_ICONS.pencil}</span>
               </div>
               ${s.description ? `<div style="font-size:11.5px;color:#94a3b8;line-height:1.35;margin-bottom:4px;">${escapeHtml(s.description)}</div>` : ''}
               <div style="font-size:10.5px;color:#38bdf8;font-family:monospace;">${escapeHtml(s.href || '/')}</div>
@@ -4147,7 +4152,7 @@ function renderFooterPreview() {
       <!-- Col 4: Social & Channels -->
       <div class="ft-interactive-col">
         <div class="ft-col-header-bar">
-          <span class="ft-col-title-badge">🌐 ${escapeHtml(cfg.socialTitle || 'Follow us on')}</span>
+          <span class="ft-col-title-badge">${FT_ICONS.social}${escapeHtml(cfg.socialTitle || 'Follow us on')}</span>
           <div style="display:flex;gap:4px;">
             <button type="button" class="ft-col-quick-btn" onclick="openFooterSocialModal()" title="Add Social Channel">+ Add</button>
             <button type="button" class="ft-col-quick-btn" onclick="switchFooterTab('social')" title="Manage Social List">List</button>
@@ -4169,15 +4174,11 @@ function renderFooterPreview() {
     <div class="ft-preview-bottom">
       <div class="ft-interactive-col" style="flex:1;min-width:280px;cursor:pointer;" onclick="switchFooterTab('brand')" title="Click to edit Footer Logo, Tagline &amp; Copyright">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-          <span class="ft-col-title-badge" style="font-size:11px;">🏛️ Brand Identity</span>
-          <span class="ft-col-quick-btn" style="padding:1px 6px;font-size:10px;">✏️ Edit Logo &amp; Brand</span>
+          <span class="ft-col-title-badge" style="font-size:11px;">${FT_ICONS.brand}Brand Identity</span>
+          <span class="ft-col-quick-btn" style="padding:1px 6px;font-size:10px;">${FT_ICONS.pencil}Edit Logo &amp; Brand</span>
         </div>
         <div style="display:inline-block;margin-bottom:8px;max-width:100%;">
-          ${(() => {
-            const rawSvg = (cfg.logoSvg && cfg.logoSvg.trim().indexOf('<svg') !== -1) ? cfg.logoSvg : FOOTER_LOGO_DEFAULT_SVG;
-            const h = cfg.logoHeight || 80;
-            return rawSvg.replace('<svg', `<svg style="height:${h}px;max-width:100%;width:auto;display:block;"`);
-          })()}
+          ${formatSvgWithSize(cfg.logoSvg, cfg.logoHeight)}
         </div>
         ${cfg.tagline ? `<div style="font-size:12px;color:rgba(255,255,255,0.7);margin-top:2px;line-height:1.4;">${escapeHtml(cfg.tagline)}</div>` : ''}
         ${cfg.copyright ? `<div style="font-size:11.5px;color:rgba(255,255,255,0.45);margin-top:4px;">${escapeHtml(cfg.copyright)}</div>` : ''}
@@ -4185,7 +4186,7 @@ function renderFooterPreview() {
 
       <div class="ft-interactive-col" style="flex:1;min-width:260px;">
         <div class="ft-col-header-bar" style="margin-bottom:8px;">
-          <span class="ft-col-title-badge" style="font-size:11px;">⚖️ Legal Links</span>
+          <span class="ft-col-title-badge" style="font-size:11px;">${FT_ICONS.legal}Legal Links</span>
           <button type="button" class="ft-col-quick-btn" onclick="openFooterBottomLinkModal()" title="Add Legal Link">+ Add Link</button>
         </div>
         <div style="display:flex;flex-wrap:wrap;gap:6px;">
@@ -4193,7 +4194,7 @@ function renderFooterPreview() {
           ${bottomList.map(b => `
             <span class="ft-visual-item ${b.enabled === false ? 'disabled' : ''}" style="display:inline-flex;padding:3px 8px;font-size:11px;margin:0;" onclick="openFooterBottomLinkModal('${b.id}')" title="Click to edit link">
               <span>${escapeHtml(b.label || 'Link')}</span>
-              <span style="color:#38bdf8;margin-left:4px;font-size:10px;">✏️</span>
+              <span style="color:#38bdf8;margin-left:4px;font-size:10px;">${FT_ICONS.pencil}</span>
             </span>
           `).join('')}
         </div>
@@ -4219,8 +4220,8 @@ function renderFooterExplore() {
     <div class="ft-item-card ${item.enabled === false ? 'disabled' : ''}">
       <div style="display:flex;align-items:center;gap:14px;flex:1;min-width:0;">
         <div class="ft-drag-handle">
-          <button type="button" class="action-btn" onclick="moveFooterItem('explore', ${idx}, -1)" ${idx === 0 ? 'disabled' : ''} title="Move Up" style="padding:2px 4px;font-size:10px;">▲</button>
-          <button type="button" class="action-btn" onclick="moveFooterItem('explore', ${idx}, 1)" ${idx === items.length - 1 ? 'disabled' : ''} title="Move Down" style="padding:2px 4px;font-size:10px;">▼</button>
+          <button type="button" class="action-btn" onclick="moveFooterItem('explore', ${idx}, -1)" ${idx === 0 ? 'disabled' : ''} title="Move Up" style="padding:2px 4px;font-size:10px;">${FT_ICONS.upArrow}</button>
+          <button type="button" class="action-btn" onclick="moveFooterItem('explore', ${idx}, 1)" ${idx === items.length - 1 ? 'disabled' : ''} title="Move Down" style="padding:2px 4px;font-size:10px;">${FT_ICONS.downArrow}</button>
         </div>
         <div style="min-width:0;">
           <div style="font-weight:700;font-size:14.5px;color:var(--text-primary);display:flex;align-items:center;gap:8px;">
@@ -4261,12 +4262,13 @@ function renderFooterSeries() {
     <div class="ft-item-card ${item.enabled === false ? 'disabled' : ''}">
       <div style="display:flex;align-items:center;gap:14px;flex:1;min-width:0;">
         <div class="ft-drag-handle">
-          <button type="button" class="action-btn" onclick="moveFooterItem('series', ${idx}, -1)" ${idx === 0 ? 'disabled' : ''} title="Move Up" style="padding:2px 4px;font-size:10px;">▲</button>
-          <button type="button" class="action-btn" onclick="moveFooterItem('series', ${idx}, 1)" ${idx === items.length - 1 ? 'disabled' : ''} title="Move Down" style="padding:2px 4px;font-size:10px;">▼</button>
+          <button type="button" class="action-btn" onclick="moveFooterItem('series', ${idx}, -1)" ${idx === 0 ? 'disabled' : ''} title="Move Up" style="padding:2px 4px;font-size:10px;">${FT_ICONS.upArrow}</button>
+          <button type="button" class="action-btn" onclick="moveFooterItem('series', ${idx}, 1)" ${idx === items.length - 1 ? 'disabled' : ''} title="Move Down" style="padding:2px 4px;font-size:10px;">${FT_ICONS.downArrow}</button>
         </div>
         <div style="min-width:0;">
-          <div style="font-family:var(--font-serif);font-weight:700;font-size:15px;color:var(--text-primary);">
-            📖 ${escapeHtml(item.title || 'Untitled Series')}
+          <div style="font-family:var(--font-serif);font-weight:700;font-size:15px;color:var(--text-primary);display:flex;align-items:center;gap:6px;">
+            ${FT_ICONS.series}
+            <span>${escapeHtml(item.title || 'Untitled Series')}</span>
           </div>
           ${item.description ? `<div style="font-size:12.5px;color:var(--text-muted);margin:3px 0 5px;line-height:1.4;">${escapeHtml(item.description)}</div>` : ''}
           <div>
@@ -4303,8 +4305,8 @@ function renderFooterSocial() {
     <div class="ft-item-card ${item.enabled === false ? 'disabled' : ''}">
       <div style="display:flex;align-items:center;gap:14px;flex:1;min-width:0;">
         <div class="ft-drag-handle">
-          <button type="button" class="action-btn" onclick="moveFooterItem('social', ${idx}, -1)" ${idx === 0 ? 'disabled' : ''} title="Move Up" style="padding:2px 4px;font-size:10px;">▲</button>
-          <button type="button" class="action-btn" onclick="moveFooterItem('social', ${idx}, 1)" ${idx === items.length - 1 ? 'disabled' : ''} title="Move Down" style="padding:2px 4px;font-size:10px;">▼</button>
+          <button type="button" class="action-btn" onclick="moveFooterItem('social', ${idx}, -1)" ${idx === 0 ? 'disabled' : ''} title="Move Up" style="padding:2px 4px;font-size:10px;">${FT_ICONS.upArrow}</button>
+          <button type="button" class="action-btn" onclick="moveFooterItem('social', ${idx}, 1)" ${idx === items.length - 1 ? 'disabled' : ''} title="Move Down" style="padding:2px 4px;font-size:10px;">${FT_ICONS.downArrow}</button>
         </div>
         <div class="ft-social-chip ft-social-chip--${escapeHtml(item.platform || 'custom')}" style="padding:8px 12px;border-radius:8px;">
           ${getSocialIconSvgForAdmin(item.platform)}
@@ -4353,8 +4355,8 @@ function renderFooterSections() {
               <div style="font-weight:700;font-size:13.5px;color:#0f172a;">${escapeHtml(s.name)}</div>
               <div style="font-size:11px;color:#64748b;">/section/${escapeHtml(s.slug)}</div>
             </div>
-            <span style="font-size:11px;font-weight:700;color:${isChecked ? '#0a528e' : '#94a3b8'};">
-              ${isChecked ? '✓ Active' : 'Hidden'}
+            <span style="font-size:11px;font-weight:700;color:${isChecked ? '#0a528e' : '#94a3b8'};display:flex;align-items:center;gap:3px;">
+              ${isChecked ? '<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Active' : 'Hidden'}
             </span>
           </div>
         `;
@@ -4375,7 +4377,7 @@ function onFooterSectionToggle(slug, checked) {
   } else {
     footerDraftConfig.enabledSections = footerDraftConfig.enabledSections.filter(x => x !== slug);
   }
-  updateFooterSaveStatus();
+  updateGlobalSyncStatus();
 }
 
 function toggleFooterSectionCard(slug) {
@@ -4394,7 +4396,7 @@ function selectAllFooterSections(enableAll) {
   recordFooterState(enableAll ? 'Select All Sections' : 'Deselect All Sections');
   const activeSecs = sections.filter(s => !s.deleted && !s.locked);
   footerDraftConfig.enabledSections = enableAll ? activeSecs.map(s => s.slug) : [];
-  updateFooterSaveStatus();
+  updateGlobalSyncStatus();
   renderFooterSections();
   showToast('success', enableAll ? 'All sections enabled for footer.' : 'All sections hidden from footer.');
 }
@@ -4431,12 +4433,12 @@ function renderFooterBrand() {
     <div class="ft-item-card ${item.enabled === false ? 'disabled' : ''}">
       <div style="display:flex;align-items:center;gap:14px;flex:1;min-width:0;">
         <div class="ft-drag-handle">
-          <button type="button" class="action-btn" onclick="moveFooterItem('bottomLinks', ${idx}, -1)" ${idx === 0 ? 'disabled' : ''} title="Move Up" style="padding:2px 4px;font-size:10px;">▲</button>
-          <button type="button" class="action-btn" onclick="moveFooterItem('bottomLinks', ${idx}, 1)" ${idx === items.length - 1 ? 'disabled' : ''} title="Move Down" style="padding:2px 4px;font-size:10px;">▼</button>
+          <button type="button" class="action-btn" onclick="moveFooterItem('bottomLinks', ${idx}, -1)" ${idx === 0 ? 'disabled' : ''} title="Move Up" style="padding:2px 4px;font-size:10px;">${FT_ICONS.upArrow}</button>
+          <button type="button" class="action-btn" onclick="moveFooterItem('bottomLinks', ${idx}, 1)" ${idx === items.length - 1 ? 'disabled' : ''} title="Move Down" style="padding:2px 4px;font-size:10px;">${FT_ICONS.downArrow}</button>
         </div>
         <div style="min-width:0;">
           <div style="font-weight:700;font-size:14px;color:var(--text-primary);display:flex;align-items:center;gap:8px;">
-            <span>⚖️ ${escapeHtml(item.label || 'Untitled Link')}</span>
+            <span style="display:flex;align-items:center;gap:4px;">${FT_ICONS.legal}${escapeHtml(item.label || 'Untitled Link')}</span>
             <span class="ft-target-badge">${item.target === '_blank' ? 'New Tab ↗' : 'Same Tab'}</span>
           </div>
           <div style="margin-top:4px;"><span class="ft-url-badge">${escapeHtml(item.href || '#')}</span></div>
@@ -4483,7 +4485,7 @@ function onFooterLogoSvgInput(svgCode) {
   if (!footerDraftConfig) return;
   recordFooterState('Change Footer Logo SVG');
   footerDraftConfig.logoSvg = svgCode ? svgCode.trim() : '';
-  updateFooterSaveStatus();
+  updateGlobalSyncStatus();
   updateFooterLogoPreview();
 }
 
@@ -4494,7 +4496,7 @@ function onFooterLogoHeightInput(heightVal) {
   footerDraftConfig.logoHeight = h;
   const label = document.getElementById('ft-logo-height-val');
   if (label) label.textContent = h;
-  updateFooterSaveStatus();
+  updateGlobalSyncStatus();
   updateFooterLogoPreview();
 }
 
@@ -4509,7 +4511,7 @@ function resetFooterLogoToDefault() {
   if (slider) slider.value = 80;
   const label = document.getElementById('ft-logo-height-val');
   if (label) label.textContent = 80;
-  updateFooterSaveStatus();
+  updateGlobalSyncStatus();
   updateFooterLogoPreview();
   showToast('info', 'Footer logo reset to default.');
 }
@@ -4520,18 +4522,8 @@ function updateFooterLogoPreview() {
   const taglineEl = document.getElementById('ft-tagline-preview-text');
   const copyrightEl = document.getElementById('ft-copyright-preview-text');
 
-  const rawSvg = (footerDraftConfig.logoSvg && footerDraftConfig.logoSvg.trim().indexOf('<svg') !== -1) ? footerDraftConfig.logoSvg : FOOTER_LOGO_DEFAULT_SVG;
-  const h = footerDraftConfig.logoHeight || 80;
-
   if (logoRenderEl) {
-    logoRenderEl.innerHTML = rawSvg;
-    const svgEl = logoRenderEl.querySelector('svg');
-    if (svgEl) {
-      svgEl.style.height = h + 'px';
-      svgEl.style.width = 'auto';
-      svgEl.style.maxWidth = '100%';
-      svgEl.style.display = 'block';
-    }
+    logoRenderEl.innerHTML = formatSvgWithSize(footerDraftConfig.logoSvg, footerDraftConfig.logoHeight);
   }
 
   if (taglineEl) {
@@ -4889,16 +4881,7 @@ async function saveFooterSettings() {
   updateGlobalSyncStatus('syncing', 'Saving to database...');
 
   try {
-    const res = await fetch('/api/sections?action=footer', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${window.PRIVATIAN_TOKEN || ''}`
-      },
-      body: JSON.stringify(footerDraftConfig)
-    });
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    const result = await res.json();
+    const result = await _apiPost('/api/sections?action=footer', footerDraftConfig);
     if (result && result.data) {
       appliedFooterConfig = JSON.parse(JSON.stringify(result.data));
       footerDraftConfig = JSON.parse(JSON.stringify(result.data));

@@ -297,9 +297,14 @@
       return `<a href="${escapeHTML(b.href || '#')}" target="${escapeHTML(b.target || '_self')}">${escapeHTML(b.label || '')}</a>`;
     }).join('');
 
-    var rawLogoSvg = (cfg.logoSvg && cfg.logoSvg.trim().indexOf('<svg') !== -1) ? cfg.logoSvg : FOOTER_LOGO_SVG;
-    var logoH = cfg.logoHeight || 80;
-    var sizedLogoSvg = rawLogoSvg.replace('<svg', `<svg style="height:${logoH}px;max-width:100%;width:auto;display:block;"`);
+    var rawLogoSvg = (cfg.logoSvg && cfg.logoSvg.trim().indexOf('<svg') !== -1) ? cfg.logoSvg.trim() : FOOTER_LOGO_SVG;
+    var logoH = parseInt(cfg.logoHeight) || 80;
+    var sizedLogoSvg = rawLogoSvg.replace(/<svg\b([^>]*)>/i, function(match, attrs) {
+      var cleanAttrs = attrs
+        .replace(/\b(height|width)=["'][^"']*["']/gi, '')
+        .replace(/\bstyle=["'][^"']*["']/gi, '');
+      return '<svg ' + cleanAttrs.trim() + ' height="' + logoH + '" style="height:' + logoH + 'px;max-width:100%;width:auto;display:block;">';
+    });
 
     var footerHTML = `
   <footer class="site-footer" id="site-footer">
@@ -316,7 +321,12 @@
           </ul>
         </div>
         <div class="footer-col footer-col-series" id="footer-col-series">
-          <h3 class="footer-col-title"><span class="footer-series-icon">&#128214;</span> ${escapeHTML(cfg.seriesTitle || 'Our recent series')}</h3>
+          <h3 class="footer-col-title">
+            <span class="footer-series-icon">
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" style="display:inline-block;vertical-align:-1px;margin-right:4px;"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+            </span>
+            ${escapeHTML(cfg.seriesTitle || 'Our recent series')}
+          </h3>
           ${seriesHtml}
         </div>
         <div class="footer-col footer-col-social" id="footer-col-social">
@@ -330,11 +340,11 @@
     <div class="footer-bottom" id="footer-bottom">
       <div class="footer-bottom-inner">
         <div class="footer-brand">
-          <div class="footer-logo-wrap" style="display:inline-block;margin-bottom:8px;max-width:100%;">
+          <div class="footer-logo-wrap">
             ${sizedLogoSvg}
           </div>
-          ${cfg.tagline ? `<div class="footer-tagline" style="font-size:12px;color:rgba(255,255,255,0.7);margin-top:2px;line-height:1.4;">${escapeHTML(cfg.tagline)}</div>` : ''}
-          ${cfg.copyright ? `<div class="footer-copyright" style="font-size:11.5px;color:rgba(255,255,255,0.45);margin-top:4px;">${escapeHTML(cfg.copyright)}</div>` : ''}
+          ${cfg.tagline ? `<div class="footer-tagline">${escapeHTML(cfg.tagline)}</div>` : ''}
+          ${cfg.copyright ? `<div class="footer-copyright">${escapeHTML(cfg.copyright)}</div>` : ''}
         </div>
         <nav class="footer-bottom-links" aria-label="Footer legal links">
           ${bottomLinksHtml}
@@ -958,6 +968,7 @@
   fetchSectionsFromAPI();
   fetchHeaderSettingsFromAPI();
   fetchMenuFromAPI();
+  fetchFooterFromAPI();
 
   if (document.readyState === 'complete' || document.readyState === 'interactive') {
     init();
