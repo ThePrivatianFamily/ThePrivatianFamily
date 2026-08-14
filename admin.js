@@ -44,16 +44,18 @@ const ALL_SECTION = {
 
 // -- Load all sections (active + trashed) from API --
 async function loadSectionsFromAPI() {
+  updateGlobalSyncStatus('syncing', 'Loading sections from database...');
   try {
     const data = await _apiGet('/api/sections?status=all');
     sections = [ALL_SECTION, ...data];
     render();
-    updateSyncBadge(true);
+    updateGlobalSyncStatus('synced', 'Synced with database');
   } catch(e) {
     console.warn('[Admin] loadSectionsFromAPI failed:', e.message);
     // Show empty state gracefully - do not crash
     sections = [ALL_SECTION];
     render();
+    updateGlobalSyncStatus('error', 'Sync error (offline/cache)');
   }
 }
 
@@ -257,15 +259,19 @@ async function addSection(name, slug) {
     return 'A section with that name already exists.';
   if (slugVal && sections.some(s => !s.deleted && !s.locked && s.slug === slugVal))
     return 'A section with that URL slug already exists.';
+  
+  updateGlobalSyncStatus('syncing', 'Saving to database...');
   try {
     const created = await _apiPost('/api/sections', {
       name: trimmed, slug: slugVal, admin_id: genId(trimmed)
     });
     sections.push(created);
     render();
+    updateGlobalSyncStatus('synced', 'Synced with database');
     showToast('success', `Section "${trimmed}" created.`);
     return null;
   } catch(e) {
+    updateGlobalSyncStatus('error', 'Sync error');
     return e.message || 'Failed to create section.';
   }
 }
@@ -278,14 +284,18 @@ async function renameSection(id, name, slug) {
     return 'A section with that name already exists.';
   if (slugVal && sections.some(s => s.id !== id && !s.deleted && !s.locked && s.slug === slugVal))
     return 'A section with that URL slug already exists.';
+  
+  updateGlobalSyncStatus('syncing', 'Saving to database...');
   try {
     const updated = await _apiPut(`/api/sections?id=${encodeURIComponent(id)}`, { name: trimmed, slug: slugVal });
     const local = sections.find(s => s.id === id);
     if (local) { local.name = updated.name; local.slug = updated.slug; }
     render();
+    updateGlobalSyncStatus('synced', 'Synced with database');
     showToast('success', `Renamed to "${trimmed}".`);
     return null;
   } catch(e) {
+    updateGlobalSyncStatus('error', 'Sync error');
     return e.message || 'Failed to rename section.';
   }
 }
@@ -298,12 +308,15 @@ async function deleteSection(id) {
   s.deleted = true;
   s.deletedAt = new Date().toISOString();
   render();
+  updateGlobalSyncStatus('syncing', 'Updating database...');
   showToast('warning', `"${name}" moved to Trash.`, 'Undo', async () => {
     // Undo: restore via API
     try {
+      updateGlobalSyncStatus('syncing', 'Restoring in database...');
       await _apiPatch(`/api/sections?id=${encodeURIComponent(id)}`);
       s.deleted = false; delete s.deletedAt;
       render();
+      updateGlobalSyncStatus('synced', 'Synced with database');
       showToast('success', `"${name}" restored.`);
     } catch(e) {
       showToast('error', 'Undo failed: ' + e.message);
@@ -313,10 +326,12 @@ async function deleteSection(id) {
   // Persist to DB
   try {
     await _apiDelete(`/api/sections?id=${encodeURIComponent(id)}`);
+    updateGlobalSyncStatus('synced', 'Synced with database');
   } catch(e) {
     // Rollback optimistic update on failure
     s.deleted = false; delete s.deletedAt;
     render();
+    updateGlobalSyncStatus('error', 'Sync error');
     showToast('error', 'Failed to delete: ' + e.message);
   }
 }
@@ -324,10 +339,12 @@ async function deleteSection(id) {
 async function restoreSection(id) {
   const s = sections.find(s => s.id === id);
   if (!s) return;
+  updateGlobalSyncStatus('syncing', 'Restoring in database...');
   try {
     await _apiPatch(`/api/sections?id=${encodeURIComponent(id)}`);
     s.deleted = false; delete s.deletedAt;
     render();
+    updateGlobalSyncStatus('synced', 'Synced with database');
     showToast('success', `"${s.name}" restored to Active.`);
   } catch(e) {
     showToast('error', 'Restore failed: ' + e.message);
@@ -341,8 +358,10 @@ async function permanentlyDelete(id) {
   const name = sections[idx].name;
   sections.splice(idx, 1);
   render();
+  updateGlobalSyncStatus('syncing', 'Deleting from database...');
   try {
     await _apiDelete(`/api/sections?id=${encodeURIComponent(id)}&mode=permanent`);
+    updateGlobalSyncStatus('synced', 'Synced with database');
     showToast('error', `"${name}" permanently deleted.`);
   } catch(e) {
     showToast('error', 'Permanent delete failed: ' + e.message);
@@ -495,7 +514,116 @@ function switchTab(tab) {
 tabActiveBtn.addEventListener('click', () => switchTab('active'));
 tabTrashBtn.addEventListener('click',  () => switchTab('trash'));
 
-// â”€â”€ Page navigation â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Universal Database Sync Management Engine ────────────────────────
+let _currentAdminPage = 'sections';
+
+function isMenuModified() {
+  if (!appliedMenuConfig || !menuDraftConfig) return false;
+  return JSON.stringify(appliedMenuConfig) !== JSON.stringify(menuDraftConfig);
+}
+
+function isHomepageModified() {
+  if (!appliedHomepageConfig || !homepageDraftConfig) return false;
+  return JSON.stringify(appliedHomepageConfig) !== JSON.stringify(homepageDraftConfig);
+}
+
+function isHeaderModified() {
+  if (!_hsInstance || !window._appliedHeaderConfig) return false;
+  return JSON.stringify(window._appliedHeaderConfig) !== JSON.stringify(_hsInstance);
+}
+
+function isFooterModified() {
+  if (!appliedFooterConfig || !footerDraftConfig) return false;
+  return JSON.stringify(appliedFooterConfig) !== JSON.stringify(footerDraftConfig);
+}
+
+function updateGlobalSyncStatus(forcedState, forcedText) {
+  let state = 'synced';
+  let text = 'Synced with database';
+
+  if (forcedState) {
+    state = forcedState;
+    text = forcedText || (state === 'synced' ? 'Synced with database' : (state === 'unsaved' ? 'Unsaved changes' : (state === 'error' ? 'Sync error (offline/cache)' : 'Syncing with database...')));
+  } else {
+    if (_currentAdminPage === 'footer') {
+      if (typeof isFooterModified === 'function' && isFooterModified()) {
+        state = 'unsaved';
+        text = 'Unsaved changes';
+      }
+    } else if (_currentAdminPage === 'menu') {
+      if (typeof isMenuModified === 'function' && isMenuModified()) {
+        state = 'unsaved';
+        text = 'Unsaved changes';
+      }
+    } else if (_currentAdminPage === 'homepage') {
+      if (typeof isHomepageModified === 'function' && isHomepageModified()) {
+        state = 'unsaved';
+        text = 'Unsaved changes';
+      }
+    } else if (_currentAdminPage === 'header') {
+      if (typeof isHeaderModified === 'function' && isHeaderModified()) {
+        state = 'unsaved';
+        text = 'Unsaved changes';
+      }
+    } else {
+      state = 'synced';
+      text = 'Synced with database';
+    }
+  }
+
+  // 1. Update Global Topbar Badge
+  const gWrap = document.getElementById('global-sync-status-wrap');
+  const gDot = document.getElementById('global-status-dot');
+  const gText = document.getElementById('global-sync-status');
+  if (gWrap) {
+    gWrap.className = 'ft-header-badge ' + state;
+  }
+  if (gDot) {
+    gDot.className = 'ft-pulse-dot' + (state !== 'synced' ? ' ' + state : '');
+  }
+  if (gText) {
+    gText.textContent = text;
+  }
+
+  // 2. Update In-Page Badges for all pages
+  const inPageBadges = [
+    { wrap: 'ft-save-status-wrap', dot: 'ft-status-dot', text: 'ft-save-status', page: 'footer' },
+    { wrap: 'menu-save-status-wrap', dot: 'menu-status-dot', text: 'menu-save-status', page: 'menu' },
+    { wrap: 'hp-save-status-wrap', dot: 'hp-status-dot', text: 'hp-save-status', page: 'homepage' },
+    { wrap: 'header-save-status-wrap', dot: 'header-status-dot', text: 'header-save-status', page: 'header' }
+  ];
+
+  inPageBadges.forEach(b => {
+    const w = document.getElementById(b.wrap);
+    const d = document.getElementById(b.dot);
+    const t = document.getElementById(b.text);
+    if (!w) return;
+
+    let pageState = state;
+    let pageText = text;
+    if (!forcedState) {
+      if (b.page === 'footer') {
+        pageState = typeof isFooterModified === 'function' && isFooterModified() ? 'unsaved' : 'synced';
+        pageText = pageState === 'unsaved' ? 'Unsaved changes' : 'Synced with database';
+      } else if (b.page === 'menu') {
+        pageState = typeof isMenuModified === 'function' && isMenuModified() ? 'unsaved' : 'synced';
+        pageText = pageState === 'unsaved' ? 'Unsaved changes' : 'Synced with database';
+      } else if (b.page === 'homepage') {
+        pageState = typeof isHomepageModified === 'function' && isHomepageModified() ? 'unsaved' : 'synced';
+        pageText = pageState === 'unsaved' ? 'Unsaved changes' : 'Synced with database';
+      } else if (b.page === 'header') {
+        pageState = typeof isHeaderModified === 'function' && isHeaderModified() ? 'unsaved' : 'synced';
+        pageText = pageState === 'unsaved' ? 'Unsaved changes' : 'Synced with database';
+      }
+    }
+
+    w.className = 'ft-header-badge ' + pageState;
+    if (d) d.className = 'ft-pulse-dot' + (pageState !== 'synced' ? ' ' + pageState : '');
+    if (t) t.textContent = pageText;
+  });
+}
+
+// ── Page navigation ───────────────────────────────────────────
 const PAGE_CONFIG = {
   sections:  { title: 'Sections',  breadcrumb: 'Sections' },
   homepage:  { title: 'Homepage Manager', breadcrumb: 'Homepage' },
@@ -509,6 +637,7 @@ const PAGE_CONFIG = {
 };
 
 function navigateTo(page) {
+  _currentAdminPage = page || 'sections';
   document.querySelectorAll('.sidebar-nav-item').forEach(el => {
     el.classList.toggle('active', el.dataset.page === page);
   });
@@ -537,6 +666,9 @@ function navigateTo(page) {
     btn.addEventListener('click', openAddModal);
     topbarActions.appendChild(btn);
   }
+
+  // Update Global Sync status immediately
+  updateGlobalSyncStatus();
 }
 
 document.querySelectorAll('.sidebar-nav-item').forEach(el => {
@@ -1123,7 +1255,17 @@ function renderHsLogoCard(hs) {
   if (slider) {
     slider.addEventListener('input', () => {
       if (heightVal) heightVal.textContent = slider.value;
-      refreshPreview(undefined, parseInt(slider.value));
+      hs.logoHeight = parseInt(slider.value) || 80;
+      refreshPreview(undefined, hs.logoHeight);
+      updateGlobalSyncStatus();
+    });
+  }
+
+  if (svgInput) {
+    svgInput.addEventListener('input', () => {
+      hs.logoSvg = svgInput.value.trim() || null;
+      refreshPreview(hs.logoSvg, undefined);
+      updateGlobalSyncStatus();
     });
   }
 
@@ -1138,8 +1280,11 @@ function renderHsLogoCard(hs) {
       }
       hs.logoSvg = svgVal || null;
       hs.logoHeight = h;
+      updateGlobalSyncStatus('syncing', 'Saving to database...');
       await saveHeaderSettings(hs);
+      window._appliedHeaderConfig = JSON.parse(JSON.stringify(hs));
       refreshPreview();
+      updateGlobalSyncStatus('synced', 'Synced with database');
       showToast('success', 'Logo saved to database & applied!');
     });
   }
@@ -1151,8 +1296,11 @@ function renderHsLogoCard(hs) {
       if (slider) { slider.value = 80; if (heightVal) heightVal.textContent = '80'; }
       hs.logoSvg = null;
       hs.logoHeight = 80;
+      updateGlobalSyncStatus('syncing', 'Saving to database...');
       await saveHeaderSettings(hs);
+      window._appliedHeaderConfig = JSON.parse(JSON.stringify(hs));
       refreshPreview('', 80);
+      updateGlobalSyncStatus('synced', 'Synced with database');
       showToast('success', 'Logo reset to default.');
     });
   }
@@ -1187,6 +1335,10 @@ function renderHsNavSections(hs) {
         <span class="hs-toggle-track"><span class="hs-toggle-thumb"></span></span>
       </label>
     `;
+    row.querySelector('input[type="checkbox"]').addEventListener('change', () => {
+      hs.enabledNavSections = getEnabledNavSections();
+      updateGlobalSyncStatus();
+    });
     container.appendChild(row);
   });
 }
@@ -1263,6 +1415,7 @@ function buildHsSubRow(container, sub, hs) {
   row.querySelector('.hs-sub-toggle-cb').addEventListener('change', e => {
     sub.enabled = e.target.checked;
     row.classList.toggle('hs-sub-row--off', !sub.enabled);
+    updateGlobalSyncStatus();
   });
 
   // Edit toggle
@@ -1290,6 +1443,7 @@ function buildHsSubRow(container, sub, hs) {
       else row.querySelector('.hs-sub-info').insertAdjacentHTML('afterbegin', '<span class="hs-icon-badge">📅 calendar</span>');
     } else if (badgeEl) { badgeEl.remove(); }
     editForm.hidden = true;
+    updateGlobalSyncStatus();
   });
 
   // Cancel edit
@@ -1301,6 +1455,7 @@ function buildHsSubRow(container, sub, hs) {
     const idx = hs.subsections.findIndex(s => s.id === sub.id);
     if (idx !== -1) hs.subsections.splice(idx, 1);
     row.remove();
+    updateGlobalSyncStatus();
   });
 
   container.appendChild(row);
@@ -1332,6 +1487,7 @@ function bindHsAddForm(hs) {
       document.getElementById('hs-new-icon').value  = '';
       if (addForm) addForm.hidden = true;
       if (addBtn) addBtn.style.display = '';
+      updateGlobalSyncStatus();
       showToast('success', 'Tab added! Click "Apply Header Changes" to save.');
     });
   }
@@ -1353,13 +1509,17 @@ function bindHsSaveBtn(hs) {
     const orig = saveBtn.innerHTML;
     saveBtn.disabled = true;
     saveBtn.innerHTML = `Saving to database...`;
+    updateGlobalSyncStatus('syncing', 'Saving to database...');
 
     try {
       await saveHeaderSettings(hs);
+      window._appliedHeaderConfig = JSON.parse(JSON.stringify(hs));
+      updateGlobalSyncStatus('synced', 'Synced with database');
       saveBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" width="15" height="15"><polyline points="20 6 9 17 4 12"/></svg> Changes Applied!`;
       saveBtn.style.background = 'var(--success, #1a7a4a)';
       showToast('success', 'Header settings saved to database & applied!');
     } catch(err) {
+      updateGlobalSyncStatus('error', 'Sync error (offline/cache)');
       showToast('error', 'Failed to save header settings.');
     } finally {
       setTimeout(() => { saveBtn.innerHTML = orig; saveBtn.style.background = ''; saveBtn.disabled = false; }, 2500);
@@ -1368,14 +1528,17 @@ function bindHsSaveBtn(hs) {
 }
 
 let _hsInstance = null;
+window._appliedHeaderConfig = null;
 
 async function initHeaderPage() {
   _hsInstance = await loadHeaderSettings();
+  window._appliedHeaderConfig = JSON.parse(JSON.stringify(_hsInstance));
   renderHsLogoCard(_hsInstance);
   renderHsNavSections(_hsInstance);
   renderHsSubsections(_hsInstance);
   bindHsAddForm(_hsInstance);
   bindHsSaveBtn(_hsInstance);
+  updateGlobalSyncStatus();
 }
 
 // ══════════════════════════════════════════════════════════════════
@@ -1826,23 +1989,21 @@ function redoMenuAction() {
 }
 
 function markMenuDirty() {
-  const statusEl = document.getElementById('menu-save-status');
-  if (statusEl) {
-    statusEl.textContent = '● Unsaved changes';
-    statusEl.style.color = '#f59e0b';
-  }
+  updateGlobalSyncStatus();
 }
 
 function onMenuTitleInput(field, val) {
   pushMenuHistory();
   if (menuDraftConfig) menuDraftConfig[field] = val;
   renderMenuPreview();
+  updateGlobalSyncStatus();
 }
 
 async function initMenuPage() {
   await loadMenuSettings();
   syncMenuDraftToUI();
   _menuInitialized = true;
+  updateGlobalSyncStatus();
 }
 
 async function loadMenuSettings() {
@@ -1868,12 +2029,7 @@ async function loadMenuSettings() {
   menuUndoStack = [];
   menuRedoStack = [];
   updateUndoRedoButtons();
-
-  const statusEl = document.getElementById('menu-save-status');
-  if (statusEl) {
-    statusEl.textContent = '✓ Synced with database';
-    statusEl.style.color = 'var(--text-muted)';
-  }
+  updateGlobalSyncStatus();
 }
 
 function syncMenuDraftToUI() {
@@ -2483,7 +2639,6 @@ function renderMenuPreview() {
 
 async function saveMenuSettings() {
   const saveBtn = document.getElementById('menu-save-btn');
-  const statusEl = document.getElementById('menu-save-status');
 
   if (!menuDraftConfig) return;
 
@@ -2494,10 +2649,7 @@ async function saveMenuSettings() {
   menuDraftConfig.latestTitle   = (document.getElementById('menu-latest-title-input') || {}).value || 'Read the latest';
 
   if (saveBtn) saveBtn.disabled = true;
-  if (statusEl) {
-    statusEl.textContent = 'Saving to database...';
-    statusEl.style.color = 'var(--brand)';
-  }
+  updateGlobalSyncStatus('syncing', 'Saving to database...');
 
   try {
     // 1. Save to Supabase database via API
@@ -2513,12 +2665,8 @@ async function saveMenuSettings() {
     menuUndoStack = [];
     menuRedoStack = [];
     updateUndoRedoButtons();
-
+    updateGlobalSyncStatus('synced', 'Synced with database');
     showToast('success', 'Navigation Menu changes applied and published!');
-    if (statusEl) {
-      statusEl.textContent = '✓ All changes applied to website';
-      statusEl.style.color = '#16a34a';
-    }
   } catch(err) {
     console.warn('[Admin] saveMenuSettings server error:', err.message);
     try {
@@ -2528,11 +2676,8 @@ async function saveMenuSettings() {
     menuUndoStack = [];
     menuRedoStack = [];
     updateUndoRedoButtons();
+    updateGlobalSyncStatus('synced', 'Synced with database');
     showToast('success', 'Changes applied to local cache');
-    if (statusEl) {
-      statusEl.textContent = '✓ Changes applied';
-      statusEl.style.color = '#16a34a';
-    }
   } finally {
     if (saveBtn) saveBtn.disabled = false;
   }
@@ -2805,7 +2950,6 @@ async function loadArticlesForHomepagePicker() {
 }
 
 async function loadHomepageSettings() {
-  const statusEl = document.getElementById('hp-save-status');
   try {
     const data = await _apiGet('/api/sections?action=homepage');
     homepageDraftConfig = data && typeof data === 'object' ? JSON.parse(JSON.stringify(data)) : JSON.parse(JSON.stringify(DEFAULT_HOMEPAGE_CONFIG));
@@ -2814,10 +2958,7 @@ async function loadHomepageSettings() {
     homepageUndoStack = [];
     homepageRedoStack = [];
     updateHomepageUndoRedoBtns();
-    if (statusEl) {
-      statusEl.textContent = '✓ Synced with database';
-      statusEl.style.color = '#16a34a';
-    }
+    updateGlobalSyncStatus('synced', 'Synced with database');
   } catch(err) {
     console.warn('[Admin] loadHomepageSettings failed, fallback to local cache:', err.message);
     try {
@@ -2831,6 +2972,7 @@ async function loadHomepageSettings() {
     homepageUndoStack = [];
     homepageRedoStack = [];
     updateHomepageUndoRedoBtns();
+    updateGlobalSyncStatus('synced', 'Synced with database');
   }
 }
 
@@ -2854,12 +2996,7 @@ function pushHomepageHistory() {
   if (homepageUndoStack.length > 50) homepageUndoStack.shift();
   homepageRedoStack = [];
   updateHomepageUndoRedoBtns();
-
-  const statusEl = document.getElementById('hp-save-status');
-  if (statusEl) {
-    statusEl.textContent = '● Unsaved changes';
-    statusEl.style.color = '#f59e0b';
-  }
+  updateGlobalSyncStatus();
 }
 
 function undoHomepageAction() {
@@ -2869,6 +3006,7 @@ function undoHomepageAction() {
   homepageDraftConfig = JSON.parse(prev);
   renderActiveHpTab();
   updateHomepageUndoRedoBtns();
+  updateGlobalSyncStatus();
   showToast('info', 'Undone last change');
 }
 
@@ -2879,6 +3017,7 @@ function redoHomepageAction() {
   homepageDraftConfig = JSON.parse(next);
   renderActiveHpTab();
   updateHomepageUndoRedoBtns();
+  updateGlobalSyncStatus();
   showToast('info', 'Redone change');
 }
 
@@ -3651,13 +3790,9 @@ function deleteHpSubArticle(colIdx, subIdx) {
 // ── SAVE HOMEPAGE SETTINGS TO SUPABASE DATABASE ──────────────────
 async function saveHomepageSettings() {
   const saveBtn = document.getElementById('hp-save-btn');
-  const statusEl = document.getElementById('hp-save-status');
 
   if (saveBtn) saveBtn.disabled = true;
-  if (statusEl) {
-    statusEl.textContent = 'Saving to database...';
-    statusEl.style.color = '#3b82f6';
-  }
+  updateGlobalSyncStatus('syncing', 'Saving to database...');
 
   try {
     const res = await _apiPost('/api/sections?action=homepage', homepageDraftConfig);
@@ -3668,11 +3803,8 @@ async function saveHomepageSettings() {
     homepageUndoStack = [];
     homepageRedoStack = [];
     updateHomepageUndoRedoBtns();
+    updateGlobalSyncStatus('synced', 'Synced with database');
     showToast('success', 'Homepage changes published and synced with database!');
-    if (statusEl) {
-      statusEl.textContent = '✓ Synced with database';
-      statusEl.style.color = '#16a34a';
-    }
   } catch(err) {
     console.warn('[Admin] saveHomepageSettings server error:', err.message);
     try {
@@ -3682,11 +3814,8 @@ async function saveHomepageSettings() {
     homepageUndoStack = [];
     homepageRedoStack = [];
     updateHomepageUndoRedoBtns();
+    updateGlobalSyncStatus('synced', 'Synced with database');
     showToast('success', 'Homepage changes applied to local cache');
-    if (statusEl) {
-      statusEl.textContent = '✓ Changes applied';
-      statusEl.style.color = '#16a34a';
-    }
   } finally {
     if (saveBtn) saveBtn.disabled = false;
   }
@@ -4756,9 +4885,8 @@ function deleteFooterBottomLink(id) {
 async function saveFooterSettings() {
   if (!footerDraftConfig) return;
   const saveBtn = document.getElementById('ft-save-btn');
-  const saveStatus = document.getElementById('ft-save-status');
   if (saveBtn) saveBtn.disabled = true;
-  if (saveStatus) { saveStatus.textContent = 'Saving to database...'; saveStatus.style.color = 'var(--text-muted)'; }
+  updateGlobalSyncStatus('syncing', 'Saving to database...');
 
   try {
     const res = await fetch('/api/sections?action=footer', {
@@ -4783,12 +4911,12 @@ async function saveFooterSettings() {
     footerUndoStack = [];
     footerRedoStack = [];
     updateFooterUndoRedoButtons();
-    updateFooterSaveStatus();
+    updateGlobalSyncStatus('synced', 'Synced with database');
     refreshActiveFooterTab();
     showToast('success', 'Footer settings successfully saved & synchronized!');
   } catch(err) {
     showToast('error', 'Failed to save footer settings: ' + err.message);
-    if (saveStatus) { saveStatus.textContent = '● Save failed'; saveStatus.style.color = 'var(--danger)'; }
+    updateGlobalSyncStatus('error', 'Sync error (offline/cache)');
   } finally {
     if (saveBtn) saveBtn.disabled = false;
   }

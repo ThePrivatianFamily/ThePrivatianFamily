@@ -143,8 +143,15 @@
           <span id="breadcrumb-current">Sections</span>
         </nav>
       </div>
-      <div class="topbar-right" id="topbar-actions">
-        <!-- injected per page -->
+      <div class="topbar-right" style="display:flex;align-items:center;gap:12px;">
+        <!-- GLOBAL DATABASE SYNC BADGE -->
+        <div id="global-sync-status-wrap" class="ft-header-badge synced" title="Database synchronization status">
+          <span class="ft-pulse-dot" id="global-status-dot"></span>
+          <span id="global-sync-status">Synced with database</span>
+        </div>
+        <div id="topbar-actions" style="display:flex;align-items:center;gap:10px;">
+          <!-- injected per page -->
+        </div>
       </div>
     </header>
 
@@ -221,6 +228,22 @@
 
     <!-- PAGE: HEADER SETTINGS -->
     <section class="page" id="page-header">
+      <div class="menu-mgr-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:12px;">
+        <div class="menu-mgr-title-wrap">
+          <h1 class="page-title" style="font-size:22px;font-weight:700;color:var(--text-primary);margin:0 0 4px;">Header Settings</h1>
+          <p class="page-subtitle" style="font-size:13px;color:var(--text-muted);margin:0;">Manage site header logo, navigation sections visibility, and sub-header tabs</p>
+        </div>
+        <div class="menu-mgr-actions" style="display:flex;align-items:center;gap:10px;">
+          <div id="header-save-status-wrap" class="ft-header-badge synced">
+            <span class="ft-pulse-dot" id="header-status-dot"></span>
+            <span id="header-save-status">Synced with database</span>
+          </div>
+          <button type="button" class="btn btn--primary btn--sm" onclick="document.getElementById('hs-save-btn').click()" style="display:flex;align-items:center;gap:6px;padding:7px 16px;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" width="14" height="14"><polyline points="20 6 9 17 4 12"/></svg>
+            Apply Header Changes
+          </button>
+        </div>
+      </div>
       <div class="hs-page">
 
         <!-- LOGO CARD -->
@@ -315,7 +338,10 @@
           <p class="page-subtitle" style="font-size:13px;color:var(--text-muted);margin:0;">Customize the 4 columns and all items inside the Header Menu Overlay</p>
         </div>
         <div class="menu-mgr-actions" style="display:flex;align-items:center;gap:10px;">
-          <span id="menu-save-status" style="font-size:12.5px;color:var(--text-muted);font-weight:500;">✓ Synced with database</span>
+          <div id="menu-save-status-wrap" class="ft-header-badge synced">
+            <span class="ft-pulse-dot" id="menu-status-dot"></span>
+            <span id="menu-save-status">Synced with database</span>
+          </div>
           <button type="button" class="btn btn--ghost btn--sm" id="menu-undo-btn" onclick="undoMenuAction()" title="Undo (Ctrl+Z)" disabled style="display:flex;align-items:center;gap:5px;padding:6px 11px;">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
             Undo
@@ -680,7 +706,10 @@
           <p class="page-subtitle" style="font-size:13px;color:var(--text-muted);margin:0;">Fully customize articles, headlines, sections, and events displayed on the main homepage</p>
         </div>
         <div class="menu-mgr-actions" style="display:flex;align-items:center;gap:10px;">
-          <span id="hp-save-status" style="font-size:12.5px;color:var(--text-muted);font-weight:500;">✓ Synced with database</span>
+          <div id="hp-save-status-wrap" class="ft-header-badge synced">
+            <span class="ft-pulse-dot" id="hp-status-dot"></span>
+            <span id="hp-save-status">Synced with database</span>
+          </div>
           <button type="button" class="btn btn--ghost btn--sm" id="hp-undo-btn" onclick="undoHomepageAction()" title="Undo (Ctrl+Z)" disabled style="display:flex;align-items:center;gap:5px;padding:6px 11px;">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
             Undo
