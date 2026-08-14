@@ -503,6 +503,7 @@ const PAGE_CONFIG = {
   homepage:  { title: 'Homepage Manager', breadcrumb: 'Homepage' },
   menu:      { title: 'Navigation Menu', breadcrumb: 'Navigation Menu' },
   header:    { title: 'Header Settings', breadcrumb: 'Header' },
+  footer:    { title: 'Footer Settings', breadcrumb: 'Footer' },
   dashboard: { title: 'Dashboard', breadcrumb: 'Dashboard' },
   articles:  { title: 'Articles',  breadcrumb: 'Articles' },
   settings:  { title: 'Settings',  breadcrumb: 'Settings' },
@@ -527,6 +528,7 @@ function navigateTo(page) {
   if (page === 'homepage') { initHomepagePage(); }
   if (page === 'menu')     { initMenuPage(); }
   if (page === 'header')   { initHeaderPage(); }
+  if (page === 'footer')   { initFooterPage(); }
   if (page === 'articles') { initArticlesPage(); }
   if (page === 'sections') {
     // New Section button
@@ -3692,22 +3694,895 @@ async function saveHomepageSettings() {
   }
 }
 
-// Global Keyboard Shortcut for Undo/Redo in Homepage Manager
+// Global Keyboard Shortcut for Undo/Redo in Homepage, Navigation Menu, and Footer Manager
 document.addEventListener('keydown', (e) => {
   const activePage = document.querySelector('.sidebar-nav-item.active');
-  if (!activePage || activePage.dataset.page !== 'homepage') return;
+  if (!activePage) return;
 
   const isInput = ['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement ? document.activeElement.tagName : '');
   if (isInput) return; // Allow browser text undo inside inputs
 
-  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z' && !e.shiftKey) {
-    e.preventDefault();
-    undoHomepageAction();
-  } else if ((e.ctrlKey || e.metaKey) && (e.key.toLowerCase() === 'y' || (e.key.toLowerCase() === 'z' && e.shiftKey))) {
-    e.preventDefault();
-    redoHomepageAction();
+  if (activePage.dataset.page === 'footer') {
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z' && !e.shiftKey) {
+      e.preventDefault();
+      undoFooterAction();
+    } else if ((e.ctrlKey || e.metaKey) && (e.key.toLowerCase() === 'y' || (e.key.toLowerCase() === 'z' && e.shiftKey))) {
+      e.preventDefault();
+      redoFooterAction();
+    }
+    return;
+  }
+
+  if (activePage.dataset.page === 'homepage') {
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z' && !e.shiftKey) {
+      e.preventDefault();
+      undoHomepageAction();
+    } else if ((e.ctrlKey || e.metaKey) && (e.key.toLowerCase() === 'y' || (e.key.toLowerCase() === 'z' && e.shiftKey))) {
+      e.preventDefault();
+      redoHomepageAction();
+    }
   }
 });
+
+/* ═══════════════════════════════════════════════════════════════
+   FOOTER SETTINGS MANAGER LOGIC
+═══════════════════════════════════════════════════════════════ */
+
+const FOOTER_SETTINGS_KEY = 'privatian_footer_settings';
+
+const DEFAULT_FOOTER_CONFIG = {
+  sectionsTitle: 'Sections',
+  enabledSections: null,
+  exploreTitle: 'Explore the Privatian',
+  explore: [
+    { id: 'f-exp-1', label: 'Events', href: '/events', target: '_self', enabled: true },
+    { id: 'f-exp-2', label: 'Article archive', href: '/', target: '_self', enabled: true },
+    { id: 'f-exp-3', label: 'About us', href: '/', target: '_self', enabled: true },
+    { id: 'f-exp-4', label: 'News+', href: '/', target: '_self', enabled: true },
+    { id: 'f-exp-5', label: 'Podcast', href: '/', target: '_self', enabled: true }
+  ],
+  seriesTitle: 'Our recent series',
+  series: [
+    {
+      id: 'f-ser-1',
+      title: 'Wondering',
+      href: '/section/findings',
+      description: 'A series of profound questions explored by The Privatian Family experts.',
+      enabled: true
+    },
+    {
+      id: 'f-ser-2',
+      title: 'Life | Heritage',
+      href: '/section/community-heritage',
+      description: 'A series focused on the personal side of Privatian family research and tradition.',
+      enabled: true
+    }
+  ],
+  socialTitle: 'Follow us on',
+  social: [
+    { id: 'f-soc-1', platform: 'instagram', label: 'Instagram', href: 'https://instagram.com', enabled: true },
+    { id: 'f-soc-2', platform: 'linkedin', label: 'LinkedIn', href: 'https://linkedin.com', enabled: true },
+    { id: 'f-soc-3', platform: 'tiktok', label: 'TikTok', href: 'https://tiktok.com', enabled: true },
+    { id: 'f-soc-4', platform: 'facebook', label: 'Facebook', href: 'https://facebook.com', enabled: true },
+    { id: 'f-soc-5', platform: 'youtube', label: 'YouTube', href: 'https://youtube.com', enabled: true },
+    { id: 'f-soc-6', platform: 'email', label: 'Email', href: 'mailto:contact@privatian.org', enabled: true }
+  ],
+  tagline: 'The Official Publication of The Privatian Society — Cambridge, Massachusetts',
+  copyright: '© 2026 The Privatian Family. All rights reserved.',
+  bottomLinks: [
+    { id: 'f-bot-1', label: 'For Media & Journalists', href: '#', target: '_self', enabled: true },
+    { id: 'f-bot-2', label: 'Family News & Archives', href: '#', target: '_self', enabled: true },
+    { id: 'f-bot-3', label: 'Digital Accessibility', href: '#', target: '_self', enabled: true },
+    { id: 'f-bot-4', label: 'Privacy Policy', href: '#', target: '_self', enabled: true },
+    { id: 'f-bot-5', label: 'Trademark', href: '#', target: '_self', enabled: true }
+  ]
+};
+
+let appliedFooterConfig = null;
+let footerDraftConfig = null;
+let footerUndoStack = [];
+let footerRedoStack = [];
+let _activeFooterTab = 'preview';
+
+function getSocialIconSvgForAdmin(platform) {
+  const p = (platform || '').toLowerCase();
+  if (p === 'instagram') return `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>`;
+  if (p === 'linkedin') return `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"></path><rect x="2" y="9" width="4" height="12"></rect><circle cx="4" cy="4" r="2"></circle></svg>`;
+  if (p === 'tiktok') return `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 00-.79-.05 6.34 6.34 0 00-6.34 6.34 6.34 6.34 0 006.34 6.34 6.34 6.34 0 006.33-6.34V8.72a8.28 8.28 0 004.84 1.55V6.81a4.85 4.85 0 01-1.07-.12z"/></svg>`;
+  if (p === 'facebook') return `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path></svg>`;
+  if (p === 'youtube') return `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M22.54 6.42a2.78 2.78 0 0 0-1.95-1.96C18.88 4 12 4 12 4s-6.88 0-8.59.46a2.78 2.78 0 0 0-1.95 1.96A29 29 0 0 0 1 12a29 29 0 0 0 .46 5.58A2.78 2.78 0 0 0 3.41 19.6C5.12 20 12 20 12 20s6.88 0 8.59-.46a2.78 2.78 0 0 0 1.95-1.95A29 29 0 0 0 23 12a29 29 0 0 0-.46-5.58z"></path><polygon points="9.75 15.02 15.5 12 9.75 8.98 9.75 15.02"></polygon></svg>`;
+  if (p === 'email') return `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>`;
+  if (p === 'twitter' || p === 'x') return `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>`;
+}
+
+async function initFooterPage() {
+  const saveStatus = document.getElementById('ft-save-status');
+  if (saveStatus) { saveStatus.textContent = 'Loading footer settings...'; saveStatus.style.color = 'var(--text-muted)'; }
+
+  try {
+    const res = await fetch('/api/sections?action=footer');
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    if (data && typeof data === 'object') {
+      appliedFooterConfig = JSON.parse(JSON.stringify(data));
+      footerDraftConfig = JSON.parse(JSON.stringify(data));
+    }
+  } catch(e) {
+    console.warn('[Footer Settings] Load from API failed (using cache or defaults):', e.message);
+    try {
+      const cached = localStorage.getItem(FOOTER_SETTINGS_KEY);
+      if (cached) {
+        appliedFooterConfig = JSON.parse(cached);
+        footerDraftConfig = JSON.parse(cached);
+      }
+    } catch(err) {}
+  }
+
+  if (!footerDraftConfig) {
+    appliedFooterConfig = JSON.parse(JSON.stringify(DEFAULT_FOOTER_CONFIG));
+    footerDraftConfig = JSON.parse(JSON.stringify(DEFAULT_FOOTER_CONFIG));
+  }
+
+  footerUndoStack = [];
+  footerRedoStack = [];
+  updateFooterUndoRedoButtons();
+  updateFooterSaveStatus();
+  switchFooterTab(_activeFooterTab || 'preview');
+}
+
+function recordFooterState(desc) {
+  if (!footerDraftConfig) return;
+  footerUndoStack.push({
+    state: JSON.parse(JSON.stringify(footerDraftConfig)),
+    desc: desc || 'Change'
+  });
+  if (footerUndoStack.length > 50) footerUndoStack.shift();
+  footerRedoStack = [];
+  updateFooterUndoRedoButtons();
+  updateFooterSaveStatus();
+}
+
+function undoFooterAction() {
+  if (footerUndoStack.length === 0) return;
+  const currentSnapshot = JSON.parse(JSON.stringify(footerDraftConfig));
+  const prev = footerUndoStack.pop();
+  footerRedoStack.push({ state: currentSnapshot, desc: prev.desc });
+  footerDraftConfig = prev.state;
+  updateFooterUndoRedoButtons();
+  updateFooterSaveStatus();
+  refreshActiveFooterTab();
+  showToast('warning', `Undo: ${prev.desc || 'Action'}`);
+}
+
+function redoFooterAction() {
+  if (footerRedoStack.length === 0) return;
+  const currentSnapshot = JSON.parse(JSON.stringify(footerDraftConfig));
+  const next = footerRedoStack.pop();
+  footerUndoStack.push({ state: currentSnapshot, desc: next.desc });
+  footerDraftConfig = next.state;
+  updateFooterUndoRedoButtons();
+  updateFooterSaveStatus();
+  refreshActiveFooterTab();
+  showToast('success', `Redo: ${next.desc || 'Action'}`);
+}
+
+function updateFooterUndoRedoButtons() {
+  const uBtn = document.getElementById('ft-undo-btn');
+  const rBtn = document.getElementById('ft-redo-btn');
+  if (uBtn) uBtn.disabled = (footerUndoStack.length === 0);
+  if (rBtn) rBtn.disabled = (footerRedoStack.length === 0);
+}
+
+function isFooterModified() {
+  if (!appliedFooterConfig || !footerDraftConfig) return false;
+  return JSON.stringify(appliedFooterConfig) !== JSON.stringify(footerDraftConfig);
+}
+
+function updateFooterSaveStatus() {
+  const statusEl = document.getElementById('ft-save-status');
+  if (!statusEl) return;
+  if (isFooterModified()) {
+    statusEl.textContent = '● Unsaved changes';
+    statusEl.style.color = '#eab308';
+  } else {
+    statusEl.textContent = '✓ Synced with database';
+    statusEl.style.color = 'var(--text-muted)';
+  }
+}
+
+function switchFooterTab(tab) {
+  _activeFooterTab = tab;
+  document.querySelectorAll('#ft-tabs-nav .menu-tab-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.id === `tab-ft-${tab}`);
+  });
+
+  const panels = ['preview', 'explore', 'series', 'social', 'sections', 'brand'];
+  panels.forEach(p => {
+    const pnl = document.getElementById(`panel-ft-${p}`);
+    if (pnl) pnl.style.display = (p === tab ? 'block' : 'none');
+  });
+
+  refreshActiveFooterTab();
+}
+
+function refreshActiveFooterTab() {
+  if (!footerDraftConfig) return;
+  if (_activeFooterTab === 'preview')  renderFooterPreview();
+  if (_activeFooterTab === 'explore')  renderFooterExplore();
+  if (_activeFooterTab === 'series')   renderFooterSeries();
+  if (_activeFooterTab === 'social')   renderFooterSocial();
+  if (_activeFooterTab === 'sections') renderFooterSections();
+  if (_activeFooterTab === 'brand')    renderFooterBrand();
+}
+
+function onFooterTitleInput(key, value) {
+  if (!footerDraftConfig) return;
+  recordFooterState(`Update ${key}`);
+  footerDraftConfig[key] = value;
+  updateFooterSaveStatus();
+}
+
+// ── TAB: LIVE PREVIEW ─────────────────────────────────────────────
+function renderFooterPreview() {
+  const box = document.getElementById('ft-live-preview-box');
+  if (!box || !footerDraftConfig) return;
+
+  const cfg = footerDraftConfig;
+  const activeSecs = sections.filter(s => !s.deleted && !s.locked);
+  const enabledSet = Array.isArray(cfg.enabledSections) ? cfg.enabledSections : null;
+  const displaySecs = activeSecs.filter(s => enabledSet ? enabledSet.includes(s.slug) : true);
+
+  const exploreList = (cfg.explore || []).filter(e => e.enabled !== false);
+  const seriesList = (cfg.series || []).filter(s => s.enabled !== false);
+  const socialList = (cfg.social || []).filter(sc => sc.enabled !== false);
+  const bottomList = (cfg.bottomLinks || []).filter(b => b.enabled !== false);
+
+  box.innerHTML = `
+    <div class="ft-live-preview-container">
+      <div class="ft-preview-grid">
+        <!-- Col 1: Sections -->
+        <div>
+          <div class="ft-preview-col-title">${escapeHtml(cfg.sectionsTitle || 'Sections')}</div>
+          <ul class="ft-preview-list">
+            ${displaySecs.map(s => `<li><a href="/section/${s.slug}">${escapeHtml(s.name)}</a></li>`).join('')}
+          </ul>
+        </div>
+
+        <!-- Col 2: Explore -->
+        <div>
+          <div class="ft-preview-col-title">${escapeHtml(cfg.exploreTitle || 'Explore the Privatian')}</div>
+          <ul class="ft-preview-list">
+            ${exploreList.map(e => `<li><a href="${escapeHtml(e.href || '#')}">${escapeHtml(e.label || '')}</a></li>`).join('')}
+          </ul>
+        </div>
+
+        <!-- Col 3: Series -->
+        <div>
+          <div class="ft-preview-col-title">&#128214; ${escapeHtml(cfg.seriesTitle || 'Our recent series')}</div>
+          <div>
+            ${seriesList.map(s => `
+              <div class="ft-preview-series-item">
+                <div class="ft-preview-series-title">${escapeHtml(s.title || '')}</div>
+                ${s.description ? `<div class="ft-preview-series-desc">${escapeHtml(s.description)}</div>` : ''}
+              </div>
+            `).join('')}
+          </div>
+        </div>
+
+        <!-- Col 4: Social -->
+        <div>
+          <div class="ft-preview-col-title">${escapeHtml(cfg.socialTitle || 'Follow us on')}</div>
+          <div class="ft-preview-social-grid">
+            ${socialList.map(sc => `
+              <div class="ft-preview-social-item">
+                ${getSocialIconSvgForAdmin(sc.platform)}
+                <span>${escapeHtml(sc.label || sc.platform || '')}</span>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      </div>
+
+      <!-- Bottom Bar -->
+      <div class="ft-preview-bottom">
+        <div>
+          <div style="font-size:16px;font-weight:700;letter-spacing:0.05em;color:#ffffff;">THE PRIVATIAN FAMILY</div>
+          ${cfg.tagline ? `<div style="font-size:11.5px;color:#94a3b8;margin-top:4px;">${escapeHtml(cfg.tagline)}</div>` : ''}
+          ${cfg.copyright ? `<div style="font-size:11px;color:#64748b;margin-top:2px;">${escapeHtml(cfg.copyright)}</div>` : ''}
+        </div>
+        <div class="ft-preview-legal-links">
+          ${bottomList.map(b => `<a href="${escapeHtml(b.href || '#')}" style="color:#94a3b8;text-decoration:none;">${escapeHtml(b.label || '')}</a>`).join('')}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+// ── TAB: EXPLORE LINKS ────────────────────────────────────────────
+function renderFooterExplore() {
+  const container = document.getElementById('ft-explore-list-container');
+  const titleInput = document.getElementById('ft-explore-title-input');
+  if (titleInput && footerDraftConfig) titleInput.value = footerDraftConfig.exploreTitle || 'Explore the Privatian';
+  if (!container || !footerDraftConfig) return;
+
+  const items = footerDraftConfig.explore || [];
+  if (items.length === 0) {
+    container.innerHTML = `<div style="text-align:center;padding:32px;color:var(--text-muted);">No explore links configured yet. Click "Add Explore Link" above.</div>`;
+    return;
+  }
+
+  container.innerHTML = items.map((item, idx) => `
+    <div class="menu-item-card ${item.enabled === false ? 'menu-item-card--disabled' : ''}">
+      <div class="menu-item-left">
+        <div style="display:flex;flex-direction:column;gap:3px;">
+          <button type="button" class="action-btn" onclick="moveFooterItem('explore', ${idx}, -1)" ${idx === 0 ? 'disabled' : ''} title="Move Up" style="padding:2px 4px;font-size:11px;">▲</button>
+          <button type="button" class="action-btn" onclick="moveFooterItem('explore', ${idx}, 1)" ${idx === items.length - 1 ? 'disabled' : ''} title="Move Down" style="padding:2px 4px;font-size:11px;">▼</button>
+        </div>
+        <div>
+          <div style="font-weight:700;font-size:14px;color:var(--text-primary);">${escapeHtml(item.label || 'Untitled Link')}</div>
+          <div style="font-size:12px;color:var(--text-muted);margin-top:2px;">
+            URL: <code style="background:#f1f5f9;padding:2px 6px;border-radius:4px;color:#0a528e;">${escapeHtml(item.href || '/')}</code>
+            <span style="margin-left:8px;color:#94a3b8;">(${item.target === '_blank' ? 'New tab' : 'Same tab'})</span>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <label class="hs-toggle" title="Enable or disable link">
+          <input type="checkbox" ${item.enabled !== false ? 'checked' : ''} onchange="toggleFooterExplore('${item.id}')" />
+          <span class="hs-toggle-track"><span class="hs-toggle-thumb"></span></span>
+        </label>
+        <button type="button" class="art-action-btn art-action-btn--edit" onclick="openFooterExploreModal('${item.id}')" title="Edit Link">${ICONS.pencil}</button>
+        <button type="button" class="art-action-btn art-action-btn--delete" onclick="deleteFooterExplore('${item.id}')" title="Delete Link">${ICONS.trash}</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ── TAB: RECENT SERIES ────────────────────────────────────────────
+function renderFooterSeries() {
+  const container = document.getElementById('ft-series-list-container');
+  const titleInput = document.getElementById('ft-series-title-input');
+  if (titleInput && footerDraftConfig) titleInput.value = footerDraftConfig.seriesTitle || 'Our recent series';
+  if (!container || !footerDraftConfig) return;
+
+  const items = footerDraftConfig.series || [];
+  if (items.length === 0) {
+    container.innerHTML = `<div style="text-align:center;padding:32px;color:var(--text-muted);">No series highlights configured. Click "Add Series Highlight" above.</div>`;
+    return;
+  }
+
+  container.innerHTML = items.map((item, idx) => `
+    <div class="menu-item-card ${item.enabled === false ? 'menu-item-card--disabled' : ''}">
+      <div class="menu-item-left">
+        <div style="display:flex;flex-direction:column;gap:3px;">
+          <button type="button" class="action-btn" onclick="moveFooterItem('series', ${idx}, -1)" ${idx === 0 ? 'disabled' : ''} title="Move Up" style="padding:2px 4px;font-size:11px;">▲</button>
+          <button type="button" class="action-btn" onclick="moveFooterItem('series', ${idx}, 1)" ${idx === items.length - 1 ? 'disabled' : ''} title="Move Down" style="padding:2px 4px;font-size:11px;">▼</button>
+        </div>
+        <div>
+          <div style="font-weight:700;font-size:14px;color:var(--text-primary);">&#128214; ${escapeHtml(item.title || 'Untitled Series')}</div>
+          ${item.description ? `<div style="font-size:12.5px;color:var(--text-muted);margin-top:2px;">${escapeHtml(item.description)}</div>` : ''}
+          <div style="font-size:11.5px;color:#0a528e;margin-top:4px;">Target: <code>${escapeHtml(item.href || '/')}</code></div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <label class="hs-toggle" title="Enable or disable series">
+          <input type="checkbox" ${item.enabled !== false ? 'checked' : ''} onchange="toggleFooterSeries('${item.id}')" />
+          <span class="hs-toggle-track"><span class="hs-toggle-thumb"></span></span>
+        </label>
+        <button type="button" class="art-action-btn art-action-btn--edit" onclick="openFooterSeriesModal('${item.id}')" title="Edit Series">${ICONS.pencil}</button>
+        <button type="button" class="art-action-btn art-action-btn--delete" onclick="deleteFooterSeries('${item.id}')" title="Delete Series">${ICONS.trash}</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ── TAB: SOCIAL & CHANNELS ────────────────────────────────────────
+function renderFooterSocial() {
+  const container = document.getElementById('ft-social-list-container');
+  const titleInput = document.getElementById('ft-social-title-input');
+  if (titleInput && footerDraftConfig) titleInput.value = footerDraftConfig.socialTitle || 'Follow us on';
+  if (!container || !footerDraftConfig) return;
+
+  const items = footerDraftConfig.social || [];
+  if (items.length === 0) {
+    container.innerHTML = `<div style="text-align:center;padding:32px;color:var(--text-muted);">No social channels added. Click "Add Social Channel" above.</div>`;
+    return;
+  }
+
+  container.innerHTML = items.map((item, idx) => `
+    <div class="menu-item-card ${item.enabled === false ? 'menu-item-card--disabled' : ''}">
+      <div class="menu-item-left">
+        <div style="display:flex;flex-direction:column;gap:3px;">
+          <button type="button" class="action-btn" onclick="moveFooterItem('social', ${idx}, -1)" ${idx === 0 ? 'disabled' : ''} title="Move Up" style="padding:2px 4px;font-size:11px;">▲</button>
+          <button type="button" class="action-btn" onclick="moveFooterItem('social', ${idx}, 1)" ${idx === items.length - 1 ? 'disabled' : ''} title="Move Down" style="padding:2px 4px;font-size:11px;">▼</button>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;">
+          <div style="width:34px;height:34px;border-radius:8px;background:#f1f5f9;display:flex;align-items:center;justify-content:center;color:#0a528e;">
+            ${getSocialIconSvgForAdmin(item.platform)}
+          </div>
+          <div>
+            <div style="font-weight:700;font-size:14px;color:var(--text-primary);">${escapeHtml(item.label || item.platform)}</div>
+            <div style="font-size:11.5px;color:var(--text-muted);margin-top:2px;">URL: <code style="color:#0a528e;">${escapeHtml(item.href || '#')}</code></div>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <label class="hs-toggle" title="Enable or disable social channel">
+          <input type="checkbox" ${item.enabled !== false ? 'checked' : ''} onchange="toggleFooterSocial('${item.id}')" />
+          <span class="hs-toggle-track"><span class="hs-toggle-thumb"></span></span>
+        </label>
+        <button type="button" class="art-action-btn art-action-btn--edit" onclick="openFooterSocialModal('${item.id}')" title="Edit Channel">${ICONS.pencil}</button>
+        <button type="button" class="art-action-btn art-action-btn--delete" onclick="deleteFooterSocial('${item.id}')" title="Delete Channel">${ICONS.trash}</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ── TAB: SECTIONS COLUMN ──────────────────────────────────────────
+function renderFooterSections() {
+  const container = document.getElementById('ft-sections-list-container');
+  const titleInput = document.getElementById('ft-sections-title-input');
+  if (titleInput && footerDraftConfig) titleInput.value = footerDraftConfig.sectionsTitle || 'Sections';
+  if (!container || !footerDraftConfig) return;
+
+  const activeSecs = sections.filter(s => !s.deleted && !s.locked);
+  const enabledSet = Array.isArray(footerDraftConfig.enabledSections) ? footerDraftConfig.enabledSections : null;
+
+  if (activeSecs.length === 0) {
+    container.innerHTML = `<div style="text-align:center;padding:24px;color:var(--text-muted);">No active sections found.</div>`;
+    return;
+  }
+
+  container.innerHTML = `
+    <div style="display:grid;grid-template-columns:repeat(auto-fill, minmax(220px, 1fr));gap:10px;">
+      ${activeSecs.map(s => {
+        const isChecked = enabledSet === null ? true : enabledSet.includes(s.slug);
+        return `
+          <label style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;cursor:pointer;font-size:13.5px;font-weight:600;color:#1e293b;">
+            <input type="checkbox" value="${s.slug}" ${isChecked ? 'checked' : ''} onchange="onFooterSectionToggle('${s.slug}', this.checked)" />
+            <span>${escapeHtml(s.name)}</span>
+          </label>
+        `;
+      }).join('')}
+    </div>
+  `;
+}
+
+function onFooterSectionToggle(slug, checked) {
+  if (!footerDraftConfig) return;
+  recordFooterState('Toggle Footer Section');
+  const activeSecs = sections.filter(s => !s.deleted && !s.locked);
+  if (!Array.isArray(footerDraftConfig.enabledSections)) {
+    footerDraftConfig.enabledSections = activeSecs.map(s => s.slug);
+  }
+  if (checked) {
+    if (!footerDraftConfig.enabledSections.includes(slug)) footerDraftConfig.enabledSections.push(slug);
+  } else {
+    footerDraftConfig.enabledSections = footerDraftConfig.enabledSections.filter(x => x !== slug);
+  }
+  updateFooterSaveStatus();
+}
+
+// ── TAB: BRAND & LEGAL LINKS ──────────────────────────────────────
+function renderFooterBrand() {
+  const taglineInput = document.getElementById('ft-tagline-input');
+  const copyrightInput = document.getElementById('ft-copyright-input');
+  const container = document.getElementById('ft-bottom-links-container');
+  if (!footerDraftConfig) return;
+
+  if (taglineInput) taglineInput.value = footerDraftConfig.tagline || '';
+  if (copyrightInput) copyrightInput.value = footerDraftConfig.copyright || '';
+  if (!container) return;
+
+  const items = footerDraftConfig.bottomLinks || [];
+  if (items.length === 0) {
+    container.innerHTML = `<div style="text-align:center;padding:24px;color:var(--text-muted);">No bottom legal links added. Click "Add Legal Link" above.</div>`;
+    return;
+  }
+
+  container.innerHTML = items.map((item, idx) => `
+    <div class="menu-item-card ${item.enabled === false ? 'menu-item-card--disabled' : ''}">
+      <div class="menu-item-left">
+        <div style="display:flex;flex-direction:column;gap:3px;">
+          <button type="button" class="action-btn" onclick="moveFooterItem('bottomLinks', ${idx}, -1)" ${idx === 0 ? 'disabled' : ''} title="Move Up" style="padding:2px 4px;font-size:11px;">▲</button>
+          <button type="button" class="action-btn" onclick="moveFooterItem('bottomLinks', ${idx}, 1)" ${idx === items.length - 1 ? 'disabled' : ''} title="Move Down" style="padding:2px 4px;font-size:11px;">▼</button>
+        </div>
+        <div>
+          <div style="font-weight:700;font-size:14px;color:var(--text-primary);">${escapeHtml(item.label || 'Untitled Link')}</div>
+          <div style="font-size:11.5px;color:var(--text-muted);margin-top:2px;">URL: <code>${escapeHtml(item.href || '#')}</code></div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <label class="hs-toggle" title="Enable or disable link">
+          <input type="checkbox" ${item.enabled !== false ? 'checked' : ''} onchange="toggleFooterBottomLink('${item.id}')" />
+          <span class="hs-toggle-track"><span class="hs-toggle-thumb"></span></span>
+        </label>
+        <button type="button" class="art-action-btn art-action-btn--edit" onclick="openFooterBottomLinkModal('${item.id}')" title="Edit Link">${ICONS.pencil}</button>
+        <button type="button" class="art-action-btn art-action-btn--delete" onclick="deleteFooterBottomLink('${item.id}')" title="Delete Link">${ICONS.trash}</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ── REORDERING HELPER ─────────────────────────────────────────────
+function moveFooterItem(type, index, dir) {
+  if (!footerDraftConfig || !Array.isArray(footerDraftConfig[type])) return;
+  const arr = footerDraftConfig[type];
+  const targetIndex = index + dir;
+  if (targetIndex < 0 || targetIndex >= arr.length) return;
+  recordFooterState(`Reorder ${type}`);
+  const temp = arr[index];
+  arr[index] = arr[targetIndex];
+  arr[targetIndex] = temp;
+  refreshActiveFooterTab();
+}
+
+// ── MODALS: EXPLORE ───────────────────────────────────────────────
+function openFooterExploreModal(id) {
+  const modal = document.getElementById('modal-footer-explore');
+  const title = document.getElementById('modal-ft-exp-title');
+  const editId = document.getElementById('ft-exp-edit-id');
+  const labelInput = document.getElementById('ft-exp-label-input');
+  const hrefInput = document.getElementById('ft-exp-href-input');
+  const targetSelect = document.getElementById('ft-exp-target-select');
+  if (!modal) return;
+
+  if (id && footerDraftConfig) {
+    const item = (footerDraftConfig.explore || []).find(e => e.id === id);
+    if (!item) return;
+    title.textContent = 'Edit Explore Link';
+    editId.value = item.id;
+    labelInput.value = item.label || '';
+    hrefInput.value = item.href || '';
+    targetSelect.value = item.target || '_self';
+  } else {
+    title.textContent = 'Add Explore Link';
+    editId.value = '';
+    labelInput.value = '';
+    hrefInput.value = '';
+    targetSelect.value = '_self';
+  }
+  modal.hidden = false;
+  setTimeout(() => labelInput.focus(), 60);
+}
+
+function closeFooterExploreModal() {
+  const modal = document.getElementById('modal-footer-explore');
+  if (modal) modal.hidden = true;
+}
+
+function saveFooterExploreModal() {
+  const editId = document.getElementById('ft-exp-edit-id').value;
+  const label = document.getElementById('ft-exp-label-input').value.trim();
+  const href = document.getElementById('ft-exp-href-input').value.trim();
+  const target = document.getElementById('ft-exp-target-select').value;
+  if (!label) { showToast('error', 'Please enter a link label.'); return; }
+  if (!href) { showToast('error', 'Please enter a target URL.'); return; }
+
+  recordFooterState(editId ? 'Edit Explore Link' : 'Add Explore Link');
+  if (!Array.isArray(footerDraftConfig.explore)) footerDraftConfig.explore = [];
+
+  if (editId) {
+    const item = footerDraftConfig.explore.find(e => e.id === editId);
+    if (item) { item.label = label; item.href = href; item.target = target; }
+  } else {
+    footerDraftConfig.explore.push({
+      id: 'f-exp-' + Date.now(),
+      label, href, target, enabled: true
+    });
+  }
+  closeFooterExploreModal();
+  renderFooterExplore();
+  showToast('success', 'Explore link updated.');
+}
+
+function toggleFooterExplore(id) {
+  if (!footerDraftConfig) return;
+  const item = (footerDraftConfig.explore || []).find(e => e.id === id);
+  if (!item) return;
+  recordFooterState('Toggle Explore Link');
+  item.enabled = (item.enabled === false ? true : false);
+  renderFooterExplore();
+}
+
+function deleteFooterExplore(id) {
+  if (!footerDraftConfig) return;
+  recordFooterState('Delete Explore Link');
+  footerDraftConfig.explore = (footerDraftConfig.explore || []).filter(e => e.id !== id);
+  renderFooterExplore();
+  showToast('warning', 'Explore link removed.');
+}
+
+// ── MODALS: SERIES ────────────────────────────────────────────────
+function openFooterSeriesModal(id) {
+  const modal = document.getElementById('modal-footer-series');
+  const title = document.getElementById('modal-ft-ser-title');
+  const editId = document.getElementById('ft-ser-edit-id');
+  const titleInput = document.getElementById('ft-ser-title-input');
+  const hrefInput = document.getElementById('ft-ser-href-input');
+  const descInput = document.getElementById('ft-ser-desc-input');
+  if (!modal) return;
+
+  if (id && footerDraftConfig) {
+    const item = (footerDraftConfig.series || []).find(s => s.id === id);
+    if (!item) return;
+    title.textContent = 'Edit Series Highlight';
+    editId.value = item.id;
+    titleInput.value = item.title || '';
+    hrefInput.value = item.href || '';
+    descInput.value = item.description || '';
+  } else {
+    title.textContent = 'Add Series Highlight';
+    editId.value = '';
+    titleInput.value = '';
+    hrefInput.value = '';
+    descInput.value = '';
+  }
+  modal.hidden = false;
+  setTimeout(() => titleInput.focus(), 60);
+}
+
+function closeFooterSeriesModal() {
+  const modal = document.getElementById('modal-footer-series');
+  if (modal) modal.hidden = true;
+}
+
+function saveFooterSeriesModal() {
+  const editId = document.getElementById('ft-ser-edit-id').value;
+  const title = document.getElementById('ft-ser-title-input').value.trim();
+  const href = document.getElementById('ft-ser-href-input').value.trim();
+  const desc = document.getElementById('ft-ser-desc-input').value.trim();
+  if (!title) { showToast('error', 'Please enter a series title.'); return; }
+  if (!href) { showToast('error', 'Please enter a target URL.'); return; }
+
+  recordFooterState(editId ? 'Edit Series Highlight' : 'Add Series Highlight');
+  if (!Array.isArray(footerDraftConfig.series)) footerDraftConfig.series = [];
+
+  if (editId) {
+    const item = footerDraftConfig.series.find(s => s.id === editId);
+    if (item) { item.title = title; item.href = href; item.description = desc; }
+  } else {
+    footerDraftConfig.series.push({
+      id: 'f-ser-' + Date.now(),
+      title, href, description: desc, enabled: true
+    });
+  }
+  closeFooterSeriesModal();
+  renderFooterSeries();
+  showToast('success', 'Series highlight updated.');
+}
+
+function toggleFooterSeries(id) {
+  if (!footerDraftConfig) return;
+  const item = (footerDraftConfig.series || []).find(s => s.id === id);
+  if (!item) return;
+  recordFooterState('Toggle Series');
+  item.enabled = (item.enabled === false ? true : false);
+  renderFooterSeries();
+}
+
+function deleteFooterSeries(id) {
+  if (!footerDraftConfig) return;
+  recordFooterState('Delete Series');
+  footerDraftConfig.series = (footerDraftConfig.series || []).filter(s => s.id !== id);
+  renderFooterSeries();
+  showToast('warning', 'Series highlight removed.');
+}
+
+// ── MODALS: SOCIAL ────────────────────────────────────────────────
+function openFooterSocialModal(id) {
+  const modal = document.getElementById('modal-footer-social');
+  const title = document.getElementById('modal-ft-soc-title');
+  const editId = document.getElementById('ft-soc-edit-id');
+  const platformSelect = document.getElementById('ft-soc-platform-select');
+  const labelInput = document.getElementById('ft-soc-label-input');
+  const hrefInput = document.getElementById('ft-soc-href-input');
+  if (!modal) return;
+
+  if (id && footerDraftConfig) {
+    const item = (footerDraftConfig.social || []).find(sc => sc.id === id);
+    if (!item) return;
+    title.textContent = 'Edit Social Channel';
+    editId.value = item.id;
+    platformSelect.value = item.platform || 'instagram';
+    labelInput.value = item.label || '';
+    hrefInput.value = item.href || '';
+  } else {
+    title.textContent = 'Add Social Channel';
+    editId.value = '';
+    platformSelect.value = 'instagram';
+    labelInput.value = 'Instagram';
+    hrefInput.value = 'https://instagram.com';
+  }
+  modal.hidden = false;
+  setTimeout(() => labelInput.focus(), 60);
+}
+
+function onFooterSocialPlatformChange(platform) {
+  const labelInput = document.getElementById('ft-soc-label-input');
+  const hrefInput = document.getElementById('ft-soc-href-input');
+  const map = {
+    instagram: { label: 'Instagram', href: 'https://instagram.com' },
+    linkedin:  { label: 'LinkedIn',  href: 'https://linkedin.com' },
+    tiktok:    { label: 'TikTok',    href: 'https://tiktok.com' },
+    facebook:  { label: 'Facebook',  href: 'https://facebook.com' },
+    youtube:   { label: 'YouTube',   href: 'https://youtube.com' },
+    email:     { label: 'Email',     href: 'mailto:contact@privatian.org' },
+    twitter:   { label: 'X / Twitter', href: 'https://x.com' },
+    custom:    { label: 'Website',   href: 'https://' }
+  };
+  if (map[platform]) {
+    if (labelInput) labelInput.value = map[platform].label;
+    if (hrefInput) hrefInput.value = map[platform].href;
+  }
+}
+
+function closeFooterSocialModal() {
+  const modal = document.getElementById('modal-footer-social');
+  if (modal) modal.hidden = true;
+}
+
+function saveFooterSocialModal() {
+  const editId = document.getElementById('ft-soc-edit-id').value;
+  const platform = document.getElementById('ft-soc-platform-select').value;
+  const label = document.getElementById('ft-soc-label-input').value.trim();
+  const href = document.getElementById('ft-soc-href-input').value.trim();
+  if (!label) { showToast('error', 'Please enter a display label.'); return; }
+  if (!href) { showToast('error', 'Please enter a URL or target link.'); return; }
+
+  recordFooterState(editId ? 'Edit Social Channel' : 'Add Social Channel');
+  if (!Array.isArray(footerDraftConfig.social)) footerDraftConfig.social = [];
+
+  if (editId) {
+    const item = footerDraftConfig.social.find(sc => sc.id === editId);
+    if (item) { item.platform = platform; item.label = label; item.href = href; }
+  } else {
+    footerDraftConfig.social.push({
+      id: 'f-soc-' + Date.now(),
+      platform, label, href, enabled: true
+    });
+  }
+  closeFooterSocialModal();
+  renderFooterSocial();
+  showToast('success', 'Social channel updated.');
+}
+
+function toggleFooterSocial(id) {
+  if (!footerDraftConfig) return;
+  const item = (footerDraftConfig.social || []).find(sc => sc.id === id);
+  if (!item) return;
+  recordFooterState('Toggle Social Channel');
+  item.enabled = (item.enabled === false ? true : false);
+  renderFooterSocial();
+}
+
+function deleteFooterSocial(id) {
+  if (!footerDraftConfig) return;
+  recordFooterState('Delete Social Channel');
+  footerDraftConfig.social = (footerDraftConfig.social || []).filter(sc => sc.id !== id);
+  renderFooterSocial();
+  showToast('warning', 'Social channel removed.');
+}
+
+// ── MODALS: BOTTOM LEGAL LINKS ────────────────────────────────────
+function openFooterBottomLinkModal(id) {
+  const modal = document.getElementById('modal-footer-bottom-link');
+  const title = document.getElementById('modal-ft-bot-title');
+  const editId = document.getElementById('ft-bot-edit-id');
+  const labelInput = document.getElementById('ft-bot-label-input');
+  const hrefInput = document.getElementById('ft-bot-href-input');
+  const targetSelect = document.getElementById('ft-bot-target-select');
+  if (!modal) return;
+
+  if (id && footerDraftConfig) {
+    const item = (footerDraftConfig.bottomLinks || []).find(b => b.id === id);
+    if (!item) return;
+    title.textContent = 'Edit Legal / Utility Link';
+    editId.value = item.id;
+    labelInput.value = item.label || '';
+    hrefInput.value = item.href || '';
+    targetSelect.value = item.target || '_self';
+  } else {
+    title.textContent = 'Add Legal / Utility Link';
+    editId.value = '';
+    labelInput.value = '';
+    hrefInput.value = '#';
+    targetSelect.value = '_self';
+  }
+  modal.hidden = false;
+  setTimeout(() => labelInput.focus(), 60);
+}
+
+function closeFooterBottomLinkModal() {
+  const modal = document.getElementById('modal-footer-bottom-link');
+  if (modal) modal.hidden = true;
+}
+
+function saveFooterBottomLinkModal() {
+  const editId = document.getElementById('ft-bot-edit-id').value;
+  const label = document.getElementById('ft-bot-label-input').value.trim();
+  const href = document.getElementById('ft-bot-href-input').value.trim();
+  const target = document.getElementById('ft-bot-target-select').value;
+  if (!label) { showToast('error', 'Please enter a link label.'); return; }
+  if (!href) { showToast('error', 'Please enter a target URL.'); return; }
+
+  recordFooterState(editId ? 'Edit Legal Link' : 'Add Legal Link');
+  if (!Array.isArray(footerDraftConfig.bottomLinks)) footerDraftConfig.bottomLinks = [];
+
+  if (editId) {
+    const item = footerDraftConfig.bottomLinks.find(b => b.id === editId);
+    if (item) { item.label = label; item.href = href; item.target = target; }
+  } else {
+    footerDraftConfig.bottomLinks.push({
+      id: 'f-bot-' + Date.now(),
+      label, href, target, enabled: true
+    });
+  }
+  closeFooterBottomLinkModal();
+  renderFooterBrand();
+  showToast('success', 'Legal link updated.');
+}
+
+function toggleFooterBottomLink(id) {
+  if (!footerDraftConfig) return;
+  const item = (footerDraftConfig.bottomLinks || []).find(b => b.id === id);
+  if (!item) return;
+  recordFooterState('Toggle Legal Link');
+  item.enabled = (item.enabled === false ? true : false);
+  renderFooterBrand();
+}
+
+function deleteFooterBottomLink(id) {
+  if (!footerDraftConfig) return;
+  recordFooterState('Delete Legal Link');
+  footerDraftConfig.bottomLinks = (footerDraftConfig.bottomLinks || []).filter(b => b.id !== id);
+  renderFooterBrand();
+  showToast('warning', 'Legal link removed.');
+}
+
+// ── SAVE FOOTER TO DATABASE ───────────────────────────────────────
+async function saveFooterSettings() {
+  if (!footerDraftConfig) return;
+  const saveBtn = document.getElementById('ft-save-btn');
+  const saveStatus = document.getElementById('ft-save-status');
+  if (saveBtn) saveBtn.disabled = true;
+  if (saveStatus) { saveStatus.textContent = 'Saving to database...'; saveStatus.style.color = 'var(--text-muted)'; }
+
+  try {
+    const res = await fetch('/api/sections?action=footer', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${window.PRIVATIAN_TOKEN || ''}`
+      },
+      body: JSON.stringify(footerDraftConfig)
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const result = await res.json();
+    if (result && result.data) {
+      appliedFooterConfig = JSON.parse(JSON.stringify(result.data));
+      footerDraftConfig = JSON.parse(JSON.stringify(result.data));
+    } else {
+      appliedFooterConfig = JSON.parse(JSON.stringify(footerDraftConfig));
+    }
+    try {
+      localStorage.setItem(FOOTER_SETTINGS_KEY, JSON.stringify(appliedFooterConfig));
+    } catch(e) {}
+    footerUndoStack = [];
+    footerRedoStack = [];
+    updateFooterUndoRedoButtons();
+    updateFooterSaveStatus();
+    refreshActiveFooterTab();
+    showToast('success', 'Footer settings successfully saved & synchronized!');
+  } catch(err) {
+    showToast('error', 'Failed to save footer settings: ' + err.message);
+    if (saveStatus) { saveStatus.textContent = '● Save failed'; saveStatus.style.color = 'var(--danger)'; }
+  } finally {
+    if (saveBtn) saveBtn.disabled = false;
+  }
+}
+
 
 
 

@@ -504,6 +504,121 @@ module.exports = async function handler(req, res) {
     }
   }
 
+  // ── FOOTER CONFIGURATION (GET / POST) ───────────────────────────────────
+  if (action === 'footer') {
+    const DEFAULT_FOOTER_CONFIG = {
+      sectionsTitle: 'Sections',
+      enabledSections: null,
+      exploreTitle: 'Explore the Privatian',
+      explore: [
+        { id: 'f-exp-1', label: 'Events', href: '/events', target: '_self', enabled: true },
+        { id: 'f-exp-2', label: 'Article archive', href: '/', target: '_self', enabled: true },
+        { id: 'f-exp-3', label: 'About us', href: '/', target: '_self', enabled: true },
+        { id: 'f-exp-4', label: 'News+', href: '/', target: '_self', enabled: true },
+        { id: 'f-exp-5', label: 'Podcast', href: '/', target: '_self', enabled: true }
+      ],
+      seriesTitle: 'Our recent series',
+      series: [
+        {
+          id: 'f-ser-1',
+          title: 'Wondering',
+          href: '/section/findings',
+          description: 'A series of profound questions explored by The Privatian Family experts.',
+          enabled: true
+        },
+        {
+          id: 'f-ser-2',
+          title: 'Life | Heritage',
+          href: '/section/community-heritage',
+          description: 'A series focused on the personal side of Privatian family research and tradition.',
+          enabled: true
+        }
+      ],
+      socialTitle: 'Follow us on',
+      social: [
+        { id: 'f-soc-1', platform: 'instagram', label: 'Instagram', href: 'https://instagram.com', enabled: true },
+        { id: 'f-soc-2', platform: 'linkedin', label: 'LinkedIn', href: 'https://linkedin.com', enabled: true },
+        { id: 'f-soc-3', platform: 'tiktok', label: 'TikTok', href: 'https://tiktok.com', enabled: true },
+        { id: 'f-soc-4', platform: 'facebook', label: 'Facebook', href: 'https://facebook.com', enabled: true },
+        { id: 'f-soc-5', platform: 'youtube', label: 'YouTube', href: 'https://youtube.com', enabled: true },
+        { id: 'f-soc-6', platform: 'email', label: 'Email', href: 'mailto:contact@privatian.org', enabled: true }
+      ],
+      tagline: 'The Official Publication of The Privatian Society — Cambridge, Massachusetts',
+      copyright: '© 2026 The Privatian Family. All rights reserved.',
+      bottomLinks: [
+        { id: 'f-bot-1', label: 'For Media & Journalists', href: '#', target: '_self', enabled: true },
+        { id: 'f-bot-2', label: 'Family News & Archives', href: '#', target: '_self', enabled: true },
+        { id: 'f-bot-3', label: 'Digital Accessibility', href: '#', target: '_self', enabled: true },
+        { id: 'f-bot-4', label: 'Privacy Policy', href: '#', target: '_self', enabled: true },
+        { id: 'f-bot-5', label: 'Trademark', href: '#', target: '_self', enabled: true }
+      ]
+    };
+
+    if (req.method === 'GET') {
+      try {
+        const { data } = await sb.from('site_settings').select('value').eq('key', 'site_footer_config').maybeSingle();
+        if (data && data.value) return res.status(200).json(data.value);
+      } catch(e) {}
+
+      // Fallback read from sections table
+      try {
+        const { data: sData } = await sb.from('sections').select('name').eq('admin_id', '__footer_config__').maybeSingle();
+        if (sData && sData.name) {
+          const parsed = JSON.parse(sData.name);
+          if (parsed && typeof parsed === 'object') return res.status(200).json(parsed);
+        }
+      } catch(e) {}
+
+      return res.status(200).json(DEFAULT_FOOTER_CONFIG);
+    }
+
+    if (req.method === 'POST') {
+      const session = await requireAuth(req, res);
+      if (!session) return;
+      const footerConfig = req.body || {};
+
+      let saved = false;
+      try {
+        const { error } = await sb.from('site_settings').upsert({
+          key: 'site_footer_config',
+          value: footerConfig,
+          updated_at: new Date().toISOString()
+        }, { onConflict: 'key' });
+        if (!error) saved = true;
+      } catch(err) {}
+
+      if (!saved) {
+        // Fallback save in sections table
+        try {
+          const { data: existing } = await sb.from('sections').select('id').eq('admin_id', '__footer_config__').maybeSingle();
+          if (existing) {
+            await sb.from('sections').update({
+              name: JSON.stringify(footerConfig),
+              slug: '__footer_config__',
+              display_order: 9996,
+              is_active: false,
+              locked: true,
+              is_deleted: true
+            }).eq('admin_id', '__footer_config__');
+          } else {
+            await sb.from('sections').insert({
+              admin_id: '__footer_config__',
+              name: JSON.stringify(footerConfig),
+              slug: '__footer_config__',
+              display_order: 9996,
+              is_active: false,
+              locked: true,
+              is_deleted: true
+            });
+          }
+        } catch(err) {
+          console.warn('[DB fallback footer save error]:', err.message);
+        }
+      }
+      return res.status(200).json({ ok: true, data: footerConfig });
+    }
+  }
+
   // ── GET ─────────────────────────────────────────────────────────────────
   if (req.method === 'GET') {
     const statusParam = (req.query && req.query.status) || 'active';
@@ -521,7 +636,7 @@ module.exports = async function handler(req, res) {
     const { data, error } = await query;
     if (error) return res.status(500).json({ error: error.message });
 
-    const rows = (data || []).filter(r => r.admin_id !== '__menu_config__' && r.admin_id !== '__header_config__' && r.admin_id !== '__homepage_config__');
+    const rows = (data || []).filter(r => r.admin_id !== '__menu_config__' && r.admin_id !== '__header_config__' && r.admin_id !== '__homepage_config__' && r.admin_id !== '__footer_config__');
 
     if (statusParam === 'all' && session) {
       // Admin format: full section objects

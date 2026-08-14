@@ -77,6 +77,14 @@
           </a>
         </li>
         <li>
+          <a href="#" class="sidebar-nav-item" data-page="footer" id="nav-footer">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="2" y="15" width="20" height="6" rx="1"/><line x1="2" y1="10" x2="22" y2="10"/><line x1="2" y1="5" x2="13" y2="5"/>
+            </svg>
+            <span>Footer</span>
+          </a>
+        </li>
+        <li>
           <a href="#" class="sidebar-nav-item" data-page="articles" id="nav-articles">
             <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
               <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
@@ -427,6 +435,145 @@
             </button>
           </div>
           <div id="menu-live-preview-box" class="menu-live-preview-container"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- PAGE: FOOTER SETTINGS -->
+    <section class="page" id="page-footer">
+      <div class="menu-mgr-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:12px;">
+        <div class="menu-mgr-title-wrap">
+          <h1 class="page-title" style="font-size:22px;font-weight:700;color:var(--text-primary);margin:0 0 4px;">Footer Settings</h1>
+          <p class="page-subtitle" style="font-size:13px;color:var(--text-muted);margin:0;">Customize footer columns, Explore links, Recent Series, Social channels, Branding, and Legal links</p>
+        </div>
+        <div class="menu-mgr-actions" style="display:flex;align-items:center;gap:10px;">
+          <span id="ft-save-status" style="font-size:12.5px;color:var(--text-muted);font-weight:500;">✓ Synced with database</span>
+          <button type="button" class="btn btn--ghost btn--sm" id="ft-undo-btn" onclick="undoFooterAction()" title="Undo (Ctrl+Z)" disabled style="display:flex;align-items:center;gap:5px;padding:6px 11px;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+            Undo
+          </button>
+          <button type="button" class="btn btn--ghost btn--sm" id="ft-redo-btn" onclick="redoFooterAction()" title="Redo (Ctrl+Y)" disabled style="display:flex;align-items:center;gap:5px;padding:6px 11px;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+            Redo
+          </button>
+          <button type="button" class="btn btn--primary btn--sm" id="ft-save-btn" onclick="saveFooterSettings()" style="display:flex;align-items:center;gap:6px;padding:7px 16px;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" width="14" height="14"><polyline points="20 6 9 17 4 12"/></svg>
+            Apply Footer Changes
+          </button>
+        </div>
+      </div>
+
+      <!-- Tab Navigation -->
+      <div class="menu-tabs" id="ft-tabs-nav" style="display:flex;gap:4px;border-bottom:1px solid var(--border);margin-bottom:20px;flex-wrap:wrap;">
+        <button class="menu-tab-btn active" id="tab-ft-preview" onclick="switchFooterTab('preview')">Live Preview</button>
+        <button class="menu-tab-btn" id="tab-ft-explore" onclick="switchFooterTab('explore')">Explore Links</button>
+        <button class="menu-tab-btn" id="tab-ft-series" onclick="switchFooterTab('series')">Recent Series</button>
+        <button class="menu-tab-btn" id="tab-ft-social" onclick="switchFooterTab('social')">Social &amp; Channels</button>
+        <button class="menu-tab-btn" id="tab-ft-sections" onclick="switchFooterTab('sections')">Sections Column</button>
+        <button class="menu-tab-btn" id="tab-ft-brand" onclick="switchFooterTab('brand')">Brand &amp; Legal Links</button>
+      </div>
+
+      <!-- Tab Panel: Live Preview -->
+      <div class="ft-tab-panel" id="panel-ft-preview">
+        <div class="card" style="padding:22px;margin-bottom:20px;background:#0d1522;color:#fff;border-radius:12px;border:1px solid #1e293b;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;border-bottom:1px solid rgba(255,255,255,0.1);padding-bottom:12px;">
+            <div style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:#94a3b8;">Footer Live Preview</div>
+            <button class="btn btn--ghost btn--sm" style="color:#fff;border-color:rgba(255,255,255,0.2);" onclick="renderFooterPreview()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+              Refresh Preview
+            </button>
+          </div>
+          <div id="ft-live-preview-box" class="ft-live-preview-container"></div>
+        </div>
+      </div>
+
+      <!-- Tab Panel: Explore Links -->
+      <div class="ft-tab-panel" id="panel-ft-explore" style="display:none;">
+        <div class="card" style="padding:22px;margin-bottom:20px;">
+          <div class="form-group" style="margin-bottom:18px;">
+            <label class="form-label" for="ft-explore-title-input">Explore Column Title</label>
+            <input type="text" id="ft-explore-title-input" class="form-input" placeholder="Explore the Privatian" value="Explore the Privatian" maxlength="60" oninput="onFooterTitleInput('exploreTitle', this.value)" />
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+            <h3 style="font-size:14px;font-weight:700;color:var(--text-primary);margin:0;">Explore Links List</h3>
+            <button class="btn btn--primary btn--sm" onclick="openFooterExploreModal()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Add Explore Link
+            </button>
+          </div>
+          <div id="ft-explore-list-container" class="menu-items-grid"></div>
+        </div>
+      </div>
+
+      <!-- Tab Panel: Recent Series -->
+      <div class="ft-tab-panel" id="panel-ft-series" style="display:none;">
+        <div class="card" style="padding:22px;margin-bottom:20px;">
+          <div class="form-group" style="margin-bottom:18px;">
+            <label class="form-label" for="ft-series-title-input">Recent Series Column Title</label>
+            <input type="text" id="ft-series-title-input" class="form-input" placeholder="Our recent series" value="Our recent series" maxlength="60" oninput="onFooterTitleInput('seriesTitle', this.value)" />
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+            <h3 style="font-size:14px;font-weight:700;color:var(--text-primary);margin:0;">Series Highlights</h3>
+            <button class="btn btn--primary btn--sm" onclick="openFooterSeriesModal()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Add Series Highlight
+            </button>
+          </div>
+          <div id="ft-series-list-container" class="menu-items-grid"></div>
+        </div>
+      </div>
+
+      <!-- Tab Panel: Social & Channels -->
+      <div class="ft-tab-panel" id="panel-ft-social" style="display:none;">
+        <div class="card" style="padding:22px;margin-bottom:20px;">
+          <div class="form-group" style="margin-bottom:18px;">
+            <label class="form-label" for="ft-social-title-input">Social Media Column Title</label>
+            <input type="text" id="ft-social-title-input" class="form-input" placeholder="Follow us on" value="Follow us on" maxlength="60" oninput="onFooterTitleInput('socialTitle', this.value)" />
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+            <h3 style="font-size:14px;font-weight:700;color:var(--text-primary);margin:0;">Social Media Channels</h3>
+            <button class="btn btn--primary btn--sm" onclick="openFooterSocialModal()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Add Social Channel
+            </button>
+          </div>
+          <div id="ft-social-list-container" class="menu-items-grid"></div>
+        </div>
+      </div>
+
+      <!-- Tab Panel: Sections Column -->
+      <div class="ft-tab-panel" id="panel-ft-sections" style="display:none;">
+        <div class="card" style="padding:22px;margin-bottom:20px;">
+          <div class="form-group" style="margin-bottom:18px;">
+            <label class="form-label" for="ft-sections-title-input">Sections Column Title</label>
+            <input type="text" id="ft-sections-title-input" class="form-input" placeholder="Sections" value="Sections" maxlength="60" oninput="onFooterTitleInput('sectionsTitle', this.value)" />
+          </div>
+          <p class="hs-hint">Select which sections appear in Footer Column 1. Active sections are managed in the <strong>Sections</strong> tab.</p>
+          <div id="ft-sections-list-container" class="hs-section-list"></div>
+        </div>
+      </div>
+
+      <!-- Tab Panel: Brand & Legal Links -->
+      <div class="ft-tab-panel" id="panel-ft-brand" style="display:none;">
+        <div class="card" style="padding:22px;margin-bottom:20px;">
+          <h3 style="font-size:15px;font-weight:700;color:var(--text-primary);margin:0 0 14px;">Footer Branding &amp; Copyright</h3>
+          <div class="form-group" style="margin-bottom:14px;">
+            <label class="form-label" for="ft-tagline-input">Footer Tagline / Secondary Description</label>
+            <input type="text" id="ft-tagline-input" class="form-input" placeholder="The Official Publication of The Privatian Society — Cambridge, Massachusetts" oninput="onFooterTitleInput('tagline', this.value)" />
+          </div>
+          <div class="form-group" style="margin-bottom:20px;">
+            <label class="form-label" for="ft-copyright-input">Copyright Notice</label>
+            <input type="text" id="ft-copyright-input" class="form-input" placeholder="© 2026 The Privatian Family. All rights reserved." oninput="onFooterTitleInput('copyright', this.value)" />
+          </div>
+
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;border-top:1px solid var(--border);padding-top:16px;">
+            <h3 style="font-size:14px;font-weight:700;color:var(--text-primary);margin:0;">Bottom Legal &amp; Utility Links</h3>
+            <button class="btn btn--primary btn--sm" onclick="openFooterBottomLinkModal()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Add Legal Link
+            </button>
+          </div>
+          <div id="ft-bottom-links-container" class="menu-items-grid"></div>
         </div>
       </div>
     </section>
@@ -950,6 +1097,145 @@
       <div class="modal-footer">
         <button class="btn btn--ghost" onclick="closeHpEventModal()">Cancel</button>
         <button class="btn btn--primary" onclick="saveHpEventModal()">Save Event</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- == MODAL: FOOTER EXPLORE LINK == -->
+  <div class="modal-overlay" id="modal-footer-explore" hidden>
+    <div class="modal" role="dialog" aria-modal="true" style="max-width:440px;">
+      <div class="modal-header">
+        <h2 class="modal-title" id="modal-ft-exp-title">Add Explore Link</h2>
+        <button class="modal-close-btn" onclick="closeFooterExploreModal()" aria-label="Close modal">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="ft-exp-edit-id" value="" />
+        <div class="form-group">
+          <label class="form-label" for="ft-exp-label-input">Link Label <span style="color:var(--danger)">*</span></label>
+          <input type="text" id="ft-exp-label-input" class="form-input" placeholder="e.g. Events, Article archive" maxlength="50" />
+        </div>
+        <div class="form-group" style="margin-top:12px;">
+          <label class="form-label" for="ft-exp-href-input">Target URL <span style="color:var(--danger)">*</span></label>
+          <input type="text" id="ft-exp-href-input" class="form-input" placeholder="e.g. /events, /section/culture" />
+        </div>
+        <div class="form-group" style="margin-top:12px;">
+          <label class="form-label" for="ft-exp-target-select">Open In</label>
+          <select id="ft-exp-target-select" class="form-input">
+            <option value="_self">Same tab (_self)</option>
+            <option value="_blank">New tab (_blank)</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn--ghost" onclick="closeFooterExploreModal()">Cancel</button>
+        <button class="btn btn--primary" onclick="saveFooterExploreModal()">Save Link</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- == MODAL: FOOTER SERIES HIGHLIGHT == -->
+  <div class="modal-overlay" id="modal-footer-series" hidden>
+    <div class="modal" role="dialog" aria-modal="true" style="max-width:480px;">
+      <div class="modal-header">
+        <h2 class="modal-title" id="modal-ft-ser-title">Add Series Highlight</h2>
+        <button class="modal-close-btn" onclick="closeFooterSeriesModal()" aria-label="Close modal">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="ft-ser-edit-id" value="" />
+        <div class="form-group">
+          <label class="form-label" for="ft-ser-title-input">Series Title <span style="color:var(--danger)">*</span></label>
+          <input type="text" id="ft-ser-title-input" class="form-input" placeholder="e.g. Wondering" maxlength="60" />
+        </div>
+        <div class="form-group" style="margin-top:12px;">
+          <label class="form-label" for="ft-ser-href-input">Target URL <span style="color:var(--danger)">*</span></label>
+          <input type="text" id="ft-ser-href-input" class="form-input" placeholder="e.g. /section/findings" />
+        </div>
+        <div class="form-group" style="margin-top:12px;">
+          <label class="form-label" for="ft-ser-desc-input">Description</label>
+          <textarea id="ft-ser-desc-input" class="form-input" rows="2" placeholder="Brief description of the series..." maxlength="180"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn--ghost" onclick="closeFooterSeriesModal()">Cancel</button>
+        <button class="btn btn--primary" onclick="saveFooterSeriesModal()">Save Series</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- == MODAL: FOOTER SOCIAL CHANNEL == -->
+  <div class="modal-overlay" id="modal-footer-social" hidden>
+    <div class="modal" role="dialog" aria-modal="true" style="max-width:460px;">
+      <div class="modal-header">
+        <h2 class="modal-title" id="modal-ft-soc-title">Add Social Channel</h2>
+        <button class="modal-close-btn" onclick="closeFooterSocialModal()" aria-label="Close modal">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="ft-soc-edit-id" value="" />
+        <div class="form-group">
+          <label class="form-label" for="ft-soc-platform-select">Platform / Icon <span style="color:var(--danger)">*</span></label>
+          <select id="ft-soc-platform-select" class="form-input" onchange="onFooterSocialPlatformChange(this.value)">
+            <option value="instagram">Instagram</option>
+            <option value="linkedin">LinkedIn</option>
+            <option value="tiktok">TikTok</option>
+            <option value="facebook">Facebook</option>
+            <option value="youtube">YouTube</option>
+            <option value="email">Email</option>
+            <option value="twitter">X / Twitter</option>
+            <option value="custom">Custom Web Link</option>
+          </select>
+        </div>
+        <div class="form-group" style="margin-top:12px;">
+          <label class="form-label" for="ft-soc-label-input">Display Label <span style="color:var(--danger)">*</span></label>
+          <input type="text" id="ft-soc-label-input" class="form-input" placeholder="e.g. Instagram" maxlength="40" />
+        </div>
+        <div class="form-group" style="margin-top:12px;">
+          <label class="form-label" for="ft-soc-href-input">URL / Target Link <span style="color:var(--danger)">*</span></label>
+          <input type="text" id="ft-soc-href-input" class="form-input" placeholder="https://instagram.com/..." />
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn--ghost" onclick="closeFooterSocialModal()">Cancel</button>
+        <button class="btn btn--primary" onclick="saveFooterSocialModal()">Save Channel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- == MODAL: FOOTER BOTTOM LEGAL LINK == -->
+  <div class="modal-overlay" id="modal-footer-bottom-link" hidden>
+    <div class="modal" role="dialog" aria-modal="true" style="max-width:440px;">
+      <div class="modal-header">
+        <h2 class="modal-title" id="modal-ft-bot-title">Add Legal / Utility Link</h2>
+        <button class="modal-close-btn" onclick="closeFooterBottomLinkModal()" aria-label="Close modal">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="ft-bot-edit-id" value="" />
+        <div class="form-group">
+          <label class="form-label" for="ft-bot-label-input">Link Label <span style="color:var(--danger)">*</span></label>
+          <input type="text" id="ft-bot-label-input" class="form-input" placeholder="e.g. Privacy Policy, Terms of Use" maxlength="50" />
+        </div>
+        <div class="form-group" style="margin-top:12px;">
+          <label class="form-label" for="ft-bot-href-input">Target URL <span style="color:var(--danger)">*</span></label>
+          <input type="text" id="ft-bot-href-input" class="form-input" placeholder="e.g. /privacy or #" />
+        </div>
+        <div class="form-group" style="margin-top:12px;">
+          <label class="form-label" for="ft-bot-target-select">Open In</label>
+          <select id="ft-bot-target-select" class="form-input">
+            <option value="_self">Same tab (_self)</option>
+            <option value="_blank">New tab (_blank)</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn--ghost" onclick="closeFooterBottomLinkModal()">Cancel</button>
+        <button class="btn btn--primary" onclick="saveFooterBottomLinkModal()">Save Link</button>
       </div>
     </div>
   </div>

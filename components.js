@@ -10,6 +10,55 @@
   var SECTIONS_KEY = 'privatian_sections';
   var HEADER_SETTINGS_KEY = 'privatian_header_settings';
   var MENU_SETTINGS_KEY = 'privatian_menu_settings';
+  var FOOTER_SETTINGS_KEY = 'privatian_footer_settings';
+
+  var DEFAULT_FOOTER_CONFIG = {
+    sectionsTitle: 'Sections',
+    enabledSections: null,
+    exploreTitle: 'Explore the Privatian',
+    explore: [
+      { id: 'f-exp-1', label: 'Events', href: '/events', target: '_self', enabled: true },
+      { id: 'f-exp-2', label: 'Article archive', href: '/', target: '_self', enabled: true },
+      { id: 'f-exp-3', label: 'About us', href: '/', target: '_self', enabled: true },
+      { id: 'f-exp-4', label: 'News+', href: '/', target: '_self', enabled: true },
+      { id: 'f-exp-5', label: 'Podcast', href: '/', target: '_self', enabled: true }
+    ],
+    seriesTitle: 'Our recent series',
+    series: [
+      {
+        id: 'f-ser-1',
+        title: 'Wondering',
+        href: '/section/findings',
+        description: 'A series of profound questions explored by The Privatian Family experts.',
+        enabled: true
+      },
+      {
+        id: 'f-ser-2',
+        title: 'Life | Heritage',
+        href: '/section/community-heritage',
+        description: 'A series focused on the personal side of Privatian family research and tradition.',
+        enabled: true
+      }
+    ],
+    socialTitle: 'Follow us on',
+    social: [
+      { id: 'f-soc-1', platform: 'instagram', label: 'Instagram', href: 'https://instagram.com', enabled: true },
+      { id: 'f-soc-2', platform: 'linkedin', label: 'LinkedIn', href: 'https://linkedin.com', enabled: true },
+      { id: 'f-soc-3', platform: 'tiktok', label: 'TikTok', href: 'https://tiktok.com', enabled: true },
+      { id: 'f-soc-4', platform: 'facebook', label: 'Facebook', href: 'https://facebook.com', enabled: true },
+      { id: 'f-soc-5', platform: 'youtube', label: 'YouTube', href: 'https://youtube.com', enabled: true },
+      { id: 'f-soc-6', platform: 'email', label: 'Email', href: 'mailto:contact@privatian.org', enabled: true }
+    ],
+    tagline: 'The Official Publication of The Privatian Society — Cambridge, Massachusetts',
+    copyright: '© 2026 The Privatian Family. All rights reserved.',
+    bottomLinks: [
+      { id: 'f-bot-1', label: 'For Media & Journalists', href: '#', target: '_self', enabled: true },
+      { id: 'f-bot-2', label: 'Family News & Archives', href: '#', target: '_self', enabled: true },
+      { id: 'f-bot-3', label: 'Digital Accessibility', href: '#', target: '_self', enabled: true },
+      { id: 'f-bot-4', label: 'Privacy Policy', href: '#', target: '_self', enabled: true },
+      { id: 'f-bot-5', label: 'Trademark', href: '#', target: '_self', enabled: true }
+    ]
+  };
 
   var DEFAULT_MENU_CONFIG = {
     sectionsTitle: 'Sections',
@@ -96,6 +145,17 @@
     } catch(e) {
       return DEFAULT_SECTIONS;
     }
+  }
+
+  function getFooterSettings() {
+    try {
+      var raw = localStorage.getItem(FOOTER_SETTINGS_KEY);
+      if (raw) {
+        var parsed = JSON.parse(raw);
+        if (parsed && typeof parsed === 'object') return parsed;
+      }
+    } catch(e) {}
+    return DEFAULT_FOOTER_CONFIG;
   }
 
   function getHeaderSettings() {
@@ -190,67 +250,73 @@
     mount.outerHTML = headerHTML;
   }
 
-  // â”€â”€ 2. RENDER FOOTER â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  function getSocialSvgIcon(platform) {
+    var p = (platform || '').toLowerCase();
+    if (p === 'instagram') return `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>`;
+    if (p === 'linkedin') return `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"></path><rect x="2" y="9" width="4" height="12"></rect><circle cx="4" cy="4" r="2"></circle></svg>`;
+    if (p === 'tiktok') return `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 00-.79-.05 6.34 6.34 0 00-6.34 6.34 6.34 6.34 0 006.34 6.34 6.34 6.34 0 006.33-6.34V8.72a8.28 8.28 0 004.84 1.55V6.81a4.85 4.85 0 01-1.07-.12z"/></svg>`;
+    if (p === 'facebook') return `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path></svg>`;
+    if (p === 'youtube') return `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22.54 6.42a2.78 2.78 0 0 0-1.95-1.96C18.88 4 12 4 12 4s-6.88 0-8.59.46a2.78 2.78 0 0 0-1.95 1.96A29 29 0 0 0 1 12a29 29 0 0 0 .46 5.58A2.78 2.78 0 0 0 3.41 19.6C5.12 20 12 20 12 20s6.88 0 8.59-.46a2.78 2.78 0 0 0 1.95-1.95A29 29 0 0 0 23 12a29 29 0 0 0-.46-5.58z"></path><polygon points="9.75 15.02 15.5 12 9.75 8.98 9.75 15.02"></polygon></svg>`;
+    if (p === 'email') return `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>`;
+    if (p === 'twitter' || p === 'x') return `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>`;
+    return `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>`;
+  }
+
+  // ── 2. RENDER FOOTER ──────────────────────────────────────────────
   function renderFooter() {
     var mount = document.getElementById('site-footer-mount') || document.getElementById('site-footer');
     if (!mount) return;
+
+    var cfg = getFooterSettings();
+
+    var exploreHtml = (cfg.explore || []).filter(function(e) { return e.enabled !== false; }).map(function(e) {
+      return `<li><a href="${escapeHTML(e.href || '/')}" target="${escapeHTML(e.target || '_self')}">${escapeHTML(e.label || '')}</a></li>`;
+    }).join('');
+
+    var seriesHtml = (cfg.series || []).filter(function(s) { return s.enabled !== false; }).map(function(s) {
+      return `
+        <div class="footer-series-item">
+          <h4 class="footer-series-name"><a href="${escapeHTML(s.href || '/')}">${escapeHTML(s.title || '')}</a></h4>
+          ${s.description ? `<p class="footer-series-desc">${escapeHTML(s.description)}</p>` : ''}
+        </div>
+      `;
+    }).join('');
+
+    var socialHtml = (cfg.social || []).filter(function(sc) { return sc.enabled !== false; }).map(function(sc) {
+      return `
+        <a href="${escapeHTML(sc.href || '#')}" class="footer-social-link" target="_blank" rel="noopener noreferrer">
+          ${getSocialSvgIcon(sc.platform)}
+          ${escapeHTML(sc.label || sc.platform || '')}
+        </a>
+      `;
+    }).join('');
+
+    var bottomLinksHtml = (cfg.bottomLinks || []).filter(function(b) { return b.enabled !== false; }).map(function(b) {
+      return `<a href="${escapeHTML(b.href || '#')}" target="${escapeHTML(b.target || '_self')}">${escapeHTML(b.label || '')}</a>`;
+    }).join('');
 
     var footerHTML = `
   <footer class="site-footer" id="site-footer">
     <div class="footer-main" id="footer-main">
       <div class="footer-inner">
         <div class="footer-col" id="footer-col-sections">
-          <h3 class="footer-col-title">Sections</h3>
+          <h3 class="footer-col-title">${escapeHTML(cfg.sectionsTitle || 'Sections')}</h3>
           <ul class="footer-col-list" id="footer-section-list"></ul>
         </div>
         <div class="footer-col" id="footer-col-explore">
-          <h3 class="footer-col-title">Explore the Privatian</h3>
+          <h3 class="footer-col-title">${escapeHTML(cfg.exploreTitle || 'Explore the Privatian')}</h3>
           <ul class="footer-col-list">
-            <li><a href="/events" id="footer-events">Events</a></li>
-            <li><a href="/" id="footer-archive">Article archive</a></li>
-            <li><a href="/" id="footer-about">About us</a></li>
-            <li><a href="/" id="footer-newsplus">News+</a></li>
-            <li><a href="/" id="footer-podcast">Podcast</a></li>
+            ${exploreHtml}
           </ul>
         </div>
         <div class="footer-col footer-col-series" id="footer-col-series">
-          <h3 class="footer-col-title"><span class="footer-series-icon">&#128214;</span> Our recent series</h3>
-          <div class="footer-series-item">
-            <h4 class="footer-series-name"><a href="/section/findings" id="footer-series-wondering">Wondering</a></h4>
-            <p class="footer-series-desc">A series of profound questions explored by The Privatian Family experts.</p>
-          </div>
-          <div class="footer-series-item">
-            <h4 class="footer-series-name"><a href="/section/community-heritage" id="footer-series-lifework">Life | Heritage</a></h4>
-            <p class="footer-series-desc">A series focused on the personal side of Privatian family research and tradition.</p>
-          </div>
+          <h3 class="footer-col-title"><span class="footer-series-icon">&#128214;</span> ${escapeHTML(cfg.seriesTitle || 'Our recent series')}</h3>
+          ${seriesHtml}
         </div>
         <div class="footer-col footer-col-social" id="footer-col-social">
-          <h3 class="footer-col-title">Follow us on</h3>
+          <h3 class="footer-col-title">${escapeHTML(cfg.socialTitle || 'Follow us on')}</h3>
           <div class="footer-social-grid">
-            <a href="#" class="footer-social-link" id="footer-instagram">
-              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>
-              Instagram
-            </a>
-            <a href="#" class="footer-social-link" id="footer-linkedin">
-              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"></path><rect x="2" y="9" width="4" height="12"></rect><circle cx="4" cy="4" r="2"></circle></svg>
-              LinkedIn
-            </a>
-            <a href="#" class="footer-social-link" id="footer-tiktok">
-              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 00-.79-.05 6.34 6.34 0 00-6.34 6.34 6.34 6.34 0 006.34 6.34 6.34 6.34 0 006.33-6.34V8.72a8.28 8.28 0 004.84 1.55V6.81a4.85 4.85 0 01-1.07-.12z"/></svg>
-              TikTok
-            </a>
-            <a href="#" class="footer-social-link" id="footer-facebook">
-              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path></svg>
-              Facebook
-            </a>
-            <a href="#" class="footer-social-link" id="footer-youtube">
-              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22.54 6.42a2.78 2.78 0 0 0-1.95-1.96C18.88 4 12 4 12 4s-6.88 0-8.59.46a2.78 2.78 0 0 0-1.95 1.96A29 29 0 0 0 1 12a29 29 0 0 0 .46 5.58A2.78 2.78 0 0 0 3.41 19.6C5.12 20 12 20 12 20s6.88 0 8.59-.46a2.78 2.78 0 0 0 1.95-1.95A29 29 0 0 0 23 12a29 29 0 0 0-.46-5.58z"></path><polygon points="9.75 15.02 15.5 12 9.75 8.98 9.75 15.02"></polygon></svg>
-              YouTube
-            </a>
-            <a href="#" class="footer-social-link" id="footer-email">
-              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
-              Email
-            </a>
+            ${socialHtml}
           </div>
         </div>
       </div>
@@ -259,13 +325,11 @@
       <div class="footer-bottom-inner">
         <div class="footer-brand">
           ${FOOTER_LOGO_SVG}
+          ${cfg.tagline ? `<div class="footer-tagline" style="font-size:12px;color:rgba(255,255,255,0.65);margin-top:6px;font-family:inherit;">${escapeHTML(cfg.tagline)}</div>` : ''}
+          ${cfg.copyright ? `<div class="footer-copyright" style="font-size:11.5px;color:rgba(255,255,255,0.45);margin-top:3px;">${escapeHTML(cfg.copyright)}</div>` : ''}
         </div>
         <nav class="footer-bottom-links" aria-label="Footer legal links">
-          <a href="#" id="footer-media">For Media &amp; Journalists</a>
-          <a href="#" id="footer-athletics">Family News &amp; Archives</a>
-          <a href="#" id="footer-accessibility">Digital Accessibility</a>
-          <a href="#" id="footer-privacy-policy">Privacy Policy</a>
-          <a href="#" id="footer-trademark">Trademark</a>
+          ${bottomLinksHtml}
         </nav>
       </div>
     </div>
@@ -273,9 +337,27 @@
     `;
 
     mount.outerHTML = footerHTML;
+    populateFooterSections();
   }
 
-  // â”€â”€ 3. POPULATE SECTIONS IN NAV & FOOTER â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  function populateFooterSections() {
+    var ul = document.getElementById('footer-section-list');
+    if (!ul) return;
+    var sections = getSections();
+    var cfg = getFooterSettings();
+    var enabledSet = (cfg && Array.isArray(cfg.enabledSections)) ? cfg.enabledSections : null;
+
+    var filtered = sections.filter(function(s) {
+      if (enabledSet) return enabledSet.indexOf(s.slug) !== -1;
+      return true;
+    });
+
+    ul.innerHTML = filtered.map(function(s) {
+      return `<li><a href="/section/${s.slug}">${escapeHTML(s.name)}</a></li>`;
+    }).join('');
+  }
+
+  // ── 3. POPULATE SECTIONS IN NAV & FOOTER ──────────────────────────
 
   // -- 2b. POPULATE SUB-HEADER TABS DYNAMICALLY
   function populateSubHeader() {
@@ -458,7 +540,7 @@
     }
   }
 
-  // â”€â”€ 4. SEARCH MODAL SYSTEM â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── 4. SEARCH MODAL SYSTEM ──────────────────────────────────────────
   function initSearch() {
     var searchBtn      = document.getElementById('search-btn');
     var searchOverlay  = document.getElementById('search-overlay');
@@ -619,7 +701,7 @@
     });
   }
 
-  // â”€â”€ 5. ATTACH INTERACTIVE EVENT LISTENERS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── 5. ATTACH INTERACTIVE EVENT LISTENERS ──────────────────────────
   function initEvents() {
     // Right-click & drag protection on logos
     var logoEls = document.querySelectorAll('#header-logo-svg, #footer-logo-svg, .site-logo, .footer-brand');
@@ -716,18 +798,9 @@
     initSearch();
   }
 
-  // â”€â”€ INITIALIZE ON LOAD â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-
-  // ── LIVE SECTION FETCH (public API, no auth) ──────────────────────
-  // Fetches active sections from /api/sections and:
-  //   1. Updates localStorage cache (so nav stays current)
-  //   2. Re-renders nav immediately
-  //   3. Updates All News column labels on the homepage
-  //   4. Fires 'privatian:sections-loaded' custom event
+  // ── 6. LIVE DATA FETCHING ──────────────────────────────────────────
   function fetchSectionsFromAPI() {
-    // Only fetch on real HTTP pages (not file://)
     if (window.location.protocol === 'file:') return;
-
     fetch('/api/sections?status=active')
       .then(function(res) {
         if (!res.ok) throw new Error('HTTP ' + res.status);
@@ -735,23 +808,14 @@
       })
       .then(function(data) {
         if (!Array.isArray(data)) return;
-
-        // Map API response to internal section format
         var mapped = data.map(function(r) {
           return { id: r.slug, name: r.name, slug: r.slug };
         });
-
         if (mapped.length) {
-          // Update localStorage — admin-set applied list gets replaced with live data
           try { localStorage.setItem(APPLIED_KEY, JSON.stringify(mapped)); } catch(e) {}
-          // Re-render nav with live data
           populateSections();
         }
-
-        // Update All News section labels on the homepage
         updateAllNewsLabels(data);
-
-        // Broadcast event so other scripts can react
         try {
           document.dispatchEvent(new CustomEvent('privatian:sections-loaded', {
             detail: { sections: mapped }
@@ -759,14 +823,10 @@
         } catch(e) {}
       })
       .catch(function(err) {
-        // API unavailable — localStorage fallback is already rendered, nothing to do
         console.warn('[Components] fetchSectionsFromAPI failed (using cache):', err.message);
       });
   }
 
-  // Update All News column labels to match live section data.
-  // Columns with a data-section-slug attribute whose section no longer exists
-  // are hidden gracefully; known slugs get their label text updated.
   function updateAllNewsLabels(apiSections) {
     var cols = document.querySelectorAll('.news-column[data-section-slug]');
     if (!cols.length) return;
@@ -778,17 +838,13 @@
       }
       var labelEl = col.querySelector('.news-col-label');
       if (!sec) {
-        // Section deleted / inactive -- hide this column gracefully
         col.hidden = true;
         col.setAttribute('aria-hidden', 'true');
         return;
       }
-      // Restore if previously hidden
       col.hidden = false;
       col.removeAttribute('aria-hidden');
-      // Update label text
       if (labelEl) labelEl.textContent = sec.name.toUpperCase();
-      // Update any section-link hrefs in the column
       col.querySelectorAll('a.news-section-link').forEach(function(a) {
         a.href = '/section/' + sec.slug;
       });
@@ -837,6 +893,26 @@
       });
   }
 
+  function fetchFooterFromAPI() {
+    if (window.location.protocol === 'file:') return;
+    fetch('/api/sections?action=footer')
+      .then(function(res) {
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        return res.json();
+      })
+      .then(function(data) {
+        if (data && typeof data === 'object') {
+          try {
+            localStorage.setItem(FOOTER_SETTINGS_KEY, JSON.stringify(data));
+          } catch(e) {}
+          renderFooter();
+        }
+      })
+      .catch(function(err) {
+        console.warn('[Components] fetchFooterFromAPI failed (using cache):', err.message);
+      });
+  }
+
   var _headerReady = false;
 
   function initHeader() {
@@ -858,8 +934,9 @@
     initHeader();
     renderFooter();
     fetchSectionsFromAPI();       // async: update nav + All News labels from live DB
-    fetchHeaderSettingsFromAPI(); // async: update logo, subsections, and nav visibility from live DB
-    fetchMenuFromAPI();           // async: update Menu Overlay from live DB
+    fetchHeaderSettingsFromAPI(); // async: sync custom logo height/svg & subheaders from DB
+    fetchMenuFromAPI();           // async: sync Navigation Menu overlay from DB
+    fetchFooterFromAPI();         // async: sync Footer settings from DB
   }
 
   // Expose immediate initializer for instant rendering right after mount tag
