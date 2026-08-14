@@ -180,21 +180,58 @@
       document.body.classList.add('article-reveal');
     }
 
-    var url = '/api/articles?action=public-get';
-    if (id)   url += '&id='   + encodeURIComponent(id);
-    if (slug) url += '&slug=' + encodeURIComponent(slug);
+    async function fetchArticleData() {
+      var url = '/api/articles?action=public-get';
+      if (id)   url += '&id='   + encodeURIComponent(id);
+      if (slug) url += '&slug=' + encodeURIComponent(slug);
 
-    var fetchHeaders = {};
-    try {
-      var tok = localStorage.getItem('privatian_token');
-      if (tok) fetchHeaders['Authorization'] = 'Bearer ' + tok;
-    } catch(e){}
+      var fetchHeaders = {};
+      try {
+        var tok = localStorage.getItem('privatian_token');
+        if (tok) fetchHeaders['Authorization'] = 'Bearer ' + tok;
+      } catch(e){}
 
-    fetch(url, { headers: fetchHeaders })
-      .then(function(r){
-        if(!r.ok) throw new Error('Status ' + r.status);
-        return r.json();
-      })
+      try {
+        var r = await fetch(url, { headers: fetchHeaders });
+        if (r.ok) {
+          var data = await r.json();
+          if (data && data.title) return data;
+        }
+      } catch(e) {}
+
+      // Supabase Client Fallback
+      try {
+        var sb = window._sb || (window.initSupabaseClient && window.initSupabaseClient());
+        if (sb) {
+          var query = sb.from('articles').select('*').or('is_deleted.is.null,is_deleted.eq.false');
+          if (id) query = query.eq('id', id);
+          else if (slug) query = query.eq('slug', slug);
+          var res = await query.maybeSingle();
+          if (!res.error && res.data && res.data.title) return res.data;
+        }
+      } catch(e) {}
+
+      // Direct Supabase REST Fallback
+      try {
+        if (typeof PRIVATIAN_SUPABASE_URL !== 'undefined' && typeof PRIVATIAN_SUPABASE_KEY !== 'undefined') {
+          var filter = id ? ('id=eq.' + encodeURIComponent(id)) : ('slug=eq.' + encodeURIComponent(slug));
+          var res = await fetch(PRIVATIAN_SUPABASE_URL + '/rest/v1/articles?' + filter + '&or=(is_deleted.is.null,is_deleted.eq.false)&select=*', {
+            headers: {
+              'apikey': PRIVATIAN_SUPABASE_KEY,
+              'Authorization': 'Bearer ' + PRIVATIAN_SUPABASE_KEY
+            }
+          });
+          if (res.ok) {
+            var arr = await res.json();
+            if (arr && arr[0] && arr[0].title) return arr[0];
+          }
+        }
+      } catch(e) {}
+
+      throw new Error('Article not found');
+    }
+
+    fetchArticleData()
       .then(function(a){
         if (!a || !a.title) throw new Error('Article not found');
 

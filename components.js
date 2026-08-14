@@ -817,32 +817,42 @@
   }
 
   // ── 6. LIVE DATA FETCHING ──────────────────────────────────────────
-  function fetchSectionsFromAPI() {
+  async function fetchSectionsFromAPI() {
     if (window.location.protocol === 'file:') return;
-    fetch('/api/sections?status=active')
-      .then(function(res) {
-        if (!res.ok) throw new Error('HTTP ' + res.status);
-        return res.json();
-      })
-      .then(function(data) {
-        if (!Array.isArray(data)) return;
-        var mapped = data.map(function(r) {
-          return { id: r.slug, name: r.name, slug: r.slug };
-        });
-        if (mapped.length) {
-          try { localStorage.setItem(APPLIED_KEY, JSON.stringify(mapped)); } catch(e) {}
-          populateSections();
+    var data = null;
+    try {
+      var res = await fetch('/api/sections?status=active');
+      if (res.ok) data = await res.json();
+    } catch(err) {}
+
+    if (!Array.isArray(data) || !data.length) {
+      try {
+        var sb = window._sb || (window.initSupabaseClient && window.initSupabaseClient());
+        if (sb) {
+          var { data: sData } = await sb.from('sections').select('*').eq('is_active', true).or('is_deleted.is.null,is_deleted.eq.false').order('display_order');
+          if (Array.isArray(sData)) {
+            var sys = ['__homepage_config__', '__header_config__', '__menu_config__', '__footer_config__'];
+            data = sData.filter(function(s) { return !sys.includes(s.admin_id); });
+          }
         }
-        updateAllNewsLabels(data);
-        try {
-          document.dispatchEvent(new CustomEvent('privatian:sections-loaded', {
-            detail: { sections: mapped }
-          }));
-        } catch(e) {}
-      })
-      .catch(function(err) {
-        console.warn('[Components] fetchSectionsFromAPI failed (using cache):', err.message);
+      } catch(e) {}
+    }
+
+    if (Array.isArray(data) && data.length) {
+      var mapped = data.map(function(r) {
+        return { id: r.slug, name: r.name, slug: r.slug };
       });
+      if (mapped.length) {
+        try { localStorage.setItem(APPLIED_KEY, JSON.stringify(mapped)); } catch(e) {}
+        populateSections();
+      }
+      updateAllNewsLabels(data);
+      try {
+        document.dispatchEvent(new CustomEvent('privatian:sections-loaded', {
+          detail: { sections: mapped }
+        }));
+      } catch(e) {}
+    }
   }
 
   function updateAllNewsLabels(apiSections) {
@@ -869,66 +879,113 @@
     });
   }
 
-  function fetchHeaderSettingsFromAPI() {
+  async function fetchHeaderSettingsFromAPI() {
     if (window.location.protocol === 'file:') return;
-    fetch('/api/sections?action=header')
-      .then(function(res) {
-        if (!res.ok) throw new Error('HTTP ' + res.status);
-        return res.json();
-      })
-      .then(function(data) {
-        if (data && typeof data === 'object') {
-          try {
-            localStorage.setItem(HEADER_SETTINGS_KEY, JSON.stringify(data));
-          } catch(e) {}
-          applyLogoSettings();
-          populateSections();
-          populateSubHeader();
+    var data = null;
+    try {
+      var res = await fetch('/api/sections?action=header');
+      if (res.ok) data = await res.json();
+    } catch(err) {}
+
+    if (!data) {
+      try {
+        var sb = window._sb || (window.initSupabaseClient && window.initSupabaseClient());
+        if (sb) {
+          var { data: sData } = await sb.from('sections').select('name').eq('admin_id', '__header_config__').maybeSingle();
+          if (sData && sData.name) {
+            var parsed = JSON.parse(sData.name);
+            if (parsed && typeof parsed === 'object') data = parsed;
+          }
         }
-      })
-      .catch(function(err) {
-        console.warn('[Components] fetchHeaderSettingsFromAPI failed (using cache):', err.message);
-      });
+      } catch(e) {}
+    }
+
+    if (data && typeof data === 'object') {
+      try {
+        localStorage.setItem(HEADER_SETTINGS_KEY, JSON.stringify(data));
+      } catch(e) {}
+      applyLogoSettings();
+      populateSections();
+      populateSubHeader();
+    }
   }
 
-  function fetchMenuFromAPI() {
+  async function fetchMenuFromAPI() {
     if (window.location.protocol === 'file:') return;
-    fetch('/api/sections?action=menu')
-      .then(function(res) {
-        if (!res.ok) throw new Error('HTTP ' + res.status);
-        return res.json();
-      })
-      .then(function(data) {
-        if (data && typeof data === 'object') {
-          try {
-            localStorage.setItem(MENU_SETTINGS_KEY, JSON.stringify(data));
-          } catch(e) {}
-          populateMenuOverlay();
+    var data = null;
+    try {
+      var res = await fetch('/api/sections?action=menu');
+      if (res.ok) data = await res.json();
+    } catch(err) {}
+
+    if (!data) {
+      try {
+        var sb = window._sb || (window.initSupabaseClient && window.initSupabaseClient());
+        if (sb) {
+          var { data: sData } = await sb.from('sections').select('name').eq('admin_id', '__menu_config__').maybeSingle();
+          if (sData && sData.name) {
+            var parsed = JSON.parse(sData.name);
+            if (parsed && typeof parsed === 'object') data = parsed;
+          }
         }
-      })
-      .catch(function(err) {
-        console.warn('[Components] fetchMenuFromAPI failed (using cache):', err.message);
-      });
+      } catch(e) {}
+    }
+
+    if (data && typeof data === 'object') {
+      try {
+        localStorage.setItem(MENU_SETTINGS_KEY, JSON.stringify(data));
+      } catch(e) {}
+      populateMenuOverlay();
+    }
   }
 
-  function fetchFooterFromAPI() {
+  async function fetchFooterFromAPI() {
     if (window.location.protocol === 'file:') return;
-    fetch('/api/sections?action=footer')
-      .then(function(res) {
-        if (!res.ok) throw new Error('HTTP ' + res.status);
-        return res.json();
-      })
-      .then(function(data) {
-        if (data && typeof data === 'object') {
-          try {
-            localStorage.setItem(FOOTER_SETTINGS_KEY, JSON.stringify(data));
-          } catch(e) {}
-          renderFooter();
+    var data = null;
+    try {
+      var res = await fetch('/api/sections?action=footer');
+      if (res.ok) data = await res.json();
+    } catch(err) {}
+
+    if (!data) {
+      try {
+        var sb = window._sb || (window.initSupabaseClient && window.initSupabaseClient());
+        if (sb) {
+          var { data: sData } = await sb.from('sections').select('name').eq('admin_id', '__footer_config__').maybeSingle();
+          if (sData && sData.name) {
+            var parsed = JSON.parse(sData.name);
+            if (parsed && typeof parsed === 'object') data = parsed;
+          }
         }
-      })
-      .catch(function(err) {
-        console.warn('[Components] fetchFooterFromAPI failed (using cache):', err.message);
-      });
+      } catch(e) {}
+    }
+
+    if (!data) {
+      try {
+        if (typeof PRIVATIAN_SUPABASE_URL !== 'undefined' && typeof PRIVATIAN_SUPABASE_KEY !== 'undefined') {
+          var sRes = await fetch(PRIVATIAN_SUPABASE_URL + '/rest/v1/sections?admin_id=eq.__footer_config__&select=name', {
+            headers: {
+              'apikey': PRIVATIAN_SUPABASE_KEY,
+              'Authorization': 'Bearer ' + PRIVATIAN_SUPABASE_KEY
+            }
+          });
+          if (sRes.ok) {
+            var arr = await sRes.json();
+            if (arr && arr[0] && arr[0].name) {
+              var parsed = JSON.parse(arr[0].name);
+              if (parsed && typeof parsed === 'object') data = parsed;
+            }
+          }
+        }
+      } catch(e) {}
+    }
+
+    if (data && typeof data === 'object') {
+      try {
+        localStorage.setItem(FOOTER_SETTINGS_KEY, JSON.stringify(data));
+      } catch(e) {}
+      renderFooter();
+    }
   }
 
   var _headerReady = false;

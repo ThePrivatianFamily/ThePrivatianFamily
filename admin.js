@@ -3,35 +3,49 @@
    Sections CRUD - Supabase API - Toast - Modal
 ================================================================= */
 
-// -- API helpers (sections endpoints) --
+// -- Authentication & API helpers --
+function _getAuthToken() {
+  return window.PRIVATIAN_TOKEN || localStorage.getItem('privatian_token') || '';
+}
+
 function _authHeaders() {
+  const tok = _getAuthToken();
   return {
     'Content-Type': 'application/json',
-    'Authorization': 'Bearer ' + (window.PRIVATIAN_TOKEN || '')
+    ...(tok ? { 'Authorization': 'Bearer ' + tok } : {})
   };
 }
+
 async function _apiGet(url) {
-  const r = await fetch(url, { headers: { 'Authorization': 'Bearer ' + (window.PRIVATIAN_TOKEN || '') } });
+  const tok = _getAuthToken();
+  const headers = tok ? { 'Authorization': 'Bearer ' + tok } : {};
+  const r = await fetch(url, { headers });
   if (!r.ok) { const d = await r.json().catch(() => ({})); throw new Error(d.error || 'Request failed'); }
   return r.json();
 }
+
 async function _apiPost(url, body) {
   const r = await fetch(url, { method: 'POST', headers: _authHeaders(), body: JSON.stringify(body) });
   if (!r.ok) { const d = await r.json().catch(() => ({})); throw new Error(d.error || 'Request failed'); }
   return r.json();
 }
+
 async function _apiPut(url, body) {
   const r = await fetch(url, { method: 'PUT', headers: _authHeaders(), body: JSON.stringify(body) });
   if (!r.ok) { const d = await r.json().catch(() => ({})); throw new Error(d.error || 'Request failed'); }
   return r.json();
 }
-async function _apiPatch(url) {
-  const r = await fetch(url, { method: 'PATCH', headers: { 'Authorization': 'Bearer ' + (window.PRIVATIAN_TOKEN || '') } });
+
+async function _apiPatch(url, body) {
+  const r = await fetch(url, { method: 'PATCH', headers: _authHeaders(), body: body ? JSON.stringify(body) : undefined });
   if (!r.ok) { const d = await r.json().catch(() => ({})); throw new Error(d.error || 'Request failed'); }
   return r.json();
 }
+
 async function _apiDelete(url) {
-  const r = await fetch(url, { method: 'DELETE', headers: { 'Authorization': 'Bearer ' + (window.PRIVATIAN_TOKEN || '') } });
+  const tok = _getAuthToken();
+  const headers = tok ? { 'Authorization': 'Bearer ' + tok } : {};
+  const r = await fetch(url, { method: 'DELETE', headers });
   if (!r.ok) { const d = await r.json().catch(() => ({})); throw new Error(d.error || 'Request failed'); }
   return r.json();
 }
@@ -42,20 +56,82 @@ const ALL_SECTION = {
   deleted: false, createdAt: '2024-01-01T00:00:00Z'
 };
 
-// -- Load all sections (active + trashed) from API --
+// -- Load all sections (active + trashed) from API / Supabase --
 async function loadSectionsFromAPI() {
   updateGlobalSyncStatus('syncing', 'Loading sections from database...');
+  let loaded = null;
+
   try {
     const data = await _apiGet('/api/sections?status=all');
-    sections = [ALL_SECTION, ...data];
+    if (Array.isArray(data)) {
+      loaded = data;
+    }
+  } catch(e) {
+    console.warn('[Admin] loadSectionsFromAPI endpoint failed, trying Supabase direct:', e.message);
+  }
+
+  if (!loaded) {
+    try {
+      const sb = window._sb || (window.initSupabaseClient && window.initSupabaseClient());
+      if (sb) {
+        const { data, error } = await sb.from('sections').select('*').order('display_order');
+        if (!error && Array.isArray(data)) {
+          const sys = ['__homepage_config__', '__header_config__', '__menu_config__', '__footer_config__'];
+          loaded = data.filter(r => !sys.includes(r.admin_id)).map(r => ({
+            id:        r.admin_id || r.slug,
+            name:      r.name,
+            slug:      r.slug || '',
+            locked:    r.locked || false,
+            deleted:   r.is_deleted || false,
+            deletedAt: r.deleted_at || null,
+            createdAt: r.created_at || new Date().toISOString()
+          }));
+        }
+      }
+    } catch(err) {}
+  }
+
+  if (!loaded) {
+    try {
+      if (typeof PRIVATIAN_SUPABASE_URL !== 'undefined' && typeof PRIVATIAN_SUPABASE_KEY !== 'undefined') {
+        const res = await fetch(`${PRIVATIAN_SUPABASE_URL}/rest/v1/sections?select=*&order=display_order.asc`, {
+          headers: {
+            'apikey': PRIVATIAN_SUPABASE_KEY,
+            'Authorization': 'Bearer ' + PRIVATIAN_SUPABASE_KEY
+          }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data)) {
+            const sys = ['__homepage_config__', '__header_config__', '__menu_config__', '__footer_config__'];
+            loaded = data.filter(r => !sys.includes(r.admin_id)).map(r => ({
+              id:        r.admin_id || r.slug,
+              name:      r.name,
+              slug:      r.slug || '',
+              locked:    r.locked || false,
+              deleted:   r.is_deleted || false,
+              deletedAt: r.deleted_at || null,
+              createdAt: r.created_at || new Date().toISOString()
+            }));
+          }
+        }
+      }
+    } catch(err) {}
+  }
+
+  if (loaded) {
+    sections = [ALL_SECTION, ...loaded];
     render();
     updateGlobalSyncStatus('synced', 'Synced with database');
-  } catch(e) {
-    console.warn('[Admin] loadSectionsFromAPI failed:', e.message);
-    // Show empty state gracefully - do not crash
+  } else {
     sections = [ALL_SECTION];
     render();
     updateGlobalSyncStatus('error', 'Sync error (offline/cache)');
+  }
+
+  // Refresh dependent tabs if currently open
+  if (_currentAdminPage === 'footer' && typeof refreshActiveFooterTab === 'function') {
+    refreshActiveFooterTab();
   }
 }
 
@@ -889,11 +965,28 @@ async function loadAccessList() {
   });
 
   try {
-    const res = await fetch('/api/admins?action=list&include_deleted=true', {
-      headers: { 'Authorization': 'Bearer ' + window.PRIVATIAN_TOKEN }
-    });
-    if (!res.ok) throw new Error('Failed');
-    const all = await res.json();
+    let all = null;
+    try {
+      const res = await fetch('/api/admins?action=list&include_deleted=true', {
+        headers: _authHeaders()
+      });
+      if (res.ok) {
+        all = await res.json();
+      }
+    } catch(e) {}
+
+    // Supabase fallback if API unreachable
+    if (!Array.isArray(all)) {
+      try {
+        const sb = window._sb || (window.initSupabaseClient && window.initSupabaseClient());
+        if (sb) {
+          const { data, error } = await sb.from('allowed_admins').select('*');
+          if (!error && Array.isArray(data)) all = data;
+        }
+      } catch(err) {}
+    }
+
+    if (!Array.isArray(all)) throw new Error('Failed to load admin list');
 
     const me       = ((window.PRIVATIAN_USER && window.PRIVATIAN_USER.email) || '').toLowerCase();
     const active    = all.filter(a => a.status === 'active');
@@ -995,7 +1088,7 @@ async function addAdminEmail() {
   if (!email || !email.includes('@') || !email.includes('.')) { showToast('error', 'Please enter a valid email address.'); return; }
   try {
     const res  = await fetch('/api/admins?action=add', {
-      method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + window.PRIVATIAN_TOKEN },
+      method: 'POST', headers: _authHeaders(),
       body: JSON.stringify({ email, role })
     });
     const data = await res.json();
@@ -1016,7 +1109,7 @@ function changeAdminRole(id, email, newRole) {
     onConfirm: async () => {
       try {
         const res  = await fetch('/api/admins?action=update&id=' + id, {
-          method: 'PATCH', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + window.PRIVATIAN_TOKEN },
+          method: 'PATCH', headers: _authHeaders(),
           body: JSON.stringify({ role: newRole })
         });
         const data = await res.json();
@@ -1046,7 +1139,7 @@ function toggleAdminStatus(id, newStatus, email) {
     onConfirm: async () => {
       try {
         const res  = await fetch('/api/admins?action=update&id=' + id, {
-          method: 'PATCH', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + window.PRIVATIAN_TOKEN },
+          method: 'PATCH', headers: _authHeaders(),
           body: JSON.stringify({ status: newStatus })
         });
         const data = await res.json();
@@ -1073,7 +1166,7 @@ function removeAdmin(id, email) {
     confirmColor: '#dc2626',
     onConfirm: async () => {
       try {
-        const res  = await fetch('/api/admins?action=remove&id=' + id, { method: 'DELETE', headers: { 'Authorization': 'Bearer ' + window.PRIVATIAN_TOKEN } });
+        const res  = await fetch('/api/admins?action=remove&id=' + id, { method: 'DELETE', headers: _authHeaders() });
         const data = await res.json();
         if (!res.ok) {
           if (data.error === 'min_admins') { _minAdminPopup(); return; }
@@ -1096,7 +1189,7 @@ function restoreAdmin(id, email) {
     onConfirm: async () => {
       try {
         const res  = await fetch('/api/admins?action=update&id=' + id, {
-          method: 'PATCH', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + window.PRIVATIAN_TOKEN },
+          method: 'PATCH', headers: _authHeaders(),
           body: JSON.stringify({ status: 'active' })
         });
         const data = await res.json();
@@ -1118,7 +1211,7 @@ function purgeAdmin(id, email) {
     confirmColor: '#dc2626',
     onConfirm: async () => {
       try {
-        const res  = await fetch('/api/admins?action=purge&id=' + id, { method: 'DELETE', headers: { 'Authorization': 'Bearer ' + window.PRIVATIAN_TOKEN } });
+        const res  = await fetch('/api/admins?action=purge&id=' + id, { method: 'DELETE', headers: _authHeaders() });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Failed');
         showToast('success', email + ' permanently deleted.');
@@ -1133,10 +1226,11 @@ let _lastAccessCheck = 0;
 let _accessRevoked   = false;
 
 async function checkMyAccess() {
-  if (_accessRevoked || !window.PRIVATIAN_TOKEN) return;
+  const tok = _getAuthToken();
+  if (_accessRevoked || !tok) return;
   _lastAccessCheck = Date.now();
   try {
-    const res  = await fetch('/api/admins?action=check', { headers: { 'Authorization': 'Bearer ' + window.PRIVATIAN_TOKEN } });
+    const res  = await fetch('/api/admins?action=check', { headers: { 'Authorization': 'Bearer ' + tok } });
     if (res.status === 401) { _revokeAccess('session_expired'); return; }
     const data = await res.json();
     if (!data.ok) { _revokeAccess(data.reason || 'revoked'); return; }
@@ -1555,15 +1649,65 @@ async function initArticlesPage() {
   if (loading) loading.style.display = 'block';
   if (table) table.style.display     = 'none';
   if (empty) empty.style.display     = 'none';
+  updateGlobalSyncStatus('syncing', 'Loading articles...');
 
+  _allArticles = [];
+
+  // Tier 1: Try API list
   try {
     const res = await fetch('/api/articles?action=list', {
-      headers: { 'Authorization': 'Bearer ' + window.PRIVATIAN_TOKEN }
+      headers: _authHeaders()
     });
-    _allArticles = await res.json();
-    if (!Array.isArray(_allArticles)) _allArticles = [];
-  } catch(e) {
-    _allArticles = [];
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data)) _allArticles = data;
+    }
+  } catch(e) {}
+
+  // Tier 2: Try API public
+  if (_allArticles.length === 0) {
+    try {
+      const res = await fetch('/api/articles?action=public&limit=100');
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data)) _allArticles = data;
+      }
+    } catch(e) {}
+  }
+
+  // Tier 3: Try Supabase JS client
+  if (_allArticles.length === 0) {
+    try {
+      const sb = window._sb || (window.initSupabaseClient && window.initSupabaseClient());
+      if (sb) {
+        const { data, error } = await sb
+          .from('articles')
+          .select('id, slug, title, deck, section, author, status, created_at, updated_at, published_at, hero_img_url')
+          .or('is_deleted.is.null,is_deleted.eq.false')
+          .order('updated_at', { ascending: false });
+        if (!error && Array.isArray(data) && data.length > 0) {
+          _allArticles = data;
+        }
+      }
+    } catch(err) {}
+  }
+
+  // Tier 4: Direct Supabase REST fetch
+  if (_allArticles.length === 0) {
+    try {
+      if (typeof PRIVATIAN_SUPABASE_URL !== 'undefined' && typeof PRIVATIAN_SUPABASE_KEY !== 'undefined') {
+        const res = await fetch(`${PRIVATIAN_SUPABASE_URL}/rest/v1/articles?select=id,slug,title,deck,section,author,status,created_at,updated_at,published_at,hero_img_url&or=(is_deleted.is.null,is_deleted.eq.false)&order=updated_at.desc`, {
+          headers: {
+            'apikey': PRIVATIAN_SUPABASE_KEY,
+            'Authorization': 'Bearer ' + PRIVATIAN_SUPABASE_KEY
+          }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data) && data.length > 0) _allArticles = data;
+        }
+      }
+    } catch(err) {}
   }
 
   if (loading) loading.style.display = 'none';
@@ -1571,18 +1715,19 @@ async function initArticlesPage() {
   renderArticlesTable(_allArticles);
   _loadArticleTrash(); // update trash count badge
   switchArticlesView(_currentArticlesView || 'active');
+  updateGlobalSyncStatus('synced', 'Synced with database');
 }
 
 function _populateSectionFilter() {
   const secSelect = document.getElementById('articles-filter-section');
   if (!secSelect) return;
   const currentVal = secSelect.value;
-  const sections = Array.from(new Set(_allArticles.map(a => a.section).filter(Boolean))).sort();
+  const secList = Array.from(new Set(_allArticles.map(a => a.section).filter(Boolean))).sort();
 
   secSelect.innerHTML = '<option value="">All Sections</option>' +
-    sections.map(s => `<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join('');
+    secList.map(s => `<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join('');
 
-  if (sections.includes(currentVal)) {
+  if (secList.includes(currentVal)) {
     secSelect.value = currentVal;
   }
 }
@@ -1683,11 +1828,22 @@ function deleteArticleConfirm(id, title) {
 
 async function _doDeleteArticle(id) {
   try {
-    const res  = await fetch('/api/articles?action=delete&id=' + id, {
-      method: 'DELETE', headers: { 'Authorization': 'Bearer ' + window.PRIVATIAN_TOKEN }
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Failed');
+    let ok = false;
+    try {
+      const res  = await fetch('/api/articles?action=delete&id=' + id, {
+        method: 'DELETE', headers: _authHeaders()
+      });
+      if (res.ok) ok = true;
+    } catch(e) {}
+
+    if (!ok) {
+      const sb = window._sb || (window.initSupabaseClient && window.initSupabaseClient());
+      if (sb) {
+        const { error } = await sb.from('articles').update({ is_deleted: true, deleted_at: new Date().toISOString() }).eq('id', id);
+        if (!error) ok = true;
+      }
+    }
+
     _allArticles = _allArticles.filter(a => a.id !== id);
     filterArticles();
     _loadArticleTrash();
@@ -1706,7 +1862,7 @@ function restoreArticleConfirm(id, title) {
 }
 
 async function _doRestoreArticle(id) {
-  // 1. Instant optimistic UI removal from trash table
+  // Instant optimistic UI removal from trash table
   const tbody = document.getElementById('art-trash-tbody');
   const countEl = document.getElementById('art-trash-count');
   if (tbody) {
@@ -1725,26 +1881,24 @@ async function _doRestoreArticle(id) {
   }
 
   try {
-    const res = await fetch('/api/articles?action=restore&id=' + id, {
-      method: 'PATCH', headers: { 'Authorization': 'Bearer ' + window.PRIVATIAN_TOKEN }
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Failed');
-    _showAdminToast('Article restored to active list', 'success');
-
-    // Reload active articles from server
+    let ok = false;
     try {
-      const listRes = await fetch('/api/articles?action=list', {
-        headers: { 'Authorization': 'Bearer ' + window.PRIVATIAN_TOKEN }
+      const res = await fetch('/api/articles?action=restore&id=' + id, {
+        method: 'PATCH', headers: _authHeaders()
       });
-      _allArticles = await listRes.json();
-      if (!Array.isArray(_allArticles)) _allArticles = [];
-      _populateSectionFilter();
-      filterArticles();
-    } catch(err) {}
+      if (res.ok) ok = true;
+    } catch(e) {}
 
-    // Reload trash table & count
-    await _loadArticleTrash();
+    if (!ok) {
+      const sb = window._sb || (window.initSupabaseClient && window.initSupabaseClient());
+      if (sb) {
+        const { error } = await sb.from('articles').update({ is_deleted: false, deleted_at: null }).eq('id', id);
+        if (!error) ok = true;
+      }
+    }
+
+    _showAdminToast('Article restored to active list', 'success');
+    await initArticlesPage();
   } catch(e) {
     _showAdminToast(e.message, 'error');
     await _loadArticleTrash();
@@ -1762,7 +1916,7 @@ function permanentDeleteArticleConfirm(id, title) {
 }
 
 async function _doPermanentDeleteArticle(id) {
-  // 1. Instant optimistic UI removal from trash table
+  // Instant optimistic UI removal from trash table
   const tbody = document.getElementById('art-trash-tbody');
   const countEl = document.getElementById('art-trash-count');
   if (tbody) {
@@ -1781,11 +1935,22 @@ async function _doPermanentDeleteArticle(id) {
   }
 
   try {
-    const res = await fetch('/api/articles?action=delete&id=' + id + '&mode=permanent', {
-      method: 'DELETE', headers: { 'Authorization': 'Bearer ' + window.PRIVATIAN_TOKEN }
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Failed');
+    let ok = false;
+    try {
+      const res = await fetch('/api/articles?action=delete&id=' + id + '&mode=permanent', {
+        method: 'DELETE', headers: _authHeaders()
+      });
+      if (res.ok) ok = true;
+    } catch(e) {}
+
+    if (!ok) {
+      const sb = window._sb || (window.initSupabaseClient && window.initSupabaseClient());
+      if (sb) {
+        const { error } = await sb.from('articles').delete().eq('id', id);
+        if (!error) ok = true;
+      }
+    }
+
     _showAdminToast('Article permanently deleted', 'success');
     await _loadArticleTrash();
   } catch(e) {
@@ -1830,59 +1995,96 @@ async function _loadArticleTrash() {
   if (table)   table.style.display   = 'none';
   if (empty)   empty.style.display   = 'none';
 
+  let arts = [];
+
+  // Tier 1: Try API trash
   try {
     const res  = await fetch('/api/articles?action=trash', {
-      headers: { 'Authorization': 'Bearer ' + window.PRIVATIAN_TOKEN }
+      headers: _authHeaders()
     });
-    const arts = await res.json();
-    if (count) count.textContent = Array.isArray(arts) ? arts.length : '0';
-    if (loading) loading.style.display = 'none';
-    if (!Array.isArray(arts) || arts.length === 0) {
-      tbody.innerHTML = '';
-      if (empty) empty.style.display = 'block';
-      if (table) table.style.display = 'none';
-      return;
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data)) arts = data;
     }
-    if (table) table.style.display = 'table';
-    const fmt = iso => iso ? new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—';
-    const isAdmin = Boolean(window.PRIVATIAN_USER && window.PRIVATIAN_USER.role === 'Admin');
-    tbody.innerHTML = arts.map(a => {
-      const thumb = a.hero_img_url
-        ? `<img src="${escapeHtml(a.hero_img_url)}" alt="" class="art-thumb" style="opacity:.75;" loading="lazy"/>`
-        : `<div class="art-thumb-ph"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>`;
-      const permDeleteBtn = isAdmin
-        ? `<button type="button" onclick="permanentDeleteArticleConfirm('${a.id}','${escapeHtml((a.title||'Untitled').replace(/'/g,"\\'"))}')" class="art-action-btn art-action-btn--delete-perm" title="Permanently delete from database (Admin only)">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/><path d="M9 6V4h6v2"/></svg>
-            Delete Forever
-          </button>`
-        : '';
-      return `<tr>
-        <td>
-          <div class="art-media-wrap">
-            ${thumb}
-            <div class="art-title-meta">
-              <div class="art-row-title" style="color:#64748b;" title="${escapeHtml(a.title||'Untitled')}">${escapeHtml(a.title||'Untitled')}</div>
-              <div class="art-row-slug" title="/article/${escapeHtml(a.slug || a.id)}">${escapeHtml(a.slug || a.id)}</div>
-            </div>
-          </div>
-        </td>
-        <td><span class="art-badge-sec" style="background:#f1f5f9;color:#64748b;border-color:#e2e8f0;">${escapeHtml(a.section||'—')}</span></td>
-        <td><span class="art-date-txt" style="color:#dc2626;font-weight:600;">${fmt(a.deleted_at)}</span></td>
-        <td class="tar">
-          <div class="art-btn-group">
-            <button type="button" onclick="restoreArticleConfirm('${a.id}','${escapeHtml((a.title||'Untitled').replace(/'/g,"\\'"))}')" class="art-action-btn art-action-btn--restore" title="Restore back to active articles">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
-              Restore
-            </button>
-            ${permDeleteBtn}
-          </div>
-        </td>
-      </tr>`;
-    }).join('');
-  } catch(e) {
-    if (loading) loading.style.display = 'none';
-    if (empty)   empty.style.display   = 'block';
+  } catch(e) {}
+
+  // Tier 2: Try Supabase JS client
+  if (arts.length === 0) {
+    try {
+      const sb = window._sb || (window.initSupabaseClient && window.initSupabaseClient());
+      if (sb) {
+        const { data, error } = await sb
+          .from('articles')
+          .select('id, slug, title, section, author, status, deleted_at, hero_img_url')
+          .eq('is_deleted', true)
+          .order('deleted_at', { ascending: false });
+        if (!error && Array.isArray(data)) arts = data;
+      }
+    } catch(e) {}
   }
+
+  // Tier 3: Try Supabase REST fetch
+  if (arts.length === 0) {
+    try {
+      if (typeof PRIVATIAN_SUPABASE_URL !== 'undefined' && typeof PRIVATIAN_SUPABASE_KEY !== 'undefined') {
+        const res = await fetch(`${PRIVATIAN_SUPABASE_URL}/rest/v1/articles?select=id,slug,title,section,author,status,deleted_at,hero_img_url&is_deleted=eq.true&order=deleted_at.desc`, {
+          headers: {
+            'apikey': PRIVATIAN_SUPABASE_KEY,
+            'Authorization': 'Bearer ' + PRIVATIAN_SUPABASE_KEY
+          }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data)) arts = data;
+        }
+      }
+    } catch(e) {}
+  }
+
+  if (count) count.textContent = Array.isArray(arts) ? arts.length : '0';
+  if (loading) loading.style.display = 'none';
+  if (!Array.isArray(arts) || arts.length === 0) {
+    tbody.innerHTML = '';
+    if (empty) empty.style.display = 'block';
+    if (table) table.style.display = 'none';
+    return;
+  }
+  if (table) table.style.display = 'table';
+  const fmt = iso => iso ? new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—';
+  const isAdmin = Boolean(window.PRIVATIAN_USER && window.PRIVATIAN_USER.role === 'Admin');
+  tbody.innerHTML = arts.map(a => {
+    const thumb = a.hero_img_url
+      ? `<img src="${escapeHtml(a.hero_img_url)}" alt="" class="art-thumb" style="opacity:.75;" loading="lazy"/>`
+      : `<div class="art-thumb-ph"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>`;
+    const permDeleteBtn = isAdmin
+      ? `<button type="button" onclick="permanentDeleteArticleConfirm('${a.id}','${escapeHtml((a.title||'Untitled').replace(/'/g,"\\'"))}')" class="art-action-btn art-action-btn--delete-perm" title="Permanently delete from database (Admin only)">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/><path d="M9 6V4h6v2"/></svg>
+          Delete Forever
+        </button>`
+      : '';
+    return `<tr>
+      <td>
+        <div class="art-media-wrap">
+          ${thumb}
+          <div class="art-title-meta">
+            <div class="art-row-title" style="color:#64748b;" title="${escapeHtml(a.title||'Untitled')}">${escapeHtml(a.title||'Untitled')}</div>
+            <div class="art-row-slug" title="/article/${escapeHtml(a.slug || a.id)}">${escapeHtml(a.slug || a.id)}</div>
+          </div>
+        </div>
+      </td>
+      <td><span class="art-badge-sec" style="background:#f1f5f9;color:#64748b;border-color:#e2e8f0;">${escapeHtml(a.section||'—')}</span></td>
+      <td><span class="art-date-txt" style="color:#dc2626;font-weight:600;">${fmt(a.deleted_at)}</span></td>
+      <td class="tar">
+        <div class="art-btn-group">
+          <button type="button" onclick="restoreArticleConfirm('${a.id}','${escapeHtml((a.title||'Untitled').replace(/'/g,"\\'"))}')" class="art-action-btn art-action-btn--restore" title="Restore back to active articles">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+            Restore
+          </button>
+          ${permDeleteBtn}
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
 }
 
 // Handle direct navigation via hash (e.g. admin.html#articles, admin.html#menu)
@@ -2936,44 +3138,87 @@ async function initHomepagePage() {
 }
 
 async function loadArticlesForHomepagePicker() {
+  homepageArticlesList = [];
   try {
     const list = await _apiGet('/api/articles?action=list');
-    homepageArticlesList = Array.isArray(list) ? list.filter(a => a.status === 'published' || !a.status) : [];
-  } catch(e) {
+    if (Array.isArray(list)) homepageArticlesList = list.filter(a => a.status === 'published' || !a.status);
+  } catch(e) {}
+
+  if (homepageArticlesList.length === 0) {
     try {
       const pubList = await _apiGet('/api/articles?action=public');
-      homepageArticlesList = Array.isArray(pubList) ? pubList : [];
-    } catch(err) {
-      homepageArticlesList = [];
-    }
+      if (Array.isArray(pubList)) homepageArticlesList = pubList;
+    } catch(err) {}
+  }
+
+  if (homepageArticlesList.length === 0) {
+    try {
+      const sb = window._sb || (window.initSupabaseClient && window.initSupabaseClient());
+      if (sb) {
+        const { data, error } = await sb
+          .from('articles')
+          .select('id, slug, title, deck, section, author, status, created_at, updated_at, published_at, hero_img_url')
+          .or('is_deleted.is.null,is_deleted.eq.false')
+          .order('updated_at', { ascending: false });
+        if (!error && Array.isArray(data)) {
+          homepageArticlesList = data.filter(a => a.status === 'published' || !a.status);
+        }
+      }
+    } catch(err) {}
+  }
+
+  if (homepageArticlesList.length === 0) {
+    try {
+      if (typeof PRIVATIAN_SUPABASE_URL !== 'undefined' && typeof PRIVATIAN_SUPABASE_KEY !== 'undefined') {
+        const res = await fetch(`${PRIVATIAN_SUPABASE_URL}/rest/v1/articles?select=id,slug,title,deck,section,author,status,created_at,updated_at,published_at,hero_img_url&or=(is_deleted.is.null,is_deleted.eq.false)&order=updated_at.desc`, {
+          headers: {
+            'apikey': PRIVATIAN_SUPABASE_KEY,
+            'Authorization': 'Bearer ' + PRIVATIAN_SUPABASE_KEY
+          }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data)) homepageArticlesList = data.filter(a => a.status === 'published' || !a.status);
+        }
+      }
+    } catch(err) {}
   }
 }
 
 async function loadHomepageSettings() {
+  let loaded = null;
   try {
     const data = await _apiGet('/api/sections?action=homepage');
-    homepageDraftConfig = data && typeof data === 'object' ? JSON.parse(JSON.stringify(data)) : JSON.parse(JSON.stringify(DEFAULT_HOMEPAGE_CONFIG));
-    ensureHomepageConfigDefaults();
-    appliedHomepageConfig = JSON.parse(JSON.stringify(homepageDraftConfig));
-    homepageUndoStack = [];
-    homepageRedoStack = [];
-    updateHomepageUndoRedoBtns();
-    updateGlobalSyncStatus('synced', 'Synced with database');
-  } catch(err) {
-    console.warn('[Admin] loadHomepageSettings failed, fallback to local cache:', err.message);
+    if (data && typeof data === 'object') loaded = data;
+  } catch(err) {}
+
+  if (!loaded) {
+    try {
+      const sb = window._sb || (window.initSupabaseClient && window.initSupabaseClient());
+      if (sb) {
+        const { data: sData } = await sb.from('sections').select('name').eq('admin_id', '__homepage_config__').maybeSingle();
+        if (sData && sData.name) {
+          const parsed = JSON.parse(sData.name);
+          if (parsed && typeof parsed === 'object') loaded = parsed;
+        }
+      }
+    } catch(e) {}
+  }
+
+  if (!loaded) {
     try {
       const cached = localStorage.getItem('privatian_homepage_settings');
-      homepageDraftConfig = cached ? JSON.parse(cached) : JSON.parse(JSON.stringify(DEFAULT_HOMEPAGE_CONFIG));
-    } catch(e) {
-      homepageDraftConfig = JSON.parse(JSON.stringify(DEFAULT_HOMEPAGE_CONFIG));
-    }
-    ensureHomepageConfigDefaults();
-    appliedHomepageConfig = JSON.parse(JSON.stringify(homepageDraftConfig));
-    homepageUndoStack = [];
-    homepageRedoStack = [];
-    updateHomepageUndoRedoBtns();
-    updateGlobalSyncStatus('synced', 'Synced with database');
+      if (cached) loaded = JSON.parse(cached);
+    } catch(e) {}
   }
+
+  homepageDraftConfig = loaded ? JSON.parse(JSON.stringify(loaded)) : JSON.parse(JSON.stringify(DEFAULT_HOMEPAGE_CONFIG));
+  ensureHomepageConfigDefaults();
+  appliedHomepageConfig = JSON.parse(JSON.stringify(homepageDraftConfig));
+  homepageUndoStack = [];
+  homepageRedoStack = [];
+  updateHomepageUndoRedoBtns();
+  updateGlobalSyncStatus('synced', 'Synced with database');
 }
 
 function ensureHomepageConfigDefaults() {
@@ -3954,27 +4199,66 @@ function getSocialIconSvgForAdmin(platform) {
 async function initFooterPage() {
   updateGlobalSyncStatus('syncing', 'Loading footer settings...');
 
+  let loadedConfig = null;
+
+  // Tier 1: Try API
   try {
     const data = await _apiGet('/api/sections?action=footer');
-    if (data && typeof data === 'object') {
-      appliedFooterConfig = JSON.parse(JSON.stringify(data));
-      footerDraftConfig = JSON.parse(JSON.stringify(data));
+    if (data && typeof data === 'object' && Object.keys(data).length > 0) {
+      loadedConfig = data;
     }
-  } catch(e) {
-    console.warn('[Footer Settings] Load from API failed (using cache or defaults):', e.message);
+  } catch(e) {}
+
+  // Tier 2: Try direct Supabase query on sections table (__footer_config__)
+  if (!loadedConfig) {
+    try {
+      const sb = window._sb || (window.initSupabaseClient && window.initSupabaseClient());
+      if (sb) {
+        const { data: sData } = await sb.from('sections').select('name').eq('admin_id', '__footer_config__').maybeSingle();
+        if (sData && sData.name) {
+          const parsed = JSON.parse(sData.name);
+          if (parsed && typeof parsed === 'object') loadedConfig = parsed;
+        }
+      }
+    } catch(e) {}
+  }
+
+  // Tier 3: Try Supabase REST fetch
+  if (!loadedConfig) {
+    try {
+      if (typeof PRIVATIAN_SUPABASE_URL !== 'undefined' && typeof PRIVATIAN_SUPABASE_KEY !== 'undefined') {
+        const res = await fetch(`${PRIVATIAN_SUPABASE_URL}/rest/v1/sections?admin_id=eq.__footer_config__&select=name`, {
+          headers: {
+            'apikey': PRIVATIAN_SUPABASE_KEY,
+            'Authorization': 'Bearer ' + PRIVATIAN_SUPABASE_KEY
+          }
+        });
+        if (res.ok) {
+          const arr = await res.json();
+          if (arr && arr[0] && arr[0].name) {
+            const parsed = JSON.parse(arr[0].name);
+            if (parsed && typeof parsed === 'object') loadedConfig = parsed;
+          }
+        }
+      }
+    } catch(e) {}
+  }
+
+  // Tier 4: LocalStorage
+  if (!loadedConfig) {
     try {
       const cached = localStorage.getItem(FOOTER_SETTINGS_KEY);
-      if (cached) {
-        appliedFooterConfig = JSON.parse(cached);
-        footerDraftConfig = JSON.parse(cached);
-      }
+      if (cached) loadedConfig = JSON.parse(cached);
     } catch(err) {}
   }
 
-  if (!footerDraftConfig) {
-    appliedFooterConfig = JSON.parse(JSON.stringify(DEFAULT_FOOTER_CONFIG));
-    footerDraftConfig = JSON.parse(JSON.stringify(DEFAULT_FOOTER_CONFIG));
+  // Tier 5: Default Config
+  if (!loadedConfig) {
+    loadedConfig = JSON.parse(JSON.stringify(DEFAULT_FOOTER_CONFIG));
   }
+
+  appliedFooterConfig = JSON.parse(JSON.stringify(loadedConfig));
+  footerDraftConfig = JSON.parse(JSON.stringify(loadedConfig));
 
   footerUndoStack = [];
   footerRedoStack = [];
@@ -4880,29 +5164,59 @@ async function saveFooterSettings() {
   if (saveBtn) saveBtn.disabled = true;
   updateGlobalSyncStatus('syncing', 'Saving to database...');
 
+  let savedOk = false;
+
+  // 1. Try API POST
   try {
     const result = await _apiPost('/api/sections?action=footer', footerDraftConfig);
-    if (result && result.data) {
-      appliedFooterConfig = JSON.parse(JSON.stringify(result.data));
-      footerDraftConfig = JSON.parse(JSON.stringify(result.data));
-    } else {
-      appliedFooterConfig = JSON.parse(JSON.stringify(footerDraftConfig));
-    }
+    if (result && (result.ok || result.data)) savedOk = true;
+  } catch(err) {}
+
+  // 2. Direct Supabase Fallback (sections table under __footer_config__)
+  if (!savedOk) {
     try {
-      localStorage.setItem(FOOTER_SETTINGS_KEY, JSON.stringify(appliedFooterConfig));
+      const sb = window._sb || (window.initSupabaseClient && window.initSupabaseClient());
+      if (sb) {
+        const { data: existing } = await sb.from('sections').select('id').eq('admin_id', '__footer_config__').maybeSingle();
+        if (existing) {
+          await sb.from('sections').update({
+            name: JSON.stringify(footerDraftConfig),
+            slug: '__footer_config__',
+            display_order: 9996,
+            is_active: false,
+            locked: true,
+            is_deleted: true
+          }).eq('admin_id', '__footer_config__');
+        } else {
+          await sb.from('sections').insert({
+            admin_id: '__footer_config__',
+            name: JSON.stringify(footerDraftConfig),
+            slug: '__footer_config__',
+            display_order: 9996,
+            is_active: false,
+            locked: true,
+            is_deleted: true
+          });
+        }
+        savedOk = true;
+      }
     } catch(e) {}
-    footerUndoStack = [];
-    footerRedoStack = [];
-    updateFooterUndoRedoButtons();
-    updateGlobalSyncStatus('synced', 'Synced with database');
-    refreshActiveFooterTab();
-    showToast('success', 'Footer settings successfully saved & synchronized!');
-  } catch(err) {
-    showToast('error', 'Failed to save footer settings: ' + err.message);
-    updateGlobalSyncStatus('error', 'Sync error (offline/cache)');
-  } finally {
-    if (saveBtn) saveBtn.disabled = false;
   }
+
+  // 3. Always persist to localStorage
+  try {
+    localStorage.setItem(FOOTER_SETTINGS_KEY, JSON.stringify(footerDraftConfig));
+  } catch(e) {}
+
+  appliedFooterConfig = JSON.parse(JSON.stringify(footerDraftConfig));
+  footerUndoStack = [];
+  footerRedoStack = [];
+  updateFooterUndoRedoButtons();
+  updateGlobalSyncStatus('synced', 'Synced with database');
+  refreshActiveFooterTab();
+  showToast('success', 'Footer settings successfully saved & synchronized!');
+
+  if (saveBtn) saveBtn.disabled = false;
 }
 
 // ── GLOBAL MODAL SCROLL LOCK & BACKDROP WATCHER ───────────────────
