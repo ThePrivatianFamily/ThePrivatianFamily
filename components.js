@@ -633,6 +633,8 @@
     var menuOverlay = document.getElementById('menu-overlay');
     var siteHeader  = document.getElementById('site-header');
 
+    var _savedScrollY = 0;
+
     function positionMenuOverlay() {
       if (menuOverlay && siteHeader) {
         var rect = siteHeader.getBoundingClientRect();
@@ -644,6 +646,7 @@
 
     function openMenu() {
       if (!menuOverlay || !menuBtn) return;
+      _savedScrollY = window.scrollY;
       positionMenuOverlay();
       menuOverlay.classList.add('is-open');
       menuBtn.classList.add('is-open');
@@ -665,6 +668,7 @@
       document.documentElement.classList.remove('menu-open');
       document.body.style.overflow = '';
       document.documentElement.style.overflow = '';
+      window.scrollTo(0, _savedScrollY);
     }
 
     if (menuBtn && menuOverlay) {

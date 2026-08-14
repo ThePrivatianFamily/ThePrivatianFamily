@@ -55,6 +55,15 @@ body.menu-open, html.menu-open {
   overflow: hidden !important;
   touch-action: none;
 }
+body.menu-open .site-header {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  width: 100% !important;
+  z-index: 10000 !important;
+  box-shadow: 0 2px 14px rgba(0,0,0,0.15) !important;
+}
 
 /* HEADER */
 .site-header { 
@@ -257,9 +266,9 @@ body.menu-open, html.menu-open {
    Breakpoints: 1100 | 900 | 640 | 400px
 ============================================================== */
 
-/* Prevent horizontal overflow */
-html { overflow-x: hidden; }
-body { overflow-x: hidden; min-width: 320px; }
+/* Prevent horizontal overflow without breaking position: sticky */
+html { overflow-x: clip; }
+body { overflow-x: clip; min-width: 320px; }
 
 /* Section visual separation via background alternation */
 .small-articles-section { background: var(--bg-section); }
