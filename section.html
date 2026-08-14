@@ -8,9 +8,9 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Source+Sans+3:wght@300;400;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="assets/css/style.css" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="supabase-config.js"></script>
+  <script src="assets/js/supabase-config.js"></script>
   <style>
     /* â”€â”€ CRITICAL OVERRIDES for section page â”€â”€ */
     /* style.css sets img{width:100%} which breaks positioned images */
@@ -283,7 +283,7 @@
       .id-title { font-size: clamp(22px, 7vw, 36px); }
     }
   </style>
-  <script src="components.js"></script>
+  <script src="assets/js/components.js"></script>
 </head>
 <body>
 
@@ -403,7 +403,7 @@
 </div>
 
 <script>
-(function(){
+(async function(){
   var AK='privatian_applied_sections', SK='privatian_sections';
   function qp(n){return new URLSearchParams(window.location.search).get(n)||'';}
   function getSecs(){
@@ -429,27 +429,10 @@
   var hb=document.getElementById('hero-badge'); if(hb)hb.textContent=name;
   var gl=document.getElementById('grid-lbl'); if(gl)gl.textContent='All Articles in '+name;
 
-  // Hero image
-  var imgs=['img1.png','img2.png','img3.png','img4.png','img5.png','img6.png'];
+  // Hero image default
+  var imgs=['assets/images/img1.png','assets/images/img2.png','assets/images/img3.png','assets/images/img4.png','assets/images/img5.png','assets/images/img6.png'];
   var hi=document.getElementById('hero-img');
   if(hi){hi.src=imgs[slug.length%imgs.length]; hi.alt=name+' section image';}
-
-  // Nav
-  var nav=document.getElementById('sec-nav');
-  if(nav&&secs.length){
-    nav.innerHTML='';
-    secs.forEach(function(s,i){
-      var li=document.createElement('li');
-      var a=document.createElement('a');
-      a.href=s.slug?'section.html?slug='+s.slug:'#';
-      a.className='nav-link'+(s.slug===slug?' nav-link--active':'');
-      a.style.color=s.slug===slug?'var(--brand-navy)':'';
-      a.style.fontWeight=s.slug===slug?'700':'';
-      a.textContent=s.name;
-      li.appendChild(a); nav.appendChild(li);
-      if(i<secs.length-1){var d=document.createElement('li');d.className='nav-divider';d.setAttribute('aria-hidden','true');nav.appendChild(d);}
-    });
-  }
 
   // Sidebar sections
   var sbl=document.getElementById('sb-secs');
@@ -467,6 +450,79 @@
     } else {
       sbl.innerHTML='<li style="padding:10px 0;color:#9ab;font-size:13px;font-family:sans-serif">No sections yet. Apply changes in admin.</li>';
     }
+  }
+
+  // ── Fetch & Render Live Articles ──────────────────────────────────────
+  try {
+    let articles = null;
+    if (typeof db_getArticles === 'function') {
+      articles = await db_getArticles(name);
+      if (!articles || !articles.length) {
+        articles = await db_getArticles(slug);
+      }
+    }
+
+    if (!articles) {
+      const res = await fetch('/api/articles?action=list&status=published&section=' + encodeURIComponent(name));
+      if (res.ok) articles = await res.json();
+    }
+
+    if (Array.isArray(articles) && articles.length > 0) {
+      // 1. Update Grid Counter
+      var gc = document.getElementById('grid-cnt');
+      if (gc) gc.textContent = '(' + articles.length + ' ' + (articles.length === 1 ? 'article' : 'articles') + ')';
+
+      // 2. Hero Area (Featured / First Article)
+      var hero = articles[0];
+      var heroLink = document.getElementById('hero-link');
+      var heroMeta = document.querySelector('.hero-meta-txt');
+      if (heroLink) {
+        heroLink.textContent = hero.title || 'Untitled';
+        heroLink.href = 'article.html?id=' + encodeURIComponent(hero.id || hero.slug);
+      }
+      if (hi && hero.hero_img_url) {
+        hi.src = hero.hero_img_url;
+      }
+      if (heroMeta) {
+        var hDate = hero.published_at ? new Date(hero.published_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '';
+        heroMeta.textContent = (hero.author ? 'By ' + hero.author + ' · ' : '') + hDate;
+      }
+
+      // 3. Hero Sidebar (Next 3 articles or recent)
+      var sbList = document.querySelector('.hero-sb-list');
+      if (sbList) {
+        var sbArticles = articles.slice(1, 4);
+        if (sbArticles.length) {
+          sbList.innerHTML = sbArticles.map(function(a) {
+            var aDate = a.published_at ? new Date(a.published_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '';
+            return '<li class="hero-sb-item"><a href="article.html?id=' + encodeURIComponent(a.id || a.slug) + '">' +
+              '<div class="hsil">' + (a.section || name) + '</div>' +
+              '<div class="hsit">' + (a.title || 'Untitled') + '</div>' +
+              '<div class="hsid">' + (a.author ? a.author + ' · ' : '') + aDate + '</div>' +
+            '</a></li>';
+          }).join('');
+        }
+      }
+
+      // 4. Article Grid
+      var grid = document.getElementById('art-grid');
+      if (grid) {
+        grid.innerHTML = articles.map(function(a, idx) {
+          var imgUrl = a.hero_img_url || imgs[idx % imgs.length];
+          var aDate = a.published_at ? new Date(a.published_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '';
+          return '<a href="article.html?id=' + encodeURIComponent(a.id || a.slug) + '" class="ac">' +
+            '<div class="ac-iw"><img src="' + imgUrl + '" alt="" loading="lazy" /></div>' +
+            '<div class="ac-b">' +
+              '<span class="ac-badge">' + (a.section || name) + '</span>' +
+              '<h3 class="ac-title">' + (a.title || 'Untitled') + '</h3>' +
+              '<div class="ac-meta">' + (a.author ? 'By ' + a.author + ' · ' : '') + aDate + '</div>' +
+            '</div>' +
+          '</a>';
+        }).join('');
+      }
+    }
+  } catch(err) {
+    console.warn('[Section] Failed to load articles:', err.message);
   }
 })();
 </script>

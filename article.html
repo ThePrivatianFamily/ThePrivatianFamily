@@ -8,11 +8,11 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Source+Sans+3:wght@300;400;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="style.css" />
-  <link rel="stylesheet" href="article.css" />
+  <link rel="stylesheet" href="assets/css/style.css" />
+  <link rel="stylesheet" href="assets/css/article.css" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="supabase-config.js"></script>
-  <script src="components.js"></script>
+  <script src="assets/js/supabase-config.js"></script>
+  <script src="assets/js/components.js"></script>
 </head>
 <body class="article-page">
   <div id="site-header-mount"></div>
@@ -56,7 +56,7 @@
 
     <main class="article-body" id="article-body">
       <figure class="article-hero-figure" id="article-hero-figure">
-        <img src="img1.png" alt="Heritage gathering" class="article-hero-img" id="article-hero-img" loading="eager" />
+        <img src="assets/images/img1.png" alt="Heritage gathering" class="article-hero-img" id="article-hero-img" loading="eager" />
         <figcaption class="article-hero-caption" id="article-hero-caption">
           A gathering of Privatian family members at an annual heritage symposium, 2024.
           <span class="caption-credit">Photo by The Privatian Archive</span>
@@ -110,7 +110,7 @@
       <div class="related-grid" id="related-grid">
         <article class="related-card" id="related-card-1">
           <a href="article.html" class="related-card-img-link">
-            <div class="related-card-img-wrap"><img src="img2.png" alt="" class="related-card-img" loading="lazy" /></div>
+            <div class="related-card-img-wrap"><img src="assets/images/img2.png" alt="" class="related-card-img" loading="lazy" /></div>
           </a>
           <div class="related-card-body">
             <a href="section.html?slug=community-heritage" class="related-card-section">Community &amp; Heritage</a>
@@ -120,7 +120,7 @@
         </article>
         <article class="related-card" id="related-card-2">
           <a href="article.html" class="related-card-img-link">
-            <div class="related-card-img-wrap"><img src="img3.png" alt="" class="related-card-img" loading="lazy" /></div>
+            <div class="related-card-img-wrap"><img src="assets/images/img3.png" alt="" class="related-card-img" loading="lazy" /></div>
           </a>
           <div class="related-card-body">
             <a href="section.html?slug=culture" class="related-card-section">Culture</a>
@@ -130,7 +130,7 @@
         </article>
         <article class="related-card" id="related-card-3">
           <a href="article.html" class="related-card-img-link">
-            <div class="related-card-img-wrap"><img src="img4.png" alt="" class="related-card-img" loading="lazy" /></div>
+            <div class="related-card-img-wrap"><img src="assets/images/img4.png" alt="" class="related-card-img" loading="lazy" /></div>
           </a>
           <div class="related-card-body">
             <a href="section.html?slug=findings" class="related-card-section">Findings</a>
@@ -187,6 +187,133 @@
         var scrolled = Math.max(0, -rect.top);
         bar.style.width = Math.min(100, (scrolled / total) * 100) + '%';
       }, { passive: true });
+    })();
+
+    // ── Dynamic Article Loader ──────────────────────────────────────────
+    (async function loadArticleData() {
+      var params = new URLSearchParams(window.location.search);
+      var articleId = params.get('id') || params.get('slug');
+      if (!articleId) return;
+
+      try {
+        var a = null;
+        if (typeof db_getArticle === 'function') {
+          a = await db_getArticle(articleId);
+        }
+        if (!a) {
+          var isUuid = /^[0-9a-f-]{36}$/i.test(articleId);
+          var q = isUuid ? 'id=' + encodeURIComponent(articleId) : 'slug=' + encodeURIComponent(articleId);
+          var res = await fetch('/api/articles?action=get&' + q);
+          if (res.ok) a = await res.json();
+        }
+
+        if (!a) return;
+
+        // Title & Meta
+        document.title = (a.title || 'Article') + ' — The Privatian Family';
+        var metaDesc = document.querySelector('meta[name="description"]');
+        if (metaDesc && a.deck) metaDesc.setAttribute('content', a.deck);
+
+        // Section Pill & Breadcrumb
+        var secName = a.section || 'Articles';
+        var secSlug = a.section ? a.section.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') : '';
+        var secLink = document.getElementById('article-section-link');
+        var secPill = document.getElementById('article-section-pill');
+        if (secLink) {
+          secLink.textContent = secName;
+          secLink.href = 'section.html?slug=' + encodeURIComponent(secSlug);
+        }
+        if (secPill) {
+          secPill.textContent = secName;
+          secPill.href = 'section.html?slug=' + encodeURIComponent(secSlug);
+        }
+
+        // Headline & Deck
+        var hl = document.getElementById('article-headline');
+        if (hl) hl.textContent = a.title || 'Untitled';
+        var deck = document.getElementById('article-deck');
+        if (deck) {
+          if (a.deck) {
+            deck.textContent = a.deck;
+            deck.style.display = '';
+          } else {
+            deck.style.display = 'none';
+          }
+        }
+
+        // Meta Info (Author, Date, Read Time)
+        var authorEl = document.getElementById('article-author');
+        if (authorEl) authorEl.innerHTML = a.author ? ('By <strong>' + a.author + '</strong>') : 'The Privatian Family';
+        var dateEl = document.getElementById('article-date');
+        if (dateEl) {
+          var d = a.published_at || a.created_at || new Date().toISOString();
+          dateEl.textContent = new Date(d).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+        }
+        var readEl = document.getElementById('article-readtime');
+        if (readEl && a.content_html) {
+          var wc = a.content_html.replace(/<[^>]*>/g, ' ').split(/\s+/).filter(Boolean).length;
+          readEl.textContent = Math.max(1, Math.round(wc / 200)) + ' min read';
+        }
+
+        // Hero Image & Caption
+        var heroFig = document.getElementById('article-hero-figure');
+        var heroImg = document.getElementById('article-hero-img');
+        var heroCap = document.getElementById('article-hero-caption');
+        if (a.hero_img_url) {
+          if (heroImg) heroImg.src = a.hero_img_url;
+          if (heroCap) {
+            heroCap.innerHTML = (a.hero_caption || '') +
+              (a.hero_credit ? '<span class="caption-credit">Photo: ' + a.hero_credit + '</span>' : '');
+            heroCap.style.display = (a.hero_caption || a.hero_credit) ? '' : 'none';
+          }
+          if (heroFig) heroFig.style.display = '';
+        } else if (heroFig) {
+          heroFig.style.display = 'none';
+        }
+
+        // Content
+        var contentEl = document.getElementById('article-content');
+        if (contentEl && a.content_html) {
+          contentEl.innerHTML = a.content_html;
+        }
+
+        // Author Bio Box
+        var bioBox = document.getElementById('article-author-bio');
+        var bioName = document.getElementById('author-bio-name');
+        var bioRole = document.getElementById('author-bio-role');
+        var bioDesc = document.getElementById('author-bio-desc');
+        if (bioName) bioName.textContent = a.author || 'The Privatian Family';
+        if (bioRole) bioRole.textContent = a.author_role || (a.author ? 'Contributor' : '');
+        if (bioDesc) bioDesc.textContent = a.author_bio || '';
+        if (bioBox && !a.author && !a.author_bio) bioBox.style.display = 'none';
+
+        // Load Related Articles from Same Section
+        if (a.section) {
+          var relRes = await fetch('/api/articles?action=list&status=published&section=' + encodeURIComponent(a.section) + '&limit=3');
+          if (relRes.ok) {
+            var relData = await relRes.json();
+            var filteredRel = (relData || []).filter(function(r) { return r.id !== a.id; }).slice(0, 3);
+            var relGrid = document.getElementById('related-grid');
+            if (relGrid && filteredRel.length > 0) {
+              relGrid.innerHTML = filteredRel.map(function(r) {
+                var rDate = r.published_at ? new Date(r.published_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '';
+                return '<article class="related-card">' +
+                  '<a href="article.html?id=' + encodeURIComponent(r.id || r.slug) + '" class="related-card-img-link">' +
+                    '<div class="related-card-img-wrap"><img src="' + (r.hero_img_url || 'assets/images/img1.png') + '" alt="" class="related-card-img" loading="lazy" /></div>' +
+                  '</a>' +
+                  '<div class="related-card-body">' +
+                    '<a href="section.html?slug=' + encodeURIComponent(secSlug) + '" class="related-card-section">' + (r.section || secName) + '</a>' +
+                    '<h3 class="related-card-title"><a href="article.html?id=' + encodeURIComponent(r.id || r.slug) + '" class="related-card-title-link">' + (r.title || 'Untitled') + '</a></h3>' +
+                    '<div class="related-card-meta">' + rDate + '</div>' +
+                  '</div>' +
+                '</article>';
+              }).join('');
+            }
+          }
+        }
+      } catch(err) {
+        console.warn('[Article] Failed to load dynamic article:', err.message);
+      }
     })();
   </script>
 </body>

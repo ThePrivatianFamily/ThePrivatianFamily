@@ -40,10 +40,11 @@ module.exports = async function handler(req, res) {
     if (!credential) return res.status(400).json({ error: 'No credential provided' });
 
     try {
-      const gClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+      const googleClientId = process.env.GOOGLE_CLIENT_ID || '998492025686-flk32n9j8s28b5r3s98l1k18k2h7h51o.apps.googleusercontent.com';
+      const gClient = new OAuth2Client(googleClientId);
       const ticket  = await gClient.verifyIdToken({
         idToken:  credential,
-        audience: process.env.GOOGLE_CLIENT_ID,
+        audience: googleClientId,
       });
       const gp = ticket.getPayload();
       if (!gp.email_verified) return res.status(401).json({ error: 'Email not verified with Google' });
@@ -52,7 +53,9 @@ module.exports = async function handler(req, res) {
       const name    = gp.name    || email;
       const picture = gp.picture || '';
 
-      const sb = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
+      const sbUrl = process.env.SUPABASE_URL || 'https://aenhajqjsgskimfzvlfr.supabase.co';
+      const sbKey = process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFlbmhhanFqc2dza2ltZnp2bGZyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY2MDc1MDUsImV4cCI6MjEwMjE4MzUwNX0.q0wmF77hpsb8M7CQOYMq8GrDuQJ32vn1NcWFXTc5UAY';
+      const sb = createClient(sbUrl, sbKey);
       const { data: admin, error } = await sb
         .from('allowed_admins')
         .select('*')
@@ -67,9 +70,10 @@ module.exports = async function handler(req, res) {
         });
       }
 
+      const sessionSecret = process.env.SESSION_SECRET || 'theprivatianfamily_secret_jwt_key_2026_secure';
       const token = jwt.sign(
         { email: admin.email, role: admin.role, name, picture },
-        process.env.SESSION_SECRET,
+        sessionSecret,
         { expiresIn: '24h' }
       );
 

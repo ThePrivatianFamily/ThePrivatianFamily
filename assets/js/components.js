@@ -133,11 +133,11 @@
       <div class="menu-col menu-col-latest">
         <h2 class="menu-section-title">Read the latest</h2>
         <div class="menu-latest-item">
-          <img src="img1.png" alt="Scholar article" class="menu-latest-img" />
+          <img src="assets/images/img1.png" alt="Scholar article" class="menu-latest-img" />
           <h3 class="menu-latest-title"><a href="section.html?slug=community-heritage" id="mo-latest-1">For families in transition, 'not all traditions are equal'</a></h3>
         </div>
         <div class="menu-latest-item">
-          <img src="img3.png" alt="Writing article" class="menu-latest-img" />
+          <img src="assets/images/img3.png" alt="Writing article" class="menu-latest-img" />
           <h3 class="menu-latest-title"><a href="section.html?slug=culture" id="mo-latest-2">The art of the pen: How writing shapes cultural identity</a></h3>
         </div>
       </div>

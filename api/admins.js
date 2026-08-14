@@ -14,7 +14,9 @@ const { requireAuth, requireAdmin } = require('./_lib/auth');
 const { createClient } = require('@supabase/supabase-js');
 
 function sb() {
-  return createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
+  const url = process.env.SUPABASE_URL || 'https://aenhajqjsgskimfzvlfr.supabase.co';
+  const key = process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFlbmhhanFqc2dza2ltZnp2bGZyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY2MDc1MDUsImV4cCI6MjEwMjE4MzUwNX0.q0wmF77hpsb8M7CQOYMq8GrDuQJ32vn1NcWFXTc5UAY';
+  return createClient(url, key);
 }
 
 async function countGmailAdmins(client, excludeId) {

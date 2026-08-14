@@ -1,5 +1,12 @@
-const jwt  = require('jsonwebtoken');
-const { createClient } = require('@supabase/supabase-js');
+const DEFAULT_SUPABASE_URL = 'https://aenhajqjsgskimfzvlfr.supabase.co';
+const DEFAULT_SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFlbmhhanFqc2dza2ltZnp2bGZyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY2MDc1MDUsImV4cCI6MjEwMjE4MzUwNX0.q0wmF77hpsb8M7CQOYMq8GrDuQJ32vn1NcWFXTc5UAY';
+const DEFAULT_SESSION_SECRET = 'theprivatianfamily_secret_jwt_key_2026_secure';
+
+function getSupabaseClient() {
+  const url = process.env.SUPABASE_URL || DEFAULT_SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_ANON_KEY || DEFAULT_SUPABASE_KEY;
+  return createClient(url, key);
+}
 
 function verifySession(req) {
   let token = null;
@@ -10,7 +17,7 @@ function verifySession(req) {
     if (m) token = m[1];
   }
   if (!token) return null;
-  try { return jwt.verify(token, process.env.SESSION_SECRET); }
+  try { return jwt.verify(token, process.env.SESSION_SECRET || DEFAULT_SESSION_SECRET); }
   catch(e) { return null; }
 }
 
@@ -32,7 +39,7 @@ async function requireAdmin(req, res) {
   // Live DB check: verify the role in DB is still 'Admin' and account is active.
   // This catches mid-session role downgrades (Admin → Moderator) even before JWT expires.
   try {
-    const sb = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
+    const sb = getSupabaseClient();
     const { data } = await sb
       .from('allowed_admins')
       .select('role, status')
