@@ -4583,6 +4583,43 @@ async function saveFooterSettings() {
   }
 }
 
+// ── GLOBAL MODAL SCROLL LOCK & BACKDROP WATCHER ───────────────────
+function syncModalScrollLock() {
+  const visibleModal = Array.from(document.querySelectorAll('.modal-overlay')).find(el => {
+    return !el.hidden && !el.hasAttribute('hidden') && el.style.display !== 'none';
+  });
+  if (visibleModal) {
+    document.body.classList.add('modal-open');
+  } else {
+    document.body.classList.remove('modal-open');
+  }
+}
+
+function initGlobalModalListeners() {
+  const observer = new MutationObserver(() => {
+    syncModalScrollLock();
+  });
+
+  document.querySelectorAll('.modal-overlay').forEach(overlay => {
+    observer.observe(overlay, { attributes: true, attributeFilter: ['hidden', 'style', 'class'] });
+
+    // Backdrop click to close
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) {
+        overlay.setAttribute('hidden', '');
+        overlay.hidden = true;
+        syncModalScrollLock();
+      }
+    });
+  });
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initGlobalModalListeners);
+} else {
+  initGlobalModalListeners();
+}
+
 
 
 
