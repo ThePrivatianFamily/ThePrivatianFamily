@@ -65,16 +65,42 @@ module.exports = async function handler(req, res) {
     return res.status(200).json(data);
   }
 
-  // ── LIST (admin) ────────────────────────────────────────────
+  // ── LIST (admin — active only) ──────────────────────────────
   if (action === 'list' && req.method === 'GET') {
     const session = requireAuth(req, res);
     if (!session) return;
     const { data, error } = await sb()
       .from('articles')
       .select('id, slug, title, deck, section, author, status, created_at, updated_at, published_at, hero_img_url')
+      .neq('is_deleted', true)
       .order('updated_at', { ascending: false });
     if (error) return res.status(500).json({ error: error.message });
     return res.status(200).json(data || []);
+  }
+
+  // ── TRASH LIST (admin) ──────────────────────────────────────
+  if (action === 'trash' && req.method === 'GET') {
+    const session = requireAuth(req, res);
+    if (!session) return;
+    const { data, error } = await sb()
+      .from('articles')
+      .select('id, slug, title, section, author, status, deleted_at, hero_img_url')
+      .eq('is_deleted', true)
+      .order('deleted_at', { ascending: false });
+    if (error) return res.status(500).json({ error: error.message });
+    return res.status(200).json(data || []);
+  }
+
+  // ── RESTORE (from trash) ────────────────────────────────────
+  if (action === 'restore' && req.method === 'PATCH') {
+    const session = requireAuth(req, res);
+    if (!session) return;
+    if (!id) return res.status(400).json({ error: 'id required' });
+    const { error } = await sb().from('articles')
+      .update({ is_deleted: false, deleted_at: null })
+      .eq('id', id);
+    if (error) return res.status(500).json({ error: error.message });
+    return res.status(200).json({ success: true });
   }
 
   // ── GET (admin — any status) ───────────────────────────────
@@ -150,14 +176,24 @@ module.exports = async function handler(req, res) {
     return res.status(200).json(data);
   }
 
-  // ── DELETE ──────────────────────────────────────────────────────
+  // ── DELETE ─────────────────────────────────────────────────────
   if (action === 'delete' && req.method === 'DELETE') {
     const session = await requireAdmin(req, res);
     if (!session) return;
     if (!id) return res.status(400).json({ error: 'id required' });
-    const { error } = await sb().from('articles').delete().eq('id', id);
+    const mode = req.query.mode;
+    if (mode === 'permanent') {
+      // Hard delete — only allowed for already-trashed articles
+      const { error } = await sb().from('articles').delete().eq('id', id);
+      if (error) return res.status(500).json({ error: error.message });
+      return res.status(200).json({ success: true, permanent: true });
+    }
+    // Soft delete — move to trash
+    const { error } = await sb().from('articles')
+      .update({ is_deleted: true, deleted_at: new Date().toISOString() })
+      .eq('id', id);
     if (error) return res.status(500).json({ error: error.message });
-    return res.status(200).json({ success: true });
+    return res.status(200).json({ success: true, soft: true });
   }
 
   // ── UPLOAD (image) ───────────────────────────────────────────────

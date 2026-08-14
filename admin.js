@@ -1,4 +1,4 @@
-/* =================================================================
+﻿/* =================================================================
    THE PRIVATIAN FAMILY - ADMIN JS
    Sections CRUD - Supabase API - Toast - Modal
 ================================================================= */
@@ -1426,7 +1426,7 @@ function renderArticlesTable(articles) {
           </button>
           <button onclick="deleteArticleConfirm('${a.id}', '${escapeHtml((a.title||'Untitled').replace(/'/g,"\\'"))}')"
             style="display:inline-flex;align-items:center;padding:5px 9px;border-radius:6px;font-size:12px;font-weight:600;border:1px solid #fee2e2;background:#fff;color:#dc2626;cursor:pointer;transition:all .12s;"
-            title="Delete">
+            title="Move to Trash">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
           </button>
         </div>
@@ -1459,7 +1459,6 @@ async function toggleArticleStatus(id, btn) {
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Failed');
-    // Update local data
     const article = _allArticles.find(a => a.id === id);
     if (article) article.status = data.status;
     renderArticlesTable(_allArticles);
@@ -1471,11 +1470,13 @@ async function toggleArticleStatus(id, btn) {
   }
 }
 
+// ── Article Trash Management ────────────────────────────────────
+
 function deleteArticleConfirm(id, title) {
   _confirmModal({
-    title: 'Delete Article',
-    message: `Are you sure you want to permanently delete "<strong>${escapeHtml(title)}</strong>"? This cannot be undone.`,
-    confirmLabel: 'Delete',
+    title: 'Move to Trash',
+    message: `"<strong>${escapeHtml(title)}</strong>" will be moved to Trash and hidden from the website. You can restore it later.`,
+    confirmLabel: 'Move to Trash',
     danger: true,
     onConfirm: () => _doDeleteArticle(id)
   });
@@ -1490,8 +1491,126 @@ async function _doDeleteArticle(id) {
     if (!res.ok) throw new Error(data.error || 'Failed');
     _allArticles = _allArticles.filter(a => a.id !== id);
     renderArticlesTable(_allArticles);
-    _showAdminToast('Article deleted', 'success');
+    _loadArticleTrash();
+    _showAdminToast('Article moved to Trash', 'success');
   } catch(e) { _showAdminToast(e.message, 'error'); }
+}
+
+function restoreArticleConfirm(id, title) {
+  _confirmModal({
+    title: 'Restore Article',
+    message: `Restore "<strong>${escapeHtml(title)}</strong>"? It will become visible again based on its current status.`,
+    confirmLabel: 'Restore',
+    danger: false,
+    onConfirm: () => _doRestoreArticle(id)
+  });
+}
+
+async function _doRestoreArticle(id) {
+  try {
+    const res = await fetch('/api/articles?action=restore&id=' + id, {
+      method: 'PATCH', headers: { 'Authorization': 'Bearer ' + window.PRIVATIAN_TOKEN }
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed');
+    _showAdminToast('Article restored', 'success');
+    await initArticlesPage();
+    _loadArticleTrash();
+  } catch(e) { _showAdminToast(e.message, 'error'); }
+}
+
+function permanentDeleteArticleConfirm(id, title) {
+  _confirmModal({
+    title: 'Permanently Delete',
+    message: `<strong>\u26A0\uFE0F This cannot be undone.</strong><br><br>Permanently delete "<strong>${escapeHtml(title)}</strong>"? The article will be gone forever.`,
+    confirmLabel: 'Delete Forever',
+    danger: true,
+    onConfirm: () => _doPermanentDeleteArticle(id)
+  });
+}
+
+async function _doPermanentDeleteArticle(id) {
+  try {
+    const res = await fetch('/api/articles?action=delete&id=' + id + '&mode=permanent', {
+      method: 'DELETE', headers: { 'Authorization': 'Bearer ' + window.PRIVATIAN_TOKEN }
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed');
+    _showAdminToast('Article permanently deleted', 'success');
+    _loadArticleTrash();
+  } catch(e) { _showAdminToast(e.message, 'error'); }
+}
+
+let _currentArticlesView = 'active';
+
+function switchArticlesView(view) {
+  _currentArticlesView = view;
+  const activePanel = document.getElementById('art-active-panel');
+  const trashPanel  = document.getElementById('art-trash-panel');
+  const activeBtn   = document.getElementById('art-view-active');
+  const trashBtn    = document.getElementById('art-view-trash');
+  if (view === 'trash') {
+    if (activePanel) activePanel.style.display = 'none';
+    if (trashPanel)  trashPanel.style.display  = '';
+    if (activeBtn) { activeBtn.style.background='#fff'; activeBtn.style.color='#374151'; activeBtn.style.borderColor='#e5e7eb'; }
+    if (trashBtn)  { trashBtn.style.background='#fee2e2'; }
+    _loadArticleTrash();
+  } else {
+    if (activePanel) activePanel.style.display = '';
+    if (trashPanel)  trashPanel.style.display  = 'none';
+    if (activeBtn) { activeBtn.style.background='#0a528e'; activeBtn.style.color='#fff'; activeBtn.style.borderColor='#0a528e'; }
+    if (trashBtn)  { trashBtn.style.background='#fff'; }
+  }
+}
+
+async function _loadArticleTrash() {
+  const tbody   = document.getElementById('art-trash-tbody');
+  const table   = document.getElementById('art-trash-table');
+  const empty   = document.getElementById('art-trash-empty');
+  const loading = document.getElementById('art-trash-loading');
+  const count   = document.getElementById('art-trash-count');
+  if (!tbody) return;
+  if (loading) loading.style.display = 'block';
+  if (table)  table.style.display   = 'none';
+  if (empty)  empty.style.display   = 'none';
+  try {
+    const res  = await fetch('/api/articles?action=trash', {
+      headers: { 'Authorization': 'Bearer ' + window.PRIVATIAN_TOKEN }
+    });
+    const arts = await res.json();
+    if (count) count.textContent = arts.length || '0';
+    if (loading) loading.style.display = 'none';
+    if (!arts || arts.length === 0) { if (empty) empty.style.display = 'block'; return; }
+    if (table) table.style.display = 'table';
+    const fmt = iso => iso ? new Date(iso).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : '—';
+    tbody.innerHTML = arts.map(a => {
+      const thumb = a.hero_img_url
+        ? `<img src="${escapeHtml(a.hero_img_url)}" alt="" style="width:40px;height:30px;object-fit:cover;border-radius:3px;flex-shrink:0;opacity:.7;" loading="lazy"/>`
+        : `<div style="width:40px;height:30px;border-radius:3px;background:#f3e8e8;flex-shrink:0;"></div>`;
+      return `<tr style="border-bottom:1px solid #fef2f2;background:#fffafa;">
+        <td style="padding:10px 16px;"><div style="display:flex;align-items:center;gap:10px;">${thumb}<div style="font-size:13px;font-weight:600;color:#6b7280;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:260px;">${escapeHtml(a.title||'Untitled')}</div></div></td>
+        <td style="padding:10px 16px;font-size:12px;color:#9ca3af;">${escapeHtml(a.section||'—')}</td>
+        <td style="padding:10px 16px;font-size:12px;color:#9ca3af;">${fmt(a.deleted_at)}</td>
+        <td style="padding:10px 16px;text-align:right;">
+          <div style="display:flex;align-items:center;justify-content:flex-end;gap:6px;">
+            <button onclick="restoreArticleConfirm('${a.id}','${escapeHtml((a.title||'Untitled').replace(/'/g,"\\'"))}')"
+              style="display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border-radius:6px;font-size:12px;font-weight:600;background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0;cursor:pointer;"
+              onmouseover="this.style.background='#16a34a';this.style.color='#fff'"
+              onmouseout="this.style.background='#f0fdf4';this.style.color='#16a34a'">↩ Restore</button>
+            <button onclick="permanentDeleteArticleConfirm('${a.id}','${escapeHtml((a.title||'Untitled').replace(/'/g,"\\'"))}')"
+              style="display:inline-flex;align-items:center;gap:4px;padding:5px 9px;border-radius:6px;font-size:12px;font-weight:600;background:#fff;color:#dc2626;border:1px solid #fee2e2;cursor:pointer;"
+              onmouseover="this.style.background='#dc2626';this.style.color='#fff'"
+              onmouseout="this.style.background='#fff';this.style.color='#dc2626'">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+            </button>
+          </div>
+        </td>
+      </tr>`;
+    }).join('');
+  } catch(e) {
+    if (loading) loading.style.display = 'none';
+    if (empty) { empty.style.display='block'; empty.querySelector('p').textContent='Could not load trash.'; }
+  }
 }
 
 // Handle direct navigation via hash (e.g. admin.html#articles)
