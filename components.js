@@ -173,7 +173,7 @@
         <ul class="menu-section-list" id="menu-section-list"></ul>
       </div>
       <div class="menu-col" id="mo-col-series-explore">
-        <h2 class="menu-section-title" id="mo-title-series"><span class="menu-icon-book">&#128214;</span> Featured series</h2>
+        <h2 class="menu-section-title" id="mo-title-series"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:text-bottom;margin-right:4px;"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg> Featured series</h2>
         <div id="mo-series-list"></div>
         <hr class="menu-divider" />
         <h2 class="menu-explore-title" id="mo-title-explore">Explore the Privatian</h2>
@@ -408,7 +408,7 @@
     // 2. Column 2: Featured Series
     var titleSeriesEl = document.getElementById('mo-title-series');
     if (titleSeriesEl) {
-      titleSeriesEl.innerHTML = '<span class="menu-icon-book">&#128214;</span> ' + escapeHTML(menuConfig.seriesTitle || 'Featured series');
+      titleSeriesEl.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:text-bottom;margin-right:4px;"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg> ' + escapeHTML(menuConfig.seriesTitle || 'Featured series');
     }
     var seriesListEl = document.getElementById('mo-series-list');
     if (seriesListEl) {

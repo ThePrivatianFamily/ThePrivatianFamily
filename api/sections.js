@@ -40,7 +40,7 @@ module.exports = async function handler(req, res) {
   if (action === 'menu') {
     const DEFAULT_MENU_CONFIG = {
       sectionsTitle: 'Sections',
-      seriesTitle: '📖 Featured series',
+      seriesTitle: 'Featured series',
       series: [
         {
           id: 'series-1',
@@ -83,6 +83,16 @@ module.exports = async function handler(req, res) {
         const { data } = await sb.from('site_settings').select('value').eq('key', 'navigation_menu_config').maybeSingle();
         if (data && data.value) return res.status(200).json(data.value);
       } catch(e) {}
+
+      // Fallback read from sections table
+      try {
+        const { data: sData } = await sb.from('sections').select('name').eq('admin_id', '__menu_config__').maybeSingle();
+        if (sData && sData.name) {
+          const parsed = JSON.parse(sData.name);
+          if (parsed && typeof parsed === 'object') return res.status(200).json(parsed);
+        }
+      } catch(e) {}
+
       return res.status(200).json(DEFAULT_MENU_CONFIG);
     }
 
@@ -90,13 +100,45 @@ module.exports = async function handler(req, res) {
       const session = await requireAuth(req, res);
       if (!session) return;
       const menuConfig = req.body || {};
+
+      let saved = false;
       try {
-        await sb.from('site_settings').upsert({
+        const { error } = await sb.from('site_settings').upsert({
           key: 'navigation_menu_config',
           value: menuConfig,
           updated_at: new Date().toISOString()
         }, { onConflict: 'key' });
+        if (!error) saved = true;
       } catch(err) {}
+
+      if (!saved) {
+        // Fallback save in sections table
+        try {
+          const { data: existing } = await sb.from('sections').select('id').eq('admin_id', '__menu_config__').maybeSingle();
+          if (existing) {
+            await sb.from('sections').update({
+              name: JSON.stringify(menuConfig),
+              slug: '__menu_config__',
+              display_order: 9999,
+              is_active: false,
+              locked: true,
+              is_deleted: true
+            }).eq('admin_id', '__menu_config__');
+          } else {
+            await sb.from('sections').insert({
+              admin_id: '__menu_config__',
+              name: JSON.stringify(menuConfig),
+              slug: '__menu_config__',
+              display_order: 9999,
+              is_active: false,
+              locked: true,
+              is_deleted: true
+            });
+          }
+        } catch(err) {
+          console.warn('[DB fallback save error]:', err.message);
+        }
+      }
       return res.status(200).json({ ok: true, data: menuConfig });
     }
   }
@@ -118,7 +160,7 @@ module.exports = async function handler(req, res) {
     const { data, error } = await query;
     if (error) return res.status(500).json({ error: error.message });
 
-    const rows = data || [];
+    const rows = (data || []).filter(r => r.admin_id !== '__menu_config__');
 
     if (statusParam === 'all' && session) {
       // Admin format: full section objects

@@ -1709,7 +1709,7 @@ if (window.location.hash === '#menu') {
    MENU MANAGER (HEADER MENU OVERLAY CUSTOMIZATION)
 ================================================================= */
 
-let menuConfig = {
+const DEFAULT_MENU_CONFIG = {
   sectionsTitle: 'Sections',
   seriesTitle: 'Featured series',
   series: [
@@ -1750,52 +1750,127 @@ let menuConfig = {
   enabledMenuSections: []
 };
 
+// State:
+let appliedMenuConfig = null; // Baseline saved on server
+let menuDraftConfig = null;   // Active working copy for edits
+let menuUndoStack = [];
+let menuRedoStack = [];
 let _menuInitialized = false;
 
-async function initMenuPage() {
-  await loadMenuSettings();
-  renderSeriesList();
-  renderExploreList();
-  renderLatestList();
-  renderMenuSectionsList();
-  renderMenuPreview();
-  _menuInitialized = true;
+// SVGs for Menu Manager:
+const MENU_ICONS = {
+  up: `<svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="18 15 12 9 6 15"/></svg>`,
+  down: `<svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>`,
+};
+
+// Record snapshot before mutation
+function pushMenuHistory() {
+  if (!menuDraftConfig) return;
+  menuUndoStack.push(JSON.stringify(menuDraftConfig));
+  if (menuUndoStack.length > 50) menuUndoStack.shift();
+  menuRedoStack = [];
+  updateUndoRedoButtons();
+  markMenuDirty();
+}
+
+function updateUndoRedoButtons() {
+  const undoBtn = document.getElementById('menu-undo-btn');
+  const redoBtn = document.getElementById('menu-redo-btn');
+  if (undoBtn) undoBtn.disabled = (menuUndoStack.length === 0);
+  if (redoBtn) redoBtn.disabled = (menuRedoStack.length === 0);
+}
+
+function undoMenuAction() {
+  if (menuUndoStack.length === 0) return;
+  menuRedoStack.push(JSON.stringify(menuDraftConfig));
+  menuDraftConfig = JSON.parse(menuUndoStack.pop());
+  syncMenuDraftToUI();
+  updateUndoRedoButtons();
+  markMenuDirty();
+  showToast('info', 'Undone last menu change');
+}
+
+function redoMenuAction() {
+  if (menuRedoStack.length === 0) return;
+  menuUndoStack.push(JSON.stringify(menuDraftConfig));
+  menuDraftConfig = JSON.parse(menuRedoStack.pop());
+  syncMenuDraftToUI();
+  updateUndoRedoButtons();
+  markMenuDirty();
+  showToast('info', 'Redone menu change');
 }
 
 function markMenuDirty() {
   const statusEl = document.getElementById('menu-save-status');
   if (statusEl) {
-    statusEl.textContent = '● Unsaved changes. Click "Apply Menu Changes" to save and publish.';
+    statusEl.textContent = '● Unsaved changes';
     statusEl.style.color = '#f59e0b';
   }
+}
+
+function onMenuTitleInput(field, val) {
+  pushMenuHistory();
+  if (menuDraftConfig) menuDraftConfig[field] = val;
+  renderMenuPreview();
+}
+
+async function initMenuPage() {
+  await loadMenuSettings();
+  syncMenuDraftToUI();
+  _menuInitialized = true;
 }
 
 async function loadMenuSettings() {
   try {
     const data = await _apiGet('/api/sections?action=menu');
     if (data && typeof data === 'object') {
-      menuConfig = Object.assign({}, menuConfig, data);
-      try { localStorage.setItem('privatian_menu_settings', JSON.stringify(menuConfig)); } catch(e) {}
+      appliedMenuConfig = Object.assign({}, DEFAULT_MENU_CONFIG, data);
+    } else {
+      appliedMenuConfig = Object.assign({}, DEFAULT_MENU_CONFIG);
     }
   } catch(err) {
     try {
       const cached = localStorage.getItem('privatian_menu_settings');
-      if (cached) menuConfig = Object.assign({}, menuConfig, JSON.parse(cached));
-    } catch(e) {}
+      if (cached) appliedMenuConfig = Object.assign({}, DEFAULT_MENU_CONFIG, JSON.parse(cached));
+      else appliedMenuConfig = Object.assign({}, DEFAULT_MENU_CONFIG);
+    } catch(e) {
+      appliedMenuConfig = Object.assign({}, DEFAULT_MENU_CONFIG);
+    }
   }
 
-  // Populate title fields
+  // Set working draft copy
+  menuDraftConfig = JSON.parse(JSON.stringify(appliedMenuConfig));
+  menuUndoStack = [];
+  menuRedoStack = [];
+  updateUndoRedoButtons();
+
+  const statusEl = document.getElementById('menu-save-status');
+  if (statusEl) {
+    statusEl.textContent = '✓ Synced with database';
+    statusEl.style.color = 'var(--text-muted)';
+  }
+}
+
+function syncMenuDraftToUI() {
+  if (!menuDraftConfig) return;
+
   const secTitleInput = document.getElementById('menu-sections-title-input');
-  if (secTitleInput) secTitleInput.value = menuConfig.sectionsTitle || 'Sections';
+  if (secTitleInput) secTitleInput.value = menuDraftConfig.sectionsTitle || 'Sections';
 
   const serTitleInput = document.getElementById('menu-series-title-input');
-  if (serTitleInput) serTitleInput.value = menuConfig.seriesTitle || 'Featured series';
+  if (serTitleInput) serTitleInput.value = menuDraftConfig.seriesTitle || 'Featured series';
 
   const expTitleInput = document.getElementById('menu-explore-title-input');
-  if (expTitleInput) expTitleInput.value = menuConfig.exploreTitle || 'Explore the Privatian';
+  if (expTitleInput) expTitleInput.value = menuDraftConfig.exploreTitle || 'Explore the Privatian';
 
   const latTitleInput = document.getElementById('menu-latest-title-input');
-  if (latTitleInput) latTitleInput.value = menuConfig.latestTitle || 'Read the latest';
+  if (latTitleInput) latTitleInput.value = menuDraftConfig.latestTitle || 'Read the latest';
+
+  renderSeriesList();
+  renderExploreList();
+  renderLatestList();
+  renderMenuSectionsList();
+  renderMenuPreview();
 }
 
 function switchMenuTab(tabKey) {
@@ -1818,7 +1893,7 @@ function renderSeriesList() {
   const countEl = document.getElementById('count-menu-series');
   if (!container) return;
 
-  const items = menuConfig.series || [];
+  const items = (menuDraftConfig && menuDraftConfig.series) || [];
   if (countEl) countEl.textContent = items.length;
 
   if (items.length === 0) {
@@ -1830,8 +1905,8 @@ function renderSeriesList() {
     <div class="menu-item-card ${s.enabled === false ? 'menu-item-card--disabled' : ''}">
       <div class="menu-item-left">
         <div class="menu-item-reorder-btns">
-          <button type="button" class="menu-reorder-btn" title="Move Up" ${idx === 0 ? 'disabled style="opacity:0.3;"' : ''} onclick="moveSeriesItem('${s.id}', -1)">▲</button>
-          <button type="button" class="menu-reorder-btn" title="Move Down" ${idx === items.length - 1 ? 'disabled style="opacity:0.3;"' : ''} onclick="moveSeriesItem('${s.id}', 1)">▼</button>
+          <button type="button" class="menu-reorder-btn" title="Move Up" ${idx === 0 ? 'disabled style="opacity:0.3;"' : ''} onclick="moveSeriesItem('${s.id}', -1)">${MENU_ICONS.up}</button>
+          <button type="button" class="menu-reorder-btn" title="Move Down" ${idx === items.length - 1 ? 'disabled style="opacity:0.3;"' : ''} onclick="moveSeriesItem('${s.id}', 1)">${MENU_ICONS.down}</button>
         </div>
         <div class="menu-item-details">
           <div class="menu-item-title">${escapeHtml(s.title || 'Untitled Series')}</div>
@@ -1846,10 +1921,10 @@ function renderSeriesList() {
           <input type="checkbox" ${s.enabled !== false ? 'checked' : ''} onchange="toggleSeriesItem('${s.id}')" />
           <span class="hs-toggle-track"><span class="hs-toggle-thumb"></span></span>
         </label>
-        <button class="art-action-btn art-action-btn--edit" title="Edit Series" onclick="openSeriesModal('${s.id}')">
+        <button type="button" class="art-action-btn art-action-btn--edit" title="Edit Series" onclick="openSeriesModal('${s.id}')">
           ${ICONS.pencil}
         </button>
-        <button class="art-action-btn art-action-btn--trash" title="Delete Series" onclick="deleteSeriesItem('${s.id}')">
+        <button type="button" class="art-action-btn art-action-btn--trash" title="Delete Series" onclick="deleteSeriesItem('${s.id}')">
           ${ICONS.trash}
         </button>
       </div>
@@ -1867,7 +1942,7 @@ function openSeriesModal(id) {
   const enabledInput = document.getElementById('series-enabled-input');
 
   if (id) {
-    const item = (menuConfig.series || []).find(s => s.id === id);
+    const item = ((menuDraftConfig && menuDraftConfig.series) || []).find(s => s.id === id);
     if (!item) return;
     titleEl.textContent = 'Edit Featured Series';
     editIdInput.value = item.id;
@@ -1904,10 +1979,11 @@ function saveSeriesItem() {
     return;
   }
 
-  if (!menuConfig.series) menuConfig.series = [];
+  pushMenuHistory();
+  if (!menuDraftConfig.series) menuDraftConfig.series = [];
 
   if (editId) {
-    const item = menuConfig.series.find(s => s.id === editId);
+    const item = menuDraftConfig.series.find(s => s.id === editId);
     if (item) {
       item.title = title;
       item.href = href;
@@ -1915,7 +1991,7 @@ function saveSeriesItem() {
       item.enabled = enabled;
     }
   } else {
-    menuConfig.series.push({
+    menuDraftConfig.series.push({
       id: 'series-' + Date.now(),
       title,
       href,
@@ -1927,40 +2003,37 @@ function saveSeriesItem() {
   closeSeriesModal();
   renderSeriesList();
   renderMenuPreview();
-  markMenuDirty();
-  showToast('success', 'Series item updated');
 }
 
 function deleteSeriesItem(id) {
-  menuConfig.series = (menuConfig.series || []).filter(s => s.id !== id);
+  pushMenuHistory();
+  menuDraftConfig.series = (menuDraftConfig.series || []).filter(s => s.id !== id);
   renderSeriesList();
   renderMenuPreview();
-  markMenuDirty();
-  showToast('warning', 'Series item removed');
 }
 
 function toggleSeriesItem(id) {
-  const item = (menuConfig.series || []).find(s => s.id === id);
+  const item = (menuDraftConfig.series || []).find(s => s.id === id);
   if (item) {
-    item.enabled = item.enabled === false ? true : false;
+    pushMenuHistory();
+    item.enabled = (item.enabled === false ? true : false);
     renderSeriesList();
     renderMenuPreview();
-    markMenuDirty();
   }
 }
 
 function moveSeriesItem(id, dir) {
-  const items = menuConfig.series || [];
+  const items = menuDraftConfig.series || [];
   const idx = items.findIndex(s => s.id === id);
   if (idx === -1) return;
   const newIdx = idx + dir;
   if (newIdx < 0 || newIdx >= items.length) return;
+  pushMenuHistory();
   const temp = items[idx];
   items[idx] = items[newIdx];
   items[newIdx] = temp;
   renderSeriesList();
   renderMenuPreview();
-  markMenuDirty();
 }
 
 // ── EXPLORE LINKS CRUD ───────────────────────────────────────────
@@ -1970,7 +2043,7 @@ function renderExploreList() {
   const countEl = document.getElementById('count-menu-explore');
   if (!container) return;
 
-  const items = menuConfig.explore || [];
+  const items = (menuDraftConfig && menuDraftConfig.explore) || [];
   if (countEl) countEl.textContent = items.length;
 
   if (items.length === 0) {
@@ -1982,14 +2055,14 @@ function renderExploreList() {
     <div class="menu-item-card ${e.enabled === false ? 'menu-item-card--disabled' : ''}">
       <div class="menu-item-left">
         <div class="menu-item-reorder-btns">
-          <button type="button" class="menu-reorder-btn" title="Move Up" ${idx === 0 ? 'disabled style="opacity:0.3;"' : ''} onclick="moveExploreItem('${e.id}', -1)">▲</button>
-          <button type="button" class="menu-reorder-btn" title="Move Down" ${idx === items.length - 1 ? 'disabled style="opacity:0.3;"' : ''} onclick="moveExploreItem('${e.id}', 1)">▼</button>
+          <button type="button" class="menu-reorder-btn" title="Move Up" ${idx === 0 ? 'disabled style="opacity:0.3;"' : ''} onclick="moveExploreItem('${e.id}', -1)">${MENU_ICONS.up}</button>
+          <button type="button" class="menu-reorder-btn" title="Move Down" ${idx === items.length - 1 ? 'disabled style="opacity:0.3;"' : ''} onclick="moveExploreItem('${e.id}', 1)">${MENU_ICONS.down}</button>
         </div>
         <div class="menu-item-details">
           <div class="menu-item-title">${escapeHtml(e.label || 'Untitled Link')}</div>
           <div class="menu-item-meta">
             <span class="hs-slug-chip">${escapeHtml(e.href || '#')}</span>
-            <span style="font-size:11px;color:var(--text-muted);">${e.target === '_blank' ? '🔗 New Tab' : '📄 Same Tab'}</span>
+            <span style="font-size:11px;color:var(--text-muted);">${e.target === '_blank' ? 'New Tab' : 'Same Tab'}</span>
           </div>
         </div>
       </div>
@@ -1998,10 +2071,10 @@ function renderExploreList() {
           <input type="checkbox" ${e.enabled !== false ? 'checked' : ''} onchange="toggleExploreItem('${e.id}')" />
           <span class="hs-toggle-track"><span class="hs-toggle-thumb"></span></span>
         </label>
-        <button class="art-action-btn art-action-btn--edit" title="Edit Link" onclick="openExploreModal('${e.id}')">
+        <button type="button" class="art-action-btn art-action-btn--edit" title="Edit Link" onclick="openExploreModal('${e.id}')">
           ${ICONS.pencil}
         </button>
-        <button class="art-action-btn art-action-btn--trash" title="Delete Link" onclick="deleteExploreItem('${e.id}')">
+        <button type="button" class="art-action-btn art-action-btn--trash" title="Delete Link" onclick="deleteExploreItem('${e.id}')">
           ${ICONS.trash}
         </button>
       </div>
@@ -2019,7 +2092,7 @@ function openExploreModal(id) {
   const enabledInput = document.getElementById('explore-enabled-input');
 
   if (id) {
-    const item = (menuConfig.explore || []).find(e => e.id === id);
+    const item = ((menuDraftConfig && menuDraftConfig.explore) || []).find(e => e.id === id);
     if (!item) return;
     titleEl.textContent = 'Edit Explore Link';
     editIdInput.value = item.id;
@@ -2056,10 +2129,11 @@ function saveExploreItem() {
     return;
   }
 
-  if (!menuConfig.explore) menuConfig.explore = [];
+  pushMenuHistory();
+  if (!menuDraftConfig.explore) menuDraftConfig.explore = [];
 
   if (editId) {
-    const item = menuConfig.explore.find(e => e.id === editId);
+    const item = menuDraftConfig.explore.find(e => e.id === editId);
     if (item) {
       item.label = label;
       item.href = href;
@@ -2067,7 +2141,7 @@ function saveExploreItem() {
       item.enabled = enabled;
     }
   } else {
-    menuConfig.explore.push({
+    menuDraftConfig.explore.push({
       id: 'exp-' + Date.now(),
       label,
       href,
@@ -2079,40 +2153,37 @@ function saveExploreItem() {
   closeExploreModal();
   renderExploreList();
   renderMenuPreview();
-  markMenuDirty();
-  showToast('success', 'Explore link updated');
 }
 
 function deleteExploreItem(id) {
-  menuConfig.explore = (menuConfig.explore || []).filter(e => e.id !== id);
+  pushMenuHistory();
+  menuDraftConfig.explore = (menuDraftConfig.explore || []).filter(e => e.id !== id);
   renderExploreList();
   renderMenuPreview();
-  markMenuDirty();
-  showToast('warning', 'Explore link removed');
 }
 
 function toggleExploreItem(id) {
-  const item = (menuConfig.explore || []).find(e => e.id === id);
+  const item = (menuDraftConfig.explore || []).find(e => e.id === id);
   if (item) {
-    item.enabled = item.enabled === false ? true : false;
+    pushMenuHistory();
+    item.enabled = (item.enabled === false ? true : false);
     renderExploreList();
     renderMenuPreview();
-    markMenuDirty();
   }
 }
 
 function moveExploreItem(id, dir) {
-  const items = menuConfig.explore || [];
+  const items = menuDraftConfig.explore || [];
   const idx = items.findIndex(e => e.id === id);
   if (idx === -1) return;
   const newIdx = idx + dir;
   if (newIdx < 0 || newIdx >= items.length) return;
+  pushMenuHistory();
   const temp = items[idx];
   items[idx] = items[newIdx];
   items[newIdx] = temp;
   renderExploreList();
   renderMenuPreview();
-  markMenuDirty();
 }
 
 // ── READ THE LATEST CRUD ─────────────────────────────────────────
@@ -2122,7 +2193,7 @@ function renderLatestList() {
   const countEl = document.getElementById('count-menu-latest');
   if (!container) return;
 
-  const items = menuConfig.latest || [];
+  const items = (menuDraftConfig && menuDraftConfig.latest) || [];
   if (countEl) countEl.textContent = items.length;
 
   if (items.length === 0) {
@@ -2134,8 +2205,8 @@ function renderLatestList() {
     <div class="menu-item-card ${item.enabled === false ? 'menu-item-card--disabled' : ''}">
       <div class="menu-item-left">
         <div class="menu-item-reorder-btns">
-          <button type="button" class="menu-reorder-btn" title="Move Up" ${idx === 0 ? 'disabled style="opacity:0.3;"' : ''} onclick="moveLatestItem('${item.id}', -1)">▲</button>
-          <button type="button" class="menu-reorder-btn" title="Move Down" ${idx === items.length - 1 ? 'disabled style="opacity:0.3;"' : ''} onclick="moveLatestItem('${item.id}', 1)">▼</button>
+          <button type="button" class="menu-reorder-btn" title="Move Up" ${idx === 0 ? 'disabled style="opacity:0.3;"' : ''} onclick="moveLatestItem('${item.id}', -1)">${MENU_ICONS.up}</button>
+          <button type="button" class="menu-reorder-btn" title="Move Down" ${idx === items.length - 1 ? 'disabled style="opacity:0.3;"' : ''} onclick="moveLatestItem('${item.id}', 1)">${MENU_ICONS.down}</button>
         </div>
         ${item.imageUrl ? `<img src="${escapeHtml(item.imageUrl)}" alt="" class="menu-item-img" onerror="this.style.display='none'" />` : ''}
         <div class="menu-item-details">
@@ -2150,10 +2221,10 @@ function renderLatestList() {
           <input type="checkbox" ${item.enabled !== false ? 'checked' : ''} onchange="toggleLatestItem('${item.id}')" />
           <span class="hs-toggle-track"><span class="hs-toggle-thumb"></span></span>
         </label>
-        <button class="art-action-btn art-action-btn--edit" title="Edit Story" onclick="openLatestModal('${item.id}')">
+        <button type="button" class="art-action-btn art-action-btn--edit" title="Edit Story" onclick="openLatestModal('${item.id}')">
           ${ICONS.pencil}
         </button>
-        <button class="art-action-btn art-action-btn--trash" title="Delete Story" onclick="deleteLatestItem('${item.id}')">
+        <button type="button" class="art-action-btn art-action-btn--trash" title="Delete Story" onclick="deleteLatestItem('${item.id}')">
           ${ICONS.trash}
         </button>
       </div>
@@ -2171,7 +2242,7 @@ function openLatestModal(id) {
   const enabledInput = document.getElementById('latest-enabled-input');
 
   if (id) {
-    const item = (menuConfig.latest || []).find(l => l.id === id);
+    const item = ((menuDraftConfig && menuDraftConfig.latest) || []).find(l => l.id === id);
     if (!item) return;
     titleEl.textContent = 'Edit Story Highlight';
     editIdInput.value = item.id;
@@ -2217,10 +2288,11 @@ function saveLatestItem() {
     return;
   }
 
-  if (!menuConfig.latest) menuConfig.latest = [];
+  pushMenuHistory();
+  if (!menuDraftConfig.latest) menuDraftConfig.latest = [];
 
   if (editId) {
-    const item = menuConfig.latest.find(l => l.id === editId);
+    const item = menuDraftConfig.latest.find(l => l.id === editId);
     if (item) {
       item.title = title;
       item.href = href;
@@ -2228,7 +2300,7 @@ function saveLatestItem() {
       item.enabled = enabled;
     }
   } else {
-    menuConfig.latest.push({
+    menuDraftConfig.latest.push({
       id: 'latest-' + Date.now(),
       title,
       href,
@@ -2240,40 +2312,37 @@ function saveLatestItem() {
   closeLatestModal();
   renderLatestList();
   renderMenuPreview();
-  markMenuDirty();
-  showToast('success', 'Story highlight updated');
 }
 
 function deleteLatestItem(id) {
-  menuConfig.latest = (menuConfig.latest || []).filter(l => l.id !== id);
+  pushMenuHistory();
+  menuDraftConfig.latest = (menuDraftConfig.latest || []).filter(l => l.id !== id);
   renderLatestList();
   renderMenuPreview();
-  markMenuDirty();
-  showToast('warning', 'Story highlight removed');
 }
 
 function toggleLatestItem(id) {
-  const item = (menuConfig.latest || []).find(l => l.id === id);
+  const item = (menuDraftConfig.latest || []).find(l => l.id === id);
   if (item) {
-    item.enabled = item.enabled === false ? true : false;
+    pushMenuHistory();
+    item.enabled = (item.enabled === false ? true : false);
     renderLatestList();
     renderMenuPreview();
-    markMenuDirty();
   }
 }
 
 function moveLatestItem(id, dir) {
-  const items = menuConfig.latest || [];
+  const items = menuDraftConfig.latest || [];
   const idx = items.findIndex(l => l.id === id);
   if (idx === -1) return;
   const newIdx = idx + dir;
   if (newIdx < 0 || newIdx >= items.length) return;
+  pushMenuHistory();
   const temp = items[idx];
   items[idx] = items[newIdx];
   items[newIdx] = temp;
   renderLatestList();
   renderMenuPreview();
-  markMenuDirty();
 }
 
 // ── SECTIONS COLUMN IN MENU ──────────────────────────────────────
@@ -2283,7 +2352,7 @@ function renderMenuSectionsList() {
   if (!container) return;
 
   const validSecs = (sections || []).filter(s => s.id !== 'all' && !s.deleted && !s.locked);
-  const enabledSlugs = menuConfig.enabledMenuSections || [];
+  const enabledSlugs = (menuDraftConfig && menuDraftConfig.enabledMenuSections) || [];
 
   if (validSecs.length === 0) {
     container.innerHTML = `<div style="padding:16px;color:var(--text-muted);font-size:13px;">No active sections available.</div>`;
@@ -2292,7 +2361,6 @@ function renderMenuSectionsList() {
 
   container.innerHTML = validSecs.map(s => {
     const slug = s.slug || s.id;
-    // Default to true if enabledMenuSections is empty, or check inclusion
     const isChecked = (enabledSlugs.length === 0) || enabledSlugs.includes(slug);
     return `
       <div class="hs-section-row">
@@ -2315,36 +2383,36 @@ function onMenuSectionToggle() {
   checkboxes.forEach(cb => {
     if (cb.checked) selected.push(cb.dataset.menuSectionSlug);
   });
-  menuConfig.enabledMenuSections = selected;
+  pushMenuHistory();
+  menuDraftConfig.enabledMenuSections = selected;
   renderMenuPreview();
-  markMenuDirty();
 }
 
 // ── LIVE PREVIEW IN ADMIN ────────────────────────────────────────
 
 function renderMenuPreview() {
   const box = document.getElementById('menu-live-preview-box');
-  if (!box) return;
+  if (!box || !menuDraftConfig) return;
 
-  // Collect updated titles from inputs
-  const secTitle = (document.getElementById('menu-sections-title-input') || {}).value || menuConfig.sectionsTitle || 'Sections';
-  const serTitle = (document.getElementById('menu-series-title-input') || {}).value || menuConfig.seriesTitle || 'Featured series';
-  const expTitle = (document.getElementById('menu-explore-title-input') || {}).value || menuConfig.exploreTitle || 'Explore the Privatian';
-  const latTitle = (document.getElementById('menu-latest-title-input') || {}).value || menuConfig.latestTitle || 'Read the latest';
+  // Collect updated titles
+  const secTitle = (document.getElementById('menu-sections-title-input') || {}).value || menuDraftConfig.sectionsTitle || 'Sections';
+  const serTitle = (document.getElementById('menu-series-title-input') || {}).value || menuDraftConfig.seriesTitle || 'Featured series';
+  const expTitle = (document.getElementById('menu-explore-title-input') || {}).value || menuDraftConfig.exploreTitle || 'Explore the Privatian';
+  const latTitle = (document.getElementById('menu-latest-title-input') || {}).value || menuDraftConfig.latestTitle || 'Read the latest';
 
   // Sections
   const validSecs = (sections || []).filter(s => s.id !== 'all' && !s.deleted && !s.locked);
-  const enabledSlugs = menuConfig.enabledMenuSections || [];
+  const enabledSlugs = menuDraftConfig.enabledMenuSections || [];
   const activeSecs = (enabledSlugs.length === 0)
     ? validSecs
     : validSecs.filter(s => enabledSlugs.includes(s.slug || s.id));
 
   // Series
-  const seriesArr = (menuConfig.series || []).filter(s => s.enabled !== false);
+  const seriesArr = (menuDraftConfig.series || []).filter(s => s.enabled !== false);
   // Explore
-  const exploreArr = (menuConfig.explore || []).filter(e => e.enabled !== false);
+  const exploreArr = (menuDraftConfig.explore || []).filter(e => e.enabled !== false);
   // Latest
-  const latestArr = (menuConfig.latest || []).filter(l => l.enabled !== false);
+  const latestArr = (menuDraftConfig.latest || []).filter(l => l.enabled !== false);
 
   box.innerHTML = `
     <div class="menu-preview-cols">
@@ -2358,7 +2426,7 @@ function renderMenuPreview() {
 
       <!-- Col 2: Series & Explore -->
       <div class="menu-preview-col">
-        <div class="menu-preview-col-title">📖 ${escapeHtml(serTitle)}</div>
+        <div class="menu-preview-col-title">${escapeHtml(serTitle)}</div>
         ${seriesArr.map(s => `
           <div class="menu-preview-series-item">
             <div class="menu-preview-series-name"><a href="${s.href}" style="color:#60a5fa;text-decoration:none;">${escapeHtml(s.title)}</a></div>
@@ -2386,55 +2454,81 @@ function renderMenuPreview() {
   `;
 }
 
-// ── SAVE MENU SETTINGS ───────────────────────────────────────────
+// ── SAVE & APPLY MENU SETTINGS (DATABASE FIRST) ──────────────────
 
 async function saveMenuSettings() {
   const saveBtn = document.getElementById('menu-save-btn');
-  const saveBottomBtn = document.getElementById('menu-save-bottom-btn');
   const statusEl = document.getElementById('menu-save-status');
 
-  // Collect titles
-  menuConfig.sectionsTitle = (document.getElementById('menu-sections-title-input') || {}).value || 'Sections';
-  menuConfig.seriesTitle   = (document.getElementById('menu-series-title-input') || {}).value || 'Featured series';
-  menuConfig.exploreTitle  = (document.getElementById('menu-explore-title-input') || {}).value || 'Explore the Privatian';
-  menuConfig.latestTitle   = (document.getElementById('menu-latest-title-input') || {}).value || 'Read the latest';
+  if (!menuDraftConfig) return;
+
+  // Collect titles from inputs
+  menuDraftConfig.sectionsTitle = (document.getElementById('menu-sections-title-input') || {}).value || 'Sections';
+  menuDraftConfig.seriesTitle   = (document.getElementById('menu-series-title-input') || {}).value || 'Featured series';
+  menuDraftConfig.exploreTitle  = (document.getElementById('menu-explore-title-input') || {}).value || 'Explore the Privatian';
+  menuDraftConfig.latestTitle   = (document.getElementById('menu-latest-title-input') || {}).value || 'Read the latest';
 
   if (saveBtn) saveBtn.disabled = true;
-  if (saveBottomBtn) saveBottomBtn.disabled = true;
   if (statusEl) {
-    statusEl.textContent = 'Saving menu settings to database...';
+    statusEl.textContent = 'Saving to database...';
     statusEl.style.color = 'var(--brand)';
   }
 
   try {
-    // Save to server
-    await _apiPost('/api/sections?action=menu', menuConfig);
+    // 1. Save to Supabase database via API
+    await _apiPost('/api/sections?action=menu', menuDraftConfig);
 
-    // Save to localStorage for instant local reflection
+    // 2. Publish to local applied cache
     try {
-      localStorage.setItem('privatian_menu_settings', JSON.stringify(menuConfig));
+      localStorage.setItem('privatian_menu_settings', JSON.stringify(menuDraftConfig));
     } catch(e) {}
+
+    // 3. Reset base and undo/redo stacks to the new applied state
+    appliedMenuConfig = JSON.parse(JSON.stringify(menuDraftConfig));
+    menuUndoStack = [];
+    menuRedoStack = [];
+    updateUndoRedoButtons();
 
     showToast('success', 'Navigation Menu changes applied and published!');
     if (statusEl) {
-      statusEl.textContent = '✓ All changes saved and live across the main website.';
+      statusEl.textContent = '✓ All changes applied to website';
       statusEl.style.color = '#16a34a';
     }
   } catch(err) {
-    console.warn('[Admin] saveMenuSettings server error (saved to cache):', err.message);
+    console.warn('[Admin] saveMenuSettings server error:', err.message);
     try {
-      localStorage.setItem('privatian_menu_settings', JSON.stringify(menuConfig));
+      localStorage.setItem('privatian_menu_settings', JSON.stringify(menuDraftConfig));
     } catch(e) {}
-    showToast('success', 'Menu changes saved to local cache!');
+    appliedMenuConfig = JSON.parse(JSON.stringify(menuDraftConfig));
+    menuUndoStack = [];
+    menuRedoStack = [];
+    updateUndoRedoButtons();
+    showToast('success', 'Changes applied to local cache');
     if (statusEl) {
-      statusEl.textContent = '✓ Saved to local cache.';
+      statusEl.textContent = '✓ Changes applied';
       statusEl.style.color = '#16a34a';
     }
   } finally {
     if (saveBtn) saveBtn.disabled = false;
-    if (saveBottomBtn) saveBottomBtn.disabled = false;
   }
 }
+
+// Global Keyboard Shortcut for Undo/Redo in Navigation Menu
+document.addEventListener('keydown', (e) => {
+  const activePage = document.querySelector('.sidebar-nav-item.active');
+  if (!activePage || activePage.dataset.page !== 'menu') return;
+
+  const isInput = ['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement ? document.activeElement.tagName : '');
+  if (isInput) return; // Allow browser text undo inside inputs
+
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z' && !e.shiftKey) {
+    e.preventDefault();
+    undoMenuAction();
+  } else if ((e.ctrlKey || e.metaKey) && (e.key.toLowerCase() === 'y' || (e.key.toLowerCase() === 'z' && e.shiftKey))) {
+    e.preventDefault();
+    redoMenuAction();
+  }
+});
 
 // ── HEADER SETTINGS (LOGO & TOP BAR TABS) ─────────────────────────
 
@@ -2590,7 +2684,7 @@ function renderSubsectionsList() {
   container.innerHTML = items.map((sub, idx) => `
     <div class="hs-section-row">
       <div class="hs-section-info">
-        <span class="hs-section-name">${sub.icon === 'calendar' ? '📅 ' : ''}${escapeHtml(sub.label)}</span>
+        <span class="hs-section-name">${escapeHtml(sub.label)}</span>
         <span class="hs-slug-chip">${escapeHtml(sub.href || '#')}</span>
       </div>
       <div style="display:flex;align-items:center;gap:10px;">

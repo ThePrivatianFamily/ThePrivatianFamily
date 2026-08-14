@@ -267,7 +267,7 @@
                 <label class="form-label" for="hs-new-icon">Icon</label>
                 <select id="hs-new-icon" class="form-input">
                   <option value="">None</option>
-                  <option value="calendar">Calendar (📅)</option>
+                  <option value="calendar">Calendar Icon</option>
                 </select>
               </div>
               <div class="hs-add-form-btns">
@@ -292,14 +292,23 @@
 
     <!-- PAGE: NAVIGATION MENU -->
     <section class="page" id="page-menu">
-      <div class="menu-mgr-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+      <div class="menu-mgr-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:12px;">
         <div class="menu-mgr-title-wrap">
           <h1 class="page-title" style="font-size:22px;font-weight:700;color:var(--text-primary);margin:0 0 4px;">Navigation Menu</h1>
           <p class="page-subtitle" style="font-size:13px;color:var(--text-muted);margin:0;">Customize the 4 columns and all items inside the Header Menu Overlay</p>
         </div>
-        <div class="menu-mgr-actions">
-          <button class="btn btn--primary btn--sm" id="menu-save-btn" onclick="saveMenuSettings()">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="20 6 9 17 4 12"/></svg>
+        <div class="menu-mgr-actions" style="display:flex;align-items:center;gap:10px;">
+          <span id="menu-save-status" style="font-size:12.5px;color:var(--text-muted);font-weight:500;">✓ Synced with database</span>
+          <button type="button" class="btn btn--ghost btn--sm" id="menu-undo-btn" onclick="undoMenuAction()" title="Undo (Ctrl+Z)" disabled style="display:flex;align-items:center;gap:5px;padding:6px 11px;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+            Undo
+          </button>
+          <button type="button" class="btn btn--ghost btn--sm" id="menu-redo-btn" onclick="redoMenuAction()" title="Redo (Ctrl+Y)" disabled style="display:flex;align-items:center;gap:5px;padding:6px 11px;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+            Redo
+          </button>
+          <button type="button" class="btn btn--primary btn--sm" id="menu-save-btn" onclick="saveMenuSettings()" style="display:flex;align-items:center;gap:6px;padding:7px 16px;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" width="14" height="14"><polyline points="20 6 9 17 4 12"/></svg>
             Apply Menu Changes
           </button>
         </div>
@@ -308,22 +317,27 @@
       <!-- Tab Switcher inside Menu Page -->
       <div class="tab-bar menu-tab-bar" style="margin-bottom:20px;">
         <button class="tab-btn active" id="tab-menu-series" onclick="switchMenuTab('series')">
-          <span>📖 Featured Series</span>
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+          <span>Featured Series</span>
           <span class="tab-count" id="count-menu-series">0</span>
         </button>
         <button class="tab-btn" id="tab-menu-explore" onclick="switchMenuTab('explore')">
-          <span>🧭 Explore the Privatian</span>
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg>
+          <span>Explore the Privatian</span>
           <span class="tab-count" id="count-menu-explore">0</span>
         </button>
         <button class="tab-btn" id="tab-menu-latest" onclick="switchMenuTab('latest')">
-          <span>📰 Read the Latest</span>
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M19 20H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v1m2 13a2 2 0 0 1-2-2V7m2 13a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"/></svg>
+          <span>Read the Latest</span>
           <span class="tab-count" id="count-menu-latest">0</span>
         </button>
         <button class="tab-btn" id="tab-menu-sections" onclick="switchMenuTab('sections')">
-          <span>📂 Sections Column</span>
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+          <span>Sections Column</span>
         </button>
         <button class="tab-btn" id="tab-menu-preview" onclick="switchMenuTab('preview')">
-          <span>👁️ Live Menu Preview</span>
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          <span>Live Menu Preview</span>
         </button>
       </div>
 
@@ -332,7 +346,7 @@
         <div class="card" style="padding:22px;margin-bottom:20px;">
           <div class="form-group" style="margin-bottom:18px;">
             <label class="form-label" for="menu-series-title-input">Featured Series Section Title</label>
-            <input type="text" id="menu-series-title-input" class="form-input" placeholder="Featured series" value="Featured series" maxlength="50" oninput="markMenuDirty()" />
+            <input type="text" id="menu-series-title-input" class="form-input" placeholder="Featured series" value="Featured series" maxlength="50" oninput="onMenuTitleInput('seriesTitle', this.value)" />
           </div>
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
             <h3 style="font-size:14px;font-weight:700;color:var(--text-primary);margin:0;">Series Cards List</h3>
@@ -350,7 +364,7 @@
         <div class="card" style="padding:22px;margin-bottom:20px;">
           <div class="form-group" style="margin-bottom:18px;">
             <label class="form-label" for="menu-explore-title-input">Explore Section Title</label>
-            <input type="text" id="menu-explore-title-input" class="form-input" placeholder="Explore the Privatian" value="Explore the Privatian" maxlength="50" oninput="markMenuDirty()" />
+            <input type="text" id="menu-explore-title-input" class="form-input" placeholder="Explore the Privatian" value="Explore the Privatian" maxlength="50" oninput="onMenuTitleInput('exploreTitle', this.value)" />
           </div>
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
             <h3 style="font-size:14px;font-weight:700;color:var(--text-primary);margin:0;">Explore Links</h3>
@@ -368,7 +382,7 @@
         <div class="card" style="padding:22px;margin-bottom:20px;">
           <div class="form-group" style="margin-bottom:18px;">
             <label class="form-label" for="menu-latest-title-input">Read the Latest Section Title</label>
-            <input type="text" id="menu-latest-title-input" class="form-input" placeholder="Read the latest" value="Read the latest" maxlength="50" oninput="markMenuDirty()" />
+            <input type="text" id="menu-latest-title-input" class="form-input" placeholder="Read the latest" value="Read the latest" maxlength="50" oninput="onMenuTitleInput('latestTitle', this.value)" />
           </div>
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
             <h3 style="font-size:14px;font-weight:700;color:var(--text-primary);margin:0;">Curated Stories</h3>
@@ -386,7 +400,7 @@
         <div class="card" style="padding:22px;margin-bottom:20px;">
           <div class="form-group" style="margin-bottom:18px;">
             <label class="form-label" for="menu-sections-title-input">Sections Column Title</label>
-            <input type="text" id="menu-sections-title-input" class="form-input" placeholder="Sections" value="Sections" maxlength="50" oninput="markMenuDirty()" />
+            <input type="text" id="menu-sections-title-input" class="form-input" placeholder="Sections" value="Sections" maxlength="50" oninput="onMenuTitleInput('sectionsTitle', this.value)" />
           </div>
           <p class="hs-hint">Select which sections appear in the Menu Overlay Column 1. Sections are managed in the <strong>Sections</strong> tab.</p>
           <div id="menu-sections-list-container" class="hs-section-list"></div>
@@ -405,15 +419,6 @@
           </div>
           <div id="menu-live-preview-box" class="menu-live-preview-container"></div>
         </div>
-      </div>
-
-      <!-- Save Bar -->
-      <div class="hs-save-row" style="margin-top:20px;">
-        <button class="btn btn--apply" id="menu-save-bottom-btn" onclick="saveMenuSettings()">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg>
-          Apply Menu Changes to Main Website
-        </button>
-        <p class="hs-save-note" id="menu-save-status">Changes will be saved and rendered across all website pages.</p>
       </div>
     </section>
     <!-- PAGE: DASHBOARD (placeholder) -->
