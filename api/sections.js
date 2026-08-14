@@ -11,7 +11,7 @@
  */
 
 const { createClient } = require('@supabase/supabase-js');
-const { verifySession } = require('./_lib/auth');
+const { verifySession, requireAuth, requireAdmin } = require('./_lib/auth');
 
 function rowToAdminSection(row) {
   return {
@@ -67,12 +67,11 @@ module.exports = async function handler(req, res) {
     }
   }
 
-  // ── All mutations require auth ────────────────────────────────────────────
-  const session = verifySession(req);
-  if (!session) return res.status(401).json({ error: 'Not authenticated', redirect: '/admin-login.html' });
-
   // ── POST: create section ─────────────────────────────────────────────────
   if (req.method === 'POST') {
+    const session = requireAuth(req, res);
+    if (!session) return;
+
     const body = req.body || {};
     const name    = (body.name   || '').trim();
     const slug    = (body.slug   || '').trim();
@@ -105,6 +104,9 @@ module.exports = async function handler(req, res) {
 
   // ── PUT: rename / re-slug ────────────────────────────────────────────────
   if (req.method === 'PUT') {
+    const session = requireAuth(req, res);
+    if (!session) return;
+
     const id   = req.query && req.query.id;
     const body = req.body || {};
     const name = (body.name || '').trim();
@@ -124,6 +126,9 @@ module.exports = async function handler(req, res) {
 
   // ── PATCH: restore from trash ─────────────────────────────────────────────
   if (req.method === 'PATCH') {
+    const session = requireAuth(req, res);
+    if (!session) return;
+
     const id = req.query && req.query.id;
     if (!id) return res.status(400).json({ error: 'id (admin_id) is required' });
 
@@ -143,12 +148,19 @@ module.exports = async function handler(req, res) {
     if (!id) return res.status(400).json({ error: 'id (admin_id) is required' });
 
     if (mode === 'permanent') {
+      // Hard delete — STRICTLY Admin only with live DB check
+      const session = await requireAdmin(req, res);
+      if (!session) return;
+
       const { error } = await sb.from('sections').delete().eq('admin_id', id);
       if (error) return res.status(500).json({ error: error.message });
       return res.status(200).json({ ok: true });
     }
 
     // Soft delete (move to trash)
+    const session = requireAuth(req, res);
+    if (!session) return;
+
     const { data, error } = await sb.from('sections')
       .update({ is_active: false, is_deleted: true, deleted_at: new Date().toISOString() })
       .eq('admin_id', id)

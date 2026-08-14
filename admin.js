@@ -217,8 +217,12 @@ function renderTrash(trash) {
   }
   trashEmpty.hidden = true;
 
+  const isAdmin = Boolean(window.PRIVATIAN_USER && window.PRIVATIAN_USER.role === 'Admin');
   trash.forEach(s => {
     const tr = document.createElement('tr');
+    const permBtn = isAdmin
+      ? `<button class="action-btn action-btn--perm-delete" data-id="${s.id}" title="Delete permanently (Admin only)" aria-label="Permanently delete ${escapeHtml(s.name)}">${ICONS.xCircle}</button>`
+      : '';
     tr.innerHTML = `
       <td>
         <div class="section-name-cell" style="color: var(--text-muted); text-decoration: line-through;">
@@ -230,7 +234,7 @@ function renderTrash(trash) {
       <td>
         <div class="action-group">
           <button class="action-btn action-btn--restore" data-id="${s.id}" title="Restore section" aria-label="Restore ${escapeHtml(s.name)}">${ICONS.restore}</button>
-          <button class="action-btn action-btn--perm-delete" data-id="${s.id}" title="Delete permanently" aria-label="Permanently delete ${escapeHtml(s.name)}">${ICONS.xCircle}</button>
+          ${permBtn}
         </div>
       </td>
     `;
