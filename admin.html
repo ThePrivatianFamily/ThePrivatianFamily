@@ -52,6 +52,15 @@
           </a>
         </li>
         <li>
+          <a href="#" class="sidebar-nav-item" data-page="homepage" id="nav-homepage">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+              <polyline points="9 22 9 12 15 12 15 22"/>
+            </svg>
+            <span>Homepage</span>
+          </a>
+        </li>
+        <li>
           <a href="#" class="sidebar-nav-item" data-page="menu" id="nav-menu">
             <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
               <line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/>
@@ -421,6 +430,90 @@
         </div>
       </div>
     </section>
+
+    <!-- PAGE: HOMEPAGE MANAGER -->
+    <section class="page" id="page-homepage">
+      <div class="menu-mgr-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:12px;">
+        <div class="menu-mgr-title-wrap">
+          <h1 class="page-title" style="font-size:22px;font-weight:700;color:var(--text-primary);margin:0 0 4px;">Homepage Manager</h1>
+          <p class="page-subtitle" style="font-size:13px;color:var(--text-muted);margin:0;">Fully customize articles, headlines, sections, and events displayed on the main homepage</p>
+        </div>
+        <div class="menu-mgr-actions" style="display:flex;align-items:center;gap:10px;">
+          <span id="hp-save-status" style="font-size:12.5px;color:var(--text-muted);font-weight:500;">✓ Synced with database</span>
+          <button type="button" class="btn btn--ghost btn--sm" id="hp-undo-btn" onclick="undoHomepageAction()" title="Undo (Ctrl+Z)" disabled style="display:flex;align-items:center;gap:5px;padding:6px 11px;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+            Undo
+          </button>
+          <button type="button" class="btn btn--ghost btn--sm" id="hp-redo-btn" onclick="redoHomepageAction()" title="Redo (Ctrl+Y)" disabled style="display:flex;align-items:center;gap:5px;padding:6px 11px;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+            Redo
+          </button>
+          <button type="button" class="btn btn--primary btn--sm" id="hp-save-btn" onclick="saveHomepageSettings()" style="display:flex;align-items:center;gap:6px;padding:7px 16px;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" width="14" height="14"><polyline points="20 6 9 17 4 12"/></svg>
+            Apply Homepage Changes
+          </button>
+        </div>
+      </div>
+
+      <!-- Tab Switcher inside Homepage Page -->
+      <div class="tab-bar menu-tab-bar" style="margin-bottom:20px;">
+        <button class="tab-btn active" id="tab-hp-canvas" onclick="switchHpTab('canvas')">
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
+          <span>Live Visual Canvas</span>
+        </button>
+        <button class="tab-btn" id="tab-hp-hero" onclick="switchHpTab('hero')">
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+          <span>Hero Lead &amp; Sidebar</span>
+        </button>
+        <button class="tab-btn" id="tab-hp-cards" onclick="switchHpTab('cards')">
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+          <span>3-Card Grid</span>
+        </button>
+        <button class="tab-btn" id="tab-hp-events" onclick="switchHpTab('events')">
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          <span>Events &amp; Spotlight</span>
+        </button>
+        <button class="tab-btn" id="tab-hp-news" onclick="switchHpTab('news')">
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+          <span>All News (6 Columns)</span>
+        </button>
+      </div>
+
+      <!-- Tab Panel: Live Visual Canvas -->
+      <div class="hp-tab-panel active" id="panel-hp-canvas">
+        <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:16px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
+          <div style="font-size:13px;color:#475569;display:flex;align-items:center;gap:8px;">
+            <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#10b981;"></span>
+            <strong>Visual Interactive Mode:</strong> Click any card or section in the preview below to change articles, titles, images, or links.
+          </div>
+          <button type="button" class="btn btn--ghost btn--sm" onclick="renderHomepageVisualCanvas()">
+            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+            Refresh Canvas
+          </button>
+        </div>
+        <div id="hp-canvas-container" class="hp-canvas-wrapper"></div>
+      </div>
+
+      <!-- Tab Panel: Hero Lead & Sidebar -->
+      <div class="hp-tab-panel" id="panel-hp-hero" style="display:none;">
+        <div id="hp-hero-editor-container"></div>
+      </div>
+
+      <!-- Tab Panel: 3-Card Grid -->
+      <div class="hp-tab-panel" id="panel-hp-cards" style="display:none;">
+        <div id="hp-cards-editor-container"></div>
+      </div>
+
+      <!-- Tab Panel: Events & Spotlight -->
+      <div class="hp-tab-panel" id="panel-hp-events" style="display:none;">
+        <div id="hp-events-editor-container"></div>
+      </div>
+
+      <!-- Tab Panel: All News (6 Columns) -->
+      <div class="hp-tab-panel" id="panel-hp-news" style="display:none;">
+        <div id="hp-news-editor-container"></div>
+      </div>
+    </section>
     <!-- PAGE: DASHBOARD (placeholder) -->
     <section class="page" id="page-dashboard">
       <div class="card coming-soon-card">
@@ -744,6 +837,119 @@
       <div class="modal-footer">
         <button class="btn btn--ghost" onclick="closeLatestModal()">Cancel</button>
         <button class="btn btn--primary" onclick="saveLatestItem()">Save Story</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- == MODAL: HOMEPAGE SLOT EDITOR == -->
+  <div class="modal-overlay" id="modal-homepage-slot" hidden>
+    <div class="modal modal--lg" role="dialog" aria-modal="true" style="max-width:580px;">
+      <div class="modal-header">
+        <div>
+          <h2 class="modal-title" id="modal-hp-slot-title">Edit Homepage Slot</h2>
+          <p id="modal-hp-slot-badge" style="font-size:11.5px;color:var(--primary);font-weight:600;margin:2px 0 0;text-transform:uppercase;letter-spacing:0.05em;"></p>
+        </div>
+        <button class="modal-close-btn" onclick="closeHpSlotModal()" aria-label="Close modal">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="hp-slot-path" value="" />
+
+        <!-- 1-Click Database Article Picker -->
+        <div class="form-group" style="background:#f1f5f9;border:1px solid #cbd5e1;border-radius:8px;padding:12px;margin-bottom:16px;">
+          <label class="form-label" for="hp-slot-article-select" style="font-weight:700;color:#0f172a;display:flex;align-items:center;gap:6px;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+            Choose from Published Articles
+          </label>
+          <select id="hp-slot-article-select" class="form-input" onchange="onHpArticleSelected(this.value)" style="background:#fff;border-color:#94a3b8;">
+            <option value="">— Or manually configure below —</option>
+          </select>
+          <div style="font-size:11px;color:#64748b;margin-top:4px;">Selecting an article will automatically fill headline, subtitle, hero image, and link URL.</div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="hp-slot-headline-input">Headline / Title <span style="color:var(--danger)">*</span></label>
+          <textarea id="hp-slot-headline-input" class="form-input" rows="2" placeholder="Article headline..." maxlength="160"></textarea>
+        </div>
+
+        <div class="form-group" id="hp-slot-subtitle-group" style="margin-top:12px;">
+          <label class="form-label" for="hp-slot-subtitle-input">Subtitle / Deck / Summary</label>
+          <textarea id="hp-slot-subtitle-input" class="form-input" rows="2" placeholder="Brief summary or deck..." maxlength="240"></textarea>
+        </div>
+
+        <div class="form-group" style="margin-top:12px;">
+          <label class="form-label" for="hp-slot-link-input">Target Link / URL</label>
+          <input type="text" id="hp-slot-link-input" class="form-input" placeholder="e.g. section.html?slug=community-heritage or article url" />
+        </div>
+
+        <div class="form-group" id="hp-slot-image-group" style="margin-top:12px;">
+          <label class="form-label" for="hp-slot-image-input">Image (URL or image filename)</label>
+          <input type="text" id="hp-slot-image-input" class="form-input" placeholder="e.g. img1.png or https://..." oninput="updateHpSlotImagePreview()" />
+          <div style="margin-top:8px;display:flex;align-items:center;gap:10px;">
+            <img id="hp-slot-image-preview" src="img1.png" alt="Preview" style="width:68px;height:46px;object-fit:cover;border-radius:4px;border:1px solid var(--border);" onerror="this.style.display='none'" onload="this.style.display='block'" />
+            <span style="font-size:11px;color:var(--text-muted);">Slot image preview</span>
+          </div>
+        </div>
+
+        <div class="form-group" id="hp-slot-tag-group" style="margin-top:12px;">
+          <label class="form-label" for="hp-slot-tag-input">Tag / Category Badge (Optional)</label>
+          <input type="text" id="hp-slot-tag-input" class="form-input" placeholder="e.g. Heritage Archive" maxlength="40" />
+        </div>
+
+        <div class="form-group" style="margin-top:14px;display:flex;align-items:center;gap:10px;">
+          <label class="hs-toggle">
+            <input type="checkbox" id="hp-slot-enabled-input" checked />
+            <span class="hs-toggle-track"><span class="hs-toggle-thumb"></span></span>
+          </label>
+          <span style="font-size:13px;font-weight:600;color:var(--text-primary);">Show in Homepage (Enabled)</span>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn--ghost" onclick="closeHpSlotModal()">Cancel</button>
+        <button class="btn btn--primary" onclick="saveHpSlotModal()">Save Slot</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- == MODAL: HOMEPAGE EVENT EDITOR == -->
+  <div class="modal-overlay" id="modal-homepage-event" hidden>
+    <div class="modal" role="dialog" aria-modal="true" style="max-width:480px;">
+      <div class="modal-header">
+        <h2 class="modal-title" id="modal-hp-event-title">Add Event</h2>
+        <button class="modal-close-btn" onclick="closeHpEventModal()" aria-label="Close modal">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="hp-event-edit-id" value="" />
+        <div class="form-group">
+          <label class="form-label" for="hp-event-date-input">Event Date</label>
+          <input type="text" id="hp-event-date-input" class="form-input" placeholder="e.g. Sep. 22, 2026" maxlength="50" />
+        </div>
+        <div class="form-group" style="margin-top:12px;">
+          <label class="form-label" for="hp-event-title-input">Event Title / Description</label>
+          <textarea id="hp-event-title-input" class="form-input" rows="2" placeholder="e.g. Debate, Debrief, and Dissect..." maxlength="180"></textarea>
+        </div>
+        <div class="form-group" style="margin-top:12px;">
+          <label class="form-label" for="hp-event-meta-input">Time &amp; Venue / Details</label>
+          <input type="text" id="hp-event-meta-input" class="form-input" placeholder="e.g. 4 p.m. Thursday ■ Privatian Forum" maxlength="150" />
+        </div>
+        <div class="form-group" style="margin-top:12px;">
+          <label class="form-label" for="hp-event-link-input">Event Link URL</label>
+          <input type="text" id="hp-event-link-input" class="form-input" placeholder="e.g. index.html#events or custom url" />
+        </div>
+        <div class="form-group" style="margin-top:14px;display:flex;align-items:center;gap:10px;">
+          <label class="hs-toggle">
+            <input type="checkbox" id="hp-event-enabled-input" checked />
+            <span class="hs-toggle-track"><span class="hs-toggle-thumb"></span></span>
+          </label>
+          <span style="font-size:13px;font-weight:600;color:var(--text-primary);">Show Event (Enabled)</span>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn--ghost" onclick="closeHpEventModal()">Cancel</button>
+        <button class="btn btn--primary" onclick="saveHpEventModal()">Save Event</button>
       </div>
     </div>
   </div>

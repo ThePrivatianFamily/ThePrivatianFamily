@@ -222,6 +222,272 @@ module.exports = async function handler(req, res) {
     }
   }
 
+  // ── HOMEPAGE CONFIGURATION (GET / POST) ──────────────────────────────────
+  if (action === 'homepage') {
+    const DEFAULT_HOMEPAGE_CONFIG = {
+      hero: {
+        main: {
+          articleId: null,
+          title: 'The art of private wisdom: how Privatian families shape culture and legacy.',
+          subtitle: 'An exclusive exploration of family heritage, intellectual tradition, and the enduring power of private knowledge.',
+          imageUrl: 'img1.png',
+          href: 'section.html?slug=findings',
+          enabled: true
+        },
+        sidebar: [
+          {
+            id: 'h-side-1',
+            articleId: null,
+            title: 'Part legacy, part field study: the Privatian story across generations',
+            description: 'From a family archive, the Privatian tradition sees pathways forged through private endeavors',
+            imageUrl: 'img5.png',
+            tag: 'Heritage Archive',
+            href: 'section.html?slug=community-heritage',
+            enabled: true
+          },
+          {
+            id: 'h-side-2',
+            articleId: null,
+            title: 'How the Privatian legacy helped define an era of private excellence',
+            description: "The family's influence on culture, art, and intellectual discourse runs deeper than most realize",
+            imageUrl: 'img6.png',
+            tag: '',
+            href: 'section.html?slug=culture',
+            enabled: true
+          }
+        ]
+      },
+      smallArticles: [
+        {
+          id: 'sm-1',
+          articleId: null,
+          title: 'When Privatians meet: the quiet power of community',
+          imageUrl: 'img2.png',
+          href: 'section.html?slug=community-heritage',
+          enabled: true
+        },
+        {
+          id: 'sm-2',
+          articleId: null,
+          title: 'Why handwritten correspondence is making a private comeback',
+          imageUrl: 'img3.png',
+          href: 'section.html?slug=culture',
+          enabled: true
+        },
+        {
+          id: 'sm-3',
+          articleId: null,
+          title: 'Liberal tradition in the modern age: how the Privatian family stays ahead',
+          imageUrl: 'img4.png',
+          href: 'section.html?slug=privacy-values',
+          enabled: true
+        }
+      ],
+      eventsSection: {
+        eventsHeading: 'Upcoming Events',
+        seeAllText: 'See all events',
+        seeAllHref: 'index.html#events-section',
+        events: [
+          {
+            id: 'ev-1',
+            date: 'Sep. 22, 2026',
+            title: 'Debate, Debrief, and Dissect: The Role of Privacy in the Modern Family and American Life',
+            meta: '4 p.m. Thursday ■ Privatian Forum, Main Hall, Private Campus; via livestream',
+            href: '#',
+            enabled: true
+          },
+          {
+            id: 'ev-2',
+            date: 'Oct. 16, 2026',
+            title: 'America at 250 and Beyond: A Well-Informed Privatian Citizenry',
+            meta: '4 p.m. Friday ■ Privatian Institute, 79 Heritage Ave., Cambridge',
+            href: '#',
+            enabled: true
+          }
+        ],
+        featured: {
+          articleId: null,
+          title: "Rubies decoded: 'Heritage is just one piece of the puzzle'",
+          description: 'Rare family gems shine in new Privatian retrospective',
+          imageUrl: 'img5.png',
+          href: 'section.html?slug=community-heritage',
+          enabled: true
+        }
+      },
+      allNews: {
+        heading: 'All News',
+        columns: [
+          {
+            id: 'col-1',
+            label: 'COMMUNITY & HERITAGE',
+            sectionSlug: 'community-heritage',
+            lead: {
+              articleId: null,
+              title: "Don't hold back, the Privatian elders told scholars. It worked.",
+              imageUrl: 'img2.png',
+              href: 'section.html?slug=community-heritage',
+              enabled: true
+            },
+            subArticles: [
+              { id: 'sub-1-1', title: 'Elena Voss named curator of The Privatian Foundation for Letters', href: 'section.html?slug=community-heritage', enabled: true },
+              { id: 'sub-1-2', title: 'Family council opposes changes to federal heritage-protection programs', href: 'section.html?slug=community-heritage', enabled: true },
+              { id: 'sub-1-3', title: "Henry's remarkable legacy of giving: what it means to the family today", href: 'section.html?slug=community-heritage', enabled: true },
+              { id: 'sub-1-4', title: 'Letters to the archive: understanding the Privatian correspondence collection', href: 'section.html?slug=community-heritage', enabled: true }
+            ]
+          },
+          {
+            id: 'col-2',
+            label: 'CULTURE',
+            sectionSlug: 'culture',
+            lead: {
+              articleId: null,
+              title: "For Privatian women in arts, 'not all cultural diets are equal'",
+              imageUrl: 'img1.png',
+              href: 'section.html?slug=culture',
+              enabled: true
+            },
+            subArticles: [
+              { id: 'sub-2-1', title: 'AI use surging for creative writing among young Privatian members', href: 'section.html?slug=culture', enabled: true },
+              { id: 'sub-2-2', title: 'Pen refill? Go for it, says the Privatian Calligraphy Society', href: 'section.html?slug=culture', enabled: true },
+              { id: 'sub-2-3', title: 'Music residency, says Privatian Arts & Culture Society, is about connection', href: 'section.html?slug=culture', enabled: true }
+            ]
+          },
+          {
+            id: 'col-3',
+            label: 'PRIVACY & VALUES',
+            sectionSlug: 'privacy-values',
+            lead: {
+              articleId: null,
+              title: 'Do you have a private AI secret?',
+              imageUrl: 'img4.png',
+              href: 'section.html?slug=privacy-values',
+              enabled: true
+            },
+            subArticles: [
+              { id: 'sub-3-1', title: 'Families alone, yes. But watching the community is another thing.', href: 'section.html?slug=privacy-values', enabled: true },
+              { id: 'sub-3-2', title: 'Is that family member a Privatian or not — and who decides the rules?', href: 'section.html?slug=privacy-values', enabled: true },
+              { id: 'sub-3-3', title: 'Bowling alone, yes. But the Privatian family still gathers.', href: 'section.html?slug=privacy-values', enabled: true }
+            ]
+          },
+          {
+            id: 'col-4',
+            label: 'NATION & WORLD',
+            sectionSlug: 'nation-world',
+            lead: {
+              articleId: null,
+              title: 'How the Privatian diaspora is keeping tradition alive in a globalized world',
+              imageUrl: 'img6.png',
+              href: 'section.html?slug=nation-world',
+              enabled: true
+            },
+            subArticles: [
+              { id: 'sub-4-1', title: 'Bearing down on global secrecy: what the Privatian model teaches us', href: 'section.html?slug=nation-world', enabled: true },
+              { id: 'sub-4-2', title: 'Currency of trust: how the Privatian family built international networks', href: 'section.html?slug=nation-world', enabled: true }
+            ]
+          },
+          {
+            id: 'col-5',
+            label: 'ARTS & LEGACY',
+            sectionSlug: 'arts-legacy',
+            lead: {
+              articleId: null,
+              title: 'New research shows writing by hand preserves memory and sharpens intellect',
+              imageUrl: 'img3.png',
+              href: 'section.html?slug=arts-legacy',
+              enabled: true
+            },
+            subArticles: [
+              { id: 'sub-5-1', title: 'Rowing, dance: yes. But the Privatian pen holds a special place of honor.', href: 'section.html?slug=arts-legacy', enabled: true },
+              { id: 'sub-5-2', title: 'Novelist argues the world needs more well-written letters, not fewer', href: 'section.html?slug=arts-legacy', enabled: true },
+              { id: 'sub-5-3', title: 'Turnover at The Privatian Society demands that cultural legacy must be paid.', href: 'section.html?slug=arts-legacy', enabled: true }
+            ]
+          },
+          {
+            id: 'col-6',
+            label: 'WORK & ECONOMY',
+            sectionSlug: 'work-economy',
+            lead: {
+              articleId: null,
+              title: 'Go-to Privatian professionals redefine private practices in modern economy',
+              imageUrl: 'img5.png',
+              href: 'section.html?slug=work-economy',
+              enabled: true
+            },
+            subArticles: [
+              { id: 'sub-6-1', title: "Rural flower power: the Privatian family's investment in private land", href: 'section.html?slug=work-economy', enabled: true },
+              { id: 'sub-6-2', title: 'The Privatian economy advisor talks to the state of family wealth', href: 'section.html?slug=work-economy', enabled: true },
+              { id: 'sub-6-3', title: 'Letters of the law: the Privatian legal scholars improve upon family statutes', href: 'section.html?slug=work-economy', enabled: true }
+            ]
+          }
+        ]
+      }
+    };
+
+    if (req.method === 'GET') {
+      try {
+        const { data } = await sb.from('site_settings').select('value').eq('key', 'site_homepage_config').maybeSingle();
+        if (data && data.value) return res.status(200).json(data.value);
+      } catch(e) {}
+
+      // Fallback read from sections table
+      try {
+        const { data: sData } = await sb.from('sections').select('name').eq('admin_id', '__homepage_config__').maybeSingle();
+        if (sData && sData.name) {
+          const parsed = JSON.parse(sData.name);
+          if (parsed && typeof parsed === 'object') return res.status(200).json(parsed);
+        }
+      } catch(e) {}
+
+      return res.status(200).json(DEFAULT_HOMEPAGE_CONFIG);
+    }
+
+    if (req.method === 'POST') {
+      const session = await requireAuth(req, res);
+      if (!session) return;
+      const homepageConfig = req.body || {};
+
+      let saved = false;
+      try {
+        const { error } = await sb.from('site_settings').upsert({
+          key: 'site_homepage_config',
+          value: homepageConfig,
+          updated_at: new Date().toISOString()
+        }, { onConflict: 'key' });
+        if (!error) saved = true;
+      } catch(err) {}
+
+      if (!saved) {
+        // Fallback save in sections table
+        try {
+          const { data: existing } = await sb.from('sections').select('id').eq('admin_id', '__homepage_config__').maybeSingle();
+          if (existing) {
+            await sb.from('sections').update({
+              name: JSON.stringify(homepageConfig),
+              slug: '__homepage_config__',
+              display_order: 9997,
+              is_active: false,
+              locked: true,
+              is_deleted: true
+            }).eq('admin_id', '__homepage_config__');
+          } else {
+            await sb.from('sections').insert({
+              admin_id: '__homepage_config__',
+              name: JSON.stringify(homepageConfig),
+              slug: '__homepage_config__',
+              display_order: 9997,
+              is_active: false,
+              locked: true,
+              is_deleted: true
+            });
+          }
+        } catch(err) {
+          console.warn('[DB fallback homepage save error]:', err.message);
+        }
+      }
+      return res.status(200).json({ ok: true, data: homepageConfig });
+    }
+  }
+
   // ── GET ─────────────────────────────────────────────────────────────────
   if (req.method === 'GET') {
     const statusParam = (req.query && req.query.status) || 'active';
@@ -239,7 +505,7 @@ module.exports = async function handler(req, res) {
     const { data, error } = await query;
     if (error) return res.status(500).json({ error: error.message });
 
-    const rows = (data || []).filter(r => r.admin_id !== '__menu_config__' && r.admin_id !== '__header_config__');
+    const rows = (data || []).filter(r => r.admin_id !== '__menu_config__' && r.admin_id !== '__header_config__' && r.admin_id !== '__homepage_config__');
 
     if (statusParam === 'all' && session) {
       // Admin format: full section objects
