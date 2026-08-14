@@ -1354,24 +1354,43 @@ function initHeaderPage() {
 let _allArticles = [];
 
 async function initArticlesPage() {
-  // Show loading
-  document.getElementById('articles-loading').style.display = 'block';
-  document.getElementById('articles-table').style.display  = 'none';
-  document.getElementById('articles-empty').style.display  = 'none';
+  const loading = document.getElementById('articles-loading');
+  const table   = document.getElementById('articles-table');
+  const empty   = document.getElementById('articles-empty');
+
+  if (loading) loading.style.display = 'block';
+  if (table) table.style.display     = 'none';
+  if (empty) empty.style.display     = 'none';
 
   try {
-    const res  = await fetch('/api/articles?action=list', {
+    const res = await fetch('/api/articles?action=list', {
       headers: { 'Authorization': 'Bearer ' + window.PRIVATIAN_TOKEN }
     });
     _allArticles = await res.json();
+    if (!Array.isArray(_allArticles)) _allArticles = [];
   } catch(e) {
     _allArticles = [];
   }
 
-  document.getElementById('articles-loading').style.display = 'none';
+  if (loading) loading.style.display = 'none';
+  _populateSectionFilter();
   renderArticlesTable(_allArticles);
   _loadArticleTrash(); // update trash count badge
   switchArticlesView(_currentArticlesView || 'active');
+}
+
+function _populateSectionFilter() {
+  const secSelect = document.getElementById('articles-filter-section');
+  if (!secSelect) return;
+  const currentVal = secSelect.value;
+  const sections = Array.from(new Set(_allArticles.map(a => a.section).filter(Boolean))).sort();
+
+  secSelect.innerHTML = '<option value="">All Sections</option>' +
+    sections.map(s => `<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join('');
+
+  if (sections.includes(currentVal)) {
+    secSelect.value = currentVal;
+  }
 }
 
 function renderArticlesTable(articles) {
@@ -1380,13 +1399,13 @@ function renderArticlesTable(articles) {
   const empty = document.getElementById('articles-empty');
 
   if (!articles || articles.length === 0) {
-    table.style.display = 'none';
-    empty.style.display = 'block';
+    if (table) table.style.display = 'none';
+    if (empty) empty.style.display = 'block';
     return;
   }
 
-  table.style.display = 'table';
-  empty.style.display = 'none';
+  if (table) table.style.display = 'table';
+  if (empty) empty.style.display = 'none';
 
   tbody.innerHTML = articles.map(a => {
     const updated = a.updated_at
@@ -1394,51 +1413,46 @@ function renderArticlesTable(articles) {
       : '—';
     const isPublished = a.status === 'published';
     const statusBadge = isPublished
-      ? `<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;background:#d1fae5;color:#065f46;">● Published</span>`
-      : `<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;background:#fef3c7;color:#92400e;">● Draft</span>`;
+      ? `<span class="art-status-pill art-status--published"><svg width="6" height="6" viewBox="0 0 6 6" fill="currentColor"><circle cx="3" cy="3" r="3"/></svg>Published</span>`
+      : `<span class="art-status-pill art-status--draft"><svg width="6" height="6" viewBox="0 0 6 6" fill="currentColor"><circle cx="3" cy="3" r="3"/></svg>Draft</span>`;
 
     const thumb = a.hero_img_url
-      ? `<img src="${escapeHtml(a.hero_img_url)}" alt="" style="width:48px;height:36px;object-fit:cover;border-radius:3px;flex-shrink:0;" loading="lazy"/>`
-      : `<div style="width:48px;height:36px;border-radius:3px;background:#e5e7eb;flex-shrink:0;"></div>`;
+      ? `<img src="${escapeHtml(a.hero_img_url)}" alt="" class="art-thumb" loading="lazy" />`
+      : `<div class="art-thumb-ph"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>`;
 
-    return `<tr style="border-bottom:1px solid #f3f4f6;transition:background .1s;" onmouseover="this.style.background='#fafafa'" onmouseout="this.style.background=''">
-      <td style="padding:12px 16px;">
-        <div style="display:flex;align-items:center;gap:12px;">
+    const sectionBadge = a.section
+      ? `<span class="art-badge-sec">${escapeHtml(a.section)}</span>`
+      : `<span style="color:#94a3b8;font-size:12px;">—</span>`;
+
+    return `<tr>
+      <td>
+        <div class="art-media-wrap">
           ${thumb}
-          <div style="min-width:0;">
-            <div style="font-size:13.5px;font-weight:600;color:#111827;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:280px;">${escapeHtml(a.title || 'Untitled')}</div>
-            <div style="font-size:11px;color:#9ca3af;margin-top:2px;">${escapeHtml(a.slug || '')}</div>
+          <div class="art-title-meta">
+            <div class="art-row-title" title="${escapeHtml(a.title || 'Untitled')}">${escapeHtml(a.title || 'Untitled')}</div>
+            <div class="art-row-slug" title="/article/${escapeHtml(a.slug || a.id)}">${escapeHtml(a.slug || a.id)}</div>
           </div>
         </div>
       </td>
-      <td style="padding:12px 16px;font-size:12.5px;color:#6b7280;">${escapeHtml(a.section || '—')}</td>
-      <td style="padding:12px 16px;font-size:12.5px;color:#6b7280;">${escapeHtml(a.author || '—')}</td>
-      <td style="padding:12px 16px;">${statusBadge}</td>
-      <td style="padding:12px 16px;font-size:12px;color:#9ca3af;">${updated}</td>
-      <td style="padding:12px 16px;text-align:right;">
-        <div style="display:flex;align-items:center;justify-content:flex-end;gap:6px;">
-          <a href="admin-article-editor.html?id=${escapeHtml(a.id)}"
-             style="display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border-radius:6px;font-size:12px;font-weight:600;background:#e8f1f9;color:#0a528e;text-decoration:none;transition:background .12s;"
-             onmouseover="this.style.background='#0a528e';this.style.color='#fff'"
-             onmouseout="this.style.background='#e8f1f9';this.style.color='#0a528e'">
+      <td>${sectionBadge}</td>
+      <td><span class="art-author-txt">${escapeHtml(a.author || '—')}</span></td>
+      <td>${statusBadge}</td>
+      <td><span class="art-date-txt">${updated}</span></td>
+      <td class="tar">
+        <div class="art-btn-group">
+          <a href="admin-article-editor.html?id=${escapeHtml(a.id)}" class="art-action-btn art-action-btn--edit" title="Edit article">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
             Edit
           </a>
-          ${isPublished ? `<a href="article.html?id=${escapeHtml(a.id)}" target="_blank"
-             style="display:inline-flex;align-items:center;gap:4px;padding:5px 11px;border-radius:6px;font-size:12px;font-weight:600;background:#f0fdf4;color:#16a34a;text-decoration:none;transition:background .12s;"
-             onmouseover="this.style.background='#16a34a';this.style.color='#fff'"
-             onmouseout="this.style.background='#f0fdf4';this.style.color='#16a34a'" title="View published article">
+          ${isPublished ? `<a href="article.html?id=${escapeHtml(a.id)}" target="_blank" class="art-action-btn art-action-btn--view" title="View live published article">
              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
              View
           </a>` : ''}
-          <button onclick="toggleArticleStatus('${a.id}', this)"
-            style="display:inline-flex;align-items:center;padding:5px 11px;border-radius:6px;font-size:12px;font-weight:600;border:1px solid #e5e7eb;background:#fff;color:#374151;cursor:pointer;transition:all .12s;"
-            title="${isPublished ? 'Move to Draft' : 'Publish'}">
+          <button type="button" onclick="toggleArticleStatus('${a.id}', this)" class="art-action-btn art-action-btn--toggle" title="${isPublished ? 'Change to Draft' : 'Publish Article'}">
             ${isPublished ? 'Unpublish' : 'Publish'}
           </button>
-          <button onclick="deleteArticleConfirm('${a.id}', '${escapeHtml((a.title||'Untitled').replace(/'/g,"\\'"))}')"
-            style="display:inline-flex;align-items:center;padding:5px 9px;border-radius:6px;font-size:12px;font-weight:600;border:1px solid #fee2e2;background:#fff;color:#dc2626;cursor:pointer;transition:all .12s;"
-            title="Move to Trash">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+          <button type="button" onclick="deleteArticleConfirm('${a.id}', '${escapeHtml((a.title||'Untitled').replace(/'/g,"\\'"))}')" class="art-action-btn art-action-btn--trash" title="Move to Recycle Bin">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
           </button>
         </div>
       </td>
@@ -1447,22 +1461,26 @@ function renderArticlesTable(articles) {
 }
 
 function filterArticles() {
-  const q      = (document.getElementById('articles-search').value || '').toLowerCase();
-  const status = document.getElementById('articles-filter-status').value;
+  const q       = (document.getElementById('articles-search').value || '').toLowerCase().trim();
+  const status  = document.getElementById('articles-filter-status').value;
+  const section = document.getElementById('articles-filter-section') ? document.getElementById('articles-filter-section').value : '';
+
   const filtered = _allArticles.filter(a => {
     const matchQ = !q ||
-      (a.title  || '').toLowerCase().includes(q) ||
-      (a.author || '').toLowerCase().includes(q) ||
-      (a.slug   || '').toLowerCase().includes(q) ||
-      (a.section|| '').toLowerCase().includes(q);
-    const matchStatus = !status || a.status === status;
-    return matchQ && matchStatus;
+      (a.title   || '').toLowerCase().includes(q) ||
+      (a.author  || '').toLowerCase().includes(q) ||
+      (a.slug    || '').toLowerCase().includes(q) ||
+      (a.section || '').toLowerCase().includes(q);
+    const matchStatus  = !status  || a.status === status;
+    const matchSection = !section || a.section === section;
+    return matchQ && matchStatus && matchSection;
   });
   renderArticlesTable(filtered);
 }
 
 async function toggleArticleStatus(id, btn) {
   btn.disabled = true;
+  const originalText = btn.textContent;
   btn.textContent = '...';
   try {
     const res  = await fetch('/api/articles?action=publish&id=' + id, {
@@ -1472,12 +1490,12 @@ async function toggleArticleStatus(id, btn) {
     if (!res.ok) throw new Error(data.error || 'Failed');
     const article = _allArticles.find(a => a.id === id);
     if (article) article.status = data.status;
-    renderArticlesTable(_allArticles);
+    filterArticles();
     _showAdminToast(data.status === 'published' ? 'Article published' : 'Moved to draft', 'success');
   } catch(e) {
     _showAdminToast(e.message, 'error');
     btn.disabled = false;
-    btn.textContent = btn.textContent === '...' ? 'Publish' : btn.textContent;
+    btn.textContent = originalText;
   }
 }
 
@@ -1486,7 +1504,7 @@ async function toggleArticleStatus(id, btn) {
 function deleteArticleConfirm(id, title) {
   _confirmModal({
     title: 'Move to Trash',
-    body: `"<strong>${escapeHtml(title)}</strong>" will be moved to Trash and hidden from the website. You can restore it later from the Trash tab.`,
+    body: `"<strong>${escapeHtml(title)}</strong>" will be moved to the Recycle Bin and removed from public view. You can restore it anytime from the Trash tab.`,
     confirmText: 'Move to Trash',
     variant: 'danger',
     onConfirm: () => _doDeleteArticle(id)
@@ -1501,7 +1519,7 @@ async function _doDeleteArticle(id) {
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Failed');
     _allArticles = _allArticles.filter(a => a.id !== id);
-    renderArticlesTable(_allArticles);
+    filterArticles();
     _loadArticleTrash();
     _showAdminToast('Article moved to Trash', 'success');
   } catch(e) { _showAdminToast(e.message, 'error'); }
@@ -1510,8 +1528,8 @@ async function _doDeleteArticle(id) {
 function restoreArticleConfirm(id, title) {
   _confirmModal({
     title: 'Restore Article',
-    body: `Restore "<strong>${escapeHtml(title)}</strong>"? It will be moved back to your articles list based on its current status (Draft / Published).`,
-    confirmText: 'Restore',
+    body: `Restore "<strong>${escapeHtml(title)}</strong>"? It will be moved back to your articles list.`,
+    confirmText: 'Restore Article',
     variant: 'success',
     onConfirm: () => _doRestoreArticle(id)
   });
@@ -1526,14 +1544,13 @@ async function _doRestoreArticle(id) {
     if (!res.ok) throw new Error(data.error || 'Failed');
     _showAdminToast('Article restored', 'success');
     await initArticlesPage();
-    _loadArticleTrash();
   } catch(e) { _showAdminToast(e.message, 'error'); }
 }
 
 function permanentDeleteArticleConfirm(id, title) {
   _confirmModal({
-    title: 'Delete Forever',
-    body: `This action <strong>cannot be undone</strong>. "<strong>${escapeHtml(title)}</strong>" will be permanently removed with no way to recover it.`,
+    title: 'Delete Permanently',
+    body: `Warning: This action <strong>cannot be undone</strong>. "<strong>${escapeHtml(title)}</strong>" will be permanently deleted from the database.`,
     confirmText: 'Delete Forever',
     variant: 'danger',
     onConfirm: () => _doPermanentDeleteArticle(id)
@@ -1560,17 +1577,18 @@ function switchArticlesView(view) {
   const trashPanel  = document.getElementById('art-trash-panel');
   const activeBtn   = document.getElementById('art-view-active');
   const trashBtn    = document.getElementById('art-view-trash');
+
   if (view === 'trash') {
     if (activePanel) activePanel.style.display = 'none';
-    if (trashPanel)  trashPanel.style.display  = '';
-    if (activeBtn) { activeBtn.style.background='#fff'; activeBtn.style.color='#374151'; activeBtn.style.borderColor='#e5e7eb'; }
-    if (trashBtn)  { trashBtn.style.background='#fee2e2'; }
+    if (trashPanel)  trashPanel.style.display  = 'block';
+    if (activeBtn)   activeBtn.classList.remove('active');
+    if (trashBtn)    trashBtn.classList.add('active');
     _loadArticleTrash();
   } else {
-    if (activePanel) activePanel.style.display = '';
+    if (activePanel) activePanel.style.display = 'block';
     if (trashPanel)  trashPanel.style.display  = 'none';
-    if (activeBtn) { activeBtn.style.background='#0a528e'; activeBtn.style.color='#fff'; activeBtn.style.borderColor='#0a528e'; }
-    if (trashBtn)  { trashBtn.style.background='#fff'; }
+    if (activeBtn)   activeBtn.classList.add('active');
+    if (trashBtn)    trashBtn.classList.remove('active');
   }
 }
 
@@ -1580,39 +1598,50 @@ async function _loadArticleTrash() {
   const empty   = document.getElementById('art-trash-empty');
   const loading = document.getElementById('art-trash-loading');
   const count   = document.getElementById('art-trash-count');
+
   if (!tbody) return;
   if (loading) loading.style.display = 'block';
-  if (table)  table.style.display   = 'none';
-  if (empty)  empty.style.display   = 'none';
+  if (table)   table.style.display   = 'none';
+  if (empty)   empty.style.display   = 'none';
+
   try {
     const res  = await fetch('/api/articles?action=trash', {
       headers: { 'Authorization': 'Bearer ' + window.PRIVATIAN_TOKEN }
     });
     const arts = await res.json();
-    if (count) count.textContent = arts.length || '0';
+    if (count) count.textContent = Array.isArray(arts) ? arts.length : '0';
     if (loading) loading.style.display = 'none';
-    if (!arts || arts.length === 0) { if (empty) empty.style.display = 'block'; return; }
+    if (!Array.isArray(arts) || arts.length === 0) {
+      if (empty) empty.style.display = 'block';
+      return;
+    }
     if (table) table.style.display = 'table';
-    const fmt = iso => iso ? new Date(iso).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : '—';
+    const fmt = iso => iso ? new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—';
     tbody.innerHTML = arts.map(a => {
       const thumb = a.hero_img_url
-        ? `<img src="${escapeHtml(a.hero_img_url)}" alt="" style="width:40px;height:30px;object-fit:cover;border-radius:3px;flex-shrink:0;opacity:.7;" loading="lazy"/>`
-        : `<div style="width:40px;height:30px;border-radius:3px;background:#f3e8e8;flex-shrink:0;"></div>`;
-      return `<tr style="border-bottom:1px solid #fef2f2;background:#fffafa;">
-        <td style="padding:10px 16px;"><div style="display:flex;align-items:center;gap:10px;">${thumb}<div style="font-size:13px;font-weight:600;color:#6b7280;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:260px;">${escapeHtml(a.title||'Untitled')}</div></div></td>
-        <td style="padding:10px 16px;font-size:12px;color:#9ca3af;">${escapeHtml(a.section||'—')}</td>
-        <td style="padding:10px 16px;font-size:12px;color:#9ca3af;">${fmt(a.deleted_at)}</td>
-        <td style="padding:10px 16px;text-align:right;">
-          <div style="display:flex;align-items:center;justify-content:flex-end;gap:6px;">
-            <button onclick="restoreArticleConfirm('${a.id}','${escapeHtml((a.title||'Untitled').replace(/'/g,"\\'"))}')"
-              style="display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border-radius:6px;font-size:12px;font-weight:600;background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0;cursor:pointer;"
-              onmouseover="this.style.background='#16a34a';this.style.color='#fff'"
-              onmouseout="this.style.background='#f0fdf4';this.style.color='#16a34a'">↩ Restore</button>
-            <button onclick="permanentDeleteArticleConfirm('${a.id}','${escapeHtml((a.title||'Untitled').replace(/'/g,"\\'"))}')"
-              style="display:inline-flex;align-items:center;gap:4px;padding:5px 9px;border-radius:6px;font-size:12px;font-weight:600;background:#fff;color:#dc2626;border:1px solid #fee2e2;cursor:pointer;"
-              onmouseover="this.style.background='#dc2626';this.style.color='#fff'"
-              onmouseout="this.style.background='#fff';this.style.color='#dc2626'">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+        ? `<img src="${escapeHtml(a.hero_img_url)}" alt="" class="art-thumb" style="opacity:.75;" loading="lazy"/>`
+        : `<div class="art-thumb-ph"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>`;
+      return `<tr>
+        <td>
+          <div class="art-media-wrap">
+            ${thumb}
+            <div class="art-title-meta">
+              <div class="art-row-title" style="color:#64748b;" title="${escapeHtml(a.title||'Untitled')}">${escapeHtml(a.title||'Untitled')}</div>
+              <div class="art-row-slug" title="/article/${escapeHtml(a.slug || a.id)}">${escapeHtml(a.slug || a.id)}</div>
+            </div>
+          </div>
+        </td>
+        <td><span class="art-badge-sec" style="background:#f1f5f9;color:#64748b;border-color:#e2e8f0;">${escapeHtml(a.section||'—')}</span></td>
+        <td><span class="art-date-txt" style="color:#dc2626;font-weight:600;">${fmt(a.deleted_at)}</span></td>
+        <td class="tar">
+          <div class="art-btn-group">
+            <button type="button" onclick="restoreArticleConfirm('${a.id}','${escapeHtml((a.title||'Untitled').replace(/'/g,"\\'"))}')" class="art-action-btn art-action-btn--restore" title="Restore back to active articles">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+              Restore
+            </button>
+            <button type="button" onclick="permanentDeleteArticleConfirm('${a.id}','${escapeHtml((a.title||'Untitled').replace(/'/g,"\\'"))}')" class="art-action-btn art-action-btn--delete-perm" title="Permanently delete from database">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/><path d="M9 6V4h6v2"/></svg>
+              Delete Forever
             </button>
           </div>
         </td>
@@ -1620,7 +1649,7 @@ async function _loadArticleTrash() {
     }).join('');
   } catch(e) {
     if (loading) loading.style.display = 'none';
-    if (empty) { empty.style.display='block'; empty.querySelector('p').textContent='Could not load trash.'; }
+    if (empty)   empty.style.display   = 'block';
   }
 }
 
@@ -1628,3 +1657,4 @@ async function _loadArticleTrash() {
 if (window.location.hash === '#articles') {
   window.addEventListener('privatian:ready', () => navigateTo('articles'));
 }
+

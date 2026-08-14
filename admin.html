@@ -296,83 +296,92 @@
     <!-- PAGE: ARTICLES -->
     <section class="page" id="page-articles">
       <!-- Page header -->
-      <div class="page-header" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px;">
-        <div>
-          <h1 class="page-title" style="margin:0 0 4px;">Articles</h1>
-          <p class="page-subtitle" style="margin:0;">Manage all published and draft articles</p>
+      <div class="art-header-row">
+        <div class="art-title-wrap">
+          <h1 class="page-title">Articles</h1>
+          <p class="page-subtitle">Manage, create, and publish editorial articles</p>
         </div>
-        <a href="admin-article-editor.html" class="btn btn-primary" id="new-article-btn"
-           style="display:inline-flex;align-items:center;gap:8px;padding:10px 20px;background:#0a528e;color:#fff;border-radius:8px;text-decoration:none;font-size:13px;font-weight:700;font-family:inherit;transition:background .15s;">
+        <a href="admin-article-editor.html" class="art-new-btn" id="new-article-btn">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
           New Article
         </a>
       </div>
 
       <!-- Filters bar -->
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap;">
-        <input type="text" id="articles-search" placeholder="Search articles..." oninput="filterArticles()"
-          style="flex:1;min-width:180px;padding:8px 12px;border:1px solid #e5e7eb;border-radius:7px;font-size:13px;font-family:inherit;outline:none;" />
-        <select id="articles-filter-status" onchange="filterArticles()"
-          style="padding:8px 12px;border:1px solid #e5e7eb;border-radius:7px;font-size:13px;font-family:inherit;background:#fff;outline:none;cursor:pointer;">
+      <div class="art-filter-bar">
+        <div class="art-search-wrap">
+          <svg class="art-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="text" id="articles-search" class="art-search-input" placeholder="Search by title, author, slug or section..." oninput="filterArticles()" />
+        </div>
+        <select id="articles-filter-status" class="art-select" onchange="filterArticles()">
           <option value="">All Status</option>
           <option value="published">Published</option>
           <option value="draft">Draft</option>
         </select>
-        <button onclick="switchArticlesView('active')" id="art-view-active"
-          style="padding:8px 14px;border-radius:7px;font-size:12px;font-weight:700;border:1px solid #e5e7eb;background:#fff;color:#374151;cursor:pointer;transition:all .15s;">
-          Active
-        </button>
-        <button onclick="switchArticlesView('trash')" id="art-view-trash"
-          style="padding:8px 14px;border-radius:7px;font-size:12px;font-weight:700;border:1px solid #fee2e2;background:#fff;color:#dc2626;cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:6px;">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
-          Trash <span id="art-trash-count" style="background:#fee2e2;color:#dc2626;border-radius:10px;padding:1px 6px;font-size:10px;">0</span>
-        </button>
+        <select id="articles-filter-section" class="art-select" onchange="filterArticles()">
+          <option value="">All Sections</option>
+        </select>
+        <div class="art-view-switch">
+          <button onclick="switchArticlesView('active')" id="art-view-active" class="art-view-btn active">
+            Active
+          </button>
+          <button onclick="switchArticlesView('trash')" id="art-view-trash" class="art-view-btn art-view-btn--trash">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+            Trash <span id="art-trash-count" class="art-trash-pill">0</span>
+          </button>
+        </div>
       </div>
 
       <!-- Active article list -->
-      <div class="card" id="art-active-panel" style="padding:0;overflow:hidden;">
-        <div id="articles-loading" style="padding:40px;text-align:center;color:#9ca3af;font-size:13px;">Loading articles...</div>
-        <table id="articles-table" style="width:100%;border-collapse:collapse;display:none;">
+      <div class="art-card" id="art-active-panel">
+        <div id="articles-loading" style="padding:48px;text-align:center;color:#94a3b8;font-size:13.5px;font-weight:500;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#0a528e" stroke-width="2" width="28" height="28" style="margin:0 auto 12px;display:block;animation:spin 1s linear infinite;"><circle cx="12" cy="12" r="10" stroke-opacity=".2"/><path d="M12 2a10 10 0 0 1 10 10"/></svg>
+          Loading articles...
+        </div>
+        <table id="articles-table" class="art-table" style="display:none;">
           <thead>
-            <tr style="border-bottom:2px solid #e5e7eb;">
-              <th style="padding:12px 16px;text-align:left;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#6b7280;">Article</th>
-              <th style="padding:12px 16px;text-align:left;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#6b7280;width:120px;">Section</th>
-              <th style="padding:12px 16px;text-align:left;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#6b7280;width:100px;">Author</th>
-              <th style="padding:12px 16px;text-align:left;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#6b7280;width:90px;">Status</th>
-              <th style="padding:12px 16px;text-align:left;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#6b7280;width:100px;">Updated</th>
-              <th style="padding:12px 16px;text-align:right;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#6b7280;width:140px;">Actions</th>
+            <tr>
+              <th style="min-width:280px;">Article</th>
+              <th style="width:130px;">Section</th>
+              <th style="width:130px;">Author</th>
+              <th style="width:110px;">Status</th>
+              <th style="width:120px;">Updated</th>
+              <th class="tar" style="width:180px;">Actions</th>
             </tr>
           </thead>
           <tbody id="articles-tbody"></tbody>
         </table>
-        <div id="articles-empty" style="padding:56px 24px;text-align:center;display:none;">
-          <svg viewBox="0 0 24 24" fill="none" stroke="#d1d5db" stroke-width="1.2" width="48" height="48" style="margin:0 auto 16px;display:block;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-          <p style="color:#9ca3af;font-size:14px;margin:0;">No articles yet. <a href="admin-article-editor.html" style="color:#0a528e;font-weight:600;">Create your first article →</a></p>
+        <div id="articles-empty" style="padding:64px 24px;text-align:center;display:none;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" stroke-width="1.2" width="52" height="52" style="margin:0 auto 16px;display:block;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          <h3 style="font-size:16px;font-weight:600;color:#334155;margin-bottom:6px;">No articles found</h3>
+          <p style="color:#94a3b8;font-size:13.5px;margin:0 0 18px;">Start writing stories, findings, and commentary for the publication.</p>
+          <a href="admin-article-editor.html" class="art-new-btn" style="display:inline-flex;">Create New Article →</a>
         </div>
       </div>
 
       <!-- Trash panel -->
-      <div class="card" id="art-trash-panel" style="padding:0;overflow:hidden;display:none;">
+      <div class="art-card" id="art-trash-panel" style="display:none;">
         <div style="padding:14px 20px;background:#fff8f8;border-bottom:1px solid #fee2e2;display:flex;align-items:center;gap:10px;">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
-          <span style="font-size:12px;font-weight:700;color:#dc2626;letter-spacing:.04em;text-transform:uppercase;">Trash</span>
-          <span style="font-size:12px;color:#9ca3af;margin-left:auto;">Items in trash are not visible on the website</span>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2.2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+          <span style="font-size:12px;font-weight:700;color:#dc2626;letter-spacing:.04em;text-transform:uppercase;">Recycle Bin / Trash</span>
+          <span style="font-size:12px;color:#94a3b8;margin-left:auto;">Deleted articles stay here until permanently removed</span>
         </div>
-        <div id="art-trash-loading" style="padding:32px;text-align:center;color:#9ca3af;font-size:13px;">Loading...</div>
-        <table id="art-trash-table" style="width:100%;border-collapse:collapse;display:none;">
+        <div id="art-trash-loading" style="padding:36px;text-align:center;color:#94a3b8;font-size:13px;">Loading trash...</div>
+        <table id="art-trash-table" class="art-table" style="display:none;">
           <thead>
-            <tr style="border-bottom:1px solid #fee2e2;">
-              <th style="padding:10px 16px;text-align:left;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#9ca3af;">Article</th>
-              <th style="padding:10px 16px;text-align:left;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#9ca3af;width:110px;">Section</th>
-              <th style="padding:10px 16px;text-align:left;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#9ca3af;width:110px;">Deleted</th>
-              <th style="padding:10px 16px;text-align:right;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#9ca3af;width:160px;">Actions</th>
+            <tr style="background:#fffafa;border-bottom:1px solid #fee2e2;">
+              <th style="min-width:260px;color:#991b1b;">Article</th>
+              <th style="width:130px;color:#991b1b;">Section</th>
+              <th style="width:130px;color:#991b1b;">Deleted At</th>
+              <th class="tar" style="width:200px;color:#991b1b;">Actions</th>
             </tr>
           </thead>
           <tbody id="art-trash-tbody"></tbody>
         </table>
-        <div id="art-trash-empty" style="padding:48px 24px;text-align:center;display:none;">
-          <svg viewBox="0 0 24 24" fill="none" stroke="#d1d5db" stroke-width="1.2" width="40" height="40" style="margin:0 auto 12px;display:block;"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
-          <p style="color:#9ca3af;font-size:14px;margin:0;">Trash is empty</p>
+        <div id="art-trash-empty" style="padding:56px 24px;text-align:center;display:none;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" stroke-width="1.2" width="44" height="44" style="margin:0 auto 12px;display:block;"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+          <h3 style="font-size:15px;font-weight:600;color:#475569;margin-bottom:4px;">Trash is empty</h3>
+          <p style="color:#94a3b8;font-size:13px;margin:0;">No deleted articles in the recycle bin.</p>
         </div>
       </div>
     </section>
