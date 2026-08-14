@@ -156,9 +156,10 @@ function applyHomepageConfig(cfg) {
 
       var events = evSec.events;
       if (Array.isArray(events)) {
+        var activeEvents = events.filter(function(ev) { return ev && ev.enabled !== false; });
+        var top2Events = activeEvents.slice(0, 2); // Show strictly top 2 active events on homepage!
         var eventsListHtml = '';
-        events.forEach(function(ev, idx) {
-          if (ev.enabled === false) return;
+        top2Events.forEach(function(ev, idx) {
           if (idx > 0 && eventsListHtml) eventsListHtml += '<hr class="event-divider" />';
           eventsListHtml += `
             <div class="event-item" id="event-item-${idx + 1}">
@@ -175,6 +176,8 @@ function applyHomepageConfig(cfg) {
           var oldItems = evPanel.querySelectorAll('.event-item, .event-divider');
           oldItems.forEach(function(el) { el.remove(); });
           if (seeAllEl) {
+            seeAllEl.href = evSec.seeAllHref || 'events.html';
+            seeAllEl.textContent = evSec.seeAllText || 'See all events';
             seeAllEl.insertAdjacentHTML('beforebegin', eventsListHtml);
           }
         }

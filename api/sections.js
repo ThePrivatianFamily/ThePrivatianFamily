@@ -286,14 +286,14 @@ module.exports = async function handler(req, res) {
       eventsSection: {
         eventsHeading: 'Upcoming Events',
         seeAllText: 'See all events',
-        seeAllHref: 'index.html#events-section',
+        seeAllHref: 'events.html',
         events: [
           {
             id: 'ev-1',
             date: 'Sep. 22, 2026',
             title: 'Debate, Debrief, and Dissect: The Role of Privacy in the Modern Family and American Life',
             meta: '4 p.m. Thursday ■ Privatian Forum, Main Hall, Private Campus; via livestream',
-            href: '#',
+            href: 'events.html',
             enabled: true
           },
           {
@@ -301,7 +301,23 @@ module.exports = async function handler(req, res) {
             date: 'Oct. 16, 2026',
             title: 'America at 250 and Beyond: A Well-Informed Privatian Citizenry',
             meta: '4 p.m. Friday ■ Privatian Institute, 79 Heritage Ave., Cambridge',
-            href: '#',
+            href: 'events.html',
+            enabled: true
+          },
+          {
+            id: 'ev-3',
+            date: 'Nov. 12, 2026',
+            title: 'Winter Symposium on Archival Preservation and Family Documentation',
+            meta: '2 p.m. Thursday ■ Cambridge Heritage Library & Virtual Room A',
+            href: 'events.html',
+            enabled: true
+          },
+          {
+            id: 'ev-4',
+            date: 'Dec. 04, 2026',
+            title: 'Annual Privatian Literary Honors and Endowed Fellowship Awards',
+            meta: '6 p.m. Friday ■ Grand Ballroom, The Privatian Society',
+            href: 'events.html',
             enabled: true
           }
         ],

@@ -25,7 +25,7 @@
     ],
     exploreTitle: 'Explore the Privatian',
     explore: [
-      { id: 'exp-1', label: 'Events', href: 'index.html#events-section', target: '_self', enabled: true },
+      { id: 'exp-1', label: 'Events', href: 'events.html', target: '_self', enabled: true },
       { id: 'exp-2', label: 'Article archive', href: 'index.html', target: '_self', enabled: true },
       { id: 'exp-3', label: 'About us', href: 'index.html', target: '_self', enabled: true },
       { id: 'exp-4', label: 'News+', href: 'index.html', target: '_self', enabled: true },
@@ -55,7 +55,7 @@
     { id: 'sub-1', label: 'FAMILY LEGACY', href: 'section.html?slug=community-heritage', icon: null, enabled: true },
     { id: 'sub-2', label: 'EXPERIENCE', href: 'section.html?slug=culture', icon: null, enabled: true },
     { id: 'sub-3', label: 'THE PRIVATIAN READS', href: 'section.html?slug=findings', icon: null, enabled: true },
-    { id: 'sub-4', label: 'EVENTS', href: 'index.html#events-section', icon: 'calendar', enabled: true }
+    { id: 'sub-4', label: 'EVENTS', href: 'events.html', icon: 'calendar', enabled: true }
   ];
 
   var DEFAULT_SECTIONS = [

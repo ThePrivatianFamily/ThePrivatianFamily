@@ -2621,14 +2621,14 @@ const DEFAULT_HOMEPAGE_CONFIG = {
   eventsSection: {
     eventsHeading: 'Upcoming Events',
     seeAllText: 'See all events',
-    seeAllHref: 'index.html#events-section',
+    seeAllHref: 'events.html',
     events: [
       {
         id: 'ev-1',
         date: 'Sep. 22, 2026',
         title: 'Debate, Debrief, and Dissect: The Role of Privacy in the Modern Family and American Life',
         meta: '4 p.m. Thursday ■ Privatian Forum, Main Hall, Private Campus; via livestream',
-        href: '#',
+        href: 'events.html',
         enabled: true
       },
       {
@@ -2636,7 +2636,23 @@ const DEFAULT_HOMEPAGE_CONFIG = {
         date: 'Oct. 16, 2026',
         title: 'America at 250 and Beyond: A Well-Informed Privatian Citizenry',
         meta: '4 p.m. Friday ■ Privatian Institute, 79 Heritage Ave., Cambridge',
-        href: '#',
+        href: 'events.html',
+        enabled: true
+      },
+      {
+        id: 'ev-3',
+        date: 'Nov. 12, 2026',
+        title: 'Winter Symposium on Archival Preservation and Family Documentation',
+        meta: '2 p.m. Thursday ■ Cambridge Heritage Library & Virtual Room A',
+        href: 'events.html',
+        enabled: true
+      },
+      {
+        id: 'ev-4',
+        date: 'Dec. 04, 2026',
+        title: 'Annual Privatian Literary Honors and Endowed Fellowship Awards',
+        meta: '6 p.m. Friday ■ Grand Ballroom, The Privatian Society',
+        href: 'events.html',
         enabled: true
       }
     ],
@@ -2982,26 +2998,34 @@ function renderHomepageVisualCanvas() {
         <!-- Events Left Panel -->
         <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:18px;">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
-            <h3 style="font-size:16px;font-weight:700;color:#0f172a;margin:0;">${escapeHtml(evSec.eventsHeading || 'Upcoming Events')}</h3>
-            <button type="button" class="btn btn--primary btn--sm" onclick="openHpEventModal()">+ Add Event</button>
-          </div>
-          ${events.length === 0 ? `<div style="font-size:12.5px;color:#94a3b8;padding:16px 0;">No events listed yet.</div>` : ''}
-          ${events.map((ev, eIdx) => `
-            <div class="hp-event-item-card" onclick="openHpEventModal('${ev.id}')" style="cursor:pointer;">
-              <div>
-                <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
-                  <span class="hp-event-date-chip">${escapeHtml(ev.date || 'TBA')}</span>
-                  <span style="font-size:11px;color:#64748b;">${ev.enabled !== false ? 'Active' : 'Disabled'}</span>
-                </div>
-                <div style="font-size:13.5px;font-weight:600;color:#0f172a;">${escapeHtml(ev.title || 'Untitled Event')}</div>
-                <div style="font-size:12px;color:#64748b;margin-top:2px;">${escapeHtml(ev.meta || '')}</div>
-              </div>
-              <div style="display:flex;gap:4px;">
-                <button type="button" class="art-action-btn art-action-btn--edit" title="Edit Event">${ICONS.pencil}</button>
-              </div>
+            <div>
+              <h3 style="font-size:16px;font-weight:700;color:#0f172a;margin:0;">${escapeHtml(evSec.eventsHeading || 'Upcoming Events')}</h3>
+              <span style="font-size:11px;color:#64748b;">Showing top 2 active events on Homepage</span>
             </div>
-          `).join('')}
-          <div style="margin-top:10px;font-size:13px;font-weight:600;color:#0a528e;">
+            <button type="button" class="btn btn--primary btn--sm" onclick="switchHpTab('events')">Manage All Events</button>
+          </div>
+          ${(() => {
+            const activeEvents = events.filter(e => e.enabled !== false);
+            const top2 = activeEvents.slice(0, 2);
+            if (top2.length === 0) return '<div style="font-size:12.5px;color:#94a3b8;padding:16px 0;">No active events to display on homepage.</div>';
+            return top2.map((ev, eIdx) => `
+              <div class="hp-event-item-card" onclick="openHpEventModal('${ev.id}')" style="cursor:pointer;margin-bottom:8px;">
+                <div>
+                  <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+                    <span class="hp-event-date-chip">${escapeHtml(ev.date || 'TBA')}</span>
+                    <span style="background:${eIdx === 0 ? '#16a34a' : '#0284c7'};color:#fff;font-size:9.5px;font-weight:700;padding:1px 5px;border-radius:3px;">Homepage #${eIdx + 1}</span>
+                  </div>
+                  <div style="font-size:13.5px;font-weight:600;color:#0f172a;">${escapeHtml(ev.title || 'Untitled Event')}</div>
+                  <div style="font-size:12px;color:#64748b;margin-top:2px;">${escapeHtml(ev.meta || '')}</div>
+                </div>
+                <div style="display:flex;gap:4px;">
+                  <button type="button" class="art-action-btn art-action-btn--edit" title="Edit Event">${ICONS.pencil}</button>
+                </div>
+              </div>
+            `).join('');
+          })()}
+          ${events.length > 2 ? `<div style="font-size:11.5px;color:#64748b;margin-top:8px;padding:4px 8px;background:#f1f5f9;border-radius:4px;display:inline-block;">+ ${events.length - 2} more event(s) listed on <a href="events.html" target="_blank" style="color:#0a528e;font-weight:600;">events.html</a></div>` : ''}
+          <div style="margin-top:10px;font-size:13px;font-weight:600;color:#0a528e;cursor:pointer;" onclick="switchHpTab('events')">
             ${escapeHtml(evSec.seeAllText || 'See all events')} &rarr;
           </div>
         </div>
@@ -3160,12 +3184,18 @@ function renderEventsEditor() {
   const events = evSec.events || [];
   const featured = evSec.featured || {};
 
+  let activeCount = 0;
+
   container.innerHTML = `
     <div style="display:grid;grid-template-columns:1.2fr 1fr;gap:20px;">
       <!-- Events Settings Card -->
       <div class="card" style="padding:22px;">
+        <div style="background:#e0f2fe;border:1px solid #bae6fd;border-radius:8px;padding:12px 14px;margin-bottom:18px;font-size:12.5px;color:#0369a1;line-height:1.45;">
+          <strong>ℹ Event Display Rule:</strong> The top <strong>2 active events</strong> in this list will automatically show on the Homepage "Upcoming Events" section. All scheduled events will be displayed on the dedicated <a href="events.html" target="_blank" style="color:#0284c7;font-weight:700;text-decoration:underline;">All Events Page (events.html)</a>. Use the <strong>▲ / ▼</strong> arrows to reorder events.
+        </div>
+
         <div class="form-group" style="margin-bottom:16px;">
-          <label class="form-label" for="hp-events-heading-input">Events Section Heading</label>
+          <label class="form-label" for="hp-events-heading-input">Homepage Events Heading</label>
           <input type="text" id="hp-events-heading-input" class="form-input" value="${escapeHtml(evSec.eventsHeading || 'Upcoming Events')}" oninput="onHpSectionTitleInput('eventsHeading', this.value)" />
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px;">
@@ -3175,30 +3205,53 @@ function renderEventsEditor() {
           </div>
           <div class="form-group">
             <label class="form-label" for="hp-events-seeall-href">"See All" Link URL</label>
-            <input type="text" id="hp-events-seeall-href" class="form-input" value="${escapeHtml(evSec.seeAllHref || 'index.html#events-section')}" oninput="onHpSectionTitleInput('seeAllHref', this.value)" />
+            <input type="text" id="hp-events-seeall-href" class="form-input" value="${escapeHtml(evSec.seeAllHref || 'events.html')}" oninput="onHpSectionTitleInput('seeAllHref', this.value)" />
           </div>
         </div>
 
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;border-top:1px solid var(--border);padding-top:14px;">
-          <h4 style="font-size:14px;font-weight:700;margin:0;">Upcoming Events List (${events.length})</h4>
+          <div>
+            <h4 style="font-size:14px;font-weight:700;margin:0;">All Events List (${events.length})</h4>
+            <span style="font-size:11px;color:var(--text-muted);">Reorder to pick which 2 events appear on the Homepage</span>
+          </div>
           <button type="button" class="btn btn--primary btn--sm" onclick="openHpEventModal()">+ Add Event</button>
         </div>
-        ${events.map((ev, idx) => `
-          <div class="hp-event-item-card">
-            <div style="flex:1;">
-              <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
-                <span class="hp-event-date-chip">${escapeHtml(ev.date || 'TBA')}</span>
-                <span style="font-size:11px;color:${ev.enabled !== false ? '#16a34a' : '#94a3b8'};">${ev.enabled !== false ? 'Active' : 'Disabled'}</span>
+        ${events.length === 0 ? `<div style="font-size:12.5px;color:var(--text-muted);padding:16px 0;">No events listed yet. Click "+ Add Event" above.</div>` : ''}
+        ${events.map((ev, idx) => {
+          const isActive = ev.enabled !== false;
+          let slotBadge = '';
+          if (isActive) {
+            activeCount++;
+            if (activeCount === 1) slotBadge = `<span style="background:#16a34a;color:#fff;font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;text-transform:uppercase;">Homepage #1</span>`;
+            else if (activeCount === 2) slotBadge = `<span style="background:#0284c7;color:#fff;font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;text-transform:uppercase;">Homepage #2</span>`;
+          }
+
+          return `
+            <div class="hp-event-item-card ${!isActive ? 'menu-item-card--disabled' : ''}">
+              <div class="menu-item-reorder-btns">
+                <button type="button" class="menu-reorder-btn" title="Move Up" ${idx === 0 ? 'disabled style="opacity:0.3;"' : ''} onclick="moveHpEvent('${ev.id}', -1)">${MENU_ICONS.up}</button>
+                <button type="button" class="menu-reorder-btn" title="Move Down" ${idx === events.length - 1 ? 'disabled style="opacity:0.3;"' : ''} onclick="moveHpEvent('${ev.id}', 1)">${MENU_ICONS.down}</button>
               </div>
-              <div style="font-size:13.5px;font-weight:600;color:var(--text-primary);">${escapeHtml(ev.title || 'Untitled Event')}</div>
-              <div style="font-size:12px;color:var(--text-muted);">${escapeHtml(ev.meta || '')}</div>
+              <div style="flex:1;min-width:0;">
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap;">
+                  <span class="hp-event-date-chip">${escapeHtml(ev.date || 'TBA')}</span>
+                  ${slotBadge}
+                  <span style="font-size:11px;color:${isActive ? '#16a34a' : '#94a3b8'};">${isActive ? 'Active' : 'Disabled'}</span>
+                </div>
+                <div style="font-size:13.5px;font-weight:600;color:var(--text-primary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(ev.title || 'Untitled Event')}</div>
+                <div style="font-size:12px;color:var(--text-muted);">${escapeHtml(ev.meta || '')}</div>
+              </div>
+              <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">
+                <label class="hs-toggle" title="Toggle visibility">
+                  <input type="checkbox" ${isActive ? 'checked' : ''} onchange="toggleHpEvent('${ev.id}')" />
+                  <span class="hs-toggle-track"><span class="hs-toggle-thumb"></span></span>
+                </label>
+                <button type="button" class="art-action-btn art-action-btn--edit" onclick="openHpEventModal('${ev.id}')" title="Edit Event">${ICONS.pencil}</button>
+                <button type="button" class="art-action-btn art-action-btn--trash" onclick="deleteHpEvent('${ev.id}')" title="Delete Event">${ICONS.trash}</button>
+              </div>
             </div>
-            <div style="display:flex;gap:6px;">
-              <button type="button" class="art-action-btn art-action-btn--edit" onclick="openHpEventModal('${ev.id}')">${ICONS.pencil}</button>
-              <button type="button" class="art-action-btn art-action-btn--trash" onclick="deleteHpEvent('${ev.id}')">${ICONS.trash}</button>
-            </div>
-          </div>
-        `).join('')}
+          `;
+        }).join('')}
       </div>
 
       <!-- Featured Spotlight Card -->
@@ -3504,6 +3557,31 @@ function deleteHpEvent(id) {
   homepageDraftConfig.eventsSection.events = homepageDraftConfig.eventsSection.events.filter(e => e.id !== id);
   renderActiveHpTab();
   showToast('info', 'Event removed');
+}
+
+function moveHpEvent(id, dir) {
+  if (!homepageDraftConfig || !homepageDraftConfig.eventsSection || !homepageDraftConfig.eventsSection.events) return;
+  const items = homepageDraftConfig.eventsSection.events;
+  const idx = items.findIndex(e => e.id === id);
+  if (idx === -1) return;
+  const newIdx = idx + dir;
+  if (newIdx < 0 || newIdx >= items.length) return;
+  pushHomepageHistory();
+  const temp = items[idx];
+  items[idx] = items[newIdx];
+  items[newIdx] = temp;
+  renderActiveHpTab();
+  showToast('info', 'Event reordered');
+}
+
+function toggleHpEvent(id) {
+  if (!homepageDraftConfig || !homepageDraftConfig.eventsSection || !homepageDraftConfig.eventsSection.events) return;
+  const ev = homepageDraftConfig.eventsSection.events.find(e => e.id === id);
+  if (!ev) return;
+  pushHomepageHistory();
+  ev.enabled = ev.enabled === false ? true : false;
+  renderActiveHpTab();
+  showToast('info', ev.enabled ? 'Event enabled' : 'Event disabled');
 }
 
 function closeHpEventModal() {
