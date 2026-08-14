@@ -1,4 +1,4 @@
-﻿/* =================================================================
+/* =================================================================
    THE PRIVATIAN FAMILY - ADMIN JS
    Sections CRUD - Supabase API - Toast - Modal
 ================================================================= */
@@ -650,35 +650,44 @@ function initAccessPage() {
 }
 
 // ── Reusable confirmation modal ─────────────────────────────────
-function _confirmModal({ title, body, confirmText = 'Confirm', confirmColor = '#dc2626', onConfirm }) {
-  const id = 'access-confirm-modal';
-  const ex = document.getElementById(id);
+function _confirmModal({ title, body, message, confirmText, confirmLabel, confirmColor, variant, danger, onConfirm }) {
+  var _body    = body || message || '';
+  var _btnText = confirmText || confirmLabel || 'Confirm';
+  var _variant = variant || (danger === false ? 'success' : 'danger');
+  if (typeof danger === 'undefined' && confirmColor && confirmColor !== '#dc2626') _variant = 'warning';
+  var themes = {
+    danger:  { iconBg:'#fff1f2', iconColor:'#dc2626', btnBg:'#dc2626', icon:'<circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>' },
+    success: { iconBg:'#f0fdf4', iconColor:'#16a34a', btnBg:'#16a34a', icon:'<circle cx="12" cy="12" r="10"/><polyline points="9 12 11.5 14.5 15 10"/>' },
+    warning: { iconBg:'#fffbeb', iconColor:'#d97706', btnBg:'#d97706', icon:'<path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>' },
+  };
+  var t = themes[_variant] || themes.danger;
+  var ex = document.getElementById('_confirm-modal-overlay');
   if (ex) ex.remove();
-
-  const overlay = document.createElement('div');
-  overlay.id = id;
-  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.48);z-index:9999;display:flex;align-items:center;justify-content:center;';
-
-  const iconHtml = confirmColor === '#dc2626'
-    ? '<svg viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2" width="24" height="24"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>'
-    : '<svg viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="2" width="24" height="24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>';
-  const iconBg = confirmColor === '#dc2626' ? '#fee2e2' : '#fef3c7';
-
-  overlay.innerHTML = `
-    <div style="background:#fff;border-radius:14px;padding:32px 28px;max-width:440px;width:92%;box-shadow:0 24px 64px rgba(0,0,0,.22);text-align:center;">
-      <div style="width:52px;height:52px;border-radius:50%;background:${iconBg};display:flex;align-items:center;justify-content:center;margin:0 auto 16px;">${iconHtml}</div>
-      <h3 style="font-size:17px;font-weight:700;color:#111827;margin:0 0 10px;">${escapeHtml(title)}</h3>
-      <p  style="font-size:14px;color:#4b5563;line-height:1.65;margin:0 0 24px;">${body}</p>
-      <div style="display:flex;gap:10px;justify-content:center;">
-        <button id="confirm-modal-cancel" style="background:#f3f4f6;color:#374151;border:none;border-radius:8px;padding:10px 24px;font-size:14px;font-weight:600;cursor:pointer;">Cancel</button>
-        <button id="confirm-modal-ok"     style="background:${confirmColor};color:#fff;border:none;border-radius:8px;padding:10px 24px;font-size:14px;font-weight:600;cursor:pointer;">${escapeHtml(confirmText)}</button>
-      </div>
-    </div>`;
-
+  if (!document.getElementById('_cm-style')) {
+    var s = document.createElement('style'); s.id = '_cm-style';
+    s.textContent = '@keyframes _cmFIn{from{opacity:0}to{opacity:1}}@keyframes _cmSlUp{from{opacity:0;transform:translateY(16px) scale(.96)}to{opacity:1;transform:none}}._cm-card{animation:_cmSlUp .2s cubic-bezier(.34,1.3,.64,1) both}._cm-btn{transition:filter .15s,transform .1s;font-family:inherit;cursor:pointer;border:none;outline:none;}._cm-btn:hover{filter:brightness(.9)}._cm-btn:active{transform:scale(.97)}';
+    document.head.appendChild(s);
+  }
+  var overlay = document.createElement('div');
+  overlay.id = '_confirm-modal-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;background:rgba(8,18,36,.52);backdrop-filter:blur(4px);animation:_cmFIn .15s ease;';
+  overlay.innerHTML = '<div class="_cm-card" style="background:#fff;border-radius:18px;padding:38px 32px 30px;max-width:420px;width:93%;box-shadow:0 32px 80px rgba(0,0,0,.22),0 0 0 1px rgba(0,0,0,.04);text-align:center;position:relative;">'
+    + '<button id="_cm-x" style="position:absolute;top:14px;right:16px;background:none;border:none;cursor:pointer;color:#bbb;padding:4px;border-radius:6px;font-size:20px;line-height:1;">&times;</button>'
+    + '<div style="width:58px;height:58px;border-radius:50%;background:' + t.iconBg + ';display:flex;align-items:center;justify-content:center;margin:0 auto 20px;">'
+    + '<svg viewBox="0 0 24 24" fill="none" stroke="' + t.iconColor + '" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="26" height="26">' + t.icon + '</svg></div>'
+    + '<h3 style="font-size:17px;font-weight:700;color:#0d1f35;margin:0 0 9px;letter-spacing:-.015em;">' + escapeHtml(title) + '</h3>'
+    + '<p style="font-size:13.5px;color:#64748b;line-height:1.65;margin:0 0 28px;">' + _body + '</p>'
+    + '<div style="display:flex;gap:10px;justify-content:center;">'
+    + '<button id="_cm-cancel" class="_cm-btn" style="background:#f1f5f9;color:#374151;padding:10px 24px;border-radius:10px;font-size:13.5px;font-weight:600;border:1px solid #e2e8f0;">Cancel</button>'
+    + '<button id="_cm-ok" class="_cm-btn" style="background:' + t.btnBg + ';color:#fff;padding:10px 26px;border-radius:10px;font-size:13.5px;font-weight:700;min-width:120px;">' + escapeHtml(_btnText) + '</button>'
+    + '</div></div>';
   document.body.appendChild(overlay);
-  overlay.querySelector('#confirm-modal-cancel').onclick = () => overlay.remove();
-  overlay.querySelector('#confirm-modal-ok').onclick = () => { overlay.remove(); onConfirm(); };
-  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+  var close = function(){ overlay.remove(); };
+  overlay.querySelector('#_cm-cancel').onclick = close;
+  overlay.querySelector('#_cm-x').onclick      = close;
+  overlay.querySelector('#_cm-ok').onclick     = function(){ close(); onConfirm(); };
+  overlay.addEventListener('click', function(e){ if (e.target === overlay) close(); });
+  setTimeout(function(){ var ok=overlay.querySelector('#_cm-ok'); if(ok)ok.focus(); }, 50);
 }
 
 // ── Min-admins info popup ────────────────────────────────────────
@@ -1361,6 +1370,8 @@ async function initArticlesPage() {
 
   document.getElementById('articles-loading').style.display = 'none';
   renderArticlesTable(_allArticles);
+  _loadArticleTrash(); // update trash count badge
+  switchArticlesView(_currentArticlesView || 'active');
 }
 
 function renderArticlesTable(articles) {
@@ -1475,9 +1486,9 @@ async function toggleArticleStatus(id, btn) {
 function deleteArticleConfirm(id, title) {
   _confirmModal({
     title: 'Move to Trash',
-    message: `"<strong>${escapeHtml(title)}</strong>" will be moved to Trash and hidden from the website. You can restore it later.`,
-    confirmLabel: 'Move to Trash',
-    danger: true,
+    body: `"<strong>${escapeHtml(title)}</strong>" will be moved to Trash and hidden from the website. You can restore it later from the Trash tab.`,
+    confirmText: 'Move to Trash',
+    variant: 'danger',
     onConfirm: () => _doDeleteArticle(id)
   });
 }
@@ -1499,9 +1510,9 @@ async function _doDeleteArticle(id) {
 function restoreArticleConfirm(id, title) {
   _confirmModal({
     title: 'Restore Article',
-    message: `Restore "<strong>${escapeHtml(title)}</strong>"? It will become visible again based on its current status.`,
-    confirmLabel: 'Restore',
-    danger: false,
+    body: `Restore "<strong>${escapeHtml(title)}</strong>"? It will be moved back to your articles list based on its current status (Draft / Published).`,
+    confirmText: 'Restore',
+    variant: 'success',
     onConfirm: () => _doRestoreArticle(id)
   });
 }
@@ -1521,10 +1532,10 @@ async function _doRestoreArticle(id) {
 
 function permanentDeleteArticleConfirm(id, title) {
   _confirmModal({
-    title: 'Permanently Delete',
-    message: `<strong>\u26A0\uFE0F This cannot be undone.</strong><br><br>Permanently delete "<strong>${escapeHtml(title)}</strong>"? The article will be gone forever.`,
-    confirmLabel: 'Delete Forever',
-    danger: true,
+    title: 'Delete Forever',
+    body: `This action <strong>cannot be undone</strong>. "<strong>${escapeHtml(title)}</strong>" will be permanently removed with no way to recover it.`,
+    confirmText: 'Delete Forever',
+    variant: 'danger',
     onConfirm: () => _doPermanentDeleteArticle(id)
   });
 }
