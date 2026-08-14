@@ -321,6 +321,60 @@
       });
     }
 
+    // ── Nav horizontal drag-scroll & wheel-scroll ──────────────
+    (function(){
+      var nav = document.getElementById('main-nav');
+      if (!nav) return;
+
+      // Mouse wheel → horizontal scroll
+      nav.addEventListener('wheel', function(e) {
+        if (e.deltaY === 0) return;
+        e.preventDefault();
+        nav.scrollLeft += e.deltaY * 1.5;
+      }, { passive: false });
+
+      // Mouse drag → horizontal scroll
+      var isDragging = false, startX = 0, scrollStart = 0;
+      nav.addEventListener('mousedown', function(e) {
+        // Only drag if clicking on nav itself or nav-list (not a link)
+        if (e.target.tagName === 'A') return;
+        isDragging  = true;
+        startX      = e.pageX;
+        scrollStart = nav.scrollLeft;
+        nav.style.cursor = 'grabbing';
+        e.preventDefault();
+      });
+      document.addEventListener('mousemove', function(e) {
+        if (!isDragging) return;
+        var dx = e.pageX - startX;
+        nav.scrollLeft = scrollStart - dx;
+      });
+      document.addEventListener('mouseup', function() {
+        if (!isDragging) return;
+        isDragging = false;
+        nav.style.cursor = '';
+      });
+
+      // Touch → horizontal scroll (mobile)
+      var touchStartX = 0, touchScrollStart = 0;
+      nav.addEventListener('touchstart', function(e) {
+        touchStartX     = e.touches[0].pageX;
+        touchScrollStart = nav.scrollLeft;
+      }, { passive: true });
+      nav.addEventListener('touchmove', function(e) {
+        var dx = e.touches[0].pageX - touchStartX;
+        nav.scrollLeft = touchScrollStart - dx;
+      }, { passive: true });
+
+      // Show current section in view on load
+      var activeLink = nav.querySelector('.nav-link--active, .active');
+      if (activeLink) {
+        setTimeout(function() {
+          activeLink.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+        }, 100);
+      }
+    })();
+
     // B. Menu Overlay Section List
     var menuList = document.getElementById('menu-section-list');
     if (menuList) {
