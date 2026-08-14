@@ -739,7 +739,7 @@ async function loadAccessList() {
   });
 
   try {
-    const res = await fetch('/api/admins?action=list?include_deleted=true', {
+    const res = await fetch('/api/admins?action=list&include_deleted=true', {
       headers: { 'Authorization': 'Bearer ' + window.PRIVATIAN_TOKEN }
     });
     if (!res.ok) throw new Error('Failed');
