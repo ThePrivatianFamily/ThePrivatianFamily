@@ -180,7 +180,9 @@ body{font-family:var(--sans);background:var(--bg);padding-top:calc(var(--tb)+var
 #ed-rt blockquote.featured::before{content:'“';position:absolute;
   left:16px;top:-2px;font:900 80px/1 Georgia,'Times New Roman',serif;
   color:var(--navy);opacity:.3;line-height:1;pointer-events:none;user-select:none}
-#ed-rt blockquote.featured::after{display:none}
+#ed-rt blockquote.featured::after{content:'\u201d';position:absolute;
+  right:14px;bottom:-22px;font:900 80px/1 Georgia,'Times New Roman',serif;
+  color:var(--navy);opacity:.2;line-height:1;pointer-events:none;user-select:none}
 #ed-rt blockquote.featured p{margin:0;font-size:19px;line-height:1.72;color:#1a3a5c}
 #ed-rt a{color:var(--navy);text-decoration:underline;text-underline-offset:3px}
 #ed-rt hr{border:none;border-top:2px solid #e4ddd5;margin:2.5em 0}
