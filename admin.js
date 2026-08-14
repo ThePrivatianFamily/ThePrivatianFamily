@@ -852,8 +852,7 @@ async function addAdminEmail() {
   const roleSelect = document.getElementById('access-role-select');
   const email = (emailInput.value || '').trim().toLowerCase();
   const role  = roleSelect ? roleSelect.value : 'Admin';
-  if (!email || !email.includes('@')) { showToast('error', 'Please enter a valid email.'); return; }
-  if (!email.endsWith('@gmail.com'))  { showToast('error', 'Only @gmail.com addresses are allowed.'); return; }
+  if (!email || !email.includes('@') || !email.includes('.')) { showToast('error', 'Please enter a valid email address.'); return; }
   try {
     const res  = await fetch('/api/admins?action=add', {
       method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + window.PRIVATIAN_TOKEN },
