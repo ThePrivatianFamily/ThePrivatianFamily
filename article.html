@@ -13,9 +13,56 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="supabase-config.js"></script>
   <script src="components.js"></script>
+  <style>
+    /* Hide hardcoded placeholders when loading a real article */
+    .article-loading #article-hero-band,
+    .article-loading #article-layout,
+    .article-loading #article-related { opacity: 0; pointer-events: none; }
+    .article-reveal #article-hero-band,
+    .article-reveal #article-layout,
+    .article-reveal #article-related {
+      opacity: 1;
+      transition: opacity 0.38s ease;
+    }
+    /* Skeleton shimmer */
+    @keyframes _shimmer { 0%{background-position:-600px 0} 100%{background-position:600px 0} }
+    .article-skeleton-bar {
+      background: linear-gradient(90deg,#e8edf2 25%,#f4f6f8 50%,#e8edf2 75%);
+      background-size: 1200px 100%;
+      animation: _shimmer 1.4s infinite linear;
+      border-radius: 4px;
+      display: block;
+    }
+    #article-skeleton {
+      max-width: 680px; margin: 48px auto; padding: 0 24px;
+    }
+  </style>
+  <script>
+    // Apply loading class immediately if article params present
+    (function(){
+      var p = new URLSearchParams(location.search);
+      if (p.get('id') || p.get('slug')) document.documentElement.classList.add('article-loading-pending');
+    })();
+  </script>
 </head>
 <body class="article-page">
   <div id="site-header-mount"></div>
+
+  <!-- Skeleton loader (shown while article loads) -->
+  <div id="article-skeleton" style="display:none">
+    <div class="article-skeleton-bar" style="height:12px;width:80px;margin-bottom:28px;"></div>
+    <div class="article-skeleton-bar" style="height:36px;width:95%;margin-bottom:12px;"></div>
+    <div class="article-skeleton-bar" style="height:36px;width:75%;margin-bottom:20px;"></div>
+    <div class="article-skeleton-bar" style="height:18px;width:60%;margin-bottom:40px;"></div>
+    <div class="article-skeleton-bar" style="height:380px;width:100%;margin-bottom:32px;border-radius:6px;"></div>
+    <div class="article-skeleton-bar" style="height:16px;width:100%;margin-bottom:12px;"></div>
+    <div class="article-skeleton-bar" style="height:16px;width:92%;margin-bottom:12px;"></div>
+    <div class="article-skeleton-bar" style="height:16px;width:96%;margin-bottom:12px;"></div>
+    <div class="article-skeleton-bar" style="height:16px;width:80%;margin-bottom:24px;"></div>
+    <div class="article-skeleton-bar" style="height:16px;width:100%;margin-bottom:12px;"></div>
+    <div class="article-skeleton-bar" style="height:16px;width:88%;margin-bottom:12px;"></div>
+  </div>
+
   <div class="article-hero-band" id="article-hero-band">
     <div class="article-hero-inner">
       <nav class="article-breadcrumb" id="article-breadcrumb" aria-label="breadcrumb">
@@ -161,19 +208,27 @@
     function readTime(html){
       var txt = html.replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim();
       var words = txt ? txt.split(' ').filter(Boolean).length : 0;
-      return Math.max(1, Math.round(words / 200)); // 200 WPM international standard
+      return Math.max(1, Math.round(words / 200));
     }
     function slugify(name){
       return (name||'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'');
     }
 
+    // ── Hide placeholder content immediately, show skeleton ──
+    document.body.classList.add('article-loading');
+    var sk = g('article-skeleton');
+    if (sk) sk.style.display = 'block';
+
+    function revealPage() {
+      var sk = g('article-skeleton');
+      if (sk) sk.style.display = 'none';
+      document.body.classList.remove('article-loading');
+      document.body.classList.add('article-reveal');
+    }
+
     var url = '/api/articles?action=public-get';
     if (id)   url += '&id='   + encodeURIComponent(id);
     if (slug) url += '&slug=' + encodeURIComponent(slug);
-
-    // Show skeleton loader
-    var headline = g('article-headline');
-    if (headline) headline.style.opacity = '0.3';
 
     fetch(url)
       .then(function(r){ if(!r.ok) throw new Error(r.status); return r.json(); })
@@ -243,6 +298,9 @@
           bioAvatar.innerHTML = '<img src="' + a.author_photo_url + '" alt="' + (a.author||'') + '" style="width:52px;height:52px;border-radius:50%;object-fit:cover;" />';
         }
 
+        // ── Reveal page content now (main data loaded) ──
+        revealPage();
+
         // ── Related articles (same section, exclude self) ──
         fetch('/api/articles?action=public&section=' + secSlug + '&limit=4')
           .then(function(r){ return r.json(); })
@@ -271,8 +329,9 @@
           }).catch(function(){});
       })
       .catch(function(e){
+        revealPage();
         var body = document.getElementById('article-body');
-        if(body) body.innerHTML = '<p style="padding:40px;text-align:center;color:#888">Article not found or not yet published.</p>';
+        if(body) body.innerHTML = '<div style="padding:60px 24px;text-align:center;"><svg viewBox="0 0 24 24" fill="none" stroke="#d1d5db" stroke-width="1.5" width="48" height="48" style="margin:0 auto 16px;display:block;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><p style="color:#9ca3af;font-size:15px;margin:0;">Article not found or not yet published.</p></div>';
       });
   })();
 
