@@ -411,7 +411,15 @@
   function g(i){return document.getElementById(i);}
   function fmt(iso){if(!iso)return '';return new Date(iso).toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'});}
   function slugify(n){return (n||'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'');}
-  var slug=qp('slug'),isAll=!slug||slug==='all';
+  
+  var slug = qp('slug');
+  if (!slug) {
+    var match = location.pathname.match(/\/section\/([^\/\?#]+)/);
+    if (match && match[1] && match[1] !== 'section.html' && match[1] !== 'section') {
+      slug = decodeURIComponent(match[1]);
+    }
+  }
+  var isAll = !slug || slug === 'all';
   var name=isAll?'All Articles':(slug.charAt(0).toUpperCase()+slug.slice(1).replace(/-/g,' '));
   document.querySelector('title').textContent=name+' \u2014 The Privatian Family';
   document.querySelector('meta[name="description"]').setAttribute('content','Browse all articles in the '+name+' section of The Privatian Family.');
@@ -422,19 +430,19 @@
     var cur=sections.find(function(s){return s.slug===slug;});
     if(cur){name=cur.name;['sec-title','bc'].forEach(function(id){var e=g(id);if(e)e.textContent=name;});if(hb)hb.textContent=name;document.querySelector('title').textContent=name+' \u2014 The Privatian Family';if(gl)gl.textContent='All Articles in '+name;}
     var nav=g('sec-nav');
-    if(nav){nav.innerHTML='';sections.forEach(function(s,i){var li=document.createElement('li');var a=document.createElement('a');a.href=s.slug?'section.html?slug='+s.slug:'#';a.className='nav-link'+(s.slug===slug?' nav-link--active':'');if(s.slug===slug){a.style.color='var(--brand-navy)';a.style.fontWeight='700';}a.textContent=s.name;li.appendChild(a);nav.appendChild(li);if(i<sections.length-1){var d=document.createElement('li');d.className='nav-divider';d.setAttribute('aria-hidden','true');nav.appendChild(d);}});}
-    var sbl=g('sb-secs');if(sbl){sbl.innerHTML='';sections.forEach(function(s){var li=document.createElement('li');li.className=s.slug===slug?'cur':'';var a=document.createElement('a');a.href=s.slug?'section.html?slug='+s.slug:'#';a.innerHTML='<span>'+s.name+'</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="11" height="11"><polyline points="9 18 15 12 9 6"/></svg>';li.appendChild(a);sbl.appendChild(li);});}
+    if(nav){nav.innerHTML='';sections.forEach(function(s,i){var li=document.createElement('li');var a=document.createElement('a');a.href=s.slug?'/section/'+s.slug:'#';a.className='nav-link'+(s.slug===slug?' nav-link--active':'');if(s.slug===slug){a.style.color='var(--brand-navy)';a.style.fontWeight='700';}a.textContent=s.name;li.appendChild(a);nav.appendChild(li);if(i<sections.length-1){var d=document.createElement('li');d.className='nav-divider';d.setAttribute('aria-hidden','true');nav.appendChild(d);}});}
+    var sbl=g('sb-secs');if(sbl){sbl.innerHTML='';sections.forEach(function(s){var li=document.createElement('li');li.className=s.slug===slug?'cur':'';var a=document.createElement('a');a.href=s.slug?'/section/'+s.slug:'#';a.innerHTML='<span>'+s.name+'</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="11" height="11"><polyline points="9 18 15 12 9 6"/></svg>';li.appendChild(a);sbl.appendChild(li);});}
   }).catch(function(){});
   var apiUrl='/api/articles?action=public';if(!isAll)apiUrl+='&section='+encodeURIComponent(slug);
   var grid=g('art-grid');if(grid)grid.innerHTML='<div style="padding:48px;text-align:center;color:#9ab;font-size:13px;font-family:sans-serif">Loading\u2026</div>';
   fetch(apiUrl).then(function(r){return r.json();}).then(function(arts){
     var hsList=document.querySelector('.hero-sb-list');
-    if(hsList){hsList.innerHTML=arts.length?arts.slice(0,3).map(function(a){return '<li class="hero-sb-item"><a href="article.html?id='+a.id+'"><div class="hsil">'+(a.section||'')+'</div><div class="hsit">'+a.title+'</div><div class="hsid">'+fmt(a.published_at)+'</div></a></li>';}).join(''):'<li class="hero-sb-item" style="padding:16px;color:rgba(255,255,255,.45);font-size:13px">No articles yet.</li>';}
+    if(hsList){hsList.innerHTML=arts.length?arts.slice(0,3).map(function(a){var artHref=a.slug?'/article/'+a.slug:'/article/'+a.id;return '<li class="hero-sb-item"><a href="'+artHref+'"><div class="hsil">'+(a.section||'')+'</div><div class="hsit">'+a.title+'</div><div class="hsid">'+fmt(a.published_at)+'</div></a></li>';}).join(''):'<li class="hero-sb-item" style="padding:16px;color:rgba(255,255,255,.45);font-size:13px">No articles yet.</li>';}
     var hi=g('hero-img');if(hi){var first=arts.find(function(a){return a.hero_img_url;});if(first){hi.src=first.hero_img_url;hi.alt=first.title||'';}}
     var gc=g('grid-cnt');if(gc)gc.textContent=arts.length?arts.length+' stories':'';
     if(!grid)return;
     if(!arts.length){grid.innerHTML='<div class="ag-empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="52" height="52"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><h3>No articles yet</h3><p>Published articles will appear here.</p></div>';return;}
-    grid.innerHTML=arts.map(function(a){var secSl=slugify(a.section||'');var thumb=a.hero_img_url?'<img src="'+a.hero_img_url+'" alt="'+a.title+'" class="ac-img" loading="lazy"/>'+'':'<div class="ac-img ac-img-ph"></div>';return '<article class="ac"><a href="article.html?id='+a.id+'" class="ac-img-wrap">'+thumb+'</a><div class="ac-body"><a href="section.html?slug='+secSl+'" class="ac-sec">'+(a.section||'')+'</a><h3 class="ac-title"><a href="article.html?id='+a.id+'">'+a.title+'</a></h3>'+(a.deck?'<p class="ac-deck">'+a.deck+'</p>':'')+'<div class="ac-meta">'+(a.author?'<span class="ac-author">'+a.author+'</span><span class="ac-dot">&middot;</span>':'')+'<span>'+fmt(a.published_at)+'</span></div></div></article>';}).join('');
+    grid.innerHTML=arts.map(function(a){var secSl=slugify(a.section||'');var artHref=a.slug?'/article/'+a.slug:'/article/'+a.id;var thumb=a.hero_img_url?'<img src="'+a.hero_img_url+'" alt="'+a.title+'" class="ac-img" loading="lazy"/>'+'':'<div class="ac-img ac-img-ph"></div>';return '<article class="ac"><a href="'+artHref+'" class="ac-img-wrap">'+thumb+'</a><div class="ac-body"><a href="/section/'+secSl+'" class="ac-sec">'+(a.section||'')+'</a><h3 class="ac-title"><a href="'+artHref+'">'+a.title+'</a></h3>'+(a.deck?'<p class="ac-deck">'+a.deck+'</p>':'')+'<div class="ac-meta">'+(a.author?'<span class="ac-author">'+a.author+'</span><span class="ac-dot">&middot;</span>':'')+'<span>'+fmt(a.published_at)+'</span></div></div></article>';}).join('');
   }).catch(function(){if(grid)grid.innerHTML='<div class="ag-empty"><h3>Could not load articles</h3><p>Please try again later.</p></div>';});
 })();
 </script>

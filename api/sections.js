@@ -45,18 +45,18 @@ module.exports = async function handler(req, res) {
         {
           id: 'series-1',
           title: 'Wondering',
-          href: 'section.html?slug=findings',
+          href: '/section/findings',
           description: 'A series of profound questions explored by The Privatian Family experts.',
           enabled: true
         }
       ],
       exploreTitle: 'Explore the Privatian',
       explore: [
-        { id: 'exp-1', label: 'Events', href: 'index.html#events-section', target: '_self', enabled: true },
-        { id: 'exp-2', label: 'Article archive', href: 'index.html', target: '_self', enabled: true },
-        { id: 'exp-3', label: 'About us', href: 'index.html', target: '_self', enabled: true },
-        { id: 'exp-4', label: 'News+', href: 'index.html', target: '_self', enabled: true },
-        { id: 'exp-5', label: 'Podcast', href: 'index.html', target: '_self', enabled: true }
+        { id: 'exp-1', label: 'Events', href: '/events', target: '_self', enabled: true },
+        { id: 'exp-2', label: 'Article archive', href: '/', target: '_self', enabled: true },
+        { id: 'exp-3', label: 'About us', href: '/', target: '_self', enabled: true },
+        { id: 'exp-4', label: 'News+', href: '/', target: '_self', enabled: true },
+        { id: 'exp-5', label: 'Podcast', href: '/', target: '_self', enabled: true }
       ],
       latestTitle: 'Read the latest',
       latestMode: 'curated',
@@ -64,14 +64,14 @@ module.exports = async function handler(req, res) {
         {
           id: 'latest-1',
           title: "For families in transition, 'not all traditions are equal'",
-          href: 'section.html?slug=community-heritage',
+          href: '/section/community-heritage',
           imageUrl: 'img1.png',
           enabled: true
         },
         {
           id: 'latest-2',
           title: 'The art of the pen: How writing shapes cultural identity',
-          href: 'section.html?slug=culture',
+          href: '/section/culture',
           imageUrl: 'img3.png',
           enabled: true
         }
@@ -150,10 +150,10 @@ module.exports = async function handler(req, res) {
       logoHeight: 80,
       enabledNavSections: null,
       subsections: [
-        { id: 'sub-1', label: 'FAMILY LEGACY', href: 'section.html?slug=community-heritage', icon: null, enabled: true },
-        { id: 'sub-2', label: 'EXPERIENCE', href: 'section.html?slug=culture', icon: null, enabled: true },
-        { id: 'sub-3', label: 'THE PRIVATIAN READS', href: 'section.html?slug=findings', icon: null, enabled: true },
-        { id: 'sub-4', label: 'EVENTS', href: 'index.html#events-section', icon: 'calendar', enabled: true }
+        { id: 'sub-1', label: 'FAMILY LEGACY', href: '/section/community-heritage', icon: null, enabled: true },
+        { id: 'sub-2', label: 'EXPERIENCE', href: '/section/culture', icon: null, enabled: true },
+        { id: 'sub-3', label: 'THE PRIVATIAN READS', href: '/section/findings', icon: null, enabled: true },
+        { id: 'sub-4', label: 'EVENTS', href: '/events', icon: 'calendar', enabled: true }
       ]
     };
 
@@ -231,7 +231,7 @@ module.exports = async function handler(req, res) {
           title: 'The art of private wisdom: how Privatian families shape culture and legacy.',
           subtitle: 'An exclusive exploration of family heritage, intellectual tradition, and the enduring power of private knowledge.',
           imageUrl: 'img1.png',
-          href: 'section.html?slug=findings',
+          href: '/section/findings',
           enabled: true
         },
         sidebar: [
@@ -242,7 +242,7 @@ module.exports = async function handler(req, res) {
             description: 'From a family archive, the Privatian tradition sees pathways forged through private endeavors',
             imageUrl: 'img5.png',
             tag: 'Heritage Archive',
-            href: 'section.html?slug=community-heritage',
+            href: '/section/community-heritage',
             enabled: true
           },
           {
@@ -252,7 +252,7 @@ module.exports = async function handler(req, res) {
             description: "The family's influence on culture, art, and intellectual discourse runs deeper than most realize",
             imageUrl: 'img6.png',
             tag: '',
-            href: 'section.html?slug=culture',
+            href: '/section/culture',
             enabled: true
           }
         ]
@@ -263,7 +263,7 @@ module.exports = async function handler(req, res) {
           articleId: null,
           title: 'When Privatians meet: the quiet power of community',
           imageUrl: 'img2.png',
-          href: 'section.html?slug=community-heritage',
+          href: '/section/community-heritage',
           enabled: true
         },
         {
@@ -271,7 +271,7 @@ module.exports = async function handler(req, res) {
           articleId: null,
           title: 'Why handwritten correspondence is making a private comeback',
           imageUrl: 'img3.png',
-          href: 'section.html?slug=culture',
+          href: '/section/culture',
           enabled: true
         },
         {
@@ -279,21 +279,21 @@ module.exports = async function handler(req, res) {
           articleId: null,
           title: 'Liberal tradition in the modern age: how the Privatian family stays ahead',
           imageUrl: 'img4.png',
-          href: 'section.html?slug=privacy-values',
+          href: '/section/privacy-values',
           enabled: true
         }
       ],
       eventsSection: {
         eventsHeading: 'Upcoming Events',
         seeAllText: 'See all events',
-        seeAllHref: 'events.html',
+        seeAllHref: '/events',
         events: [
           {
             id: 'ev-1',
             date: 'Sep. 22, 2026',
             title: 'Debate, Debrief, and Dissect: The Role of Privacy in the Modern Family and American Life',
             meta: '4 p.m. Thursday ■ Privatian Forum, Main Hall, Private Campus; via livestream',
-            href: 'events.html',
+            href: '/events',
             enabled: true
           },
           {
@@ -301,7 +301,7 @@ module.exports = async function handler(req, res) {
             date: 'Oct. 16, 2026',
             title: 'America at 250 and Beyond: A Well-Informed Privatian Citizenry',
             meta: '4 p.m. Friday ■ Privatian Institute, 79 Heritage Ave., Cambridge',
-            href: 'events.html',
+            href: '/events',
             enabled: true
           },
           {
@@ -309,7 +309,7 @@ module.exports = async function handler(req, res) {
             date: 'Nov. 12, 2026',
             title: 'Winter Symposium on Archival Preservation and Family Documentation',
             meta: '2 p.m. Thursday ■ Cambridge Heritage Library & Virtual Room A',
-            href: 'events.html',
+            href: '/events',
             enabled: true
           },
           {
@@ -317,7 +317,7 @@ module.exports = async function handler(req, res) {
             date: 'Dec. 04, 2026',
             title: 'Annual Privatian Literary Honors and Endowed Fellowship Awards',
             meta: '6 p.m. Friday ■ Grand Ballroom, The Privatian Society',
-            href: 'events.html',
+            href: '/events',
             enabled: true
           }
         ],
@@ -326,7 +326,7 @@ module.exports = async function handler(req, res) {
           title: "Rubies decoded: 'Heritage is just one piece of the puzzle'",
           description: 'Rare family gems shine in new Privatian retrospective',
           imageUrl: 'img5.png',
-          href: 'section.html?slug=community-heritage',
+          href: '/section/community-heritage',
           enabled: true
         }
       },
@@ -341,14 +341,14 @@ module.exports = async function handler(req, res) {
               articleId: null,
               title: "Don't hold back, the Privatian elders told scholars. It worked.",
               imageUrl: 'img2.png',
-              href: 'section.html?slug=community-heritage',
+              href: '/section/community-heritage',
               enabled: true
             },
             subArticles: [
-              { id: 'sub-1-1', title: 'Elena Voss named curator of The Privatian Foundation for Letters', href: 'section.html?slug=community-heritage', enabled: true },
-              { id: 'sub-1-2', title: 'Family council opposes changes to federal heritage-protection programs', href: 'section.html?slug=community-heritage', enabled: true },
-              { id: 'sub-1-3', title: "Henry's remarkable legacy of giving: what it means to the family today", href: 'section.html?slug=community-heritage', enabled: true },
-              { id: 'sub-1-4', title: 'Letters to the archive: understanding the Privatian correspondence collection', href: 'section.html?slug=community-heritage', enabled: true }
+              { id: 'sub-1-1', title: 'Elena Voss named curator of The Privatian Foundation for Letters', href: '/section/community-heritage', enabled: true },
+              { id: 'sub-1-2', title: 'Family council opposes changes to federal heritage-protection programs', href: '/section/community-heritage', enabled: true },
+              { id: 'sub-1-3', title: "Henry's remarkable legacy of giving: what it means to the family today", href: '/section/community-heritage', enabled: true },
+              { id: 'sub-1-4', title: 'Letters to the archive: understanding the Privatian correspondence collection', href: '/section/community-heritage', enabled: true }
             ]
           },
           {
@@ -359,13 +359,13 @@ module.exports = async function handler(req, res) {
               articleId: null,
               title: "For Privatian women in arts, 'not all cultural diets are equal'",
               imageUrl: 'img1.png',
-              href: 'section.html?slug=culture',
+              href: '/section/culture',
               enabled: true
             },
             subArticles: [
-              { id: 'sub-2-1', title: 'AI use surging for creative writing among young Privatian members', href: 'section.html?slug=culture', enabled: true },
-              { id: 'sub-2-2', title: 'Pen refill? Go for it, says the Privatian Calligraphy Society', href: 'section.html?slug=culture', enabled: true },
-              { id: 'sub-2-3', title: 'Music residency, says Privatian Arts & Culture Society, is about connection', href: 'section.html?slug=culture', enabled: true }
+              { id: 'sub-2-1', title: 'AI use surging for creative writing among young Privatian members', href: '/section/culture', enabled: true },
+              { id: 'sub-2-2', title: 'Pen refill? Go for it, says the Privatian Calligraphy Society', href: '/section/culture', enabled: true },
+              { id: 'sub-2-3', title: 'Music residency, says Privatian Arts & Culture Society, is about connection', href: '/section/culture', enabled: true }
             ]
           },
           {
@@ -376,13 +376,13 @@ module.exports = async function handler(req, res) {
               articleId: null,
               title: 'Do you have a private AI secret?',
               imageUrl: 'img4.png',
-              href: 'section.html?slug=privacy-values',
+              href: '/section/privacy-values',
               enabled: true
             },
             subArticles: [
-              { id: 'sub-3-1', title: 'Families alone, yes. But watching the community is another thing.', href: 'section.html?slug=privacy-values', enabled: true },
-              { id: 'sub-3-2', title: 'Is that family member a Privatian or not — and who decides the rules?', href: 'section.html?slug=privacy-values', enabled: true },
-              { id: 'sub-3-3', title: 'Bowling alone, yes. But the Privatian family still gathers.', href: 'section.html?slug=privacy-values', enabled: true }
+              { id: 'sub-3-1', title: 'Families alone, yes. But watching the community is another thing.', href: '/section/privacy-values', enabled: true },
+              { id: 'sub-3-2', title: 'Is that family member a Privatian or not — and who decides the rules?', href: '/section/privacy-values', enabled: true },
+              { id: 'sub-3-3', title: 'Bowling alone, yes. But the Privatian family still gathers.', href: '/section/privacy-values', enabled: true }
             ]
           },
           {
@@ -393,12 +393,12 @@ module.exports = async function handler(req, res) {
               articleId: null,
               title: 'How the Privatian diaspora is keeping tradition alive in a globalized world',
               imageUrl: 'img6.png',
-              href: 'section.html?slug=nation-world',
+              href: '/section/nation-world',
               enabled: true
             },
             subArticles: [
-              { id: 'sub-4-1', title: 'Bearing down on global secrecy: what the Privatian model teaches us', href: 'section.html?slug=nation-world', enabled: true },
-              { id: 'sub-4-2', title: 'Currency of trust: how the Privatian family built international networks', href: 'section.html?slug=nation-world', enabled: true }
+              { id: 'sub-4-1', title: 'Bearing down on global secrecy: what the Privatian model teaches us', href: '/section/nation-world', enabled: true },
+              { id: 'sub-4-2', title: 'Currency of trust: how the Privatian family built international networks', href: '/section/nation-world', enabled: true }
             ]
           },
           {
@@ -409,13 +409,13 @@ module.exports = async function handler(req, res) {
               articleId: null,
               title: 'New research shows writing by hand preserves memory and sharpens intellect',
               imageUrl: 'img3.png',
-              href: 'section.html?slug=arts-legacy',
+              href: '/section/arts-legacy',
               enabled: true
             },
             subArticles: [
-              { id: 'sub-5-1', title: 'Rowing, dance: yes. But the Privatian pen holds a special place of honor.', href: 'section.html?slug=arts-legacy', enabled: true },
-              { id: 'sub-5-2', title: 'Novelist argues the world needs more well-written letters, not fewer', href: 'section.html?slug=arts-legacy', enabled: true },
-              { id: 'sub-5-3', title: 'Turnover at The Privatian Society demands that cultural legacy must be paid.', href: 'section.html?slug=arts-legacy', enabled: true }
+              { id: 'sub-5-1', title: 'Rowing, dance: yes. But the Privatian pen holds a special place of honor.', href: '/section/arts-legacy', enabled: true },
+              { id: 'sub-5-2', title: 'Novelist argues the world needs more well-written letters, not fewer', href: '/section/arts-legacy', enabled: true },
+              { id: 'sub-5-3', title: 'Turnover at The Privatian Society demands that cultural legacy must be paid.', href: '/section/arts-legacy', enabled: true }
             ]
           },
           {
@@ -426,13 +426,13 @@ module.exports = async function handler(req, res) {
               articleId: null,
               title: 'Go-to Privatian professionals redefine private practices in modern economy',
               imageUrl: 'img5.png',
-              href: 'section.html?slug=work-economy',
+              href: '/section/work-economy',
               enabled: true
             },
             subArticles: [
-              { id: 'sub-6-1', title: "Rural flower power: the Privatian family's investment in private land", href: 'section.html?slug=work-economy', enabled: true },
-              { id: 'sub-6-2', title: 'The Privatian economy advisor talks to the state of family wealth', href: 'section.html?slug=work-economy', enabled: true },
-              { id: 'sub-6-3', title: 'Letters of the law: the Privatian legal scholars improve upon family statutes', href: 'section.html?slug=work-economy', enabled: true }
+              { id: 'sub-6-1', title: "Rural flower power: the Privatian family's investment in private land", href: '/section/work-economy', enabled: true },
+              { id: 'sub-6-2', title: 'The Privatian economy advisor talks to the state of family wealth', href: '/section/work-economy', enabled: true },
+              { id: 'sub-6-3', title: 'Letters of the law: the Privatian legal scholars improve upon family statutes', href: '/section/work-economy', enabled: true }
             ]
           }
         ]

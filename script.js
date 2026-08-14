@@ -297,7 +297,7 @@ function updateAllNewsLabels(sections) {
     }
 
     col.querySelectorAll('a.news-section-link').forEach(function(a) {
-      a.href = 'section.html?slug=' + sec.slug;
+      a.href = '/section/' + sec.slug;
     });
   });
 }

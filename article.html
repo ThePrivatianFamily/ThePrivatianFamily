@@ -205,7 +205,7 @@
 
         // ── Section pill & breadcrumb ──
         var secSlug = slugify(a.section || '');
-        var secHref = a.section ? 'section.html?slug=' + secSlug : 'index.html';
+        var secHref = a.section ? '/section/' + secSlug : '/';
         var pill = g('article-section-pill');
         var secLink = g('article-section-link');
         if(pill){
@@ -296,7 +296,7 @@
               relSec.style.display = '';
               grid.innerHTML = others.map(function(r){
                 var rSlug = slugify(r.section||'');
-                var artUrl = r.slug ? '/article/' + r.slug : 'article.html?id=' + r.id;
+                var artUrl = r.slug ? '/article/' + r.slug : '/article/' + r.id;
                 var thumb = r.hero_img_url
                   ? '<img src="'+r.hero_img_url+'" alt="" class="related-card-img" loading="lazy" />'
                   : '<div style="width:100%;height:100%;background:#e8f1f9"></div>';
@@ -304,7 +304,7 @@
                 return '<article class="related-card">'
                   +'<a href="'+artUrl+'" class="related-card-img-link"><div class="related-card-img-wrap">'+thumb+'</div></a>'
                   +'<div class="related-card-body">'
-                  +'<a href="section.html?slug='+rSlug+'" class="related-card-section">'+(r.section||'')+'</a>'
+                  +'<a href="/section/'+rSlug+'" class="related-card-section">'+(r.section||'')+'</a>'
                   +'<h3 class="related-card-title"><a href="'+artUrl+'" class="related-card-title-link">'+r.title+'</a></h3>'
                   +'<div class="related-card-meta">'+date+'</div>'
                   +'</div></article>';

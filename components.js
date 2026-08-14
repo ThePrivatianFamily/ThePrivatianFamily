@@ -18,18 +18,18 @@
       {
         id: 'series-1',
         title: 'Wondering',
-        href: 'section.html?slug=findings',
+        href: '/section/findings',
         description: 'A series of profound questions explored by The Privatian Family experts.',
         enabled: true
       }
     ],
     exploreTitle: 'Explore the Privatian',
     explore: [
-      { id: 'exp-1', label: 'Events', href: 'events.html', target: '_self', enabled: true },
-      { id: 'exp-2', label: 'Article archive', href: 'index.html', target: '_self', enabled: true },
-      { id: 'exp-3', label: 'About us', href: 'index.html', target: '_self', enabled: true },
-      { id: 'exp-4', label: 'News+', href: 'index.html', target: '_self', enabled: true },
-      { id: 'exp-5', label: 'Podcast', href: 'index.html', target: '_self', enabled: true }
+      { id: 'exp-1', label: 'Events', href: '/events', target: '_self', enabled: true },
+      { id: 'exp-2', label: 'Article archive', href: '/', target: '_self', enabled: true },
+      { id: 'exp-3', label: 'About us', href: '/', target: '_self', enabled: true },
+      { id: 'exp-4', label: 'News+', href: '/', target: '_self', enabled: true },
+      { id: 'exp-5', label: 'Podcast', href: '/', target: '_self', enabled: true }
     ],
     latestTitle: 'Read the latest',
     latestMode: 'curated',
@@ -37,14 +37,14 @@
       {
         id: 'latest-1',
         title: "For families in transition, 'not all traditions are equal'",
-        href: 'section.html?slug=community-heritage',
+        href: '/section/community-heritage',
         imageUrl: 'img1.png',
         enabled: true
       },
       {
         id: 'latest-2',
         title: 'The art of the pen: How writing shapes cultural identity',
-        href: 'section.html?slug=culture',
+        href: '/section/culture',
         imageUrl: 'img3.png',
         enabled: true
       }
@@ -52,10 +52,10 @@
   };
 
   var DEFAULT_SUBSECTIONS = [
-    { id: 'sub-1', label: 'FAMILY LEGACY', href: 'section.html?slug=community-heritage', icon: null, enabled: true },
-    { id: 'sub-2', label: 'EXPERIENCE', href: 'section.html?slug=culture', icon: null, enabled: true },
-    { id: 'sub-3', label: 'THE PRIVATIAN READS', href: 'section.html?slug=findings', icon: null, enabled: true },
-    { id: 'sub-4', label: 'EVENTS', href: 'events.html', icon: 'calendar', enabled: true }
+    { id: 'sub-1', label: 'FAMILY LEGACY', href: '/section/community-heritage', icon: null, enabled: true },
+    { id: 'sub-2', label: 'EXPERIENCE', href: '/section/culture', icon: null, enabled: true },
+    { id: 'sub-3', label: 'THE PRIVATIAN READS', href: '/section/findings', icon: null, enabled: true },
+    { id: 'sub-4', label: 'EVENTS', href: '/events', icon: 'calendar', enabled: true }
   ];
 
   var DEFAULT_SECTIONS = [
@@ -206,21 +206,21 @@
         <div class="footer-col" id="footer-col-explore">
           <h3 class="footer-col-title">Explore the Privatian</h3>
           <ul class="footer-col-list">
-            <li><a href="index.html" id="footer-events">Events</a></li>
-            <li><a href="index.html" id="footer-archive">Article archive</a></li>
-            <li><a href="index.html" id="footer-about">About us</a></li>
-            <li><a href="index.html" id="footer-newsplus">News+</a></li>
-            <li><a href="index.html" id="footer-podcast">Podcast</a></li>
+            <li><a href="/events" id="footer-events">Events</a></li>
+            <li><a href="/" id="footer-archive">Article archive</a></li>
+            <li><a href="/" id="footer-about">About us</a></li>
+            <li><a href="/" id="footer-newsplus">News+</a></li>
+            <li><a href="/" id="footer-podcast">Podcast</a></li>
           </ul>
         </div>
         <div class="footer-col footer-col-series" id="footer-col-series">
           <h3 class="footer-col-title"><span class="footer-series-icon">&#128214;</span> Our recent series</h3>
           <div class="footer-series-item">
-            <h4 class="footer-series-name"><a href="section.html?slug=findings" id="footer-series-wondering">Wondering</a></h4>
+            <h4 class="footer-series-name"><a href="/section/findings" id="footer-series-wondering">Wondering</a></h4>
             <p class="footer-series-desc">A series of profound questions explored by The Privatian Family experts.</p>
           </div>
           <div class="footer-series-item">
-            <h4 class="footer-series-name"><a href="section.html?slug=community-heritage" id="footer-series-lifework">Life | Heritage</a></h4>
+            <h4 class="footer-series-name"><a href="/section/community-heritage" id="footer-series-lifework">Life | Heritage</a></h4>
             <p class="footer-series-desc">A series focused on the personal side of Privatian family research and tradition.</p>
           </div>
         </div>
@@ -344,7 +344,7 @@
       navSecs.forEach(function(s, idx) {
         var li = document.createElement('li');
         var a  = document.createElement('a');
-        a.href = s.slug ? ('section.html?slug=' + s.slug) : '#';
+        a.href = s.slug ? ('/section/' + s.slug) : '#';
         a.className = 'nav-link' + (s.slug === currentSlug ? ' active nav-link--active' : '');
         if (s.slug === currentSlug) {
           a.style.color = 'var(--brand-navy)';
@@ -370,7 +370,7 @@
       secs.forEach(function(s) {
         var li = document.createElement('li');
         var a  = document.createElement('a');
-        a.href = s.slug ? ('section.html?slug=' + s.slug) : '#';
+        a.href = s.slug ? ('/section/' + s.slug) : '#';
         a.textContent = s.name;
         if (s.slug === currentSlug) a.style.color = 'var(--brand-navy)';
         li.appendChild(a);
@@ -385,7 +385,7 @@
       secs.forEach(function(s) {
         var li = document.createElement('li');
         var a  = document.createElement('a');
-        a.href = s.slug ? ('section.html?slug=' + s.slug) : '#';
+        a.href = s.slug ? ('/section/' + s.slug) : '#';
         a.textContent = s.name;
         li.appendChild(a);
         footerList.appendChild(li);
@@ -790,7 +790,7 @@
       if (labelEl) labelEl.textContent = sec.name.toUpperCase();
       // Update any section-link hrefs in the column
       col.querySelectorAll('a.news-section-link').forEach(function(a) {
-        a.href = 'section.html?slug=' + sec.slug;
+        a.href = '/section/' + sec.slug;
       });
     });
   }
