@@ -69,19 +69,16 @@ body{font-family:var(--sans);background:var(--bg);padding-top:calc(var(--tb)+var
 .fb:hover{background:#eef2f7;color:var(--navy)}
 .fb.on{background:#e8f1f9;color:var(--navy)}
 .fb svg{pointer-events:none}
-/* Undo/Redo grouped pill */
-.fmt-hist{display:flex;align-items:center;gap:1px;
-  background:#f2f5f8;border:1px solid #e2eaf2;border-radius:8px;padding:2px;margin-right:4px}
-.fmt-hist .fb{border-radius:6px;color:#6b8199;width:30px;height:28px}
-.fmt-hist .fb:hover{background:#e0eaf4;color:var(--navy)}
+/* Undo/Redo distinct segmented bar */
+.fmt-hist{display:inline-flex;align-items:center;background:#f8fafc;border:1.5px solid #d5dfe8;border-radius:6px;padding:1px;margin-right:6px;box-shadow:0 1px 2px rgba(0,0,0,.03)}
+.fmt-hist .fb{border-radius:4px;color:#475569;width:30px;height:28px;background:transparent;transition:all .12s ease}
+.fmt-hist .fb:hover{background:#e2ecf5;color:var(--navy)}
+.fmt-hist .fb:active{background:#cbd9e8;transform:scale(.95)}
+.fmt-hist-sep{width:1px;height:16px;background:#d5dfe8}
 /* color pickers */
-.fc-wrap{position:relative;width:32px;height:32px;display:flex;align-items:center;justify-content:center;cursor:pointer}
-.fc-wrap input[type=color]{position:absolute;opacity:0;width:100%;height:100%;cursor:pointer;border:none;padding:0}
-.fc-ico{width:32px;height:32px;border-radius:6px;display:flex;flex-direction:column;
-  align-items:center;justify-content:center;pointer-events:none;
-  color:#4a5568;font:700 13px/1 var(--sans);gap:2px;transition:.12s}
-.fc-wrap:hover .fc-ico{background:#eef2f7;color:var(--navy)}
-.fc-sw{height:3px;width:18px;border-radius:2px}
+.fc-btn{display:flex;align-items:center;justify-content:center;position:relative}
+.fc-ico{display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;gap:2px;line-height:1}
+.fc-sw{height:3px;width:18px;border-radius:1.5px;box-shadow:0 0 1px rgba(0,0,0,.3)}
 
 /* ── RESTORE BANNER ──────────────────────────── */
 #restore-banner{display:none;background:#fef3c7;border-bottom:1px solid #fbbf24;
@@ -286,6 +283,42 @@ body{font-family:var(--sans);background:var(--bg);padding-top:calc(var(--tb)+var
 .lp-cancel{background:#f0f4f8;color:#4a5568}.lp-cancel:hover{background:#e2eaf2}
 .lp-insert{background:var(--navy);color:#fff}.lp-insert:hover{background:#0a3d6b}
 
+/* ── COLOR PICKER POPOVER ────────────────────────── */
+.cp-popover{display:none;position:fixed;z-index:9998;background:#ffffff;
+  border-radius:12px;padding:16px 18px 14px;width:272px;
+  box-shadow:0 14px 44px rgba(0,0,0,.18), 0 0 0 1px rgba(0,0,0,.07);
+  animation:lpIn .16s ease;user-select:none}
+.cp-popover.show{display:block}
+.cp-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.cp-title{font:700 11px/1 var(--sans);letter-spacing:.08em;text-transform:uppercase;color:#64748b}
+.cp-clear-btn{font:600 11px/1 var(--sans);color:#dc2626;background:#fee2e2;
+  border:1px solid #fecaca;border-radius:4px;padding:3px 8px;cursor:pointer;transition:.12s}
+.cp-clear-btn:hover{background:#dc2626;color:#fff}
+.cp-section-lbl{font:600 10px/1 var(--sans);letter-spacing:.06em;text-transform:uppercase;color:#94a3b8;margin:10px 0 6px}
+.cp-palette{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+.cp-swatch{width:26px;height:26px;border-radius:6px;border:1.5px solid rgba(0,0,0,.08);
+  cursor:pointer;transition:transform .12s, box-shadow .12s;padding:0;display:inline-block;outline:none}
+.cp-swatch:hover{transform:scale(1.18);box-shadow:0 3px 8px rgba(0,0,0,.18);z-index:2}
+.cp-div{height:1px;background:#e2e8f0;margin:12px 0 10px}
+.cp-custom-row{display:flex;align-items:center;gap:8px}
+.cp-custom-btn{position:relative;display:inline-flex;align-items:center;gap:5px;
+  padding:5px 8px;background:#f1f5f9;border:1px solid #cbd5e1;border-radius:6px;
+  cursor:pointer;color:#334155;transition:.12s}
+.cp-custom-btn:hover{background:#e2e8f0;color:#0a528e}
+.cp-custom-btn input[type=color]{position:absolute;opacity:0;inset:0;width:100%;height:100%;cursor:pointer}
+.cp-spectrum-swatch{width:14px;height:14px;border-radius:3px;
+  background:linear-gradient(135deg,red,yellow,lime,cyan,blue,magenta,red);
+  display:inline-block;border:1px solid rgba(0,0,0,.15)}
+.cp-hex-wrap{display:flex;align-items:center;flex:1;background:#f8fafc;
+  border:1px solid #cbd5e1;border-radius:6px;padding:2px 4px 2px 6px;transition:.12s}
+.cp-hex-wrap:focus-within{border-color:#0a528e;box-shadow:0 0 0 2px rgba(10,82,142,.12);background:#fff}
+.cp-hex-hash{font:700 11px/1 var(--sans);color:#94a3b8;margin-right:2px}
+.cp-hex-wrap input{width:100%;min-width:0;border:none;background:transparent;
+  font:600 11px/1 monospace;color:#0f172a;outline:none}
+.cp-hex-ok{background:#0a528e;color:#fff;border:none;border-radius:4px;
+  font:700 10px/1 var(--sans);padding:4px 6px;cursor:pointer;transition:.12s}
+.cp-hex-ok:hover{background:#073860}
+
 /* Placeholder helper */
 [contenteditable][data-ph]:empty::before{content:attr(data-ph);
   color:#b0c0cc;pointer-events:none;font-weight:400;font-style:italic}
@@ -456,13 +489,14 @@ body{padding-bottom:34px}
 <!-- ═══ FORMAT BAR ═══════════════════════════════════════════════ -->
 <div id="fmt">
 
-  <!-- Undo / Redo — grouped pill -->
-  <div class="fmt-hist">
+  <!-- Undo / Redo — Sleek segmented pair -->
+  <div class="fmt-hist" title="History (Undo / Redo)">
     <button class="fb" onmousedown="f(event,'undo')" title="Undo (Ctrl+Z)">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M3 7v6h6"/><path d="M3 13A9 9 0 1 0 6 6.7L3 9"/></svg>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7v6h6"/><path d="M3 13A9 9 0 1 0 6 6.7L3 9"/></svg>
     </button>
+    <div class="fmt-hist-sep"></div>
     <button class="fb" onmousedown="f(event,'redo')" title="Redo (Ctrl+Y)">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M21 7v6h-6"/><path d="M21 13A9 9 0 1 1 18 6.7L21 9"/></svg>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M21 7v6h-6"/><path d="M21 13A9 9 0 1 1 18 6.7L21 9"/></svg>
     </button>
   </div>
 
@@ -488,16 +522,20 @@ body{padding-bottom:34px}
   <div class="fs"></div>
 
   <!-- Text color -->
-  <div class="fc-wrap" title="Text color">
-    <input type="color" id="fc-txt" value="#000000" onchange="fv(event,'foreColor',this.value,'sw-txt')" />
-    <div class="fc-ico">A<span class="fc-sw" id="sw-txt" style="background:#000"></span></div>
-  </div>
+  <button class="fb fc-btn" id="btn-fc-txt" onmousedown="openColorPopover(event,'text')" title="Text Color">
+    <div class="fc-ico">
+      <span style="font-size:13px;font-weight:700;font-family:var(--sans);">A</span>
+      <span class="fc-sw" id="sw-txt" style="background:#1a2d3e"></span>
+    </div>
+  </button>
 
-  <!-- Highlight -->
-  <div class="fc-wrap" title="Highlight color">
-    <input type="color" id="fc-hl" value="#ffff00" onchange="fv(event,'hiliteColor',this.value,'sw-hl')" />
-    <div class="fc-ico" style="font-size:16px;">🖍<span class="fc-sw" id="sw-hl" style="background:#ff0"></span></div>
-  </div>
+  <!-- Highlight color -->
+  <button class="fb fc-btn" id="btn-fc-hl" onmousedown="openColorPopover(event,'highlight')" title="Highlight Color">
+    <div class="fc-ico">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 11-6 6v3h3l6-6"/><path d="m22 7-4.5-4.5a2.12 2.12 0 0 0-3 0L10 7l7 7 4.5-4.5a2.12 2.12 0 0 0 0-3z"/></svg>
+      <span class="fc-sw" id="sw-hl" style="background:#fef08a"></span>
+    </div>
+  </button>
 
   <div class="fs"></div>
 
@@ -708,6 +746,38 @@ body{padding-bottom:34px}
   <div class="lp-btns">
     <button class="lp-btn lp-cancel" onclick="hideLinkPopup()">Cancel</button>
     <button class="lp-btn lp-insert" onclick="applyLink()">Insert Link</button>
+  </div>
+</div>
+
+<!-- ═══ COLOR PICKER POPOVER ════════════════════════════════════ -->
+<div id="cp-popover" class="cp-popover" onclick="event.stopPropagation()">
+  <div class="cp-hd">
+    <span id="cp-title" class="cp-title">Text Color</span>
+    <button type="button" class="cp-clear-btn" id="cp-clear-btn" onclick="clearCurrentColor()">Reset Color</button>
+  </div>
+  
+  <!-- Rainbow 7 Colors -->
+  <div class="cp-section-lbl">Rainbow Palette (৭টি মৌলিক রং)</div>
+  <div class="cp-palette" id="cp-rainbow-grid"></div>
+
+  <!-- Theme / Classic / Pastels -->
+  <div class="cp-section-lbl" id="cp-theme-lbl">Theme Colors</div>
+  <div class="cp-palette" id="cp-theme-grid"></div>
+
+  <div class="cp-div"></div>
+
+  <!-- Custom Color (RGB / HEX input + native picker) -->
+  <div class="cp-custom-row">
+    <label class="cp-custom-btn" title="Open Custom Color Spectrum">
+      <input type="color" id="cp-native-input" onchange="onCustomColorChange(this.value)" />
+      <span class="cp-spectrum-swatch"></span>
+      <span style="font-size:11px;font-weight:600;">Custom RGB</span>
+    </label>
+    <div class="cp-hex-wrap">
+      <span class="cp-hex-hash">#</span>
+      <input type="text" id="cp-hex-input" placeholder="000000" maxlength="7" oninput="onHexInput(this.value)" onkeydown="if(event.key==='Enter')applyHexColor()" />
+      <button type="button" class="cp-hex-ok" onclick="applyHexColor()" title="Apply custom color">OK</button>
+    </div>
   </div>
 </div>
 
@@ -1388,6 +1458,168 @@ function globalClick(e) {
   // Close link popup if click outside
   if (!g('lp').contains(e.target) && !e.target.closest('[onmousedown*="insLink"]')) {
     hideLinkPopup();
+  }
+  // Close color popover if click outside
+  const cp = g('cp-popover');
+  if (cp && !cp.contains(e.target) && !e.target.closest('#btn-fc-txt, #btn-fc-hl')) {
+    closeColorPopover();
+  }
+}
+
+// ── COLOR PICKER POPOVER LOGIC ──────────────────────────────
+let _colorMode = 'text'; // 'text' | 'highlight'
+let _savedColorRange = null;
+
+function openColorPopover(ev, mode) {
+  if (ev) {
+    ev.preventDefault();
+    ev.stopPropagation();
+  }
+  _colorMode = mode;
+
+  // Save current selection before popover takes focus
+  const sel = window.getSelection();
+  if (sel && sel.rangeCount > 0) {
+    _savedColorRange = sel.getRangeAt(0).cloneRange();
+  }
+
+  const pop = g('cp-popover');
+  const title = g('cp-title');
+  const btn = mode === 'text' ? g('btn-fc-txt') : g('btn-fc-hl');
+  
+  if (title) title.textContent = mode === 'text' ? 'Text Color' : 'Highlight Color';
+  const clearBtn = g('cp-clear-btn');
+  if (clearBtn) clearBtn.textContent = mode === 'text' ? 'Reset Color' : 'Clear Highlight';
+
+  renderColorPalettes(mode);
+
+  // Position popover right under the button
+  if (btn) {
+    const r = btn.getBoundingClientRect();
+    pop.style.top = (r.bottom + 6) + 'px';
+    pop.style.left = Math.min(r.left, window.innerWidth - 290) + 'px';
+  }
+  pop.classList.add('show');
+}
+
+function closeColorPopover() {
+  const pop = g('cp-popover');
+  if (pop) pop.classList.remove('show');
+}
+
+function applySelectedColor(color) {
+  g('ed-rt').focus();
+  if (_savedColorRange) {
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(_savedColorRange);
+  }
+
+  if (_colorMode === 'text') {
+    document.execCommand('foreColor', false, color);
+    const sw = g('sw-txt');
+    if (sw) sw.style.background = color;
+  } else {
+    document.execCommand('hiliteColor', false, color);
+    const sw = g('sw-hl');
+    if (sw) sw.style.background = color;
+  }
+
+  DIRTY = true;
+  closeColorPopover();
+}
+
+function clearCurrentColor() {
+  g('ed-rt').focus();
+  if (_savedColorRange) {
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(_savedColorRange);
+  }
+
+  if (_colorMode === 'text') {
+    document.execCommand('foreColor', false, '#1a2d3e');
+    const sw = g('sw-txt');
+    if (sw) sw.style.background = '#1a2d3e';
+  } else {
+    document.execCommand('removeFormat', false, null);
+    const sw = g('sw-hl');
+    if (sw) sw.style.background = '#fef08a';
+  }
+
+  DIRTY = true;
+  closeColorPopover();
+}
+
+function onCustomColorChange(hex) {
+  if (!hex) return;
+  const hexInp = g('cp-hex-input');
+  if (hexInp) hexInp.value = hex.replace('#', '');
+  applySelectedColor(hex);
+}
+
+function onHexInput(val) {
+  val = (val || '').trim().replace(/[^0-9a-fA-F]/g, '');
+  if (val.length === 6 || val.length === 3) {
+    const hex = '#' + val;
+    const nat = g('cp-native-input');
+    if (nat) nat.value = hex.length === 4 ? '#' + val[0] + val[0] + val[1] + val[1] + val[2] + val[2] : hex;
+  }
+}
+
+function applyHexColor() {
+  const hexInp = g('cp-hex-input');
+  let val = (hexInp ? hexInp.value : '').trim().replace(/#/g, '');
+  if (!val) return;
+  if (val.length === 3) val = val[0] + val[0] + val[1] + val[1] + val[2] + val[2];
+  if (val.length === 6) {
+    applySelectedColor('#' + val);
+  }
+}
+
+function renderColorPalettes(mode) {
+  const rainbow = [
+    { name: 'Red', hex: '#E53935' },
+    { name: 'Orange', hex: '#FB8C00' },
+    { name: 'Yellow', hex: '#FDD835' },
+    { name: 'Green', hex: '#43A047' },
+    { name: 'Blue', hex: '#1E88E5' },
+    { name: 'Indigo', hex: '#3949AB' },
+    { name: 'Violet', hex: '#8E24AA' }
+  ];
+
+  const themeColors = mode === 'text' ? [
+    { name: 'Charcoal (Default)', hex: '#1A2D3E' },
+    { name: 'Pitch Black', hex: '#000000' },
+    { name: 'Privatian Navy', hex: '#0A528E' },
+    { name: 'Slate Gray', hex: '#5A7A9A' },
+    { name: 'Burgundy', hex: '#881337' },
+    { name: 'Forest Green', hex: '#14532D' },
+    { name: 'Deep Purple', hex: '#581C87' }
+  ] : [
+    { name: 'Soft Yellow (Classic)', hex: '#FEF08A' },
+    { name: 'Soft Lime/Green', hex: '#BBF7D0' },
+    { name: 'Soft Sky Blue', hex: '#BAE6FD' },
+    { name: 'Soft Coral/Pink', hex: '#FECDD3' },
+    { name: 'Soft Lavender', hex: '#E9D5FF' },
+    { name: 'Soft Orange', hex: '#FED7AA' },
+    { name: 'Soft Slate', hex: '#E2E8F0' }
+  ];
+
+  const rainGrid = g('cp-rainbow-grid');
+  if (rainGrid) {
+    rainGrid.innerHTML = rainbow.map(c =>
+      `<button type="button" class="cp-swatch" style="background:${c.hex}" title="${c.name} (${c.hex})" onclick="applySelectedColor('${c.hex}')"></button>`
+    ).join('');
+  }
+
+  const themeGrid = g('cp-theme-grid');
+  const themeLbl = g('cp-theme-lbl');
+  if (themeLbl) themeLbl.textContent = mode === 'text' ? 'Classic & Editorial Tones' : 'Highlight Pastels';
+  if (themeGrid) {
+    themeGrid.innerHTML = themeColors.map(c =>
+      `<button type="button" class="cp-swatch" style="background:${c.hex}" title="${c.name} (${c.hex})" onclick="applySelectedColor('${c.hex}')"></button>`
+    ).join('');
   }
 }
 
