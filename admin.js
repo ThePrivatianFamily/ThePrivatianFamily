@@ -3879,19 +3879,23 @@ function isFooterModified() {
 
 function updateFooterSaveStatus() {
   const statusEl = document.getElementById('ft-save-status');
+  const statusWrap = document.getElementById('ft-save-status-wrap');
+  const dotEl = document.getElementById('ft-status-dot');
   if (!statusEl) return;
   if (isFooterModified()) {
-    statusEl.textContent = '● Unsaved changes';
-    statusEl.style.color = '#eab308';
+    statusEl.textContent = 'Unsaved changes';
+    if (statusWrap) { statusWrap.className = 'ft-header-badge unsaved'; }
+    if (dotEl) { dotEl.className = 'ft-pulse-dot unsaved'; }
   } else {
-    statusEl.textContent = '✓ Synced with database';
-    statusEl.style.color = 'var(--text-muted)';
+    statusEl.textContent = 'Synced with database';
+    if (statusWrap) { statusWrap.className = 'ft-header-badge synced'; }
+    if (dotEl) { dotEl.className = 'ft-pulse-dot'; }
   }
 }
 
 function switchFooterTab(tab) {
   _activeFooterTab = tab;
-  document.querySelectorAll('#ft-tabs-nav .menu-tab-btn').forEach(btn => {
+  document.querySelectorAll('#ft-tabs-nav .tab-btn').forEach(btn => {
     btn.classList.toggle('active', btn.id === `tab-ft-${tab}`);
   });
 
@@ -3921,7 +3925,7 @@ function onFooterTitleInput(key, value) {
   updateFooterSaveStatus();
 }
 
-// ── TAB: LIVE PREVIEW ─────────────────────────────────────────────
+// ── TAB: LIVE INTERACTIVE VISUAL CANVAS ───────────────────────────
 function renderFooterPreview() {
   const box = document.getElementById('ft-live-preview-box');
   if (!box || !footerDraftConfig) return;
@@ -3931,66 +3935,124 @@ function renderFooterPreview() {
   const enabledSet = Array.isArray(cfg.enabledSections) ? cfg.enabledSections : null;
   const displaySecs = activeSecs.filter(s => enabledSet ? enabledSet.includes(s.slug) : true);
 
-  const exploreList = (cfg.explore || []).filter(e => e.enabled !== false);
-  const seriesList = (cfg.series || []).filter(s => s.enabled !== false);
-  const socialList = (cfg.social || []).filter(sc => sc.enabled !== false);
-  const bottomList = (cfg.bottomLinks || []).filter(b => b.enabled !== false);
+  const exploreList = cfg.explore || [];
+  const seriesList = cfg.series || [];
+  const socialList = cfg.social || [];
+  const bottomList = cfg.bottomLinks || [];
 
   box.innerHTML = `
-    <div class="ft-live-preview-container">
-      <div class="ft-preview-grid">
-        <!-- Col 1: Sections -->
-        <div>
-          <div class="ft-preview-col-title">${escapeHtml(cfg.sectionsTitle || 'Sections')}</div>
-          <ul class="ft-preview-list">
-            ${displaySecs.map(s => `<li><a href="/section/${s.slug}">${escapeHtml(s.name)}</a></li>`).join('')}
-          </ul>
+    <div class="ft-preview-grid">
+      <!-- Col 1: Sections -->
+      <div class="ft-interactive-col">
+        <div class="ft-col-header-bar">
+          <span class="ft-col-title-badge">📑 ${escapeHtml(cfg.sectionsTitle || 'Sections')}</span>
+          <button type="button" class="ft-col-quick-btn" onclick="switchFooterTab('sections')">
+            ⚙️ Edit (${displaySecs.length})
+          </button>
         </div>
-
-        <!-- Col 2: Explore -->
-        <div>
-          <div class="ft-preview-col-title">${escapeHtml(cfg.exploreTitle || 'Explore the Privatian')}</div>
-          <ul class="ft-preview-list">
-            ${exploreList.map(e => `<li><a href="${escapeHtml(e.href || '#')}">${escapeHtml(e.label || '')}</a></li>`).join('')}
-          </ul>
-        </div>
-
-        <!-- Col 3: Series -->
-        <div>
-          <div class="ft-preview-col-title">&#128214; ${escapeHtml(cfg.seriesTitle || 'Our recent series')}</div>
-          <div>
-            ${seriesList.map(s => `
-              <div class="ft-preview-series-item">
-                <div class="ft-preview-series-title">${escapeHtml(s.title || '')}</div>
-                ${s.description ? `<div class="ft-preview-series-desc">${escapeHtml(s.description)}</div>` : ''}
-              </div>
-            `).join('')}
-          </div>
-        </div>
-
-        <!-- Col 4: Social -->
-        <div>
-          <div class="ft-preview-col-title">${escapeHtml(cfg.socialTitle || 'Follow us on')}</div>
-          <div class="ft-preview-social-grid">
-            ${socialList.map(sc => `
-              <div class="ft-preview-social-item">
-                ${getSocialIconSvgForAdmin(sc.platform)}
-                <span>${escapeHtml(sc.label || sc.platform || '')}</span>
-              </div>
-            `).join('')}
-          </div>
+        <div style="display:flex;flex-direction:column;gap:5px;">
+          ${displaySecs.length === 0 ? '<span style="font-size:12px;color:#64748b;font-style:italic;">No sections enabled.</span>' : ''}
+          ${displaySecs.map(s => `
+            <div class="ft-visual-item" onclick="switchFooterTab('sections')" title="Manage section visibility">
+              <span style="font-size:12.5px;color:#e2e8f0;">${escapeHtml(s.name)}</span>
+              <span style="font-size:10px;color:#38bdf8;">/section/${escapeHtml(s.slug)}</span>
+            </div>
+          `).join('')}
         </div>
       </div>
 
-      <!-- Bottom Bar -->
-      <div class="ft-preview-bottom">
-        <div>
-          <div style="font-size:16px;font-weight:700;letter-spacing:0.05em;color:#ffffff;">THE PRIVATIAN FAMILY</div>
-          ${cfg.tagline ? `<div style="font-size:11.5px;color:#94a3b8;margin-top:4px;">${escapeHtml(cfg.tagline)}</div>` : ''}
-          ${cfg.copyright ? `<div style="font-size:11px;color:#64748b;margin-top:2px;">${escapeHtml(cfg.copyright)}</div>` : ''}
+      <!-- Col 2: Explore Links -->
+      <div class="ft-interactive-col">
+        <div class="ft-col-header-bar">
+          <span class="ft-col-title-badge">🔗 ${escapeHtml(cfg.exploreTitle || 'Explore')}</span>
+          <div style="display:flex;gap:4px;">
+            <button type="button" class="ft-col-quick-btn" onclick="openFooterExploreModal()" title="Add Explore Link">+ Add</button>
+            <button type="button" class="ft-col-quick-btn" onclick="switchFooterTab('explore')" title="Manage Explore List">List</button>
+          </div>
         </div>
-        <div class="ft-preview-legal-links">
-          ${bottomList.map(b => `<a href="${escapeHtml(b.href || '#')}" style="color:#94a3b8;text-decoration:none;">${escapeHtml(b.label || '')}</a>`).join('')}
+        <div style="display:flex;flex-direction:column;gap:5px;">
+          ${exploreList.length === 0 ? '<span style="font-size:12px;color:#64748b;font-style:italic;">No explore links added yet.</span>' : ''}
+          ${exploreList.map(e => `
+            <div class="ft-visual-item ${e.enabled === false ? 'disabled' : ''}" onclick="openFooterExploreModal('${e.id}')" title="Click to edit link">
+              <span style="font-size:13px;font-weight:500;color:#f1f5f9;">${escapeHtml(e.label || 'Untitled')}</span>
+              <div style="display:flex;align-items:center;gap:6px;">
+                <span style="font-size:10.5px;color:#94a3b8;font-family:monospace;">${escapeHtml(e.href || '/')}</span>
+                <span style="color:#38bdf8;font-size:11px;">✏️</span>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+
+      <!-- Col 3: Recent Series -->
+      <div class="ft-interactive-col">
+        <div class="ft-col-header-bar">
+          <span class="ft-col-title-badge">📖 ${escapeHtml(cfg.seriesTitle || 'Our recent series')}</span>
+          <div style="display:flex;gap:4px;">
+            <button type="button" class="ft-col-quick-btn" onclick="openFooterSeriesModal()" title="Add Series">+ Add</button>
+            <button type="button" class="ft-col-quick-btn" onclick="switchFooterTab('series')" title="Manage Series List">List</button>
+          </div>
+        </div>
+        <div>
+          ${seriesList.length === 0 ? '<span style="font-size:12px;color:#64748b;font-style:italic;">No series highlights configured.</span>' : ''}
+          ${seriesList.map(s => `
+            <div class="ft-visual-series-card ${s.enabled === false ? 'disabled' : ''}" onclick="openFooterSeriesModal('${s.id}')" title="Click to edit series">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px;">
+                <div style="font-family:var(--font-serif);font-size:14px;font-weight:700;color:#ffffff;">${escapeHtml(s.title || 'Untitled Series')}</div>
+                <span style="color:#38bdf8;font-size:11px;">✏️</span>
+              </div>
+              ${s.description ? `<div style="font-size:11.5px;color:#94a3b8;line-height:1.35;margin-bottom:4px;">${escapeHtml(s.description)}</div>` : ''}
+              <div style="font-size:10.5px;color:#38bdf8;font-family:monospace;">${escapeHtml(s.href || '/')}</div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+
+      <!-- Col 4: Social & Channels -->
+      <div class="ft-interactive-col">
+        <div class="ft-col-header-bar">
+          <span class="ft-col-title-badge">🌐 ${escapeHtml(cfg.socialTitle || 'Follow us on')}</span>
+          <div style="display:flex;gap:4px;">
+            <button type="button" class="ft-col-quick-btn" onclick="openFooterSocialModal()" title="Add Social Channel">+ Add</button>
+            <button type="button" class="ft-col-quick-btn" onclick="switchFooterTab('social')" title="Manage Social List">List</button>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill, minmax(110px, 1fr));gap:6px;">
+          ${socialList.length === 0 ? '<span style="font-size:12px;color:#64748b;font-style:italic;">No social channels added.</span>' : ''}
+          ${socialList.map(sc => `
+            <div class="ft-social-chip ft-social-chip--${escapeHtml(sc.platform || 'custom')} ${sc.enabled === false ? 'disabled' : ''}" onclick="openFooterSocialModal('${sc.id}')" title="Click to edit ${escapeHtml(sc.label || sc.platform)}">
+              ${getSocialIconSvgForAdmin(sc.platform)}
+              <span style="font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(sc.label || sc.platform)}</span>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom Bar Interactive -->
+    <div class="ft-preview-bottom">
+      <div class="ft-interactive-col" style="flex:1;min-width:280px;cursor:pointer;" onclick="switchFooterTab('brand')" title="Click to edit Tagline &amp; Copyright">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+          <span style="font-family:var(--font-serif);font-size:15px;font-weight:700;letter-spacing:0.04em;color:#ffffff;">THE PRIVATIAN FAMILY</span>
+          <span class="ft-col-quick-btn" style="padding:1px 6px;font-size:10px;">✏️ Edit Branding</span>
+        </div>
+        ${cfg.tagline ? `<div style="font-size:12px;color:#94a3b8;margin-bottom:3px;">${escapeHtml(cfg.tagline)}</div>` : ''}
+        ${cfg.copyright ? `<div style="font-size:11px;color:#64748b;">${escapeHtml(cfg.copyright)}</div>` : ''}
+      </div>
+
+      <div class="ft-interactive-col" style="flex:1;min-width:260px;">
+        <div class="ft-col-header-bar" style="margin-bottom:8px;">
+          <span class="ft-col-title-badge" style="font-size:11px;">⚖️ Legal Links</span>
+          <button type="button" class="ft-col-quick-btn" onclick="openFooterBottomLinkModal()" title="Add Legal Link">+ Add Link</button>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;">
+          ${bottomList.length === 0 ? '<span style="font-size:11px;color:#64748b;">No legal links added.</span>' : ''}
+          ${bottomList.map(b => `
+            <span class="ft-visual-item ${b.enabled === false ? 'disabled' : ''}" style="display:inline-flex;padding:3px 8px;font-size:11px;margin:0;" onclick="openFooterBottomLinkModal('${b.id}')" title="Click to edit link">
+              <span>${escapeHtml(b.label || 'Link')}</span>
+              <span style="color:#38bdf8;margin-left:4px;font-size:10px;">✏️</span>
+            </span>
+          `).join('')}
         </div>
       </div>
     </div>
@@ -4006,27 +4068,29 @@ function renderFooterExplore() {
 
   const items = footerDraftConfig.explore || [];
   if (items.length === 0) {
-    container.innerHTML = `<div style="text-align:center;padding:32px;color:var(--text-muted);">No explore links configured yet. Click "Add Explore Link" above.</div>`;
+    container.innerHTML = `<div style="text-align:center;padding:36px;color:var(--text-muted);font-size:13.5px;">No explore links configured yet. Click <strong>"Add Explore Link"</strong> above.</div>`;
     return;
   }
 
   container.innerHTML = items.map((item, idx) => `
-    <div class="menu-item-card ${item.enabled === false ? 'menu-item-card--disabled' : ''}">
-      <div class="menu-item-left">
-        <div style="display:flex;flex-direction:column;gap:3px;">
-          <button type="button" class="action-btn" onclick="moveFooterItem('explore', ${idx}, -1)" ${idx === 0 ? 'disabled' : ''} title="Move Up" style="padding:2px 4px;font-size:11px;">▲</button>
-          <button type="button" class="action-btn" onclick="moveFooterItem('explore', ${idx}, 1)" ${idx === items.length - 1 ? 'disabled' : ''} title="Move Down" style="padding:2px 4px;font-size:11px;">▼</button>
+    <div class="ft-item-card ${item.enabled === false ? 'disabled' : ''}">
+      <div style="display:flex;align-items:center;gap:14px;flex:1;min-width:0;">
+        <div class="ft-drag-handle">
+          <button type="button" class="action-btn" onclick="moveFooterItem('explore', ${idx}, -1)" ${idx === 0 ? 'disabled' : ''} title="Move Up" style="padding:2px 4px;font-size:10px;">▲</button>
+          <button type="button" class="action-btn" onclick="moveFooterItem('explore', ${idx}, 1)" ${idx === items.length - 1 ? 'disabled' : ''} title="Move Down" style="padding:2px 4px;font-size:10px;">▼</button>
         </div>
-        <div>
-          <div style="font-weight:700;font-size:14px;color:var(--text-primary);">${escapeHtml(item.label || 'Untitled Link')}</div>
-          <div style="font-size:12px;color:var(--text-muted);margin-top:2px;">
-            URL: <code style="background:#f1f5f9;padding:2px 6px;border-radius:4px;color:#0a528e;">${escapeHtml(item.href || '/')}</code>
-            <span style="margin-left:8px;color:#94a3b8;">(${item.target === '_blank' ? 'New tab' : 'Same tab'})</span>
+        <div style="min-width:0;">
+          <div style="font-weight:700;font-size:14.5px;color:var(--text-primary);display:flex;align-items:center;gap:8px;">
+            <span>${escapeHtml(item.label || 'Untitled Link')}</span>
+            <span class="ft-target-badge">${item.target === '_blank' ? 'New Tab ↗' : 'Same Tab'}</span>
+          </div>
+          <div style="margin-top:4px;">
+            <span class="ft-url-badge">${escapeHtml(item.href || '/')}</span>
           </div>
         </div>
       </div>
-      <div style="display:flex;align-items:center;gap:8px;">
-        <label class="hs-toggle" title="Enable or disable link">
+      <div style="display:flex;align-items:center;gap:10px;flex-shrink:0;">
+        <label class="hs-toggle" title="Enable or disable this link">
           <input type="checkbox" ${item.enabled !== false ? 'checked' : ''} onchange="toggleFooterExplore('${item.id}')" />
           <span class="hs-toggle-track"><span class="hs-toggle-thumb"></span></span>
         </label>
@@ -4046,24 +4110,28 @@ function renderFooterSeries() {
 
   const items = footerDraftConfig.series || [];
   if (items.length === 0) {
-    container.innerHTML = `<div style="text-align:center;padding:32px;color:var(--text-muted);">No series highlights configured. Click "Add Series Highlight" above.</div>`;
+    container.innerHTML = `<div style="text-align:center;padding:36px;color:var(--text-muted);font-size:13.5px;">No series highlights configured yet. Click <strong>"Add Series Highlight"</strong> above.</div>`;
     return;
   }
 
   container.innerHTML = items.map((item, idx) => `
-    <div class="menu-item-card ${item.enabled === false ? 'menu-item-card--disabled' : ''}">
-      <div class="menu-item-left">
-        <div style="display:flex;flex-direction:column;gap:3px;">
-          <button type="button" class="action-btn" onclick="moveFooterItem('series', ${idx}, -1)" ${idx === 0 ? 'disabled' : ''} title="Move Up" style="padding:2px 4px;font-size:11px;">▲</button>
-          <button type="button" class="action-btn" onclick="moveFooterItem('series', ${idx}, 1)" ${idx === items.length - 1 ? 'disabled' : ''} title="Move Down" style="padding:2px 4px;font-size:11px;">▼</button>
+    <div class="ft-item-card ${item.enabled === false ? 'disabled' : ''}">
+      <div style="display:flex;align-items:center;gap:14px;flex:1;min-width:0;">
+        <div class="ft-drag-handle">
+          <button type="button" class="action-btn" onclick="moveFooterItem('series', ${idx}, -1)" ${idx === 0 ? 'disabled' : ''} title="Move Up" style="padding:2px 4px;font-size:10px;">▲</button>
+          <button type="button" class="action-btn" onclick="moveFooterItem('series', ${idx}, 1)" ${idx === items.length - 1 ? 'disabled' : ''} title="Move Down" style="padding:2px 4px;font-size:10px;">▼</button>
         </div>
-        <div>
-          <div style="font-weight:700;font-size:14px;color:var(--text-primary);">&#128214; ${escapeHtml(item.title || 'Untitled Series')}</div>
-          ${item.description ? `<div style="font-size:12.5px;color:var(--text-muted);margin-top:2px;">${escapeHtml(item.description)}</div>` : ''}
-          <div style="font-size:11.5px;color:#0a528e;margin-top:4px;">Target: <code>${escapeHtml(item.href || '/')}</code></div>
+        <div style="min-width:0;">
+          <div style="font-family:var(--font-serif);font-weight:700;font-size:15px;color:var(--text-primary);">
+            📖 ${escapeHtml(item.title || 'Untitled Series')}
+          </div>
+          ${item.description ? `<div style="font-size:12.5px;color:var(--text-muted);margin:3px 0 5px;line-height:1.4;">${escapeHtml(item.description)}</div>` : ''}
+          <div>
+            <span class="ft-url-badge">${escapeHtml(item.href || '/')}</span>
+          </div>
         </div>
       </div>
-      <div style="display:flex;align-items:center;gap:8px;">
+      <div style="display:flex;align-items:center;gap:10px;flex-shrink:0;">
         <label class="hs-toggle" title="Enable or disable series">
           <input type="checkbox" ${item.enabled !== false ? 'checked' : ''} onchange="toggleFooterSeries('${item.id}')" />
           <span class="hs-toggle-track"><span class="hs-toggle-thumb"></span></span>
@@ -4084,28 +4152,27 @@ function renderFooterSocial() {
 
   const items = footerDraftConfig.social || [];
   if (items.length === 0) {
-    container.innerHTML = `<div style="text-align:center;padding:32px;color:var(--text-muted);">No social channels added. Click "Add Social Channel" above.</div>`;
+    container.innerHTML = `<div style="text-align:center;padding:36px;color:var(--text-muted);font-size:13.5px;">No social accounts configured yet. Click <strong>"Add Social Channel"</strong> above.</div>`;
     return;
   }
 
   container.innerHTML = items.map((item, idx) => `
-    <div class="menu-item-card ${item.enabled === false ? 'menu-item-card--disabled' : ''}">
-      <div class="menu-item-left">
-        <div style="display:flex;flex-direction:column;gap:3px;">
-          <button type="button" class="action-btn" onclick="moveFooterItem('social', ${idx}, -1)" ${idx === 0 ? 'disabled' : ''} title="Move Up" style="padding:2px 4px;font-size:11px;">▲</button>
-          <button type="button" class="action-btn" onclick="moveFooterItem('social', ${idx}, 1)" ${idx === items.length - 1 ? 'disabled' : ''} title="Move Down" style="padding:2px 4px;font-size:11px;">▼</button>
+    <div class="ft-item-card ${item.enabled === false ? 'disabled' : ''}">
+      <div style="display:flex;align-items:center;gap:14px;flex:1;min-width:0;">
+        <div class="ft-drag-handle">
+          <button type="button" class="action-btn" onclick="moveFooterItem('social', ${idx}, -1)" ${idx === 0 ? 'disabled' : ''} title="Move Up" style="padding:2px 4px;font-size:10px;">▲</button>
+          <button type="button" class="action-btn" onclick="moveFooterItem('social', ${idx}, 1)" ${idx === items.length - 1 ? 'disabled' : ''} title="Move Down" style="padding:2px 4px;font-size:10px;">▼</button>
         </div>
-        <div style="display:flex;align-items:center;gap:12px;">
-          <div style="width:34px;height:34px;border-radius:8px;background:#f1f5f9;display:flex;align-items:center;justify-content:center;color:#0a528e;">
-            ${getSocialIconSvgForAdmin(item.platform)}
-          </div>
-          <div>
-            <div style="font-weight:700;font-size:14px;color:var(--text-primary);">${escapeHtml(item.label || item.platform)}</div>
-            <div style="font-size:11.5px;color:var(--text-muted);margin-top:2px;">URL: <code style="color:#0a528e;">${escapeHtml(item.href || '#')}</code></div>
-          </div>
+        <div class="ft-social-chip ft-social-chip--${escapeHtml(item.platform || 'custom')}" style="padding:8px 12px;border-radius:8px;">
+          ${getSocialIconSvgForAdmin(item.platform)}
+          <span>${escapeHtml(item.platform ? item.platform.toUpperCase() : 'WEB')}</span>
+        </div>
+        <div style="min-width:0;">
+          <div style="font-weight:700;font-size:14px;color:var(--text-primary);">${escapeHtml(item.label || item.platform)}</div>
+          <div style="margin-top:3px;"><span class="ft-url-badge">${escapeHtml(item.href || '#')}</span></div>
         </div>
       </div>
-      <div style="display:flex;align-items:center;gap:8px;">
+      <div style="display:flex;align-items:center;gap:10px;flex-shrink:0;">
         <label class="hs-toggle" title="Enable or disable social channel">
           <input type="checkbox" ${item.enabled !== false ? 'checked' : ''} onchange="toggleFooterSocial('${item.id}')" />
           <span class="hs-toggle-track"><span class="hs-toggle-thumb"></span></span>
@@ -4128,19 +4195,25 @@ function renderFooterSections() {
   const enabledSet = Array.isArray(footerDraftConfig.enabledSections) ? footerDraftConfig.enabledSections : null;
 
   if (activeSecs.length === 0) {
-    container.innerHTML = `<div style="text-align:center;padding:24px;color:var(--text-muted);">No active sections found.</div>`;
+    container.innerHTML = `<div style="text-align:center;padding:24px;color:var(--text-muted);">No active sections found in the database.</div>`;
     return;
   }
 
   container.innerHTML = `
-    <div style="display:grid;grid-template-columns:repeat(auto-fill, minmax(220px, 1fr));gap:10px;">
+    <div class="ft-section-pill-grid">
       ${activeSecs.map(s => {
         const isChecked = enabledSet === null ? true : enabledSet.includes(s.slug);
         return `
-          <label style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;cursor:pointer;font-size:13.5px;font-weight:600;color:#1e293b;">
-            <input type="checkbox" value="${s.slug}" ${isChecked ? 'checked' : ''} onchange="onFooterSectionToggle('${s.slug}', this.checked)" />
-            <span>${escapeHtml(s.name)}</span>
-          </label>
+          <div class="ft-section-pill-card ${isChecked ? 'selected' : ''}" onclick="toggleFooterSectionCard('${s.slug}')">
+            <input type="checkbox" value="${s.slug}" ${isChecked ? 'checked' : ''} style="width:16px;height:16px;accent-color:#0a528e;cursor:pointer;" onclick="event.stopPropagation(); onFooterSectionToggle('${s.slug}', this.checked);" />
+            <div style="flex:1;min-width:0;">
+              <div style="font-weight:700;font-size:13.5px;color:#0f172a;">${escapeHtml(s.name)}</div>
+              <div style="font-size:11px;color:#64748b;">/section/${escapeHtml(s.slug)}</div>
+            </div>
+            <span style="font-size:11px;font-weight:700;color:${isChecked ? '#0a528e' : '#94a3b8'};">
+              ${isChecked ? '✓ Active' : 'Hidden'}
+            </span>
+          </div>
         `;
       }).join('')}
     </div>
@@ -4162,6 +4235,27 @@ function onFooterSectionToggle(slug, checked) {
   updateFooterSaveStatus();
 }
 
+function toggleFooterSectionCard(slug) {
+  if (!footerDraftConfig) return;
+  const activeSecs = sections.filter(s => !s.deleted && !s.locked);
+  if (!Array.isArray(footerDraftConfig.enabledSections)) {
+    footerDraftConfig.enabledSections = activeSecs.map(s => s.slug);
+  }
+  const isSelected = footerDraftConfig.enabledSections.includes(slug);
+  onFooterSectionToggle(slug, !isSelected);
+  renderFooterSections();
+}
+
+function selectAllFooterSections(enableAll) {
+  if (!footerDraftConfig) return;
+  recordFooterState(enableAll ? 'Select All Sections' : 'Deselect All Sections');
+  const activeSecs = sections.filter(s => !s.deleted && !s.locked);
+  footerDraftConfig.enabledSections = enableAll ? activeSecs.map(s => s.slug) : [];
+  updateFooterSaveStatus();
+  renderFooterSections();
+  showToast('success', enableAll ? 'All sections enabled for footer.' : 'All sections hidden from footer.');
+}
+
 // ── TAB: BRAND & LEGAL LINKS ──────────────────────────────────────
 function renderFooterBrand() {
   const taglineInput = document.getElementById('ft-tagline-input');
@@ -4175,23 +4269,26 @@ function renderFooterBrand() {
 
   const items = footerDraftConfig.bottomLinks || [];
   if (items.length === 0) {
-    container.innerHTML = `<div style="text-align:center;padding:24px;color:var(--text-muted);">No bottom legal links added. Click "Add Legal Link" above.</div>`;
+    container.innerHTML = `<div style="text-align:center;padding:28px;color:var(--text-muted);font-size:13px;">No bottom legal links added yet. Click <strong>"Add Legal Link"</strong> above.</div>`;
     return;
   }
 
   container.innerHTML = items.map((item, idx) => `
-    <div class="menu-item-card ${item.enabled === false ? 'menu-item-card--disabled' : ''}">
-      <div class="menu-item-left">
-        <div style="display:flex;flex-direction:column;gap:3px;">
-          <button type="button" class="action-btn" onclick="moveFooterItem('bottomLinks', ${idx}, -1)" ${idx === 0 ? 'disabled' : ''} title="Move Up" style="padding:2px 4px;font-size:11px;">▲</button>
-          <button type="button" class="action-btn" onclick="moveFooterItem('bottomLinks', ${idx}, 1)" ${idx === items.length - 1 ? 'disabled' : ''} title="Move Down" style="padding:2px 4px;font-size:11px;">▼</button>
+    <div class="ft-item-card ${item.enabled === false ? 'disabled' : ''}">
+      <div style="display:flex;align-items:center;gap:14px;flex:1;min-width:0;">
+        <div class="ft-drag-handle">
+          <button type="button" class="action-btn" onclick="moveFooterItem('bottomLinks', ${idx}, -1)" ${idx === 0 ? 'disabled' : ''} title="Move Up" style="padding:2px 4px;font-size:10px;">▲</button>
+          <button type="button" class="action-btn" onclick="moveFooterItem('bottomLinks', ${idx}, 1)" ${idx === items.length - 1 ? 'disabled' : ''} title="Move Down" style="padding:2px 4px;font-size:10px;">▼</button>
         </div>
-        <div>
-          <div style="font-weight:700;font-size:14px;color:var(--text-primary);">${escapeHtml(item.label || 'Untitled Link')}</div>
-          <div style="font-size:11.5px;color:var(--text-muted);margin-top:2px;">URL: <code>${escapeHtml(item.href || '#')}</code></div>
+        <div style="min-width:0;">
+          <div style="font-weight:700;font-size:14px;color:var(--text-primary);display:flex;align-items:center;gap:8px;">
+            <span>⚖️ ${escapeHtml(item.label || 'Untitled Link')}</span>
+            <span class="ft-target-badge">${item.target === '_blank' ? 'New Tab ↗' : 'Same Tab'}</span>
+          </div>
+          <div style="margin-top:4px;"><span class="ft-url-badge">${escapeHtml(item.href || '#')}</span></div>
         </div>
       </div>
-      <div style="display:flex;align-items:center;gap:8px;">
+      <div style="display:flex;align-items:center;gap:10px;flex-shrink:0;">
         <label class="hs-toggle" title="Enable or disable link">
           <input type="checkbox" ${item.enabled !== false ? 'checked' : ''} onchange="toggleFooterBottomLink('${item.id}')" />
           <span class="hs-toggle-track"><span class="hs-toggle-thumb"></span></span>

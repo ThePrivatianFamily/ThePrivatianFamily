@@ -443,11 +443,14 @@
     <section class="page" id="page-footer">
       <div class="menu-mgr-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:12px;">
         <div class="menu-mgr-title-wrap">
-          <h1 class="page-title" style="font-size:22px;font-weight:700;color:var(--text-primary);margin:0 0 4px;">Footer Settings</h1>
-          <p class="page-subtitle" style="font-size:13px;color:var(--text-muted);margin:0;">Customize footer columns, Explore links, Recent Series, Social channels, Branding, and Legal links</p>
+          <h1 class="page-title" style="font-size:22px;font-weight:700;color:var(--text-primary);margin:0 0 4px;">Footer Settings Manager</h1>
+          <p class="page-subtitle" style="font-size:13px;color:var(--text-muted);margin:0;">Interactive visual editor for footer columns, Explore links, Editorial series, Social channels, Branding &amp; Legal links</p>
         </div>
         <div class="menu-mgr-actions" style="display:flex;align-items:center;gap:10px;">
-          <span id="ft-save-status" style="font-size:12.5px;color:var(--text-muted);font-weight:500;">✓ Synced with database</span>
+          <div id="ft-save-status-wrap" class="ft-header-badge synced">
+            <span class="ft-pulse-dot" id="ft-status-dot"></span>
+            <span id="ft-save-status">Synced with database</span>
+          </div>
           <button type="button" class="btn btn--ghost btn--sm" id="ft-undo-btn" onclick="undoFooterAction()" title="Undo (Ctrl+Z)" disabled style="display:flex;align-items:center;gap:5px;padding:6px 11px;">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
             Undo
@@ -464,40 +467,64 @@
       </div>
 
       <!-- Tab Navigation -->
-      <div class="menu-tabs" id="ft-tabs-nav" style="display:flex;gap:4px;border-bottom:1px solid var(--border);margin-bottom:20px;flex-wrap:wrap;">
-        <button class="menu-tab-btn active" id="tab-ft-preview" onclick="switchFooterTab('preview')">Live Preview</button>
-        <button class="menu-tab-btn" id="tab-ft-explore" onclick="switchFooterTab('explore')">Explore Links</button>
-        <button class="menu-tab-btn" id="tab-ft-series" onclick="switchFooterTab('series')">Recent Series</button>
-        <button class="menu-tab-btn" id="tab-ft-social" onclick="switchFooterTab('social')">Social &amp; Channels</button>
-        <button class="menu-tab-btn" id="tab-ft-sections" onclick="switchFooterTab('sections')">Sections Column</button>
-        <button class="menu-tab-btn" id="tab-ft-brand" onclick="switchFooterTab('brand')">Brand &amp; Legal Links</button>
+      <div class="tab-bar menu-tab-bar" id="ft-tabs-nav" style="margin-bottom:20px;">
+        <button class="tab-btn active" id="tab-ft-preview" onclick="switchFooterTab('preview')">
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
+          <span>Live Visual Footer</span>
+        </button>
+        <button class="tab-btn" id="tab-ft-explore" onclick="switchFooterTab('explore')">
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+          <span>Explore Links</span>
+        </button>
+        <button class="tab-btn" id="tab-ft-series" onclick="switchFooterTab('series')">
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+          <span>Recent Series</span>
+        </button>
+        <button class="tab-btn" id="tab-ft-social" onclick="switchFooterTab('social')">
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+          <span>Social &amp; Channels</span>
+        </button>
+        <button class="tab-btn" id="tab-ft-sections" onclick="switchFooterTab('sections')">
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+          <span>Sections Column</span>
+        </button>
+        <button class="tab-btn" id="tab-ft-brand" onclick="switchFooterTab('brand')">
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          <span>Brand &amp; Legal Links</span>
+        </button>
       </div>
 
-      <!-- Tab Panel: Live Preview -->
+      <!-- Tab Panel: Live Visual Interactive Footer -->
       <div class="ft-tab-panel" id="panel-ft-preview">
-        <div class="card" style="padding:22px;margin-bottom:20px;background:#0d1522;color:#fff;border-radius:12px;border:1px solid #1e293b;">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;border-bottom:1px solid rgba(255,255,255,0.1);padding-bottom:12px;">
-            <div style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:#94a3b8;">Footer Live Preview</div>
-            <button class="btn btn--ghost btn--sm" style="color:#fff;border-color:rgba(255,255,255,0.2);" onclick="renderFooterPreview()">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
-              Refresh Preview
-            </button>
+        <div class="ft-canvas-notice">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#38bdf8;"></span>
+            <strong>Visual Interactive Mode:</strong> Click any link, series card, or social channel directly in the visual footer below to edit or reconfigure.
           </div>
-          <div id="ft-live-preview-box" class="ft-live-preview-container"></div>
+          <button type="button" class="btn btn--ghost btn--sm" style="color:#38bdf8;border-color:rgba(56,189,248,0.3);" onclick="renderFooterPreview()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+            Refresh Canvas
+          </button>
+        </div>
+        <div class="ft-canvas-card">
+          <div id="ft-live-preview-box"></div>
         </div>
       </div>
 
       <!-- Tab Panel: Explore Links -->
       <div class="ft-tab-panel" id="panel-ft-explore" style="display:none;">
-        <div class="card" style="padding:22px;margin-bottom:20px;">
-          <div class="form-group" style="margin-bottom:18px;">
-            <label class="form-label" for="ft-explore-title-input">Explore Column Title</label>
-            <input type="text" id="ft-explore-title-input" class="form-input" placeholder="Explore the Privatian" value="Explore the Privatian" maxlength="60" oninput="onFooterTitleInput('exploreTitle', this.value)" />
+        <div class="card" style="padding:24px;margin-bottom:20px;border-radius:12px;">
+          <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:14px;margin-bottom:20px;">
+            <label class="form-label" for="ft-explore-title-input" style="font-weight:700;color:#0f172a;margin-bottom:6px;">Explore Column Header Title</label>
+            <input type="text" id="ft-explore-title-input" class="form-input" placeholder="Explore the Privatian" value="Explore the Privatian" maxlength="60" oninput="onFooterTitleInput('exploreTitle', this.value)" style="background:#fff;" />
           </div>
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-            <h3 style="font-size:14px;font-weight:700;color:var(--text-primary);margin:0;">Explore Links List</h3>
-            <button class="btn btn--primary btn--sm" onclick="openFooterExploreModal()">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+            <div>
+              <h3 style="font-size:15px;font-weight:700;color:var(--text-primary);margin:0 0 2px;">Explore Links Collection</h3>
+              <p style="font-size:12px;color:var(--text-muted);margin:0;">Manage destination links shown in column 2 of the footer</p>
+            </div>
+            <button class="btn btn--primary btn--sm" onclick="openFooterExploreModal()" style="display:flex;align-items:center;gap:6px;">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
               Add Explore Link
             </button>
           </div>
@@ -507,15 +534,18 @@
 
       <!-- Tab Panel: Recent Series -->
       <div class="ft-tab-panel" id="panel-ft-series" style="display:none;">
-        <div class="card" style="padding:22px;margin-bottom:20px;">
-          <div class="form-group" style="margin-bottom:18px;">
-            <label class="form-label" for="ft-series-title-input">Recent Series Column Title</label>
-            <input type="text" id="ft-series-title-input" class="form-input" placeholder="Our recent series" value="Our recent series" maxlength="60" oninput="onFooterTitleInput('seriesTitle', this.value)" />
+        <div class="card" style="padding:24px;margin-bottom:20px;border-radius:12px;">
+          <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:14px;margin-bottom:20px;">
+            <label class="form-label" for="ft-series-title-input" style="font-weight:700;color:#0f172a;margin-bottom:6px;">Recent Series Column Header Title</label>
+            <input type="text" id="ft-series-title-input" class="form-input" placeholder="Our recent series" value="Our recent series" maxlength="60" oninput="onFooterTitleInput('seriesTitle', this.value)" style="background:#fff;" />
           </div>
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-            <h3 style="font-size:14px;font-weight:700;color:var(--text-primary);margin:0;">Series Highlights</h3>
-            <button class="btn btn--primary btn--sm" onclick="openFooterSeriesModal()">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+            <div>
+              <h3 style="font-size:15px;font-weight:700;color:var(--text-primary);margin:0 0 2px;">Editorial Series Highlights</h3>
+              <p style="font-size:12px;color:var(--text-muted);margin:0;">Spotlight recurring investigative series and thematic collections</p>
+            </div>
+            <button class="btn btn--primary btn--sm" onclick="openFooterSeriesModal()" style="display:flex;align-items:center;gap:6px;">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
               Add Series Highlight
             </button>
           </div>
@@ -525,15 +555,18 @@
 
       <!-- Tab Panel: Social & Channels -->
       <div class="ft-tab-panel" id="panel-ft-social" style="display:none;">
-        <div class="card" style="padding:22px;margin-bottom:20px;">
-          <div class="form-group" style="margin-bottom:18px;">
-            <label class="form-label" for="ft-social-title-input">Social Media Column Title</label>
-            <input type="text" id="ft-social-title-input" class="form-input" placeholder="Follow us on" value="Follow us on" maxlength="60" oninput="onFooterTitleInput('socialTitle', this.value)" />
+        <div class="card" style="padding:24px;margin-bottom:20px;border-radius:12px;">
+          <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:14px;margin-bottom:20px;">
+            <label class="form-label" for="ft-social-title-input" style="font-weight:700;color:#0f172a;margin-bottom:6px;">Social Media Column Header Title</label>
+            <input type="text" id="ft-social-title-input" class="form-input" placeholder="Follow us on" value="Follow us on" maxlength="60" oninput="onFooterTitleInput('socialTitle', this.value)" style="background:#fff;" />
           </div>
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-            <h3 style="font-size:14px;font-weight:700;color:var(--text-primary);margin:0;">Social Media Channels</h3>
-            <button class="btn btn--primary btn--sm" onclick="openFooterSocialModal()">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+            <div>
+              <h3 style="font-size:15px;font-weight:700;color:var(--text-primary);margin:0 0 2px;">Active Social Media Accounts</h3>
+              <p style="font-size:12px;color:var(--text-muted);margin:0;">Connect readers to official channels with custom icons and links</p>
+            </div>
+            <button class="btn btn--primary btn--sm" onclick="openFooterSocialModal()" style="display:flex;align-items:center;gap:6px;">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
               Add Social Channel
             </button>
           </div>
@@ -543,33 +576,52 @@
 
       <!-- Tab Panel: Sections Column -->
       <div class="ft-tab-panel" id="panel-ft-sections" style="display:none;">
-        <div class="card" style="padding:22px;margin-bottom:20px;">
-          <div class="form-group" style="margin-bottom:18px;">
-            <label class="form-label" for="ft-sections-title-input">Sections Column Title</label>
-            <input type="text" id="ft-sections-title-input" class="form-input" placeholder="Sections" value="Sections" maxlength="60" oninput="onFooterTitleInput('sectionsTitle', this.value)" />
+        <div class="card" style="padding:24px;margin-bottom:20px;border-radius:12px;">
+          <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:14px;margin-bottom:20px;">
+            <label class="form-label" for="ft-sections-title-input" style="font-weight:700;color:#0f172a;margin-bottom:6px;">Sections Column Header Title</label>
+            <input type="text" id="ft-sections-title-input" class="form-input" placeholder="Sections" value="Sections" maxlength="60" oninput="onFooterTitleInput('sectionsTitle', this.value)" style="background:#fff;" />
           </div>
-          <p class="hs-hint">Select which sections appear in Footer Column 1. Active sections are managed in the <strong>Sections</strong> tab.</p>
-          <div id="ft-sections-list-container" class="hs-section-list"></div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+            <div>
+              <h3 style="font-size:15px;font-weight:700;color:var(--text-primary);margin:0 0 2px;">Footer Section Visibility</h3>
+              <p style="font-size:12px;color:var(--text-muted);margin:0;">Choose which published sections appear in Column 1 of the footer</p>
+            </div>
+            <div style="display:flex;gap:8px;">
+              <button type="button" class="btn btn--ghost btn--sm" onclick="selectAllFooterSections(true)">Select All</button>
+              <button type="button" class="btn btn--ghost btn--sm" onclick="selectAllFooterSections(false)">Deselect All</button>
+            </div>
+          </div>
+          <div id="ft-sections-list-container"></div>
         </div>
       </div>
 
       <!-- Tab Panel: Brand & Legal Links -->
       <div class="ft-tab-panel" id="panel-ft-brand" style="display:none;">
-        <div class="card" style="padding:22px;margin-bottom:20px;">
-          <h3 style="font-size:15px;font-weight:700;color:var(--text-primary);margin:0 0 14px;">Footer Branding &amp; Copyright</h3>
-          <div class="form-group" style="margin-bottom:14px;">
-            <label class="form-label" for="ft-tagline-input">Footer Tagline / Secondary Description</label>
+        <div class="card" style="padding:24px;margin-bottom:20px;border-radius:12px;">
+          <div style="display:flex;align-items:center;gap:12px;padding:16px;background:linear-gradient(135deg, #090e17 0%, #1e293b 100%);border-radius:10px;margin-bottom:22px;color:#fff;">
+            <div style="width:44px;height:44px;border-radius:8px;background:rgba(255,255,255,0.1);display:flex;align-items:center;justify-content:center;font-size:20px;">🏛️</div>
+            <div>
+              <div style="font-family:var(--font-serif);font-size:18px;font-weight:700;letter-spacing:0.04em;">THE PRIVATIAN FAMILY</div>
+              <div style="font-size:12px;color:#94a3b8;">Primary Publication Brand &amp; Legal Metadata</div>
+            </div>
+          </div>
+
+          <div class="form-group" style="margin-bottom:18px;">
+            <label class="form-label" for="ft-tagline-input" style="font-weight:700;color:#0f172a;margin-bottom:6px;">Publication Tagline / Secondary Description</label>
             <input type="text" id="ft-tagline-input" class="form-input" placeholder="The Official Publication of The Privatian Society — Cambridge, Massachusetts" oninput="onFooterTitleInput('tagline', this.value)" />
           </div>
-          <div class="form-group" style="margin-bottom:20px;">
-            <label class="form-label" for="ft-copyright-input">Copyright Notice</label>
+          <div class="form-group" style="margin-bottom:24px;">
+            <label class="form-label" for="ft-copyright-input" style="font-weight:700;color:#0f172a;margin-bottom:6px;">Copyright Notice</label>
             <input type="text" id="ft-copyright-input" class="form-input" placeholder="© 2026 The Privatian Family. All rights reserved." oninput="onFooterTitleInput('copyright', this.value)" />
           </div>
 
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;border-top:1px solid var(--border);padding-top:16px;">
-            <h3 style="font-size:14px;font-weight:700;color:var(--text-primary);margin:0;">Bottom Legal &amp; Utility Links</h3>
-            <button class="btn btn--primary btn--sm" onclick="openFooterBottomLinkModal()">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;border-top:1px solid #e2e8f0;padding-top:20px;">
+            <div>
+              <h3 style="font-size:15px;font-weight:700;color:var(--text-primary);margin:0 0 2px;">Bottom Legal &amp; Utility Links</h3>
+              <p style="font-size:12px;color:var(--text-muted);margin:0;">Links shown along the bottom copyright bar</p>
+            </div>
+            <button class="btn btn--primary btn--sm" onclick="openFooterBottomLinkModal()" style="display:flex;align-items:center;gap:6px;">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
               Add Legal Link
             </button>
           </div>
