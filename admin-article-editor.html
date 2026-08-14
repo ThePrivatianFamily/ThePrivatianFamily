@@ -289,6 +289,79 @@ body{padding-bottom:34px}
 .pm-do:hover{background:#158040}
 .pm-do:disabled{opacity:.4;cursor:default}
 
+/* ── SETTINGS DRAWER ─────────────────────────────── */
+:root{--drawer:320px}
+#sd{position:fixed;top:calc(var(--tb)+var(--fmt));right:0;bottom:34px;
+  width:var(--drawer);background:#fff;border-left:1px solid var(--border);
+  z-index:700;transform:translateX(100%);transition:transform .25s cubic-bezier(.4,0,.2,1);
+  display:flex;flex-direction:column;overflow:hidden;box-shadow:-4px 0 16px rgba(0,0,0,.06)}
+#sd.open{transform:translateX(0)}
+.sd-scroll{flex:1;overflow-y:auto}
+.sd-sec{border-bottom:1px solid var(--border)}
+.sd-sec-hd{display:flex;align-items:center;justify-content:space-between;
+  padding:13px 16px;cursor:pointer;user-select:none;border:none;width:100%;
+  font:700 10px/1 var(--sans);letter-spacing:.1em;text-transform:uppercase;color:var(--muted);
+  background:none;text-align:left;transition:.12s}
+.sd-sec-hd:hover{background:#f8fafc;color:var(--navy)}
+.sd-sec-hd .sd-chevron{transition:transform .2s;flex-shrink:0;margin-left:auto}
+.sd-sec.collapsed .sd-chevron{transform:rotate(-90deg)}
+.sd-sec-body{padding:12px 16px 16px;display:flex;flex-direction:column;gap:11px}
+.sd-sec.collapsed .sd-sec-body{display:none}
+
+.sd-field{display:flex;flex-direction:column;gap:4px}
+.sd-lbl{font:700 10px/1 var(--sans);letter-spacing:.08em;text-transform:uppercase;
+  color:var(--muted);margin-bottom:1px}
+.sd-inp{font:400 12.5px/1.4 var(--sans);color:var(--text);
+  background:#f8fafc;border:1px solid #dde4ea;border-radius:7px;
+  padding:8px 10px;outline:none;resize:vertical;width:100%;transition:.12s}
+.sd-inp:focus{border-color:var(--navy);background:#fff;box-shadow:0 0 0 3px rgba(10,82,142,.08)}
+.sd-cc{font:400 10px/1 var(--sans);color:var(--light);text-align:right;margin-top:2px}
+.sd-cc.warn{color:#f59e0b}.sd-cc.over{color:#ef4444}
+
+/* Tags */
+.tags-wrap{display:flex;flex-wrap:wrap;gap:5px;
+  background:#f8fafc;border:1px solid #dde4ea;border-radius:7px;
+  padding:6px 8px;min-height:36px;align-items:flex-start;cursor:text;transition:.12s}
+.tags-wrap:focus-within{border-color:var(--navy);background:#fff}
+.tag-pill{display:inline-flex;align-items:center;gap:4px;
+  font:600 11px/1 var(--sans);color:var(--navy);
+  background:#e8f1f9;border-radius:4px;padding:3px 7px 3px 8px;flex-shrink:0}
+.tag-x{cursor:pointer;color:#5a8ab0;font-size:14px;line-height:1;
+  background:none;border:none;padding:0;display:flex;align-items:center;margin-left:1px}
+.tag-x:hover{color:#dc2626}
+#tag-inp{border:none;background:none;outline:none;font:400 12px/1 var(--sans);
+  color:var(--text);flex:1;min-width:70px;padding:3px 2px}
+
+/* Featured image area */
+.feat-zone{border:2px dashed #d0dae5;border-radius:8px;
+  min-height:90px;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;gap:6px;cursor:pointer;transition:.15s;
+  background:#f8fafc;padding:12px;text-align:center}
+.feat-zone:hover{border-color:var(--navy);background:#eef5fb}
+.feat-zone-lbl{font:600 11.5px/1.4 var(--sans);color:var(--muted)}
+.feat-preview{position:relative;border-radius:8px;overflow:hidden}
+.feat-preview img{width:100%;display:block;max-height:120px;object-fit:cover}
+.feat-actions{display:flex;gap:6px;margin-top:6px}
+.feat-act-btn{font:600 11px/1 var(--sans);padding:5px 10px;border-radius:6px;
+  cursor:pointer;border:1px solid #dde4ea;background:#f8fafc;color:var(--muted);transition:.12s}
+.feat-act-btn:hover{background:#eef2f7;color:var(--navy)}
+.feat-act-btn.rm{color:#dc2626;border-color:#fca5a5}
+.feat-act-btn.rm:hover{background:#fef2f2}
+
+/* Search preview */
+.seo-preview{background:#f8fafc;border:1px solid #dde4ea;border-radius:7px;padding:11px 13px}
+.sp-ttl{font:600 14px/1.3 var(--sans);color:#1a0dab;margin-bottom:2px;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sp-url{font:400 11px/1.3 var(--sans);color:#006621;margin-bottom:4px}
+.sp-desc{font:400 12px/1.5 var(--sans);color:#545454;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+
+.tb-settings{background:rgba(255,255,255,.07);color:rgba(255,255,255,.55);
+  border:1px solid rgba(255,255,255,.1)}
+.tb-settings:hover{background:rgba(255,255,255,.13);color:#fff}
+.tb-settings.active{background:rgba(10,82,142,.55);color:#fff;
+  border-color:rgba(10,82,142,.7)}
+
 /* Hide public elements */
 #site-header-mount,#site-footer-mount,.article-share-sidebar,
 .article-related,.article-right-aside{display:none!important}
@@ -311,6 +384,10 @@ body{padding-bottom:34px}
   <span class="tb-badge draft" id="tb-badge">● Draft</span>
   <span id="tb-save-st"></span>
   <div class="tb-vr"></div>
+  <button class="tb-btn tb-settings" id="sd-toggle" onclick="toggleDrawer()" title="Article Settings">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+    Settings
+  </button>
   <button class="tb-btn tb-preview" onclick="previewArt()">Preview</button>
   <button class="tb-btn tb-save" id="tb-save-btn" onclick="saveArt()">Save Draft</button>
   <button class="tb-btn tb-pub" id="tb-pub-btn" onclick="pubArt()">Publish</button>
@@ -556,6 +633,96 @@ body{padding-bottom:34px}
   </div>
 </div>
 
+<!-- ═══ SETTINGS DRAWER ══════════════════════════════════════ -->
+<div id="sd">
+  <div class="sd-scroll">
+
+    <!-- ── Featured Image ─── -->
+    <div class="sd-sec" id="sds-feat">
+      <button class="sd-sec-hd" onclick="toggleSdSec('sds-feat')">
+        Featured Image
+        <svg class="sd-chevron" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      <div class="sd-sec-body">
+        <div id="feat-preview" style="display:none">
+          <div class="feat-preview"><img id="feat-img-el" src="" alt="" /></div>
+          <div class="feat-actions">
+            <button class="feat-act-btn" onclick="trigFeatImg()">Replace</button>
+            <button class="feat-act-btn rm" onclick="removeFeatImg()">Remove</button>
+          </div>
+        </div>
+        <div class="feat-zone" id="feat-zone" onclick="trigFeatImg()">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color:#9db5c3"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5-4 4-2-2-5 5"/></svg>
+          <span class="feat-zone-lbl">Click to upload featured image</span>
+          <span style="font:400 10px/1 var(--sans);color:var(--light)">JPEG · PNG · WebP</span>
+        </div>
+        <div class="sd-field">
+          <label class="sd-lbl">Alt Text</label>
+          <input type="text" class="sd-inp" id="sd-feat-alt" placeholder="Describe the image…" oninput="DIRTY=true" />
+        </div>
+        <div class="sd-field">
+          <label class="sd-lbl">Caption</label>
+          <input type="text" class="sd-inp" id="sd-feat-caption" placeholder="Image caption…" oninput="DIRTY=true" />
+        </div>
+        <div class="sd-field">
+          <label class="sd-lbl">Credit / Source</label>
+          <input type="text" class="sd-inp" id="sd-feat-credit" placeholder="e.g. NASA / ESA / Reuters" oninput="DIRTY=true" />
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Tags ─── -->
+    <div class="sd-sec" id="sds-tags">
+      <button class="sd-sec-hd" onclick="toggleSdSec('sds-tags')">
+        Tags
+        <svg class="sd-chevron" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      <div class="sd-sec-body">
+        <div class="sd-field">
+          <div class="tags-wrap" onclick="g('tag-inp').focus()">
+            <div id="tags-list" style="display:contents"></div>
+            <input type="text" id="tag-inp" placeholder="Add tag, press Enter…" onkeydown="tagKey(event)" />
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── SEO ─── -->
+    <div class="sd-sec" id="sds-seo">
+      <button class="sd-sec-hd" onclick="toggleSdSec('sds-seo')">
+        SEO
+        <svg class="sd-chevron" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      <div class="sd-sec-body">
+        <div class="sd-field">
+          <label class="sd-lbl">SEO Title</label>
+          <input type="text" class="sd-inp" id="sd-seo-title" placeholder="Auto-fills from headline…" maxlength="80"
+            oninput="seoCC(this,'sd-seo-cc',60);g('sp-ttl').textContent=this.value||gt('ed-headline')||'Article Title';DIRTY=true" />
+          <span class="sd-cc" id="sd-seo-cc">0 / 60</span>
+        </div>
+        <div class="sd-field">
+          <label class="sd-lbl">Meta Description</label>
+          <textarea class="sd-inp" id="sd-meta-desc" rows="3"
+            placeholder="Brief article summary for search engines…" maxlength="200"
+            oninput="seoCC(this,'sd-meta-cc',160);g('sp-desc').textContent=this.value||'Meta description will appear here.';DIRTY=true"></textarea>
+          <span class="sd-cc" id="sd-meta-cc">0 / 160</span>
+        </div>
+        <div class="sd-field">
+          <label class="sd-lbl">Search Preview</label>
+          <div class="seo-preview">
+            <div class="sp-ttl" id="sp-ttl">Article Title</div>
+            <div class="sp-url">theprivatianfamily.vercel.app/…</div>
+            <div class="sp-desc" id="sp-desc">Meta description will appear here.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Hidden inputs -->
+<input type="file" id="feat-img-inp" accept="image/*" style="display:none" onchange="handleFeatImgFile(this)" />
 
 <script src="admin-auth.js"></script>
 <script>
@@ -572,6 +739,8 @@ let SAVING  = false;
 let _SEL    = null;   // saved selection for image insert
 let _CURIMG = null;   // currently selected image element
 let _serverTS = 0;    // server updated_at timestamp
+let _TAGS   = [];     // article tags array
+let _featImgUrl = ''; // featured image URL
 
 // Debounce timers
 let _lsTimer   = null;
@@ -634,7 +803,18 @@ function fill(a) {
   if (a.section) setSec(a.section);
   if (a.content_html) g('ed-rt').innerHTML = a.content_html;
   if (a.author_photo_url) showAuthorPhoto(a.author_photo_url);
-  refreshStatus(); updateReadTime();
+  // ── Drawer fields ────────────────────────────────────
+  if (a.hero_img_url) { _featImgUrl = a.hero_img_url; showFeatPreview(a.hero_img_url); }
+  if (a.hero_img_alt)   g('sd-feat-alt').value    = a.hero_img_alt;
+  if (a.hero_caption)   g('sd-feat-caption').value = a.hero_caption;
+  if (a.hero_credit)    g('sd-feat-credit').value  = a.hero_credit;
+  if (a.seo_title)    { g('sd-seo-title').value = a.seo_title; seoCC(g('sd-seo-title'),'sd-seo-cc',60); }
+  if (a.meta_description) { g('sd-meta-desc').value = a.meta_description; seoCC(g('sd-meta-desc'),'sd-meta-cc',160); }
+  if (a.tags)  { _TAGS = a.tags.split(',').filter(Boolean); renderTags(); }
+  // Update search preview
+  g('sp-ttl').textContent = a.seo_title || a.title || 'Article Title';
+  if (a.meta_description) g('sp-desc').textContent = a.meta_description;
+  refreshStatus(); updateMetrics();
 }
 
 // ── SECTIONS FROM DB ─────────────────────────────────────────
@@ -848,14 +1028,85 @@ function buildPayload() {
     author_role:     gt('bio-role'),
     author_bio:      gt('bio-desc'),
     author_photo_url: g('author-photo-img').src && g('author-photo-img').style.display !== 'none' ? g('author-photo-img').src : '',
-    hero_img_url:    '',
-    hero_caption:    '',
-    hero_credit:     '',
+    hero_img_url:    _featImgUrl || '',
+    hero_img_alt:    (g('sd-feat-alt')?.value  || '').trim(),
+    hero_caption:    (g('sd-feat-caption')?.value || '').trim(),
+    hero_credit:     (g('sd-feat-credit')?.value  || '').trim(),
+    seo_title:       (g('sd-seo-title')?.value || '').trim(),
+    meta_description:(g('sd-meta-desc')?.value  || '').trim(),
+    tags:            _TAGS.join(','),
     content_html:    g('ed-rt').innerHTML,
   };
 }
 
-// ── FORMATTING ────────────────────────────────────────────────
+// ── SETTINGS DRAWER ───────────────────────────────────────
+function toggleDrawer() {
+  const isOpen = g('sd').classList.toggle('open');
+  g('sd-toggle').classList.toggle('active', isOpen);
+}
+function toggleSdSec(id) {
+  g(id).classList.toggle('collapsed');
+}
+
+// ── TAGS ─────────────────────────────────────────────────
+function tagKey(e) {
+  if (e.key === 'Enter' || e.key === ',') {
+    e.preventDefault();
+    const val = e.target.value.trim().replace(/,/g,'');
+    if (val && !_TAGS.includes(val)) { _TAGS.push(val); renderTags(); DIRTY = true; }
+    e.target.value = '';
+  } else if (e.key === 'Backspace' && !e.target.value && _TAGS.length) {
+    _TAGS.pop(); renderTags(); DIRTY = true;
+  }
+}
+function renderTags() {
+  g('tags-list').innerHTML = _TAGS.map((t,i) =>
+    `<span class="tag-pill">${escH(t)}<button class="tag-x" onclick="removeTag(${i})" title="Remove">×</button></span>`
+  ).join('');
+}
+function removeTag(i) { _TAGS.splice(i,1); renderTags(); DIRTY = true; }
+
+// ── SEO CHAR COUNTER ──────────────────────────────────────
+function seoCC(el, ccId, limit) {
+  const len = el.value.length;
+  const cc  = g(ccId);
+  cc.textContent = len + ' / ' + limit;
+  cc.className = 'sd-cc' + (len > limit ? ' over' : len > limit * .85 ? ' warn' : '');
+}
+
+// ── FEATURED IMAGE (drawer) ──────────────────────────────
+function trigFeatImg() {
+  g('feat-img-inp').value = ''; g('feat-img-inp').click();
+}
+async function handleFeatImgFile(input) {
+  const file = input.files[0]; if (!file) return;
+  const localUrl = URL.createObjectURL(file);
+  showFeatPreview(localUrl);
+  try {
+    const r = await api('/api/articles?action=upload', { method: 'POST' });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error || 'Upload init failed');
+    await fetch(d.uploadUrl, { method: 'PUT', headers: { 'Content-Type': file.type }, body: file });
+    _featImgUrl = d.publicUrl;
+    g('feat-img-el').src = d.publicUrl;
+    DIRTY = true; lsSave();
+  } catch(e) { toast('Featured image upload failed: ' + e.message, 'err'); }
+}
+function showFeatPreview(url) {
+  _featImgUrl = url;
+  g('feat-img-el').src = url;
+  g('feat-preview').style.display = 'block';
+  g('feat-zone').style.display    = 'none';
+}
+function removeFeatImg() {
+  _featImgUrl = '';
+  g('feat-img-el').src = '';
+  g('feat-preview').style.display = 'none';
+  g('feat-zone').style.display    = 'flex';
+  DIRTY = true;
+}
+
+// ── FORMATTING ────────────────────────────────────────────
 function f(ev, cmd, val) {
   ev.preventDefault();
   document.execCommand(cmd, false, val || null);

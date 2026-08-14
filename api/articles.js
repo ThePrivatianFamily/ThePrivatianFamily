@@ -56,15 +56,16 @@ module.exports = async function handler(req, res) {
     return res.status(200).json(data);
   }
 
-  // ── SAVE (create or update) ──────────────────────────────────────
+  // ── SAVE (create or update) ───────────────────────────────────────
   if (action === 'save' && req.method === 'POST') {
     const session = requireAuth(req, res);
     if (!session) return;
 
     const {
       id: bodyId, title = '', deck = '', section = '', author = '', author_role = '',
-      author_bio = '', author_photo_url = '', hero_img_url = '', hero_caption = '',
-      hero_credit = '', content_html = '', slug: bodySlug
+      author_bio = '', author_photo_url = '', hero_img_url = '', hero_img_alt = '',
+      hero_caption = '', hero_credit = '', content_html = '', slug: bodySlug,
+      seo_title = '', meta_description = '', tags = '',
     } = req.body || {};
 
     const client = sb();
@@ -73,7 +74,8 @@ module.exports = async function handler(req, res) {
       // UPDATE
       const updates = {
         title, deck, section, author, author_role, author_bio, author_photo_url,
-        hero_img_url, hero_caption, hero_credit, content_html,
+        hero_img_url, hero_img_alt, hero_caption, hero_credit, content_html,
+        seo_title, meta_description, tags,
         updated_at: new Date().toISOString(),
       };
       if (bodySlug) updates.slug = bodySlug.toLowerCase().trim();
@@ -90,7 +92,8 @@ module.exports = async function handler(req, res) {
       }
       const { data, error } = await client.from('articles').insert({
         slug, title, deck, section, author, author_role, author_bio, author_photo_url,
-        hero_img_url, hero_caption, hero_credit, content_html,
+        hero_img_url, hero_img_alt, hero_caption, hero_credit, content_html,
+        seo_title, meta_description, tags,
         status: 'draft', created_by: session.email,
       }).select().single();
       if (error) return res.status(500).json({ error: error.message });
