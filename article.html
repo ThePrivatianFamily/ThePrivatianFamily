@@ -14,12 +14,12 @@
   <script src="supabase-config.js"></script>
   <script src="components.js"></script>
   <style>
-    /* Hide placeholders when loading a real article */
+    /* Hide hardcoded placeholders when loading a real article */
     .article-loading #article-hero-band,
-    .article-loading #article-body,
+    .article-loading #article-layout,
     .article-loading #article-related { opacity: 0; pointer-events: none; }
     .article-reveal #article-hero-band,
-    .article-reveal #article-body,
+    .article-reveal #article-layout,
     .article-reveal #article-related {
       opacity: 1;
       transition: opacity 0.38s ease;
@@ -34,7 +34,7 @@
       display: block;
     }
     #article-skeleton {
-      max-width: 740px; margin: 48px auto; padding: 0 24px;
+      max-width: 680px; margin: 48px auto; padding: 0 24px;
     }
   </style>
   <script>
@@ -64,38 +64,39 @@
     <div class="article-skeleton-bar" style="height:16px;width:88%;margin-bottom:12px;"></div>
   </div>
 
-  <div class="article-doc-container" id="article-doc-container">
+  <div class="article-hero-band" id="article-hero-band">
+    <div class="article-hero-inner">
+      <nav class="article-breadcrumb" id="article-breadcrumb" aria-label="breadcrumb">
+        <a href="/" class="breadcrumb-home">Home</a>
+        <span class="breadcrumb-sep">&#x203A;</span>
+        <a href="section.html" class="breadcrumb-section" id="article-section-link"></a>
+      </nav>
+      <a href="section.html" class="article-section-pill" id="article-section-pill"></a>
+      <h1 class="article-headline" id="article-headline"></h1>
+      <p class="article-deck" id="article-deck"></p>
+      <div class="article-meta" id="article-meta">
+        <span class="article-author" id="article-author"></span>
+        <span class="meta-dot" id="meta-dot-1">&#xB7;</span>
+        <span class="article-date" id="article-date"></span>
+        <span class="meta-dot" id="meta-dot-2">&#xB7;</span>
+        <span class="article-readtime" id="article-readtime"></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="article-layout" id="article-layout">
 
     <aside class="article-share-sidebar" id="article-share-sidebar" aria-label="Share this article">
       <div class="share-label">Share</div>
-      <div class="share-buttons" style="display:flex;flex-direction:column;gap:8px;">
-        <button class="share-btn" id="share-twitter" title="Share on X" onclick="shareArticle('twitter')"><svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.742l7.73-8.835L1.254 2.25H8.08l4.253 5.622zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg></button>
-        <button class="share-btn" id="share-facebook" title="Share on Facebook" onclick="shareArticle('facebook')"><svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg></button>
-        <button class="share-btn" id="share-linkedin" title="Share on LinkedIn" onclick="shareArticle('linkedin')"><svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg></button>
-        <button class="share-btn" id="share-email" title="Share via Email" onclick="shareArticle('email')"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg></button>
-        <button class="share-btn" id="share-copy" title="Copy link" onclick="shareArticle('copy')"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></button>
+      <div class="share-buttons">
+        <button class="share-btn" id="share-twitter" title="Share on X" onclick="shareArticle('twitter')"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.742l7.73-8.835L1.254 2.25H8.08l4.253 5.622zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg></button>
+        <button class="share-btn" id="share-facebook" title="Share on Facebook" onclick="shareArticle('facebook')"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg></button>
+        <button class="share-btn" id="share-linkedin" title="Share on LinkedIn" onclick="shareArticle('linkedin')"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg></button>
+        <button class="share-btn" id="share-email" title="Share via Email" onclick="shareArticle('email')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg></button>
+        <button class="share-btn" id="share-copy" title="Copy link" onclick="shareArticle('copy')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></button>
+        <button class="share-btn" id="share-print" title="Print" onclick="window.print()"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg></button>
       </div>
     </aside>
-
-    <div class="article-hero-band" id="article-hero-band">
-      <div class="article-hero-inner">
-        <nav class="article-breadcrumb" id="article-breadcrumb" aria-label="breadcrumb">
-          <a href="/" class="breadcrumb-home">Home</a>
-          <span class="breadcrumb-sep">&#x203A;</span>
-          <a href="section.html" class="breadcrumb-section" id="article-section-link"></a>
-        </nav>
-        <a href="section.html" class="article-section-pill" id="article-section-pill"></a>
-        <h1 class="article-headline" id="article-headline"></h1>
-        <p class="article-deck" id="article-deck"></p>
-        <div class="article-meta" id="article-meta">
-          <span class="article-author" id="article-author"></span>
-          <span class="meta-dot" id="meta-dot-1">&#xB7;</span>
-          <span class="article-date" id="article-date"></span>
-          <span class="meta-dot" id="meta-dot-2">&#xB7;</span>
-          <span class="article-readtime" id="article-readtime"></span>
-        </div>
-      </div>
-    </div>
 
     <main class="article-body" id="article-body">
       <figure class="article-hero-figure" id="article-hero-figure" style="display:none;">
@@ -107,7 +108,7 @@
 
       <div class="article-author-bio" id="article-author-bio" style="display:none;">
         <div class="author-bio-avatar" id="author-bio-avatar">
-          <svg width="64" height="64" viewBox="0 0 64 64" fill="none"><circle cx="32" cy="32" r="32" fill="#e8f1f9"/><circle cx="32" cy="25" r="11" fill="#0a528e" opacity="0.28"/><ellipse cx="32" cy="53" rx="20" ry="11" fill="#0a528e" opacity="0.16"/></svg>
+          <svg width="52" height="52" viewBox="0 0 52 52" fill="none"><circle cx="26" cy="26" r="26" fill="#e8f1f9"/><circle cx="26" cy="20" r="9" fill="#0a528e" opacity="0.35"/><ellipse cx="26" cy="42" rx="16" ry="9" fill="#0a528e" opacity="0.2"/></svg>
         </div>
         <div class="author-bio-text">
           <div class="author-bio-name" id="author-bio-name"></div>
@@ -118,6 +119,7 @@
 
     </main>
 
+    <aside class="article-right-aside" id="article-right-aside" aria-hidden="true"></aside>
   </div>
 
   <section class="article-related" id="article-related" style="display:none;">
@@ -207,7 +209,7 @@
         if(pill){
           pill.textContent = a.section || '';
           pill.href = secHref;
-          pill.style.display = a.section ? 'inline-flex' : 'none';
+          pill.style.display = a.section ? 'inline-block' : 'none';
         }
         if(secLink){
           secLink.textContent = a.section || 'Home';
@@ -273,7 +275,7 @@
             if(bioRole) bioRole.textContent = a.author_role || '';
             if(bioDesc) bioDesc.textContent = a.author_bio || '';
             if(bioAvatar && a.author_photo_url){
-              bioAvatar.innerHTML = '<img src="' + a.author_photo_url + '" alt="' + (a.author||'') + '" style="width:64px;height:64px;border-radius:50%;object-fit:cover;" />';
+              bioAvatar.innerHTML = '<img src="' + a.author_photo_url + '" alt="' + (a.author||'') + '" style="width:52px;height:52px;border-radius:50%;object-fit:cover;" />';
             }
           }
         }
@@ -313,15 +315,17 @@
       .catch(function(e){
         // Hide skeleton
         var sk = g('article-skeleton'); if (sk) sk.style.display = 'none';
-        var doc = g('article-doc-container'); if (doc) doc.style.display = 'none';
+        // Keep hero band hidden (don't reveal placeholder content)
+        var band = g('article-hero-band'); if (band) band.style.display = 'none';
+        var layout = g('article-layout'); if (layout) layout.style.display = 'none';
         var related = g('article-related'); if (related) related.style.display = 'none';
         // Show full-page error
         var err = document.createElement('div');
         err.style.cssText = 'max-width:520px;margin:80px auto;padding:0 24px;text-align:center;';
         err.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="#d1d5db" stroke-width="1.2" width="56" height="56" style="margin:0 auto 20px;display:block;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>'
-          + '<h2 style="font-family:var(--serif,serif);font-size:22px;color:#1a2d3e;margin:0 0 10px;">Article not available</h2>'
-          + '<p style="font-family:var(--sans,sans-serif);font-size:14px;color:#9ca3af;margin:0 0 24px;line-height:1.6;">This article may not be published yet, or the link may be incorrect.</p>'
-          + '<a href="/" style="font-family:var(--sans,sans-serif);font-size:13px;font-weight:600;color:#0a528e;text-decoration:none;">← Back to Home</a>';
+          + '<h2 style="font-family:var(--font-serif,\'Libre Baskerville\',serif);font-size:22px;color:#1a2d3e;margin:0 0 10px;">Article not available</h2>'
+          + '<p style="font-family:var(--font-sans,\'Source Sans 3\',sans-serif);font-size:14px;color:#9ca3af;margin:0 0 24px;line-height:1.6;">This article may not be published yet, or the link may be incorrect.</p>'
+          + '<a href="/" style="font-family:var(--font-sans,\'Source Sans 3\',sans-serif);font-size:13px;font-weight:600;color:#0a528e;text-decoration:none;">← Back to Home</a>';
         document.body.appendChild(err);
       });
   })();
@@ -341,7 +345,7 @@
       navigator.clipboard.writeText(window.location.href).then(function() {
         var btn = document.getElementById('share-copy');
         if (btn) {
-          btn.style.color = 'var(--navy)';
+          btn.style.color = 'var(--brand-navy,#0a528e)';
           setTimeout(function() { btn.style.color = ''; }, 1500);
         }
       });
@@ -366,7 +370,7 @@
   (function() {
     var bar = document.createElement('div');
     bar.id = 'read-progress';
-    bar.style.cssText = 'position:fixed;top:0;left:0;height:3px;background:var(--navy,#0a528e);z-index:9999;width:0%;transition:width 0.1s;pointer-events:none;';
+    bar.style.cssText = 'position:fixed;top:0;left:0;height:3px;background:var(--brand-navy,#0a528e);z-index:9999;width:0%;transition:width 0.1s;pointer-events:none;';
     document.body.appendChild(bar);
     window.addEventListener('scroll', function() {
       var body = document.getElementById('article-body');
