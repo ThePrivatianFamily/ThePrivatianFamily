@@ -2,7 +2,7 @@
   "cleanUrls": true,
   "trailingSlash": false,
   "rewrites": [
-    { "source": "/article/:slug*", "destination": "/article.html" },
-    { "source": "/section/:slug*", "destination": "/section.html" }
+    { "source": "/article/:path*", "destination": "/article" },
+    { "source": "/section/:path*", "destination": "/section" }
   ]
 }

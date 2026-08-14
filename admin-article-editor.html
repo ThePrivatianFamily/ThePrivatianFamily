@@ -20,7 +20,7 @@
   --tb:52px;--fmt:46px;--col:720px;
 }
 html,body{min-height:100%}
-body{font-family:var(--sans);background:var(--bg);padding-top:calc(var(--tb)+var(--fmt));color:var(--text)}
+body{font-family:var(--sans);background:var(--bg);padding-top:calc(var(--tb) + var(--fmt));color:var(--text)}
 
 /* ── ADMIN TOOLBAR ───────────────────────────── */
 #tb{position:fixed;top:0;left:0;right:0;height:var(--tb);z-index:1000;
@@ -83,7 +83,7 @@ body{font-family:var(--sans);background:var(--bg);padding-top:calc(var(--tb)+var
 /* ── RESTORE BANNER ──────────────────────────── */
 #restore-banner{display:none;background:#fef3c7;border-bottom:1px solid #fbbf24;
   padding:10px 20px;font:400 13px/1.4 var(--sans);color:#92400e;
-  position:sticky;top:calc(var(--tb)+var(--fmt));z-index:800;
+  position:sticky;top:calc(var(--tb) + var(--fmt));z-index:800;
   display:none;align-items:center;gap:10px}
 #restore-banner.show{display:flex}
 .rb-btns{display:flex;gap:8px;margin-left:auto}
@@ -108,7 +108,7 @@ body{font-family:var(--sans);background:var(--bg);padding-top:calc(var(--tb)+var
   color:#fff;background:var(--navy);padding:5px 13px 5px 14px;
   border-radius:3px;cursor:pointer;user-select:none;transition:opacity .15s}
 #sec-pill:hover{opacity:.82}
-#sec-dd{display:none;position:absolute;top:calc(100%+8px);left:0;z-index:500;
+#sec-dd{display:none;position:absolute;top:calc(100% + 8px);left:0;z-index:500;
   background:#fff;border:1px solid #dde4ea;border-radius:10px;
   box-shadow:0 10px 32px rgba(0,0,0,.13);min-width:200px;overflow:hidden}
 #sec-dd.open{display:block}
@@ -384,7 +384,7 @@ body{padding-bottom:34px}
 
 /* ── SETTINGS DRAWER ─────────────────────────────── */
 :root{--drawer:320px}
-#sd{position:fixed;top:calc(var(--tb)+var(--fmt));right:0;bottom:34px;
+#sd{position:fixed;top:calc(var(--tb) + var(--fmt));right:0;bottom:34px;
   width:var(--drawer);background:#fff;border-left:1px solid var(--border);
   z-index:700;transform:translateX(100%);transition:transform .25s cubic-bezier(.4,0,.2,1);
   display:flex;flex-direction:column;overflow:hidden;box-shadow:-4px 0 16px rgba(0,0,0,.06)}
