@@ -122,7 +122,6 @@ const modalOverlay   = document.getElementById('modal-overlay');
 const modalTitle     = document.getElementById('modal-title');
 const modalSaveBtn   = document.getElementById('modal-save-btn');
 const modalCancelBtn = document.getElementById('modal-cancel-btn');
-const modalCloseBtn  = document.getElementById('modal-close-btn');
 const nameInput      = document.getElementById('section-name-input');
 const modalError     = document.getElementById('modal-error');
 
@@ -453,7 +452,6 @@ modalSaveBtn.addEventListener('click', async () => {
 
 nameInput.addEventListener('keydown', e => { if (e.key === 'Enter') modalSaveBtn.click(); });
 modalCancelBtn.addEventListener('click', closeModal);
-modalCloseBtn.addEventListener('click', closeModal);
 modalOverlay.addEventListener('click', e => { if (e.target === modalOverlay) closeModal(); });
 
 // â”€â”€ Confirm Delete Modal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
