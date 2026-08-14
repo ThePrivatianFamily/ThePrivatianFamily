@@ -55,9 +55,8 @@ button { cursor: pointer; border: none; background: none; font-family: inherit; 
 .header-inner { display: flex; align-items: center; max-width: var(--max-width); margin: 0 auto; padding: 6px 24px; gap: 20px; }
 .site-logo { display: flex; align-items: center; flex-shrink: 0; }
 .logo-svg { display: block; flex-shrink: 0; user-select: none; -webkit-user-drag: none; } .logo-cover-svg { display: block; flex-shrink: 0; user-select: none; -webkit-user-drag: none; }
-.main-nav { flex: 1; overflow-x: auto; overflow-y: hidden; scrollbar-width: none; -ms-overflow-style: none; display: flex; justify-content: flex-end; align-items: center; cursor: grab; }
-.main-nav::-webkit-scrollbar { display: none; }
-.nav-list { display: flex; align-items: center; gap: 0; white-space: nowrap; }
+.main-nav { flex: 1; overflow-x: auto; overflow-y: hidden; scrollbar-width: none; -ms-overflow-style: none; display: flex; justify-content: flex-end; align-items: center; }
+.nav-list { display: flex; align-items: center; gap: 0; white-space: nowrap; justify-content: flex-end; }
 .nav-list li.nav-divider { width: 1px; height: 18px; background: #c5bfb5; margin: 0 4px; flex-shrink: 0; }
 .nav-link { font-family: var(--font-sans); font-size: 14.5px; font-weight: 700; color: var(--text-primary); padding: 6px 12px; letter-spacing: 0.01em; transition: color 0.15s; display: block; }
 .nav-link:hover { color: var(--brand-navy); }

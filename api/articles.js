@@ -53,15 +53,20 @@ module.exports = async function handler(req, res) {
     return res.status(200).json(data || []);
   }
 
-  // ── PUBLIC GET: single published article by id or slug (no auth) ─────
+  // ── PUBLIC GET: single published article by id or slug (no auth required for published) ─────
   if (action === 'public-get' && req.method === 'GET') {
     const slug = req.query.slug || '';
     let query = sb().from('articles').select('*')
-      .eq('status', 'published')
       .or('is_deleted.is.null,is_deleted.eq.false');
     if (id)   query = query.eq('id', id);
     else if (slug) query = query.eq('slug', slug);
     else return res.status(400).json({ error: 'id or slug required' });
+
+    // If no Authorization header or invalid, enforce status: 'published'
+    const authHeader = req.headers.authorization || '';
+    if (!authHeader.startsWith('Bearer ')) {
+      query = query.eq('status', 'published');
+    }
     const { data, error } = await query.single();
     if (error || !data) return res.status(404).json({ error: 'Article not found' });
     return res.status(200).json(data);
