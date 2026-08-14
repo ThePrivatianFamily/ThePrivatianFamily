@@ -1523,7 +1523,7 @@ function updateMetrics() {
   const text = (g('ed-rt')?.innerText || '').replace(/\s+/g,' ').trim();
   const words = text ? text.split(' ').filter(Boolean).length : 0;
   const chars = text.length;
-  const rtime = Math.max(1, Math.round(words / 225)); // 225 WPM average
+  const rtime = Math.max(1, Math.round(words / 200)); // 200 WPM — international standard
   // Metrics bar
   if (g('mb-words')) g('mb-words').textContent = words.toLocaleString();
   if (g('mb-chars')) g('mb-chars').textContent = chars.toLocaleString();

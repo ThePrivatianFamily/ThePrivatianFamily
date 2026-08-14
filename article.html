@@ -145,49 +145,185 @@
   <div id="site-footer-mount"></div>
 
   <script>
-    function shareArticle(platform) {
-      var url = encodeURIComponent(window.location.href);
-      var title = encodeURIComponent(document.getElementById('article-headline').textContent.trim());
-      var urls = {
-        twitter:  'https://twitter.com/intent/tweet?url=' + url + '&text=' + title,
-        facebook: 'https://www.facebook.com/sharer/sharer.php?u=' + url,
-        linkedin: 'https://www.linkedin.com/sharing/share-offsite/?url=' + url,
-        email:    'mailto:?subject=' + title + '&body=' + url
-      };
-      if (platform === 'copy') {
-        navigator.clipboard.writeText(window.location.href).then(function() {
-          var btn = document.getElementById('share-copy');
-          btn.style.color = 'var(--brand-navy)';
-          setTimeout(function() { btn.style.color = ''; }, 1500);
-        });
-        return;
-      }
-      if (urls[platform]) window.open(urls[platform], '_blank', 'width=600,height=400');
+  /* ── Dynamic article loader ── */
+  (function(){
+    var params = new URLSearchParams(location.search);
+    var id   = params.get('id');
+    var slug = params.get('slug');
+    if (!id && !slug) return; // no params = show static demo
+
+    function g(i){ return document.getElementById(i); }
+    function fmt(iso){
+      if(!iso) return '';
+      var d = new Date(iso);
+      return d.toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'});
     }
-    (function() {
-      var sidebar = document.getElementById('article-share-sidebar');
-      var band = document.getElementById('article-hero-band');
-      function onScroll() {
-        if (!band || !sidebar) return;
-        sidebar.classList.toggle('is-visible', band.getBoundingClientRect().bottom < 80);
-      }
-      window.addEventListener('scroll', onScroll, { passive: true });
-      onScroll();
-    })();
-    (function() {
-      var bar = document.createElement('div');
-      bar.id = 'read-progress';
-      bar.style.cssText = 'position:fixed;top:0;left:0;height:3px;background:var(--brand-navy,#0a528e);z-index:9999;width:0%;transition:width 0.1s;pointer-events:none;';
-      document.body.appendChild(bar);
-      window.addEventListener('scroll', function() {
+    function readTime(html){
+      var txt = html.replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim();
+      var words = txt ? txt.split(' ').filter(Boolean).length : 0;
+      return Math.max(1, Math.round(words / 200)); // 200 WPM international standard
+    }
+    function slugify(name){
+      return (name||'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'');
+    }
+
+    var url = '/api/articles?action=public-get';
+    if (id)   url += '&id='   + encodeURIComponent(id);
+    if (slug) url += '&slug=' + encodeURIComponent(slug);
+
+    // Show skeleton loader
+    var headline = g('article-headline');
+    if (headline) headline.style.opacity = '0.3';
+
+    fetch(url)
+      .then(function(r){ if(!r.ok) throw new Error(r.status); return r.json(); })
+      .then(function(a){
+        // ── <head> meta ──
+        document.title = (a.seo_title || a.title || 'Article') + ' — The Privatian Family';
+        var metaDesc = document.querySelector('meta[name="description"]');
+        if(metaDesc) metaDesc.content = a.meta_description || a.deck || '';
+
+        // ── Section pill & breadcrumb ──
+        var secSlug = slugify(a.section || '');
+        var secHref = a.section ? 'section.html?slug=' + secSlug : 'index.html';
+        var pill = g('article-section-pill');
+        var secLink = g('article-section-link');
+        if(pill){ pill.textContent = a.section || ''; pill.href = secHref; }
+        if(secLink){ secLink.textContent = a.section || 'Home'; secLink.href = secHref; }
+
+        // ── Headline, deck ──
+        if(headline){ headline.textContent = a.title || ''; headline.style.opacity = ''; }
+        var deck = g('article-deck');
+        if(deck) deck.textContent = a.deck || '';
+
+        // ── Meta row ──
+        var authEl = g('article-author');
+        if(authEl) authEl.innerHTML = a.author ? 'By <strong>' + a.author + '</strong>' : '';
+        var dateEl = g('article-date');
+        if(dateEl) dateEl.textContent = fmt(a.published_at || a.created_at);
+        var rtEl = g('article-readtime');
+        if(rtEl) rtEl.textContent = readTime(a.content_html || '') + ' min read';
+
+        // ── Hero image ──
+        var heroImg = g('article-hero-img');
+        if(heroImg){
+          if(a.hero_img_url){ heroImg.src = a.hero_img_url; heroImg.alt = a.hero_img_alt || a.title || ''; }
+          else { var fig = g('article-hero-figure'); if(fig) fig.style.display='none'; }
+        }
+        var cap = g('article-hero-caption');
+        if(cap){
+          var capText = a.hero_caption || '';
+          var credit  = a.hero_credit  ? '<span class="caption-credit">' + a.hero_credit + '</span>' : '';
+          cap.innerHTML = capText + (credit ? ' ' + credit : '');
+          if(!capText && !a.hero_credit) cap.style.display='none';
+        }
+
+        // ── Article body ──
+        var body = g('article-content');
+        if(body){
+          if(a.content_html){
+            body.innerHTML = a.content_html;
+            // Remove demo lead paragraph placeholder
+            var lead = g('article-lead');
+            if(lead) lead.remove();
+          }
+          // Remove static pullquotes
+          body.querySelectorAll('.article-pullquote').forEach(function(el){ el.remove(); });
+        }
+
+        // ── Author bio ──
+        var bioName = g('author-bio-name');
+        if(bioName) bioName.textContent = a.author || '';
+        var bioRole = g('author-bio-role');
+        if(bioRole) bioRole.textContent = a.author_role || '';
+        var bioDesc = g('author-bio-desc');
+        if(bioDesc) bioDesc.textContent = a.author_bio || '';
+        var bioAvatar = g('author-bio-avatar');
+        if(bioAvatar && a.author_photo_url){
+          bioAvatar.innerHTML = '<img src="' + a.author_photo_url + '" alt="' + (a.author||'') + '" style="width:52px;height:52px;border-radius:50%;object-fit:cover;" />';
+        }
+
+        // ── Related articles (same section, exclude self) ──
+        fetch('/api/articles?action=public&section=' + secSlug + '&limit=4')
+          .then(function(r){ return r.json(); })
+          .then(function(list){
+            var others = list.filter(function(x){ return x.id !== a.id; }).slice(0,3);
+            var grid = g('related-grid');
+            if(grid && others.length){
+              grid.innerHTML = others.map(function(r){
+                var rSlug = slugify(r.section||'');
+                var thumb = r.hero_img_url
+                  ? '<img src="'+r.hero_img_url+'" alt="" class="related-card-img" loading="lazy" />'
+                  : '<div style="width:100%;height:100%;background:#e8f1f9"></div>';
+                var date  = fmt(r.published_at);
+                var rt    = Math.max(1,Math.round(((r.deck||'').split(' ').length*2)/200))+'+ min';
+                return '<article class="related-card">'
+                  +'<a href="article.html?id='+r.id+'" class="related-card-img-link"><div class="related-card-img-wrap">'+thumb+'</div></a>'
+                  +'<div class="related-card-body">'
+                  +'<a href="section.html?slug='+rSlug+'" class="related-card-section">'+r.section+'</a>'
+                  +'<h3 class="related-card-title"><a href="article.html?id='+r.id+'" class="related-card-title-link">'+r.title+'</a></h3>'
+                  +'<div class="related-card-meta">'+date+'</div>'
+                  +'</div></article>';
+              }).join('');
+            } else if(grid && !others.length){
+              g('article-related').style.display = 'none';
+            }
+          }).catch(function(){});
+      })
+      .catch(function(e){
         var body = document.getElementById('article-body');
-        if (!body) return;
-        var rect = body.getBoundingClientRect();
-        var total = rect.height - window.innerHeight;
-        var scrolled = Math.max(0, -rect.top);
-        bar.style.width = Math.min(100, (scrolled / total) * 100) + '%';
-      }, { passive: true });
-    })();
+        if(body) body.innerHTML = '<p style="padding:40px;text-align:center;color:#888">Article not found or not yet published.</p>';
+      });
+  })();
+
+  /* ── Share buttons ── */
+  function shareArticle(platform) {
+    var url = encodeURIComponent(window.location.href);
+    var title = encodeURIComponent(document.getElementById('article-headline').textContent.trim());
+    var urls = {
+      twitter:  'https://twitter.com/intent/tweet?url=' + url + '&text=' + title,
+      facebook: 'https://www.facebook.com/sharer/sharer.php?u=' + url,
+      linkedin: 'https://www.linkedin.com/sharing/share-offsite/?url=' + url,
+      email:    'mailto:?subject=' + title + '&body=' + url
+    };
+    if (platform === 'copy') {
+      navigator.clipboard.writeText(window.location.href).then(function() {
+        var btn = document.getElementById('share-copy');
+        btn.style.color = 'var(--brand-navy)';
+        setTimeout(function() { btn.style.color = ''; }, 1500);
+      });
+      return;
+    }
+    if (urls[platform]) window.open(urls[platform], '_blank', 'width=600,height=400');
+  }
+
+  /* ── Share sidebar visibility ── */
+  (function() {
+    var sidebar = document.getElementById('article-share-sidebar');
+    var band = document.getElementById('article-hero-band');
+    function onScroll() {
+      if (!band || !sidebar) return;
+      sidebar.classList.toggle('is-visible', band.getBoundingClientRect().bottom < 80);
+    }
+    window.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+  })();
+
+  /* ── Reading progress bar ── */
+  (function() {
+    var bar = document.createElement('div');
+    bar.id = 'read-progress';
+    bar.style.cssText = 'position:fixed;top:0;left:0;height:3px;background:var(--brand-navy,#0a528e);z-index:9999;width:0%;transition:width 0.1s;pointer-events:none;';
+    document.body.appendChild(bar);
+    window.addEventListener('scroll', function() {
+      var body = document.getElementById('article-body');
+      if (!body) return;
+      var rect = body.getBoundingClientRect();
+      var total = rect.height - window.innerHeight;
+      var scrolled = Math.max(0, -rect.top);
+      bar.style.width = Math.min(100, (scrolled / total) * 100) + '%';
+    }, { passive: true });
+  })();
   </script>
 </body>
 </html>

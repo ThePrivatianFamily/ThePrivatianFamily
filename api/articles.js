@@ -34,7 +34,38 @@ module.exports = async function handler(req, res) {
 
   const { action, id } = req.query;
 
-  // ── LIST ────────────────────────────────────────────────────────
+  // ── PUBLIC: list published articles (no auth) ────────────────────
+  if (action === 'public' && req.method === 'GET') {
+    const section = req.query.section || '';
+    const limit   = Math.min(parseInt(req.query.limit  || '50', 10), 100);
+    const offset  = Math.max(parseInt(req.query.offset || '0',  10), 0);
+    let query = sb().from('articles')
+      .select('id, slug, title, deck, section, author, published_at, hero_img_url, tags')
+      .eq('status', 'published')
+      .order('published_at', { ascending: false })
+      .range(offset, offset + limit - 1);
+    if (section && section !== 'all') {
+      // Match section name case-insensitively via ilike
+      query = query.ilike('section', '%' + section.replace(/-/g, '%') + '%');
+    }
+    const { data, error } = await query;
+    if (error) return res.status(500).json({ error: error.message });
+    return res.status(200).json(data || []);
+  }
+
+  // ── PUBLIC GET: single published article by id or slug (no auth) ─────
+  if (action === 'public-get' && req.method === 'GET') {
+    const slug = req.query.slug || '';
+    let query = sb().from('articles').select('*').eq('status', 'published');
+    if (id)   query = query.eq('id', id);
+    else if (slug) query = query.eq('slug', slug);
+    else return res.status(400).json({ error: 'id or slug required' });
+    const { data, error } = await query.single();
+    if (error || !data) return res.status(404).json({ error: 'Article not found' });
+    return res.status(200).json(data);
+  }
+
+  // ── LIST (admin) ────────────────────────────────────────────
   if (action === 'list' && req.method === 'GET') {
     const session = requireAuth(req, res);
     if (!session) return;
@@ -46,7 +77,7 @@ module.exports = async function handler(req, res) {
     return res.status(200).json(data || []);
   }
 
-  // ── GET ─────────────────────────────────────────────────────────
+  // ── GET (admin — any status) ───────────────────────────────
   if (action === 'get' && req.method === 'GET') {
     const session = requireAuth(req, res);
     if (!session) return;

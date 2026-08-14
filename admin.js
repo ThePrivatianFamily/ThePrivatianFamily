@@ -1412,6 +1412,13 @@ function renderArticlesTable(articles) {
              onmouseout="this.style.background='#e8f1f9';this.style.color='#0a528e'">
             Edit
           </a>
+          ${isPublished ? `<a href="article.html?id=${escapeHtml(a.id)}" target="_blank"
+             style="display:inline-flex;align-items:center;gap:4px;padding:5px 11px;border-radius:6px;font-size:12px;font-weight:600;background:#f0fdf4;color:#16a34a;text-decoration:none;transition:background .12s;"
+             onmouseover="this.style.background='#16a34a';this.style.color='#fff'"
+             onmouseout="this.style.background='#f0fdf4';this.style.color='#16a34a'" title="View published article">
+             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+             View
+          </a>` : ''}
           <button onclick="toggleArticleStatus('${a.id}', this)"
             style="display:inline-flex;align-items:center;padding:5px 11px;border-radius:6px;font-size:12px;font-weight:600;border:1px solid #e5e7eb;background:#fff;color:#374151;cursor:pointer;transition:all .12s;"
             title="${isPublished ? 'Move to Draft' : 'Publish'}">
