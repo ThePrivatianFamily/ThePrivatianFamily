@@ -9,6 +9,48 @@
   var APPLIED_KEY  = 'privatian_applied_sections';
   var SECTIONS_KEY = 'privatian_sections';
   var HEADER_SETTINGS_KEY = 'privatian_header_settings';
+  var MENU_SETTINGS_KEY = 'privatian_menu_settings';
+
+  var DEFAULT_MENU_CONFIG = {
+    sectionsTitle: 'Sections',
+    seriesTitle: 'Featured series',
+    series: [
+      {
+        id: 'series-1',
+        title: 'Wondering',
+        href: 'section.html?slug=findings',
+        description: 'A series of profound questions explored by The Privatian Family experts.',
+        enabled: true
+      }
+    ],
+    exploreTitle: 'Explore the Privatian',
+    explore: [
+      { id: 'exp-1', label: 'Events', href: 'index.html#events-section', target: '_self', enabled: true },
+      { id: 'exp-2', label: 'Article archive', href: 'index.html', target: '_self', enabled: true },
+      { id: 'exp-3', label: 'About us', href: 'index.html', target: '_self', enabled: true },
+      { id: 'exp-4', label: 'News+', href: 'index.html', target: '_self', enabled: true },
+      { id: 'exp-5', label: 'Podcast', href: 'index.html', target: '_self', enabled: true }
+    ],
+    latestTitle: 'Read the latest',
+    latestMode: 'curated',
+    latest: [
+      {
+        id: 'latest-1',
+        title: "For families in transition, 'not all traditions are equal'",
+        href: 'section.html?slug=community-heritage',
+        imageUrl: 'img1.png',
+        enabled: true
+      },
+      {
+        id: 'latest-2',
+        title: 'The art of the pen: How writing shapes cultural identity',
+        href: 'section.html?slug=culture',
+        imageUrl: 'img3.png',
+        enabled: true
+      }
+    ]
+  };
+
   var DEFAULT_SUBSECTIONS = [
     { id: 'sub-1', label: 'FAMILY LEGACY', href: 'section.html?slug=community-heritage', icon: null, enabled: true },
     { id: 'sub-2', label: 'EXPERIENCE', href: 'section.html?slug=culture', icon: null, enabled: true },
@@ -25,6 +67,22 @@
     { id: 'arts',      name: 'Arts & Legacy',        slug: 'arts-legacy' },
     { id: 'economy',   name: 'Work & Economy',       slug: 'work-economy' }
   ];
+
+  function escapeHTML(str) {
+    if (!str) return '';
+    return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  function getMenuSettings() {
+    try {
+      var raw = localStorage.getItem(MENU_SETTINGS_KEY);
+      if (raw) {
+        var parsed = JSON.parse(raw);
+        if (parsed && typeof parsed === 'object') return parsed;
+      }
+    } catch(e) {}
+    return DEFAULT_MENU_CONFIG;
+  }
 
   function getSections() {
     try {
@@ -110,36 +168,20 @@
   <!-- MENU OVERLAY -->
   <div class="menu-overlay" id="menu-overlay" aria-hidden="true" role="dialog" aria-modal="true" aria-label="Site navigation menu">
     <div class="menu-overlay-inner">
-      <div class="menu-col">
-        <h2 class="menu-section-title">Sections</h2>
+      <div class="menu-col" id="mo-col-sections">
+        <h2 class="menu-section-title" id="mo-title-sections">Sections</h2>
         <ul class="menu-section-list" id="menu-section-list"></ul>
       </div>
-      <div class="menu-col">
-        <h2 class="menu-section-title"><span class="menu-icon-book">&#128214;</span> Featured series</h2>
-        <div class="menu-series">
-          <h3 class="menu-series-name"><a href="section.html?slug=findings" id="mo-series-wondering">Wondering</a></h3>
-          <p class="menu-series-desc">A series of profound questions explored by The Privatian Family experts.</p>
-        </div>
+      <div class="menu-col" id="mo-col-series-explore">
+        <h2 class="menu-section-title" id="mo-title-series"><span class="menu-icon-book">&#128214;</span> Featured series</h2>
+        <div id="mo-series-list"></div>
         <hr class="menu-divider" />
-        <h2 class="menu-explore-title">Explore the Privatian</h2>
-        <ul class="menu-explore-list">
-          <li><a href="index.html" id="mo-events">Events</a></li>
-          <li><a href="index.html" id="mo-archive">Article archive</a></li>
-          <li><a href="index.html" id="mo-about">About us</a></li>
-          <li><a href="index.html" id="mo-newsplus">News+</a></li>
-          <li><a href="index.html" id="mo-podcast">Podcast</a></li>
-        </ul>
+        <h2 class="menu-explore-title" id="mo-title-explore">Explore the Privatian</h2>
+        <ul class="menu-explore-list" id="mo-explore-list"></ul>
       </div>
-      <div class="menu-col menu-col-latest">
-        <h2 class="menu-section-title">Read the latest</h2>
-        <div class="menu-latest-item">
-          <img src="img1.png" alt="Scholar article" class="menu-latest-img" />
-          <h3 class="menu-latest-title"><a href="section.html?slug=community-heritage" id="mo-latest-1">For families in transition, 'not all traditions are equal'</a></h3>
-        </div>
-        <div class="menu-latest-item">
-          <img src="img3.png" alt="Writing article" class="menu-latest-img" />
-          <h3 class="menu-latest-title"><a href="section.html?slug=culture" id="mo-latest-2">The art of the pen: How writing shapes cultural identity</a></h3>
-        </div>
+      <div class="menu-col menu-col-latest" id="mo-col-latest">
+        <h2 class="menu-section-title" id="mo-title-latest">Read the latest</h2>
+        <div id="mo-latest-list"></div>
       </div>
     </div>
   </div>
@@ -347,6 +389,71 @@
         a.textContent = s.name;
         li.appendChild(a);
         footerList.appendChild(li);
+      });
+    }
+
+    // D. Menu Overlay Dynamic Elements
+    populateMenuOverlay();
+  }
+
+  // ── 3b. POPULATE MENU OVERLAY (SERIES, EXPLORE, LATEST) ─────────────────────
+  function populateMenuOverlay() {
+    var menuConfig = getMenuSettings();
+    if (!menuConfig) menuConfig = DEFAULT_MENU_CONFIG;
+
+    // 1. Column 1: Sections Title
+    var titleSectionsEl = document.getElementById('mo-title-sections');
+    if (titleSectionsEl) titleSectionsEl.textContent = menuConfig.sectionsTitle || 'Sections';
+
+    // 2. Column 2: Featured Series
+    var titleSeriesEl = document.getElementById('mo-title-series');
+    if (titleSeriesEl) {
+      titleSeriesEl.innerHTML = '<span class="menu-icon-book">&#128214;</span> ' + escapeHTML(menuConfig.seriesTitle || 'Featured series');
+    }
+    var seriesListEl = document.getElementById('mo-series-list');
+    if (seriesListEl) {
+      seriesListEl.innerHTML = '';
+      var seriesArr = (menuConfig.series || DEFAULT_MENU_CONFIG.series).filter(function(s) { return s.enabled !== false; });
+      seriesArr.forEach(function(s) {
+        var wrap = document.createElement('div');
+        wrap.className = 'menu-series';
+        wrap.innerHTML = '<h3 class="menu-series-name"><a href="' + (s.href || '#') + '">' + escapeHTML(s.title) + '</a></h3>' +
+                         '<p class="menu-series-desc">' + escapeHTML(s.description || '') + '</p>';
+        seriesListEl.appendChild(wrap);
+      });
+    }
+
+    // 3. Column 2: Explore the Privatian
+    var titleExploreEl = document.getElementById('mo-title-explore');
+    if (titleExploreEl) titleExploreEl.textContent = menuConfig.exploreTitle || 'Explore the Privatian';
+    var exploreListEl = document.getElementById('mo-explore-list');
+    if (exploreListEl) {
+      exploreListEl.innerHTML = '';
+      var exploreArr = (menuConfig.explore || DEFAULT_MENU_CONFIG.explore).filter(function(e) { return e.enabled !== false; });
+      exploreArr.forEach(function(e) {
+        var li = document.createElement('li');
+        var a = document.createElement('a');
+        a.href = e.href || '#';
+        if (e.target) a.target = e.target;
+        a.textContent = e.label;
+        li.appendChild(a);
+        exploreListEl.appendChild(li);
+      });
+    }
+
+    // 4. Column 3: Read the latest
+    var titleLatestEl = document.getElementById('mo-title-latest');
+    if (titleLatestEl) titleLatestEl.textContent = menuConfig.latestTitle || 'Read the latest';
+    var latestListEl = document.getElementById('mo-latest-list');
+    if (latestListEl) {
+      latestListEl.innerHTML = '';
+      var latestArr = (menuConfig.latest || DEFAULT_MENU_CONFIG.latest).filter(function(item) { return item.enabled !== false; });
+      latestArr.forEach(function(item) {
+        var itemDiv = document.createElement('div');
+        itemDiv.className = 'menu-latest-item';
+        itemDiv.innerHTML = (item.imageUrl ? '<img src="' + item.imageUrl + '" alt="' + escapeHTML(item.title) + '" class="menu-latest-img" />' : '') +
+                            '<h3 class="menu-latest-title"><a href="' + (item.href || '#') + '">' + escapeHTML(item.title) + '</a></h3>';
+        latestListEl.appendChild(itemDiv);
       });
     }
   }
@@ -646,6 +753,25 @@
       });
     });
   }
+  function fetchMenuFromAPI() {
+    fetch('/api/sections?action=menu')
+      .then(function(res) {
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        return res.json();
+      })
+      .then(function(data) {
+        if (data && typeof data === 'object') {
+          try {
+            localStorage.setItem(MENU_SETTINGS_KEY, JSON.stringify(data));
+          } catch(e) {}
+          populateMenuOverlay();
+        }
+      })
+      .catch(function(err) {
+        console.warn('[Components] fetchMenuFromAPI failed (using cache):', err.message);
+      });
+  }
+
   function init() {
     renderHeader();
     renderFooter();
@@ -654,6 +780,7 @@
     applyLogoSettings();
     initEvents();
     fetchSectionsFromAPI(); // async: update nav + All News labels from live DB
+    fetchMenuFromAPI();     // async: update Menu Overlay from live DB
   }
 
   if (document.readyState === 'complete' || document.readyState === 'interactive') {

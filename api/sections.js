@@ -34,6 +34,72 @@ module.exports = async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
 
   const sb = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
+  const action = req.query && req.query.action;
+
+  // ── MENU CONFIGURATION (GET / POST) ─────────────────────────────────────
+  if (action === 'menu') {
+    const DEFAULT_MENU_CONFIG = {
+      sectionsTitle: 'Sections',
+      seriesTitle: '📖 Featured series',
+      series: [
+        {
+          id: 'series-1',
+          title: 'Wondering',
+          href: 'section.html?slug=findings',
+          description: 'A series of profound questions explored by The Privatian Family experts.',
+          enabled: true
+        }
+      ],
+      exploreTitle: 'Explore the Privatian',
+      explore: [
+        { id: 'exp-1', label: 'Events', href: 'index.html#events-section', target: '_self', enabled: true },
+        { id: 'exp-2', label: 'Article archive', href: 'index.html', target: '_self', enabled: true },
+        { id: 'exp-3', label: 'About us', href: 'index.html', target: '_self', enabled: true },
+        { id: 'exp-4', label: 'News+', href: 'index.html', target: '_self', enabled: true },
+        { id: 'exp-5', label: 'Podcast', href: 'index.html', target: '_self', enabled: true }
+      ],
+      latestTitle: 'Read the latest',
+      latestMode: 'curated',
+      latest: [
+        {
+          id: 'latest-1',
+          title: "For families in transition, 'not all traditions are equal'",
+          href: 'section.html?slug=community-heritage',
+          imageUrl: 'img1.png',
+          enabled: true
+        },
+        {
+          id: 'latest-2',
+          title: 'The art of the pen: How writing shapes cultural identity',
+          href: 'section.html?slug=culture',
+          imageUrl: 'img3.png',
+          enabled: true
+        }
+      ]
+    };
+
+    if (req.method === 'GET') {
+      try {
+        const { data } = await sb.from('site_settings').select('value').eq('key', 'navigation_menu_config').maybeSingle();
+        if (data && data.value) return res.status(200).json(data.value);
+      } catch(e) {}
+      return res.status(200).json(DEFAULT_MENU_CONFIG);
+    }
+
+    if (req.method === 'POST') {
+      const session = await requireAuth(req, res);
+      if (!session) return;
+      const menuConfig = req.body || {};
+      try {
+        await sb.from('site_settings').upsert({
+          key: 'navigation_menu_config',
+          value: menuConfig,
+          updated_at: new Date().toISOString()
+        }, { onConflict: 'key' });
+      } catch(err) {}
+      return res.status(200).json({ ok: true, data: menuConfig });
+    }
+  }
 
   // ── GET ─────────────────────────────────────────────────────────────────
   if (req.method === 'GET') {

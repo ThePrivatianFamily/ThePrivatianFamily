@@ -52,6 +52,14 @@
           </a>
         </li>
         <li>
+          <a href="#" class="sidebar-nav-item" data-page="menu" id="nav-menu">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/>
+            </svg>
+            <span>Navigation Menu</span>
+          </a>
+        </li>
+        <li>
           <a href="#" class="sidebar-nav-item" data-page="header" id="nav-header">
             <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
               <rect x="2" y="3" width="20" height="6" rx="1"/><line x1="2" y1="14" x2="22" y2="14"/><line x1="2" y1="19" x2="13" y2="19"/>
@@ -281,6 +289,133 @@
 
       </div>
     </section>
+
+    <!-- PAGE: NAVIGATION MENU -->
+    <section class="page" id="page-menu">
+      <div class="menu-mgr-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+        <div class="menu-mgr-title-wrap">
+          <h1 class="page-title" style="font-size:22px;font-weight:700;color:var(--text-primary);margin:0 0 4px;">Navigation Menu</h1>
+          <p class="page-subtitle" style="font-size:13px;color:var(--text-muted);margin:0;">Customize the 4 columns and all items inside the Header Menu Overlay</p>
+        </div>
+        <div class="menu-mgr-actions">
+          <button class="btn btn--primary btn--sm" id="menu-save-btn" onclick="saveMenuSettings()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="20 6 9 17 4 12"/></svg>
+            Apply Menu Changes
+          </button>
+        </div>
+      </div>
+
+      <!-- Tab Switcher inside Menu Page -->
+      <div class="tab-bar menu-tab-bar" style="margin-bottom:20px;">
+        <button class="tab-btn active" id="tab-menu-series" onclick="switchMenuTab('series')">
+          <span>📖 Featured Series</span>
+          <span class="tab-count" id="count-menu-series">0</span>
+        </button>
+        <button class="tab-btn" id="tab-menu-explore" onclick="switchMenuTab('explore')">
+          <span>🧭 Explore the Privatian</span>
+          <span class="tab-count" id="count-menu-explore">0</span>
+        </button>
+        <button class="tab-btn" id="tab-menu-latest" onclick="switchMenuTab('latest')">
+          <span>📰 Read the Latest</span>
+          <span class="tab-count" id="count-menu-latest">0</span>
+        </button>
+        <button class="tab-btn" id="tab-menu-sections" onclick="switchMenuTab('sections')">
+          <span>📂 Sections Column</span>
+        </button>
+        <button class="tab-btn" id="tab-menu-preview" onclick="switchMenuTab('preview')">
+          <span>👁️ Live Menu Preview</span>
+        </button>
+      </div>
+
+      <!-- Tab Panel: Featured Series -->
+      <div class="menu-tab-panel active" id="panel-menu-series">
+        <div class="card" style="padding:22px;margin-bottom:20px;">
+          <div class="form-group" style="margin-bottom:18px;">
+            <label class="form-label" for="menu-series-title-input">Featured Series Section Title</label>
+            <input type="text" id="menu-series-title-input" class="form-input" placeholder="Featured series" value="Featured series" maxlength="50" oninput="markMenuDirty()" />
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+            <h3 style="font-size:14px;font-weight:700;color:var(--text-primary);margin:0;">Series Cards List</h3>
+            <button class="btn btn--primary btn--sm" onclick="openSeriesModal()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Add New Series
+            </button>
+          </div>
+          <div id="menu-series-list-container" class="menu-items-grid"></div>
+        </div>
+      </div>
+
+      <!-- Tab Panel: Explore the Privatian -->
+      <div class="menu-tab-panel" id="panel-menu-explore" style="display:none;">
+        <div class="card" style="padding:22px;margin-bottom:20px;">
+          <div class="form-group" style="margin-bottom:18px;">
+            <label class="form-label" for="menu-explore-title-input">Explore Section Title</label>
+            <input type="text" id="menu-explore-title-input" class="form-input" placeholder="Explore the Privatian" value="Explore the Privatian" maxlength="50" oninput="markMenuDirty()" />
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+            <h3 style="font-size:14px;font-weight:700;color:var(--text-primary);margin:0;">Explore Links</h3>
+            <button class="btn btn--primary btn--sm" onclick="openExploreModal()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Add Explore Link
+            </button>
+          </div>
+          <div id="menu-explore-list-container" class="menu-items-grid"></div>
+        </div>
+      </div>
+
+      <!-- Tab Panel: Read the Latest -->
+      <div class="menu-tab-panel" id="panel-menu-latest" style="display:none;">
+        <div class="card" style="padding:22px;margin-bottom:20px;">
+          <div class="form-group" style="margin-bottom:18px;">
+            <label class="form-label" for="menu-latest-title-input">Read the Latest Section Title</label>
+            <input type="text" id="menu-latest-title-input" class="form-input" placeholder="Read the latest" value="Read the latest" maxlength="50" oninput="markMenuDirty()" />
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+            <h3 style="font-size:14px;font-weight:700;color:var(--text-primary);margin:0;">Curated Stories</h3>
+            <button class="btn btn--primary btn--sm" onclick="openLatestModal()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Add Story Highlight
+            </button>
+          </div>
+          <div id="menu-latest-list-container" class="menu-items-grid"></div>
+        </div>
+      </div>
+
+      <!-- Tab Panel: Sections Column -->
+      <div class="menu-tab-panel" id="panel-menu-sections" style="display:none;">
+        <div class="card" style="padding:22px;margin-bottom:20px;">
+          <div class="form-group" style="margin-bottom:18px;">
+            <label class="form-label" for="menu-sections-title-input">Sections Column Title</label>
+            <input type="text" id="menu-sections-title-input" class="form-input" placeholder="Sections" value="Sections" maxlength="50" oninput="markMenuDirty()" />
+          </div>
+          <p class="hs-hint">Select which sections appear in the Menu Overlay Column 1. Sections are managed in the <strong>Sections</strong> tab.</p>
+          <div id="menu-sections-list-container" class="hs-section-list"></div>
+        </div>
+      </div>
+
+      <!-- Tab Panel: Live Preview -->
+      <div class="menu-tab-panel" id="panel-menu-preview" style="display:none;">
+        <div class="card" style="padding:22px;margin-bottom:20px;background:#1e293b;color:#fff;border-radius:12px;border:1px solid #334155;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;border-bottom:1px solid rgba(255,255,255,0.1);padding-bottom:12px;">
+            <div style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:#94a3b8;">Header Menu Overlay Live Preview</div>
+            <button class="btn btn--ghost btn--sm" style="color:#fff;border-color:rgba(255,255,255,0.2);" onclick="renderMenuPreview()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+              Refresh Preview
+            </button>
+          </div>
+          <div id="menu-live-preview-box" class="menu-live-preview-container"></div>
+        </div>
+      </div>
+
+      <!-- Save Bar -->
+      <div class="hs-save-row" style="margin-top:20px;">
+        <button class="btn btn--apply" id="menu-save-bottom-btn" onclick="saveMenuSettings()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg>
+          Apply Menu Changes to Main Website
+        </button>
+        <p class="hs-save-note" id="menu-save-status">Changes will be saved and rendered across all website pages.</p>
+      </div>
+    </section>
     <!-- PAGE: DASHBOARD (placeholder) -->
     <section class="page" id="page-dashboard">
       <div class="card coming-soon-card">
@@ -486,6 +621,127 @@
       <div id="access-list"><div style="text-align:center;padding:40px;color:#9ca3af;">Loading...</div></div>
     </div>
   </section>
+
+  <!-- == MODAL: FEATURED SERIES == -->
+  <div class="modal-overlay" id="modal-series-overlay" hidden>
+    <div class="modal" role="dialog" aria-modal="true">
+      <div class="modal-header">
+        <h2 class="modal-title" id="modal-series-title">Add Featured Series</h2>
+        <button class="modal-close-btn" onclick="closeSeriesModal()" aria-label="Close modal">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="series-edit-id" value="" />
+        <div class="form-group">
+          <label class="form-label" for="series-name-input">Series Title / Name</label>
+          <input type="text" id="series-name-input" class="form-input" placeholder="e.g. Wondering, Life | Heritage" maxlength="60" />
+        </div>
+        <div class="form-group" style="margin-top:14px;">
+          <label class="form-label" for="series-href-input">Target Link / URL</label>
+          <input type="text" id="series-href-input" class="form-input" placeholder="e.g. section.html?slug=findings" />
+        </div>
+        <div class="form-group" style="margin-top:14px;">
+          <label class="form-label" for="series-desc-input">Description</label>
+          <textarea id="series-desc-input" class="form-input" placeholder="Brief description of this series..." rows="3" maxlength="200"></textarea>
+        </div>
+        <div class="form-group" style="margin-top:14px;display:flex;align-items:center;gap:10px;">
+          <label class="hs-toggle">
+            <input type="checkbox" id="series-enabled-input" checked />
+            <span class="hs-toggle-track"><span class="hs-toggle-thumb"></span></span>
+          </label>
+          <span style="font-size:13px;font-weight:600;color:var(--text-primary);">Show in Menu (Enabled)</span>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn--ghost" onclick="closeSeriesModal()">Cancel</button>
+        <button class="btn btn--primary" onclick="saveSeriesItem()">Save Series</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- == MODAL: EXPLORE LINK == -->
+  <div class="modal-overlay" id="modal-explore-overlay" hidden>
+    <div class="modal" role="dialog" aria-modal="true">
+      <div class="modal-header">
+        <h2 class="modal-title" id="modal-explore-title">Add Explore Link</h2>
+        <button class="modal-close-btn" onclick="closeExploreModal()" aria-label="Close modal">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="explore-edit-id" value="" />
+        <div class="form-group">
+          <label class="form-label" for="explore-label-input">Link Label</label>
+          <input type="text" id="explore-label-input" class="form-input" placeholder="e.g. Events, Article archive, Podcast" maxlength="50" />
+        </div>
+        <div class="form-group" style="margin-top:14px;">
+          <label class="form-label" for="explore-href-input">Target Link / URL</label>
+          <input type="text" id="explore-href-input" class="form-input" placeholder="e.g. index.html#events-section or https://..." />
+        </div>
+        <div class="form-group" style="margin-top:14px;">
+          <label class="form-label" for="explore-target-input">Open In</label>
+          <select id="explore-target-input" class="form-input">
+            <option value="_self">Same Tab (_self)</option>
+            <option value="_blank">New Tab (_blank)</option>
+          </select>
+        </div>
+        <div class="form-group" style="margin-top:14px;display:flex;align-items:center;gap:10px;">
+          <label class="hs-toggle">
+            <input type="checkbox" id="explore-enabled-input" checked />
+            <span class="hs-toggle-track"><span class="hs-toggle-thumb"></span></span>
+          </label>
+          <span style="font-size:13px;font-weight:600;color:var(--text-primary);">Show in Menu (Enabled)</span>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn--ghost" onclick="closeExploreModal()">Cancel</button>
+        <button class="btn btn--primary" onclick="saveExploreItem()">Save Link</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- == MODAL: LATEST STORY HIGHLIGHT == -->
+  <div class="modal-overlay" id="modal-latest-overlay" hidden>
+    <div class="modal" role="dialog" aria-modal="true">
+      <div class="modal-header">
+        <h2 class="modal-title" id="modal-latest-title">Add Story Highlight</h2>
+        <button class="modal-close-btn" onclick="closeLatestModal()" aria-label="Close modal">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="latest-edit-id" value="" />
+        <div class="form-group">
+          <label class="form-label" for="latest-headline-input">Article Headline / Title</label>
+          <input type="text" id="latest-headline-input" class="form-input" placeholder="e.g. For families in transition, 'not all traditions are equal'" maxlength="120" />
+        </div>
+        <div class="form-group" style="margin-top:14px;">
+          <label class="form-label" for="latest-href-input">Target Link / URL</label>
+          <input type="text" id="latest-href-input" class="form-input" placeholder="e.g. section.html?slug=community-heritage or article url" />
+        </div>
+        <div class="form-group" style="margin-top:14px;">
+          <label class="form-label" for="latest-image-input">Thumbnail Image (URL or path)</label>
+          <input type="text" id="latest-image-input" class="form-input" placeholder="e.g. img1.png or https://..." oninput="updateLatestImagePreview()" />
+          <div id="latest-image-preview-box" style="margin-top:8px;display:flex;align-items:center;gap:10px;">
+            <img id="latest-image-preview-img" src="img1.png" alt="Preview" style="width:56px;height:40px;object-fit:cover;border-radius:4px;border:1px solid var(--border);" onerror="this.style.display='none'" onload="this.style.display='block'" />
+            <span style="font-size:11px;color:var(--text-muted);">Thumbnail preview</span>
+          </div>
+        </div>
+        <div class="form-group" style="margin-top:14px;display:flex;align-items:center;gap:10px;">
+          <label class="hs-toggle">
+            <input type="checkbox" id="latest-enabled-input" checked />
+            <span class="hs-toggle-track"><span class="hs-toggle-thumb"></span></span>
+          </label>
+          <span style="font-size:13px;font-weight:600;color:var(--text-primary);">Show in Menu (Enabled)</span>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn--ghost" onclick="closeLatestModal()">Cancel</button>
+        <button class="btn btn--primary" onclick="saveLatestItem()">Save Story</button>
+      </div>
+    </div>
+  </div>
 
   <div class="toast-container" id="toast-container" aria-live="polite"></div>
 

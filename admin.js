@@ -500,6 +500,7 @@ tabTrashBtn.addEventListener('click',  () => switchTab('trash'));
 // â”€â”€ Page navigation â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const PAGE_CONFIG = {
   sections:  { title: 'Sections',  breadcrumb: 'Sections' },
+  menu:      { title: 'Navigation Menu', breadcrumb: 'Navigation Menu' },
   header:    { title: 'Header Settings', breadcrumb: 'Header' },
   dashboard: { title: 'Dashboard', breadcrumb: 'Dashboard' },
   articles:  { title: 'Articles',  breadcrumb: 'Articles' },
@@ -522,6 +523,7 @@ function navigateTo(page) {
   // Inject topbar action buttons
   topbarActions.innerHTML = '';
   if (page === 'access')   { loadAccessList(); }
+  if (page === 'menu')     { initMenuPage(); }
   if (page === 'header')   { initHeaderPage(); }
   if (page === 'articles') { initArticlesPage(); }
   if (page === 'sections') {
@@ -1695,8 +1697,936 @@ async function _loadArticleTrash() {
   }
 }
 
-// Handle direct navigation via hash (e.g. admin.html#articles)
+// Handle direct navigation via hash (e.g. admin.html#articles, admin.html#menu)
 if (window.location.hash === '#articles') {
   window.addEventListener('privatian:ready', () => navigateTo('articles'));
 }
+if (window.location.hash === '#menu') {
+  window.addEventListener('privatian:ready', () => navigateTo('menu'));
+}
+
+/* =================================================================
+   MENU MANAGER (HEADER MENU OVERLAY CUSTOMIZATION)
+================================================================= */
+
+let menuConfig = {
+  sectionsTitle: 'Sections',
+  seriesTitle: 'Featured series',
+  series: [
+    {
+      id: 'series-1',
+      title: 'Wondering',
+      href: 'section.html?slug=findings',
+      description: 'A series of profound questions explored by The Privatian Family experts.',
+      enabled: true
+    }
+  ],
+  exploreTitle: 'Explore the Privatian',
+  explore: [
+    { id: 'exp-1', label: 'Events', href: 'index.html#events-section', target: '_self', enabled: true },
+    { id: 'exp-2', label: 'Article archive', href: 'index.html', target: '_self', enabled: true },
+    { id: 'exp-3', label: 'About us', href: 'index.html', target: '_self', enabled: true },
+    { id: 'exp-4', label: 'News+', href: 'index.html', target: '_self', enabled: true },
+    { id: 'exp-5', label: 'Podcast', href: 'index.html', target: '_self', enabled: true }
+  ],
+  latestTitle: 'Read the latest',
+  latestMode: 'curated',
+  latest: [
+    {
+      id: 'latest-1',
+      title: "For families in transition, 'not all traditions are equal'",
+      href: 'section.html?slug=community-heritage',
+      imageUrl: 'img1.png',
+      enabled: true
+    },
+    {
+      id: 'latest-2',
+      title: 'The art of the pen: How writing shapes cultural identity',
+      href: 'section.html?slug=culture',
+      imageUrl: 'img3.png',
+      enabled: true
+    }
+  ],
+  enabledMenuSections: []
+};
+
+let _menuInitialized = false;
+
+async function initMenuPage() {
+  await loadMenuSettings();
+  renderSeriesList();
+  renderExploreList();
+  renderLatestList();
+  renderMenuSectionsList();
+  renderMenuPreview();
+  _menuInitialized = true;
+}
+
+function markMenuDirty() {
+  const statusEl = document.getElementById('menu-save-status');
+  if (statusEl) {
+    statusEl.textContent = '● Unsaved changes. Click "Apply Menu Changes" to save and publish.';
+    statusEl.style.color = '#f59e0b';
+  }
+}
+
+async function loadMenuSettings() {
+  try {
+    const data = await _apiGet('/api/sections?action=menu');
+    if (data && typeof data === 'object') {
+      menuConfig = Object.assign({}, menuConfig, data);
+      try { localStorage.setItem('privatian_menu_settings', JSON.stringify(menuConfig)); } catch(e) {}
+    }
+  } catch(err) {
+    try {
+      const cached = localStorage.getItem('privatian_menu_settings');
+      if (cached) menuConfig = Object.assign({}, menuConfig, JSON.parse(cached));
+    } catch(e) {}
+  }
+
+  // Populate title fields
+  const secTitleInput = document.getElementById('menu-sections-title-input');
+  if (secTitleInput) secTitleInput.value = menuConfig.sectionsTitle || 'Sections';
+
+  const serTitleInput = document.getElementById('menu-series-title-input');
+  if (serTitleInput) serTitleInput.value = menuConfig.seriesTitle || 'Featured series';
+
+  const expTitleInput = document.getElementById('menu-explore-title-input');
+  if (expTitleInput) expTitleInput.value = menuConfig.exploreTitle || 'Explore the Privatian';
+
+  const latTitleInput = document.getElementById('menu-latest-title-input');
+  if (latTitleInput) latTitleInput.value = menuConfig.latestTitle || 'Read the latest';
+}
+
+function switchMenuTab(tabKey) {
+  const tabs = ['series', 'explore', 'latest', 'sections', 'preview'];
+  tabs.forEach(t => {
+    const btn = document.getElementById(`tab-menu-${t}`);
+    const panel = document.getElementById(`panel-menu-${t}`);
+    if (btn) btn.classList.toggle('active', t === tabKey);
+    if (panel) panel.style.display = (t === tabKey ? 'block' : 'none');
+  });
+  if (tabKey === 'preview') {
+    renderMenuPreview();
+  }
+}
+
+// ── FEATURED SERIES CRUD ─────────────────────────────────────────
+
+function renderSeriesList() {
+  const container = document.getElementById('menu-series-list-container');
+  const countEl = document.getElementById('count-menu-series');
+  if (!container) return;
+
+  const items = menuConfig.series || [];
+  if (countEl) countEl.textContent = items.length;
+
+  if (items.length === 0) {
+    container.innerHTML = `<div style="text-align:center;padding:32px;color:var(--text-muted);font-size:13px;">No series cards added yet. Click "Add New Series" above.</div>`;
+    return;
+  }
+
+  container.innerHTML = items.map((s, idx) => `
+    <div class="menu-item-card ${s.enabled === false ? 'menu-item-card--disabled' : ''}">
+      <div class="menu-item-left">
+        <div class="menu-item-reorder-btns">
+          <button type="button" class="menu-reorder-btn" title="Move Up" ${idx === 0 ? 'disabled style="opacity:0.3;"' : ''} onclick="moveSeriesItem('${s.id}', -1)">▲</button>
+          <button type="button" class="menu-reorder-btn" title="Move Down" ${idx === items.length - 1 ? 'disabled style="opacity:0.3;"' : ''} onclick="moveSeriesItem('${s.id}', 1)">▼</button>
+        </div>
+        <div class="menu-item-details">
+          <div class="menu-item-title">${escapeHtml(s.title || 'Untitled Series')}</div>
+          <div class="menu-item-meta">
+            <span class="hs-slug-chip">${escapeHtml(s.href || '#')}</span>
+          </div>
+          <div class="menu-item-desc">${escapeHtml(s.description || 'No description')}</div>
+        </div>
+      </div>
+      <div class="menu-item-right">
+        <label class="hs-toggle" title="Toggle visibility">
+          <input type="checkbox" ${s.enabled !== false ? 'checked' : ''} onchange="toggleSeriesItem('${s.id}')" />
+          <span class="hs-toggle-track"><span class="hs-toggle-thumb"></span></span>
+        </label>
+        <button class="art-action-btn art-action-btn--edit" title="Edit Series" onclick="openSeriesModal('${s.id}')">
+          ${ICONS.pencil}
+        </button>
+        <button class="art-action-btn art-action-btn--trash" title="Delete Series" onclick="deleteSeriesItem('${s.id}')">
+          ${ICONS.trash}
+        </button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function openSeriesModal(id) {
+  const modal = document.getElementById('modal-series-overlay');
+  const titleEl = document.getElementById('modal-series-title');
+  const editIdInput = document.getElementById('series-edit-id');
+  const nameInput = document.getElementById('series-name-input');
+  const hrefInput = document.getElementById('series-href-input');
+  const descInput = document.getElementById('series-desc-input');
+  const enabledInput = document.getElementById('series-enabled-input');
+
+  if (id) {
+    const item = (menuConfig.series || []).find(s => s.id === id);
+    if (!item) return;
+    titleEl.textContent = 'Edit Featured Series';
+    editIdInput.value = item.id;
+    nameInput.value = item.title || '';
+    hrefInput.value = item.href || '';
+    descInput.value = item.description || '';
+    enabledInput.checked = item.enabled !== false;
+  } else {
+    titleEl.textContent = 'Add Featured Series';
+    editIdInput.value = '';
+    nameInput.value = '';
+    hrefInput.value = 'section.html?slug=findings';
+    descInput.value = '';
+    enabledInput.checked = true;
+  }
+  modal.removeAttribute('hidden');
+  nameInput.focus();
+}
+
+function closeSeriesModal() {
+  const modal = document.getElementById('modal-series-overlay');
+  if (modal) modal.setAttribute('hidden', '');
+}
+
+function saveSeriesItem() {
+  const editId = document.getElementById('series-edit-id').value;
+  const title = document.getElementById('series-name-input').value.trim();
+  const href = document.getElementById('series-href-input').value.trim();
+  const desc = document.getElementById('series-desc-input').value.trim();
+  const enabled = document.getElementById('series-enabled-input').checked;
+
+  if (!title) {
+    showToast('error', 'Series Title is required');
+    return;
+  }
+
+  if (!menuConfig.series) menuConfig.series = [];
+
+  if (editId) {
+    const item = menuConfig.series.find(s => s.id === editId);
+    if (item) {
+      item.title = title;
+      item.href = href;
+      item.description = desc;
+      item.enabled = enabled;
+    }
+  } else {
+    menuConfig.series.push({
+      id: 'series-' + Date.now(),
+      title,
+      href,
+      description: desc,
+      enabled
+    });
+  }
+
+  closeSeriesModal();
+  renderSeriesList();
+  renderMenuPreview();
+  markMenuDirty();
+  showToast('success', 'Series item updated');
+}
+
+function deleteSeriesItem(id) {
+  menuConfig.series = (menuConfig.series || []).filter(s => s.id !== id);
+  renderSeriesList();
+  renderMenuPreview();
+  markMenuDirty();
+  showToast('warning', 'Series item removed');
+}
+
+function toggleSeriesItem(id) {
+  const item = (menuConfig.series || []).find(s => s.id === id);
+  if (item) {
+    item.enabled = item.enabled === false ? true : false;
+    renderSeriesList();
+    renderMenuPreview();
+    markMenuDirty();
+  }
+}
+
+function moveSeriesItem(id, dir) {
+  const items = menuConfig.series || [];
+  const idx = items.findIndex(s => s.id === id);
+  if (idx === -1) return;
+  const newIdx = idx + dir;
+  if (newIdx < 0 || newIdx >= items.length) return;
+  const temp = items[idx];
+  items[idx] = items[newIdx];
+  items[newIdx] = temp;
+  renderSeriesList();
+  renderMenuPreview();
+  markMenuDirty();
+}
+
+// ── EXPLORE LINKS CRUD ───────────────────────────────────────────
+
+function renderExploreList() {
+  const container = document.getElementById('menu-explore-list-container');
+  const countEl = document.getElementById('count-menu-explore');
+  if (!container) return;
+
+  const items = menuConfig.explore || [];
+  if (countEl) countEl.textContent = items.length;
+
+  if (items.length === 0) {
+    container.innerHTML = `<div style="text-align:center;padding:32px;color:var(--text-muted);font-size:13px;">No explore links added yet. Click "Add Explore Link" above.</div>`;
+    return;
+  }
+
+  container.innerHTML = items.map((e, idx) => `
+    <div class="menu-item-card ${e.enabled === false ? 'menu-item-card--disabled' : ''}">
+      <div class="menu-item-left">
+        <div class="menu-item-reorder-btns">
+          <button type="button" class="menu-reorder-btn" title="Move Up" ${idx === 0 ? 'disabled style="opacity:0.3;"' : ''} onclick="moveExploreItem('${e.id}', -1)">▲</button>
+          <button type="button" class="menu-reorder-btn" title="Move Down" ${idx === items.length - 1 ? 'disabled style="opacity:0.3;"' : ''} onclick="moveExploreItem('${e.id}', 1)">▼</button>
+        </div>
+        <div class="menu-item-details">
+          <div class="menu-item-title">${escapeHtml(e.label || 'Untitled Link')}</div>
+          <div class="menu-item-meta">
+            <span class="hs-slug-chip">${escapeHtml(e.href || '#')}</span>
+            <span style="font-size:11px;color:var(--text-muted);">${e.target === '_blank' ? '🔗 New Tab' : '📄 Same Tab'}</span>
+          </div>
+        </div>
+      </div>
+      <div class="menu-item-right">
+        <label class="hs-toggle" title="Toggle visibility">
+          <input type="checkbox" ${e.enabled !== false ? 'checked' : ''} onchange="toggleExploreItem('${e.id}')" />
+          <span class="hs-toggle-track"><span class="hs-toggle-thumb"></span></span>
+        </label>
+        <button class="art-action-btn art-action-btn--edit" title="Edit Link" onclick="openExploreModal('${e.id}')">
+          ${ICONS.pencil}
+        </button>
+        <button class="art-action-btn art-action-btn--trash" title="Delete Link" onclick="deleteExploreItem('${e.id}')">
+          ${ICONS.trash}
+        </button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function openExploreModal(id) {
+  const modal = document.getElementById('modal-explore-overlay');
+  const titleEl = document.getElementById('modal-explore-title');
+  const editIdInput = document.getElementById('explore-edit-id');
+  const labelInput = document.getElementById('explore-label-input');
+  const hrefInput = document.getElementById('explore-href-input');
+  const targetInput = document.getElementById('explore-target-input');
+  const enabledInput = document.getElementById('explore-enabled-input');
+
+  if (id) {
+    const item = (menuConfig.explore || []).find(e => e.id === id);
+    if (!item) return;
+    titleEl.textContent = 'Edit Explore Link';
+    editIdInput.value = item.id;
+    labelInput.value = item.label || '';
+    hrefInput.value = item.href || '';
+    targetInput.value = item.target || '_self';
+    enabledInput.checked = item.enabled !== false;
+  } else {
+    titleEl.textContent = 'Add Explore Link';
+    editIdInput.value = '';
+    labelInput.value = '';
+    hrefInput.value = 'index.html';
+    targetInput.value = '_self';
+    enabledInput.checked = true;
+  }
+  modal.removeAttribute('hidden');
+  labelInput.focus();
+}
+
+function closeExploreModal() {
+  const modal = document.getElementById('modal-explore-overlay');
+  if (modal) modal.setAttribute('hidden', '');
+}
+
+function saveExploreItem() {
+  const editId = document.getElementById('explore-edit-id').value;
+  const label = document.getElementById('explore-label-input').value.trim();
+  const href = document.getElementById('explore-href-input').value.trim();
+  const target = document.getElementById('explore-target-input').value;
+  const enabled = document.getElementById('explore-enabled-input').checked;
+
+  if (!label) {
+    showToast('error', 'Link Label is required');
+    return;
+  }
+
+  if (!menuConfig.explore) menuConfig.explore = [];
+
+  if (editId) {
+    const item = menuConfig.explore.find(e => e.id === editId);
+    if (item) {
+      item.label = label;
+      item.href = href;
+      item.target = target;
+      item.enabled = enabled;
+    }
+  } else {
+    menuConfig.explore.push({
+      id: 'exp-' + Date.now(),
+      label,
+      href,
+      target,
+      enabled
+    });
+  }
+
+  closeExploreModal();
+  renderExploreList();
+  renderMenuPreview();
+  markMenuDirty();
+  showToast('success', 'Explore link updated');
+}
+
+function deleteExploreItem(id) {
+  menuConfig.explore = (menuConfig.explore || []).filter(e => e.id !== id);
+  renderExploreList();
+  renderMenuPreview();
+  markMenuDirty();
+  showToast('warning', 'Explore link removed');
+}
+
+function toggleExploreItem(id) {
+  const item = (menuConfig.explore || []).find(e => e.id === id);
+  if (item) {
+    item.enabled = item.enabled === false ? true : false;
+    renderExploreList();
+    renderMenuPreview();
+    markMenuDirty();
+  }
+}
+
+function moveExploreItem(id, dir) {
+  const items = menuConfig.explore || [];
+  const idx = items.findIndex(e => e.id === id);
+  if (idx === -1) return;
+  const newIdx = idx + dir;
+  if (newIdx < 0 || newIdx >= items.length) return;
+  const temp = items[idx];
+  items[idx] = items[newIdx];
+  items[newIdx] = temp;
+  renderExploreList();
+  renderMenuPreview();
+  markMenuDirty();
+}
+
+// ── READ THE LATEST CRUD ─────────────────────────────────────────
+
+function renderLatestList() {
+  const container = document.getElementById('menu-latest-list-container');
+  const countEl = document.getElementById('count-menu-latest');
+  if (!container) return;
+
+  const items = menuConfig.latest || [];
+  if (countEl) countEl.textContent = items.length;
+
+  if (items.length === 0) {
+    container.innerHTML = `<div style="text-align:center;padding:32px;color:var(--text-muted);font-size:13px;">No story highlights added yet. Click "Add Story Highlight" above.</div>`;
+    return;
+  }
+
+  container.innerHTML = items.map((item, idx) => `
+    <div class="menu-item-card ${item.enabled === false ? 'menu-item-card--disabled' : ''}">
+      <div class="menu-item-left">
+        <div class="menu-item-reorder-btns">
+          <button type="button" class="menu-reorder-btn" title="Move Up" ${idx === 0 ? 'disabled style="opacity:0.3;"' : ''} onclick="moveLatestItem('${item.id}', -1)">▲</button>
+          <button type="button" class="menu-reorder-btn" title="Move Down" ${idx === items.length - 1 ? 'disabled style="opacity:0.3;"' : ''} onclick="moveLatestItem('${item.id}', 1)">▼</button>
+        </div>
+        ${item.imageUrl ? `<img src="${escapeHtml(item.imageUrl)}" alt="" class="menu-item-img" onerror="this.style.display='none'" />` : ''}
+        <div class="menu-item-details">
+          <div class="menu-item-title">${escapeHtml(item.title || 'Untitled Story')}</div>
+          <div class="menu-item-meta">
+            <span class="hs-slug-chip">${escapeHtml(item.href || '#')}</span>
+          </div>
+        </div>
+      </div>
+      <div class="menu-item-right">
+        <label class="hs-toggle" title="Toggle visibility">
+          <input type="checkbox" ${item.enabled !== false ? 'checked' : ''} onchange="toggleLatestItem('${item.id}')" />
+          <span class="hs-toggle-track"><span class="hs-toggle-thumb"></span></span>
+        </label>
+        <button class="art-action-btn art-action-btn--edit" title="Edit Story" onclick="openLatestModal('${item.id}')">
+          ${ICONS.pencil}
+        </button>
+        <button class="art-action-btn art-action-btn--trash" title="Delete Story" onclick="deleteLatestItem('${item.id}')">
+          ${ICONS.trash}
+        </button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function openLatestModal(id) {
+  const modal = document.getElementById('modal-latest-overlay');
+  const titleEl = document.getElementById('modal-latest-title');
+  const editIdInput = document.getElementById('latest-edit-id');
+  const headlineInput = document.getElementById('latest-headline-input');
+  const hrefInput = document.getElementById('latest-href-input');
+  const imageInput = document.getElementById('latest-image-input');
+  const enabledInput = document.getElementById('latest-enabled-input');
+
+  if (id) {
+    const item = (menuConfig.latest || []).find(l => l.id === id);
+    if (!item) return;
+    titleEl.textContent = 'Edit Story Highlight';
+    editIdInput.value = item.id;
+    headlineInput.value = item.title || '';
+    hrefInput.value = item.href || '';
+    imageInput.value = item.imageUrl || '';
+    enabledInput.checked = item.enabled !== false;
+  } else {
+    titleEl.textContent = 'Add Story Highlight';
+    editIdInput.value = '';
+    headlineInput.value = '';
+    hrefInput.value = 'section.html?slug=findings';
+    imageInput.value = 'img1.png';
+    enabledInput.checked = true;
+  }
+  updateLatestImagePreview();
+  modal.removeAttribute('hidden');
+  headlineInput.focus();
+}
+
+function updateLatestImagePreview() {
+  const imgInput = document.getElementById('latest-image-input');
+  const imgEl = document.getElementById('latest-image-preview-img');
+  if (imgInput && imgEl) {
+    imgEl.src = imgInput.value.trim() || 'img1.png';
+  }
+}
+
+function closeLatestModal() {
+  const modal = document.getElementById('modal-latest-overlay');
+  if (modal) modal.setAttribute('hidden', '');
+}
+
+function saveLatestItem() {
+  const editId = document.getElementById('latest-edit-id').value;
+  const title = document.getElementById('latest-headline-input').value.trim();
+  const href = document.getElementById('latest-href-input').value.trim();
+  const imageUrl = document.getElementById('latest-image-input').value.trim();
+  const enabled = document.getElementById('latest-enabled-input').checked;
+
+  if (!title) {
+    showToast('error', 'Headline / Title is required');
+    return;
+  }
+
+  if (!menuConfig.latest) menuConfig.latest = [];
+
+  if (editId) {
+    const item = menuConfig.latest.find(l => l.id === editId);
+    if (item) {
+      item.title = title;
+      item.href = href;
+      item.imageUrl = imageUrl;
+      item.enabled = enabled;
+    }
+  } else {
+    menuConfig.latest.push({
+      id: 'latest-' + Date.now(),
+      title,
+      href,
+      imageUrl,
+      enabled
+    });
+  }
+
+  closeLatestModal();
+  renderLatestList();
+  renderMenuPreview();
+  markMenuDirty();
+  showToast('success', 'Story highlight updated');
+}
+
+function deleteLatestItem(id) {
+  menuConfig.latest = (menuConfig.latest || []).filter(l => l.id !== id);
+  renderLatestList();
+  renderMenuPreview();
+  markMenuDirty();
+  showToast('warning', 'Story highlight removed');
+}
+
+function toggleLatestItem(id) {
+  const item = (menuConfig.latest || []).find(l => l.id === id);
+  if (item) {
+    item.enabled = item.enabled === false ? true : false;
+    renderLatestList();
+    renderMenuPreview();
+    markMenuDirty();
+  }
+}
+
+function moveLatestItem(id, dir) {
+  const items = menuConfig.latest || [];
+  const idx = items.findIndex(l => l.id === id);
+  if (idx === -1) return;
+  const newIdx = idx + dir;
+  if (newIdx < 0 || newIdx >= items.length) return;
+  const temp = items[idx];
+  items[idx] = items[newIdx];
+  items[newIdx] = temp;
+  renderLatestList();
+  renderMenuPreview();
+  markMenuDirty();
+}
+
+// ── SECTIONS COLUMN IN MENU ──────────────────────────────────────
+
+function renderMenuSectionsList() {
+  const container = document.getElementById('menu-sections-list-container');
+  if (!container) return;
+
+  const validSecs = (sections || []).filter(s => s.id !== 'all' && !s.deleted && !s.locked);
+  const enabledSlugs = menuConfig.enabledMenuSections || [];
+
+  if (validSecs.length === 0) {
+    container.innerHTML = `<div style="padding:16px;color:var(--text-muted);font-size:13px;">No active sections available.</div>`;
+    return;
+  }
+
+  container.innerHTML = validSecs.map(s => {
+    const slug = s.slug || s.id;
+    // Default to true if enabledMenuSections is empty, or check inclusion
+    const isChecked = (enabledSlugs.length === 0) || enabledSlugs.includes(slug);
+    return `
+      <div class="hs-section-row">
+        <div class="hs-section-info">
+          <span class="hs-section-name">${escapeHtml(s.name)}</span>
+          <span class="hs-slug-chip">/section/${escapeHtml(slug)}</span>
+        </div>
+        <label class="hs-toggle">
+          <input type="checkbox" data-menu-section-slug="${escapeHtml(slug)}" ${isChecked ? 'checked' : ''} onchange="onMenuSectionToggle()" />
+          <span class="hs-toggle-track"><span class="hs-toggle-thumb"></span></span>
+        </label>
+      </div>
+    `;
+  }).join('');
+}
+
+function onMenuSectionToggle() {
+  const checkboxes = document.querySelectorAll('input[data-menu-section-slug]');
+  const selected = [];
+  checkboxes.forEach(cb => {
+    if (cb.checked) selected.push(cb.dataset.menuSectionSlug);
+  });
+  menuConfig.enabledMenuSections = selected;
+  renderMenuPreview();
+  markMenuDirty();
+}
+
+// ── LIVE PREVIEW IN ADMIN ────────────────────────────────────────
+
+function renderMenuPreview() {
+  const box = document.getElementById('menu-live-preview-box');
+  if (!box) return;
+
+  // Collect updated titles from inputs
+  const secTitle = (document.getElementById('menu-sections-title-input') || {}).value || menuConfig.sectionsTitle || 'Sections';
+  const serTitle = (document.getElementById('menu-series-title-input') || {}).value || menuConfig.seriesTitle || 'Featured series';
+  const expTitle = (document.getElementById('menu-explore-title-input') || {}).value || menuConfig.exploreTitle || 'Explore the Privatian';
+  const latTitle = (document.getElementById('menu-latest-title-input') || {}).value || menuConfig.latestTitle || 'Read the latest';
+
+  // Sections
+  const validSecs = (sections || []).filter(s => s.id !== 'all' && !s.deleted && !s.locked);
+  const enabledSlugs = menuConfig.enabledMenuSections || [];
+  const activeSecs = (enabledSlugs.length === 0)
+    ? validSecs
+    : validSecs.filter(s => enabledSlugs.includes(s.slug || s.id));
+
+  // Series
+  const seriesArr = (menuConfig.series || []).filter(s => s.enabled !== false);
+  // Explore
+  const exploreArr = (menuConfig.explore || []).filter(e => e.enabled !== false);
+  // Latest
+  const latestArr = (menuConfig.latest || []).filter(l => l.enabled !== false);
+
+  box.innerHTML = `
+    <div class="menu-preview-cols">
+      <!-- Col 1: Sections -->
+      <div class="menu-preview-col">
+        <div class="menu-preview-col-title">${escapeHtml(secTitle)}</div>
+        <ul class="menu-preview-list">
+          ${activeSecs.map(s => `<li><a href="section.html?slug=${s.slug}">${escapeHtml(s.name)}</a></li>`).join('')}
+        </ul>
+      </div>
+
+      <!-- Col 2: Series & Explore -->
+      <div class="menu-preview-col">
+        <div class="menu-preview-col-title">📖 ${escapeHtml(serTitle)}</div>
+        ${seriesArr.map(s => `
+          <div class="menu-preview-series-item">
+            <div class="menu-preview-series-name"><a href="${s.href}" style="color:#60a5fa;text-decoration:none;">${escapeHtml(s.title)}</a></div>
+            <div class="menu-preview-series-desc">${escapeHtml(s.description)}</div>
+          </div>
+        `).join('')}
+        <hr style="border:0;border-top:1px solid rgba(255,255,255,0.15);margin:16px 0;" />
+        <div class="menu-preview-col-title">${escapeHtml(expTitle)}</div>
+        <ul class="menu-preview-list">
+          ${exploreArr.map(e => `<li><a href="${e.href}">${escapeHtml(e.label)}</a></li>`).join('')}
+        </ul>
+      </div>
+
+      <!-- Col 3: Latest Reads -->
+      <div class="menu-preview-col">
+        <div class="menu-preview-col-title">${escapeHtml(latTitle)}</div>
+        ${latestArr.map(item => `
+          <div class="menu-preview-latest-item">
+            ${item.imageUrl ? `<img src="${escapeHtml(item.imageUrl)}" alt="" class="menu-preview-latest-img" onerror="this.style.display='none'" />` : ''}
+            <div class="menu-preview-latest-title"><a href="${item.href}" style="color:#f1f5f9;text-decoration:none;">${escapeHtml(item.title)}</a></div>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `;
+}
+
+// ── SAVE MENU SETTINGS ───────────────────────────────────────────
+
+async function saveMenuSettings() {
+  const saveBtn = document.getElementById('menu-save-btn');
+  const saveBottomBtn = document.getElementById('menu-save-bottom-btn');
+  const statusEl = document.getElementById('menu-save-status');
+
+  // Collect titles
+  menuConfig.sectionsTitle = (document.getElementById('menu-sections-title-input') || {}).value || 'Sections';
+  menuConfig.seriesTitle   = (document.getElementById('menu-series-title-input') || {}).value || 'Featured series';
+  menuConfig.exploreTitle  = (document.getElementById('menu-explore-title-input') || {}).value || 'Explore the Privatian';
+  menuConfig.latestTitle   = (document.getElementById('menu-latest-title-input') || {}).value || 'Read the latest';
+
+  if (saveBtn) saveBtn.disabled = true;
+  if (saveBottomBtn) saveBottomBtn.disabled = true;
+  if (statusEl) {
+    statusEl.textContent = 'Saving menu settings to database...';
+    statusEl.style.color = 'var(--brand)';
+  }
+
+  try {
+    // Save to server
+    await _apiPost('/api/sections?action=menu', menuConfig);
+
+    // Save to localStorage for instant local reflection
+    try {
+      localStorage.setItem('privatian_menu_settings', JSON.stringify(menuConfig));
+    } catch(e) {}
+
+    showToast('success', 'Navigation Menu changes applied and published!');
+    if (statusEl) {
+      statusEl.textContent = '✓ All changes saved and live across the main website.';
+      statusEl.style.color = '#16a34a';
+    }
+  } catch(err) {
+    console.warn('[Admin] saveMenuSettings server error (saved to cache):', err.message);
+    try {
+      localStorage.setItem('privatian_menu_settings', JSON.stringify(menuConfig));
+    } catch(e) {}
+    showToast('success', 'Menu changes saved to local cache!');
+    if (statusEl) {
+      statusEl.textContent = '✓ Saved to local cache.';
+      statusEl.style.color = '#16a34a';
+    }
+  } finally {
+    if (saveBtn) saveBtn.disabled = false;
+    if (saveBottomBtn) saveBottomBtn.disabled = false;
+  }
+}
+
+// ── HEADER SETTINGS (LOGO & TOP BAR TABS) ─────────────────────────
+
+let headerSettings = {
+  logoSvg: '',
+  logoHeight: 80,
+  enabledNavSections: null,
+  subsections: [
+    { id: 'sub-1', label: 'FAMILY LEGACY', href: 'section.html?slug=community-heritage', icon: null, enabled: true },
+    { id: 'sub-2', label: 'EXPERIENCE', href: 'section.html?slug=culture', icon: null, enabled: true },
+    { id: 'sub-3', label: 'THE PRIVATIAN READS', href: 'section.html?slug=findings', icon: null, enabled: true },
+    { id: 'sub-4', label: 'EVENTS', href: 'index.html#events-section', icon: 'calendar', enabled: true }
+  ]
+};
+
+function initHeaderPage() {
+  try {
+    const raw = localStorage.getItem('privatian_header_settings');
+    if (raw) headerSettings = Object.assign({}, headerSettings, JSON.parse(raw));
+  } catch(e) {}
+
+  const logoSvgInput = document.getElementById('hs-logo-svg-input');
+  if (logoSvgInput) logoSvgInput.value = headerSettings.logoSvg || '';
+
+  const logoHeightInput = document.getElementById('hs-logo-height');
+  const logoHeightVal = document.getElementById('hs-logo-height-val');
+  if (logoHeightInput) {
+    logoHeightInput.value = headerSettings.logoHeight || 80;
+    if (logoHeightVal) logoHeightVal.textContent = logoHeightInput.value;
+    logoHeightInput.oninput = () => {
+      if (logoHeightVal) logoHeightVal.textContent = logoHeightInput.value;
+      updateLogoPreview();
+    };
+  }
+
+  const logoResetBtn = document.getElementById('hs-logo-reset-btn');
+  if (logoResetBtn) {
+    logoResetBtn.onclick = () => {
+      if (logoSvgInput) logoSvgInput.value = '';
+      if (logoHeightInput) {
+        logoHeightInput.value = 80;
+        if (logoHeightVal) logoHeightVal.textContent = '80';
+      }
+      updateLogoPreview();
+      showToast('warning', 'Logo reset to default.');
+    };
+  }
+
+  const logoApplyBtn = document.getElementById('hs-logo-apply-btn');
+  if (logoApplyBtn) {
+    logoApplyBtn.onclick = () => {
+      headerSettings.logoSvg = (logoSvgInput ? logoSvgInput.value.trim() : '');
+      headerSettings.logoHeight = parseInt(logoHeightInput ? logoHeightInput.value : 80, 10);
+      saveHeaderSettings();
+    };
+  }
+
+  renderHeaderNavSections();
+  renderSubsectionsList();
+
+  const addSubBtn = document.getElementById('hs-add-subsection-btn');
+  const addForm = document.getElementById('hs-add-form');
+  const addConfirmBtn = document.getElementById('hs-add-confirm-btn');
+  const addCancelBtn = document.getElementById('hs-add-cancel-btn');
+
+  if (addSubBtn && addForm) {
+    addSubBtn.onclick = () => { addForm.hidden = false; };
+  }
+  if (addCancelBtn && addForm) {
+    addCancelBtn.onclick = () => { addForm.hidden = true; };
+  }
+  if (addConfirmBtn) {
+    addConfirmBtn.onclick = () => {
+      const label = (document.getElementById('hs-new-label') || {}).value.trim();
+      const href = (document.getElementById('hs-new-href') || {}).value.trim();
+      const icon = (document.getElementById('hs-new-icon') || {}).value;
+      if (!label) { showToast('error', 'Tab Label is required'); return; }
+      if (!headerSettings.subsections) headerSettings.subsections = [];
+      headerSettings.subsections.push({
+        id: 'sub-' + Date.now(),
+        label,
+        href: href || '#',
+        icon: icon || null,
+        enabled: true
+      });
+      if (addForm) addForm.hidden = true;
+      (document.getElementById('hs-new-label') || {}).value = '';
+      (document.getElementById('hs-new-href') || {}).value = '';
+      renderSubsectionsList();
+      saveHeaderSettings();
+    };
+  }
+
+  const saveBtn = document.getElementById('hs-save-btn');
+  if (saveBtn) {
+    saveBtn.onclick = saveHeaderSettings;
+  }
+}
+
+function updateLogoPreview() {
+  const preview = document.getElementById('hs-logo-preview');
+  const svgCode = (document.getElementById('hs-logo-svg-input') || {}).value.trim();
+  const height = (document.getElementById('hs-logo-height') || {}).value || 80;
+  if (!preview) return;
+
+  if (svgCode && svgCode.includes('<svg')) {
+    preview.innerHTML = svgCode;
+    const svg = preview.querySelector('svg');
+    if (svg) svg.style.height = height + 'px';
+  } else {
+    preview.innerHTML = `<div class="hs-logo-preview-default">Default site logo (${height}px)</div>`;
+  }
+}
+
+function renderHeaderNavSections() {
+  const container = document.getElementById('hs-nav-sections-list');
+  if (!container) return;
+  const validSecs = (sections || []).filter(s => s.id !== 'all' && !s.deleted && !s.locked);
+  const enabled = headerSettings.enabledNavSections;
+
+  container.innerHTML = validSecs.map(s => {
+    const slug = s.slug || s.id;
+    const isChecked = (enabled === null) || enabled.includes(slug);
+    return `
+      <div class="hs-section-row">
+        <div class="hs-section-info">
+          <span class="hs-section-name">${escapeHtml(s.name)}</span>
+          <span class="hs-slug-chip">/section/${escapeHtml(slug)}</span>
+        </div>
+        <label class="hs-toggle">
+          <input type="checkbox" data-nav-slug="${escapeHtml(slug)}" ${isChecked ? 'checked' : ''} onchange="onNavSectionToggle()" />
+          <span class="hs-toggle-track"><span class="hs-toggle-thumb"></span></span>
+        </label>
+      </div>
+    `;
+  }).join('');
+}
+
+function onNavSectionToggle() {
+  const checkboxes = document.querySelectorAll('input[data-nav-slug]');
+  const selected = [];
+  checkboxes.forEach(cb => {
+    if (cb.checked) selected.push(cb.dataset.navSlug);
+  });
+  headerSettings.enabledNavSections = selected;
+}
+
+function renderSubsectionsList() {
+  const container = document.getElementById('hs-subsections-list');
+  if (!container) return;
+  const items = headerSettings.subsections || [];
+
+  container.innerHTML = items.map((sub, idx) => `
+    <div class="hs-section-row">
+      <div class="hs-section-info">
+        <span class="hs-section-name">${sub.icon === 'calendar' ? '📅 ' : ''}${escapeHtml(sub.label)}</span>
+        <span class="hs-slug-chip">${escapeHtml(sub.href || '#')}</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <label class="hs-toggle">
+          <input type="checkbox" ${sub.enabled !== false ? 'checked' : ''} onchange="toggleSubsection('${sub.id}')" />
+          <span class="hs-toggle-track"><span class="hs-toggle-thumb"></span></span>
+        </label>
+        <button type="button" class="art-action-btn art-action-btn--trash" title="Delete Tab" onclick="deleteSubsection('${sub.id}')">
+          ${ICONS.trash}
+        </button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function toggleSubsection(id) {
+  const sub = (headerSettings.subsections || []).find(s => s.id === id);
+  if (sub) {
+    sub.enabled = sub.enabled === false ? true : false;
+    saveHeaderSettings();
+  }
+}
+
+function deleteSubsection(id) {
+  headerSettings.subsections = (headerSettings.subsections || []).filter(s => s.id !== id);
+  renderSubsectionsList();
+  saveHeaderSettings();
+}
+
+function saveHeaderSettings() {
+  try {
+    localStorage.setItem('privatian_header_settings', JSON.stringify(headerSettings));
+    showToast('success', 'Header settings applied!');
+  } catch(e) {
+    showToast('error', 'Failed to save header settings');
+  }
+}
+
 
