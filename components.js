@@ -147,10 +147,10 @@
         </button>
       </div>
     </div>
-    <div class="sub-header" id="sub-header">
-      <div class="sub-header-inner" id="sub-header-inner"></div>
-    </div>
   </header>
+  <div class="sub-header" id="sub-header">
+    <div class="sub-header-inner" id="sub-header-inner"></div>
+  </div>
 
   <!-- SEARCH OVERLAY -->
   <div id="search-overlay" class="search-overlay" role="dialog" aria-modal="true" aria-label="Search" hidden>
@@ -628,48 +628,85 @@
       el.addEventListener('dragstart',   function(e) { e.preventDefault(); });
     });
 
-    // Menu overlay toggle
+    // Menu overlay toggle & scroll lock
     var menuBtn     = document.getElementById('menu-toggle-btn');
     var menuOverlay = document.getElementById('menu-overlay');
     var siteHeader  = document.getElementById('site-header');
 
     function positionMenuOverlay() {
-      if (menuOverlay && siteHeader) menuOverlay.style.top = siteHeader.offsetHeight + 'px';
+      if (menuOverlay && siteHeader) {
+        var rect = siteHeader.getBoundingClientRect();
+        var topVal = Math.max(0, rect.bottom);
+        menuOverlay.style.top = topVal + 'px';
+        menuOverlay.style.height = 'calc(100vh - ' + topVal + 'px)';
+      }
+    }
+
+    function openMenu() {
+      if (!menuOverlay || !menuBtn) return;
+      positionMenuOverlay();
+      menuOverlay.classList.add('is-open');
+      menuBtn.classList.add('is-open');
+      menuBtn.setAttribute('aria-expanded', 'true');
+      menuBtn.innerHTML = '<span style="font-size:16px">&#10005;</span> Close';
+      document.body.classList.add('menu-open');
+      document.documentElement.classList.add('menu-open');
+      document.body.style.overflow = 'hidden';
+      document.documentElement.style.overflow = 'hidden';
+    }
+
+    function closeMenu() {
+      if (!menuOverlay || !menuBtn) return;
+      menuOverlay.classList.remove('is-open');
+      menuBtn.classList.remove('is-open');
+      menuBtn.setAttribute('aria-expanded', 'false');
+      menuBtn.innerHTML = '<span class="menu-hamburger">&#9776;</span> Menu';
+      document.body.classList.remove('menu-open');
+      document.documentElement.classList.remove('menu-open');
+      document.body.style.overflow = '';
+      document.documentElement.style.overflow = '';
     }
 
     if (menuBtn && menuOverlay) {
       menuBtn.addEventListener('click', function(e) {
         e.stopPropagation();
-        var isOpen = menuOverlay.classList.toggle('is-open');
-        menuBtn.classList.toggle('is-open', isOpen);
-        menuBtn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
-        if (isOpen) {
-          positionMenuOverlay();
-          menuBtn.innerHTML = '<span style="font-size:16px">&#10005;</span> Close';
+        if (menuOverlay.classList.contains('is-open')) {
+          closeMenu();
         } else {
-          menuBtn.innerHTML = '<span class="menu-hamburger">&#9776;</span> Menu';
+          openMenu();
         }
       });
 
       document.addEventListener('click', function(e) {
-        if (!menuBtn.contains(e.target) && !menuOverlay.contains(e.target)) {
-          menuOverlay.classList.remove('is-open');
-          menuBtn.classList.remove('is-open');
-          menuBtn.setAttribute('aria-expanded', 'false');
-          menuBtn.innerHTML = '<span class="menu-hamburger">&#9776;</span> Menu';
+        if (menuOverlay.classList.contains('is-open')) {
+          if (!menuBtn.contains(e.target) && !menuOverlay.contains(e.target)) {
+            closeMenu();
+          }
+        }
+      });
+
+      document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && menuOverlay.classList.contains('is-open')) {
+          closeMenu();
+        }
+      });
+
+      window.addEventListener('resize', function() {
+        if (menuOverlay.classList.contains('is-open')) {
+          positionMenuOverlay();
         }
       });
     }
 
-    // Sub-header hide on scroll
-    var subHeader = document.getElementById('sub-header');
-    if (subHeader) {
-      window.addEventListener('scroll', function() {
-        var y = window.scrollY;
-        subHeader.classList.toggle('is-hidden', y > 60);
-        if (siteHeader) siteHeader.style.boxShadow = y > 10 ? '0 2px 12px rgba(0,0,0,0.12)' : '0 1px 6px rgba(0,0,0,0.07)';
-      }, { passive: true });
+    // Sticky header is-pinned shadow on scroll
+    function updatePinnedHeader() {
+      if (siteHeader) {
+        var isScrolled = window.scrollY > 0;
+        siteHeader.classList.toggle('is-pinned', isScrolled);
+      }
     }
+    window.addEventListener('scroll', updatePinnedHeader, { passive: true });
+    updatePinnedHeader();
 
     // Search
     initSearch();
