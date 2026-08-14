@@ -3,6 +3,34 @@
    Sections CRUD - Supabase API - Toast - Modal
 ================================================================= */
 
+// ── Global State Variables (Hoisted to prevent TDZ ReferenceErrors) ──
+var sections = [];
+var currentTab = 'active';
+var activeTab = 'active';
+var _currentAdminPage = 'sections';
+var _allArticles = [];
+var _currentArticlesView = 'active';
+var _hsInstance = null;
+var appliedHeaderConfig = null;
+var headerDraftConfig = null;
+var appliedMenuConfig = null;
+var menuDraftConfig = null;
+var menuUndoStack = [];
+var menuRedoStack = [];
+var appliedHomepageConfig = null;
+var homepageDraftConfig = null;
+var homepageUndoStack = [];
+var homepageRedoStack = [];
+var homepageArticlesList = [];
+var activeHpTab = 'canvas';
+var appliedFooterConfig = null;
+var footerDraftConfig = null;
+var footerUndoStack = [];
+var footerRedoStack = [];
+var _activeFooterTab = 'preview';
+var _lastAccessCheck = 0;
+var _accessRevoked = false;
+
 // -- Authentication & API helpers --
 function _getAuthToken() {
   return window.PRIVATIAN_TOKEN || localStorage.getItem('privatian_token') || '';
@@ -174,12 +202,10 @@ function formatDate(iso) {
   return d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
 }
 
-// â”€â”€ State â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-let sections = [];
-let currentTab = 'active';
-let editingId  = null;   // for modal edit mode
-let pendingDeleteId = null;  // for confirm modal
-let undoTimer  = null;
+// ── State ────────────────────────────────────────────────────────
+editingId  = null;   // for modal edit mode
+pendingDeleteId = null;  // for confirm modal
+undoTimer  = null;
 
 // â”€â”€ DOM refs â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const sectionsTable  = document.getElementById('sections-tbody');
@@ -591,7 +617,7 @@ tabActiveBtn.addEventListener('click', () => switchTab('active'));
 tabTrashBtn.addEventListener('click',  () => switchTab('trash'));
 
 // ── Universal Database Sync Management Engine ────────────────────────
-let _currentAdminPage = 'sections';
+_currentAdminPage = 'sections';
 
 function isMenuModified() {
   if (!appliedMenuConfig || !menuDraftConfig) return false;
@@ -1222,8 +1248,8 @@ function purgeAdmin(id, email) {
 }
 
 // ── Silent access check ──────────────────────────────────────────
-let _lastAccessCheck = 0;
-let _accessRevoked   = false;
+_lastAccessCheck = 0;
+_accessRevoked   = false;
 
 async function checkMyAccess() {
   const tok = _getAuthToken();
@@ -1621,7 +1647,7 @@ function bindHsSaveBtn(hs) {
   });
 }
 
-let _hsInstance = null;
+_hsInstance = null;
 window._appliedHeaderConfig = null;
 
 async function initHeaderPage() {
@@ -1639,7 +1665,7 @@ async function initHeaderPage() {
 // ARTICLES PAGE
 // ══════════════════════════════════════════════════════════════════
 
-let _allArticles = [];
+_allArticles = [];
 
 async function initArticlesPage() {
   const loading = document.getElementById('articles-loading');
@@ -1959,7 +1985,7 @@ async function _doPermanentDeleteArticle(id) {
   }
 }
 
-let _currentArticlesView = 'active';
+_currentArticlesView = 'active';
 
 function switchArticlesView(view) {
   _currentArticlesView = view;
@@ -2141,11 +2167,11 @@ const DEFAULT_MENU_CONFIG = {
 };
 
 // State:
-let appliedMenuConfig = null; // Baseline saved on server
-let menuDraftConfig = null;   // Active working copy for edits
-let menuUndoStack = [];
-let menuRedoStack = [];
-let _menuInitialized = false;
+appliedMenuConfig = null; // Baseline saved on server
+menuDraftConfig = null;   // Active working copy for edits
+menuUndoStack = [];
+menuRedoStack = [];
+var _menuInitialized = false;
 
 // SVGs for Menu Manager:
 const MENU_ICONS = {
@@ -3121,12 +3147,12 @@ const DEFAULT_HOMEPAGE_CONFIG = {
   }
 };
 
-let homepageDraftConfig = null;
-let appliedHomepageConfig = null;
-let homepageUndoStack = [];
-let homepageRedoStack = [];
-let homepageArticlesList = [];
-let activeHpTab = 'canvas';
+homepageDraftConfig = null;
+appliedHomepageConfig = null;
+homepageUndoStack = [];
+homepageRedoStack = [];
+homepageArticlesList = [];
+activeHpTab = 'canvas';
 
 // ── INIT HOMEPAGE PAGE ───────────────────────────────────────────
 async function initHomepagePage() {
@@ -4178,11 +4204,11 @@ function formatSvgWithSize(svgCode, height) {
   });
 }
 
-let appliedFooterConfig = null;
-let footerDraftConfig = null;
-let footerUndoStack = [];
-let footerRedoStack = [];
-let _activeFooterTab = 'preview';
+appliedFooterConfig = null;
+footerDraftConfig = null;
+footerUndoStack = [];
+footerRedoStack = [];
+_activeFooterTab = 'preview';
 
 function getSocialIconSvgForAdmin(platform) {
   const p = (platform || '').toLowerCase();
