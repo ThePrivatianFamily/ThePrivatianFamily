@@ -231,6 +231,64 @@ body{font-family:var(--sans);background:var(--bg);padding-top:calc(var(--tb)+var
   color:#b0c0cc;pointer-events:none;font-weight:400;font-style:italic}
 .ed-h1[data-ph]:empty::before{font-style:normal}
 
+/* H4 in rich text */
+#ed-rt h4{font:700 15px/1.4 var(--sans);color:#2d4a5e;text-transform:uppercase;
+  letter-spacing:.06em;margin:1.8em 0 .6em}
+
+/* Lists in rich text */
+#ed-rt ul,#ed-rt ol{margin:0 0 1.5em;padding-left:1.8em}
+#ed-rt li{font:400 18.5px/1.7 var(--serif);color:#1a2d3e;margin-bottom:.3em}
+#ed-rt ul li::marker{color:var(--navy)}
+#ed-rt ol li::marker{color:var(--navy);font-weight:700}
+/* Checklist */
+#ed-rt ul.checklist{list-style:none;padding-left:.4em}
+#ed-rt ul.checklist li{display:flex;align-items:flex-start;gap:10px}
+#ed-rt ul.checklist li input[type=checkbox]{margin-top:.35em;flex-shrink:0;
+  width:16px;height:16px;accent-color:var(--navy);cursor:pointer}
+#ed-rt ul.checklist li.done{color:#7a9ab2;text-decoration:line-through}
+
+/* ── METRICS BAR ─────────────────────────────── */
+#metrics-bar{position:fixed;bottom:0;left:0;right:0;z-index:800;
+  height:34px;background:#fff;border-top:1px solid var(--border);
+  display:flex;align-items:center;justify-content:center;gap:20px;
+  font:400 12px/1 var(--sans);color:var(--light);
+  box-shadow:0 -1px 0 rgba(0,0,0,.04)}
+.mbar-item{display:flex;align-items:center;gap:5px}
+.mbar-val{font-weight:700;color:var(--muted)}
+.mbar-sep{color:#d0dae3}
+body{padding-bottom:34px}
+
+/* ── PRE-PUBLISH MODAL ───────────────────────── */
+#pub-overlay{display:none;position:fixed;inset:0;z-index:9990;
+  background:rgba(10,20,35,.55);backdrop-filter:blur(4px);
+  align-items:center;justify-content:center}
+#pub-overlay.show{display:flex}
+#pub-modal{background:#fff;border-radius:16px;width:440px;max-width:90vw;
+  box-shadow:0 24px 60px rgba(0,0,0,.25);overflow:hidden}
+.pm-head{padding:22px 28px 0;border-bottom:1px solid var(--border);padding-bottom:18px;
+  display:flex;align-items:center;justify-content:space-between}
+.pm-title{font:700 17px/1 var(--sans);color:var(--dark)}
+.pm-close{width:28px;height:28px;border:none;background:#f4f6f8;border-radius:50%;
+  cursor:pointer;color:#6b7f92;font-size:17px;display:flex;align-items:center;
+  justify-content:center;transition:.12s}
+.pm-close:hover{background:#e8f1f9;color:var(--navy)}
+.pm-body{padding:22px 28px;display:flex;flex-direction:column;gap:10px;max-height:55vh;overflow-y:auto}
+.pm-item{display:flex;align-items:center;gap:12px;
+  padding:10px 14px;border-radius:8px;font:500 13.5px/1.3 var(--sans)}
+.pm-item.pass{background:#f0fdf4;color:#166534}
+.pm-item.fail{background:#fef2f2;color:#991b1b}
+.pm-item.warn{background:#fffbeb;color:#92400e}
+.pm-ico{font-size:15px;flex-shrink:0}
+.pm-foot{padding:18px 28px;border-top:1px solid var(--border);
+  display:flex;gap:10px;justify-content:flex-end}
+.pm-btn{font:600 13px/1 var(--sans);padding:9px 20px;border-radius:8px;
+  cursor:pointer;border:none;transition:.15s}
+.pm-cancel{background:#f4f6f8;color:#4a5568}
+.pm-cancel:hover{background:#e8edf2}
+.pm-do{background:#1a7a4a;color:#fff}
+.pm-do:hover{background:#158040}
+.pm-do:disabled{opacity:.4;cursor:default}
+
 /* Hide public elements */
 #site-header-mount,#site-footer-mount,.article-share-sidebar,
 .article-related,.article-right-aside{display:none!important}
@@ -276,6 +334,7 @@ body{font-family:var(--sans);background:var(--bg);padding-top:calc(var(--tb)+var
     <option value="p">Paragraph</option>
     <option value="h2">Heading 2</option>
     <option value="h3">Heading 3</option>
+    <option value="h4">Heading 4</option>
     <option value="blockquote">Block Quote</option>
     <option value="pre">Code Block</option>
   </select>
@@ -329,6 +388,25 @@ body{font-family:var(--sans);background:var(--bg);padding-top:calc(var(--tb)+var
   <button class="fb" onmousedown="f(event,'removeFormat')" title="Clear formatting">
     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m7 21 9-18M3 6h18M3 12h10M3 18h6"/></svg>
   </button>
+
+  <div class="fs"></div>
+
+  <!-- Lists -->
+  <button class="fb" id="fb-ul" onmousedown="f(event,'insertUnorderedList')" title="Bullet list">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="9" y1="6" x2="20" y2="6"/><line x1="9" y1="12" x2="20" y2="12"/><line x1="9" y1="18" x2="20" y2="18"/><circle cx="4" cy="6" r="1.5" fill="currentColor" stroke="none"/><circle cx="4" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="4" cy="18" r="1.5" fill="currentColor" stroke="none"/></svg>
+  </button>
+  <button class="fb" id="fb-ol" onmousedown="f(event,'insertOrderedList')" title="Numbered list">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="10" y1="6" x2="21" y2="6"/><line x1="10" y1="12" x2="21" y2="12"/><line x1="10" y1="18" x2="21" y2="18"/><path d="M4 6h1v4" stroke-linecap="round"/><path d="M4 10h2" stroke-linecap="round"/><path d="M6 18H4c0-1 2-2 2-3s-1-1.5-2-1"/></svg>
+  </button>
+  <button class="fb" onmousedown="insChecklist(event)" title="Checklist">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+  </button>
+
+  <div class="fs"></div>
+
+  <!-- Superscript / Subscript -->
+  <button class="fb" onmousedown="f(event,'superscript')" title="Superscript">x²</button>
+  <button class="fb" onmousedown="f(event,'subscript')"   title="Subscript">x₂</button>
 </div>
 
 <!-- Hidden inputs -->
@@ -443,13 +521,48 @@ body{font-family:var(--sans);background:var(--bg);padding-top:calc(var(--tb)+var
 
 <div id="toast"></div>
 
+<!-- ═══ METRICS BAR (sticky bottom) ═══════════════════════════ -->
+<div id="metrics-bar">
+  <div class="mbar-item">
+    <span class="mbar-val" id="mb-words">0</span>
+    <span>words</span>
+  </div>
+  <span class="mbar-sep">·</span>
+  <div class="mbar-item">
+    <span class="mbar-val" id="mb-chars">0</span>
+    <span>characters</span>
+  </div>
+  <span class="mbar-sep">·</span>
+  <div class="mbar-item">
+    <span class="mbar-val" id="mb-rtime">—</span>
+    <span>min read</span>
+  </div>
+</div>
+
+<!-- ═══ PRE-PUBLISH CHECKLIST MODAL ══════════════════════════ -->
+<div id="pub-overlay" onclick="closePubModal(event)">
+  <div id="pub-modal">
+    <div class="pm-head">
+      <span class="pm-title">Ready to Publish?</span>
+      <button class="pm-close" onclick="g('pub-overlay').classList.remove('show')">×</button>
+    </div>
+    <div class="pm-body" id="pm-body">
+      <!-- Populated by JS -->
+    </div>
+    <div class="pm-foot">
+      <button class="pm-btn pm-cancel" onclick="g('pub-overlay').classList.remove('show')">Cancel</button>
+      <button class="pm-btn pm-do" id="pm-publish-btn" onclick="doPublish()">Publish Article</button>
+    </div>
+  </div>
+</div>
+
+
 <script src="admin-auth.js"></script>
 <script>
 /* ════════════════════════════════════════════════════════════
-   The Privatian Family — Article Editor v4
-   Features: undo/redo, image resize/align/delete,
-   sections from DB, localStorage draft, author photo,
-   debounced auto-save
+   The Privatian Family — Article Editor v5
+   Sprint 1: + lists, H4, metrics bar, nav protection,
+   pre-publish checklist, superscript/subscript
 ════════════════════════════════════════════════════════════ */
 
 let ART_ID  = null;
@@ -474,11 +587,20 @@ window.addEventListener('privatian:ready', () => {
   bindFmtSync();
   bindImgClicks();
   bindInput();
+  updateMetrics();
 
   if (!g('ed-date').textContent.trim())
     g('ed-date').textContent = fmtDate(new Date());
 
   document.addEventListener('click', globalClick);
+
+  // ── Navigation protection ──────────────────────────────────
+  window.addEventListener('beforeunload', ev => {
+    if (DIRTY) {
+      ev.preventDefault();
+      ev.returnValue = 'You have unsaved changes. Are you sure you want to leave?';
+    }
+  });
 });
 
 function initEmpty() {
@@ -556,7 +678,7 @@ function bindInput() {
 
 function onInput() {
   DIRTY = true;
-  updateReadTime();
+  updateMetrics();
   // 1. localStorage — 300ms debounce
   clearTimeout(_lsTimer);
   _lsTimer = setTimeout(lsSave, 300);
@@ -650,6 +772,57 @@ async function saveArt(silent = false) {
 
 // ── PUBLISH / UNPUBLISH ──────────────────────────────────────
 async function pubArt() {
+  // If already published → unpublish immediately (no checklist needed)
+  if (STATUS === 'published') {
+    await doPublish();
+    return;
+  }
+  // Show pre-publish checklist first
+  openPubModal();
+}
+
+function openPubModal() {
+  const items = [];
+  const title   = gt('ed-headline');
+  const body    = (g('ed-rt')?.innerText || '').trim();
+  const section = g('sec-lbl')?.textContent;
+  const author  = gt('ed-author');
+  const slug    = g('tb-slug')?.value?.trim();
+
+  // Required checks (block publish)
+  const checks = [
+    { label: 'Headline', pass: !!title,   req: true },
+    { label: 'Article body', pass: body.length > 50,  req: true },
+    { label: 'Section selected', pass: !!section && section !== 'Select Section', req: true },
+    { label: 'Author name', pass: !!author, req: true },
+    // Recommendations (warn only)
+    { label: 'Subtitle / Deck', pass: !!gt('ed-deck'), req: false },
+    { label: 'Slug is set', pass: !!slug, req: false },
+    { label: 'Author bio', pass: !!gt('bio-desc'), req: false },
+  ];
+
+  const hasBlocker = checks.some(c => c.req && !c.pass);
+
+  g('pm-body').innerHTML = checks.map(c => `
+    <div class="pm-item ${c.pass ? 'pass' : c.req ? 'fail' : 'warn'}">
+      <span class="pm-ico">${c.pass ? '✓' : c.req ? '✕' : '⚠'}</span>
+      <span>${c.label}${!c.pass && !c.req ? ' (recommended)' : ''}</span>
+    </div>
+  `).join('');
+
+  const pubBtn = g('pm-publish-btn');
+  pubBtn.disabled = hasBlocker;
+  pubBtn.title = hasBlocker ? 'Fix required fields before publishing' : '';
+
+  g('pub-overlay').classList.add('show');
+}
+
+function closePubModal(e) {
+  if (e.target === g('pub-overlay')) g('pub-overlay').classList.remove('show');
+}
+
+async function doPublish() {
+  g('pub-overlay').classList.remove('show');
   if (!ART_ID) { await saveArt(true); if (!ART_ID) { toast('Save failed', 'err'); return; } }
   const btn = g('tb-pub-btn'); btn.disabled = true; btn.textContent = '…';
   try {
@@ -657,6 +830,7 @@ async function pubArt() {
     const d = await r.json();
     if (!r.ok) throw new Error(d.error);
     STATUS = d.status;
+    DIRTY = false; // Published = clean state
     refreshStatus();
     toast(STATUS === 'published' ? '🎉 Article published!' : 'Moved to Draft', 'ok');
   } catch(e) { toast(e.message, 'err'); }
@@ -713,18 +887,35 @@ function insHR(ev) {
   document.execCommand('insertHTML', false, '<hr/>');
 }
 
+// ── CHECKLIST INSERT ─────────────────────────────────────────
+function insChecklist(ev) {
+  ev.preventDefault();
+  g('ed-rt').focus();
+  const html = `<ul class="checklist"><li><input type="checkbox" /><span> List item</span></li></ul><p><br></p>`;
+  document.execCommand('insertHTML', false, html);
+  // Bind checkbox toggle
+  g('ed-rt').querySelectorAll('ul.checklist input[type=checkbox]').forEach(cb => {
+    if (cb._bound) return; cb._bound = true;
+    cb.addEventListener('change', () => {
+      cb.closest('li').classList.toggle('done', cb.checked);
+      DIRTY = true;
+    });
+  });
+}
+
 // ── FORMAT BAR SYNC ──────────────────────────────────────────
 function bindFmtSync() {
   document.addEventListener('selectionchange', syncFmt);
 }
 function syncFmt() {
-  [['bold','fb-b'],['italic','fb-i'],['underline','fb-u'],['strikeThrough','fb-s']].forEach(([c,id]) => {
+  [['bold','fb-b'],['italic','fb-i'],['underline','fb-u'],['strikeThrough','fb-s'],
+   ['insertUnorderedList','fb-ul'],['insertOrderedList','fb-ol']].forEach(([c,id]) => {
     const el = g(id); if (el) el.classList.toggle('on', document.queryCommandState(c));
   });
   try {
     const v = document.queryCommandValue('formatBlock').toLowerCase().replace(/[<>]/g,'');
     const fb = g('fmt-block');
-    if (fb) fb.value = {p:'p',h2:'h2',h3:'h3',blockquote:'blockquote',pre:'pre'}[v] || 'p';
+    if (fb) fb.value = {p:'p',h2:'h2',h3:'h3',h4:'h4',blockquote:'blockquote',pre:'pre'}[v] || 'p';
   } catch(e){}
 }
 
@@ -913,10 +1104,20 @@ function refreshPubBtn() {
   btn.className   = 'tb-btn ' + (STATUS === 'published' ? 'tb-unpub' : 'tb-pub');
 }
 function setSaveStatus(msg) { g('tb-save-st').textContent = msg; }
-function updateReadTime() {
-  const wc = (g('ed-rt').innerText||'').replace(/\s+/g,' ').split(' ').filter(Boolean).length;
-  g('ed-rtime').textContent = Math.max(1, Math.round(wc/200)) + ' min read';
+function updateMetrics() {
+  const text = (g('ed-rt')?.innerText || '').replace(/\s+/g,' ').trim();
+  const words = text ? text.split(' ').filter(Boolean).length : 0;
+  const chars = text.length;
+  const rtime = Math.max(1, Math.round(words / 225)); // 225 WPM average
+  // Metrics bar
+  if (g('mb-words')) g('mb-words').textContent = words.toLocaleString();
+  if (g('mb-chars')) g('mb-chars').textContent = chars.toLocaleString();
+  if (g('mb-rtime')) g('mb-rtime').textContent = rtime;
+  // Header read-time
+  if (g('ed-rtime')) g('ed-rtime').textContent = rtime + ' min read';
 }
+// Legacy alias
+function updateReadTime() { updateMetrics(); }
 function previewArt() {
   if (!ART_ID) { toast('Save first to preview', 'info'); return; }
   window.open('/article.html?id=' + ART_ID, '_blank');
