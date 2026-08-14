@@ -164,6 +164,13 @@ body{font-family:var(--sans);background:var(--bg);padding-top:calc(var(--tb)+var
   right:12px;bottom:-28px;font:900 88px/1 Georgia,'Times New Roman',serif;
   color:var(--navy);opacity:.12;line-height:1;pointer-events:none;user-select:none}
 #ed-rt blockquote p{margin:0;font-size:19.5px;line-height:1.7;color:#2c4a62}
+/* ─ Classic blockquote (old left-border style) ─────────────────── */
+#ed-rt blockquote.classic{padding:16px 24px;background:#f0f5fa;
+  border-left:4px solid var(--navy);border-radius:0 8px 8px 0;
+  font-style:italic;color:#3a5568;overflow:visible}
+#ed-rt blockquote.classic::before,
+#ed-rt blockquote.classic::after{display:none}
+#ed-rt blockquote.classic p{font-size:18.5px;line-height:1.65;color:#3a5568}
 #ed-rt a{color:var(--navy);text-decoration:underline;text-underline-offset:3px}
 #ed-rt hr{border:none;border-top:2px solid #e4ddd5;margin:2.5em 0}
 #ed-rt figure{margin:2em 0;text-align:center}
@@ -452,7 +459,8 @@ body{padding-bottom:34px}
     <option value="h2">Heading 2</option>
     <option value="h3">Heading 3</option>
     <option value="h4">Heading 4</option>
-    <option value="blockquote">❝ Block Quote</option>
+    <option value="blockquote">❝ Pull Quote</option>
+    <option value="blockquote-classic">▎ Classic Quote</option>
     <option value="pre">Code Block</option>
   </select>
 
@@ -1177,7 +1185,30 @@ function fv(ev, cmd, val, swatchId) {
 
 function setBlock(tag) {
   g('ed-rt').focus();
-  document.execCommand('formatBlock', false, tag);
+  if (tag === 'blockquote-classic') {
+    // Insert a classic blockquote element
+    document.execCommand('formatBlock', false, 'blockquote');
+    // Find the newly created blockquote and add class
+    const sel = getSelection();
+    const node = sel?.anchorNode;
+    const bq = node?.nodeType === 3
+      ? node.parentElement?.closest('blockquote')
+      : node?.closest?.('blockquote');
+    if (bq) { bq.className = 'classic'; }
+  } else {
+    // For regular blockquote, remove classic class if present
+    if (tag === 'blockquote') {
+      document.execCommand('formatBlock', false, 'blockquote');
+      const sel = getSelection();
+      const node = sel?.anchorNode;
+      const bq = node?.nodeType === 3
+        ? node.parentElement?.closest('blockquote')
+        : node?.closest?.('blockquote');
+      if (bq) bq.classList.remove('classic');
+    } else {
+      document.execCommand('formatBlock', false, tag);
+    }
+  }
   syncFmt();
 }
 
