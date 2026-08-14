@@ -1440,7 +1440,7 @@ function renderArticlesTable(articles) {
       <td><span class="art-date-txt">${updated}</span></td>
       <td class="tar">
         <div class="art-btn-group">
-          <a href="admin-article-editor.html?id=${escapeHtml(a.id)}" class="art-action-btn art-action-btn--edit" title="Edit article">
+          <a href="admin-article-editor.html?id=${escapeHtml(a.id)}" class="art-action-btn art-action-btn--edit" title="Edit article in editor">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
             Edit
           </a>
@@ -1448,9 +1448,6 @@ function renderArticlesTable(articles) {
              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
              View
           </a>` : ''}
-          <button type="button" onclick="toggleArticleStatus('${a.id}', this)" class="art-action-btn art-action-btn--toggle" title="${isPublished ? 'Change to Draft' : 'Publish Article'}">
-            ${isPublished ? 'Unpublish' : 'Publish'}
-          </button>
           <button type="button" onclick="deleteArticleConfirm('${a.id}', '${escapeHtml((a.title||'Untitled').replace(/'/g,"\\'"))}')" class="art-action-btn art-action-btn--trash" title="Move to Recycle Bin">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
           </button>
@@ -1476,27 +1473,6 @@ function filterArticles() {
     return matchQ && matchStatus && matchSection;
   });
   renderArticlesTable(filtered);
-}
-
-async function toggleArticleStatus(id, btn) {
-  btn.disabled = true;
-  const originalText = btn.textContent;
-  btn.textContent = '...';
-  try {
-    const res  = await fetch('/api/articles?action=publish&id=' + id, {
-      method: 'POST', headers: { 'Authorization': 'Bearer ' + window.PRIVATIAN_TOKEN }
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Failed');
-    const article = _allArticles.find(a => a.id === id);
-    if (article) article.status = data.status;
-    filterArticles();
-    _showAdminToast(data.status === 'published' ? 'Article published' : 'Moved to draft', 'success');
-  } catch(e) {
-    _showAdminToast(e.message, 'error');
-    btn.disabled = false;
-    btn.textContent = originalText;
-  }
 }
 
 // ── Article Trash Management ────────────────────────────────────
@@ -1528,7 +1504,7 @@ async function _doDeleteArticle(id) {
 function restoreArticleConfirm(id, title) {
   _confirmModal({
     title: 'Restore Article',
-    body: `Restore "<strong>${escapeHtml(title)}</strong>"? It will be moved back to your articles list.`,
+    body: `Restore "<strong>${escapeHtml(title)}</strong>"? It will be moved back to your active articles list.`,
     confirmText: 'Restore Article',
     variant: 'success',
     onConfirm: () => _doRestoreArticle(id)
@@ -1543,7 +1519,20 @@ async function _doRestoreArticle(id) {
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Failed');
     _showAdminToast('Article restored', 'success');
-    await initArticlesPage();
+
+    // 1. Immediately reload active articles from server
+    try {
+      const listRes = await fetch('/api/articles?action=list', {
+        headers: { 'Authorization': 'Bearer ' + window.PRIVATIAN_TOKEN }
+      });
+      _allArticles = await listRes.json();
+      if (!Array.isArray(_allArticles)) _allArticles = [];
+      _populateSectionFilter();
+      filterArticles();
+    } catch(err) {}
+
+    // 2. Reload trash table & count
+    await _loadArticleTrash();
   } catch(e) { _showAdminToast(e.message, 'error'); }
 }
 
@@ -1589,6 +1578,7 @@ function switchArticlesView(view) {
     if (trashPanel)  trashPanel.style.display  = 'none';
     if (activeBtn)   activeBtn.classList.add('active');
     if (trashBtn)    trashBtn.classList.remove('active');
+    filterArticles();
   }
 }
 
