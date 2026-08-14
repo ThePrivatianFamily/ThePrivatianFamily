@@ -543,6 +543,8 @@ module.exports = async function handler(req, res) {
         { id: 'f-soc-5', platform: 'youtube', label: 'YouTube', href: 'https://youtube.com', enabled: true },
         { id: 'f-soc-6', platform: 'email', label: 'Email', href: 'mailto:contact@privatian.org', enabled: true }
       ],
+      logoSvg: '',
+      logoHeight: 80,
       tagline: 'The Official Publication of The Privatian Society — Cambridge, Massachusetts',
       copyright: '© 2026 The Privatian Family. All rights reserved.',
       bottomLinks: [

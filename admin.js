@@ -3728,6 +3728,8 @@ document.addEventListener('keydown', (e) => {
 
 const FOOTER_SETTINGS_KEY = 'privatian_footer_settings';
 
+const FOOTER_LOGO_DEFAULT_SVG = `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="240 582 3365 640" preserveAspectRatio="xMinYMin meet" class="logo-cover-svg" id="footer-logo-svg" aria-label="The Privatian Family" style="height:90px;width:auto;display:block;flex-shrink:0;"><defs><g/><clipPath id="3e2e9e006a"><rect x="0" width="561" y="0" height="1121"/></clipPath><clipPath id="5439340641"><rect x="0" width="3354" y="0" height="302"/></clipPath><clipPath id="0e3ea0e472"><path d="M 2790 1154 L 2867 1154 L 2867 1170.730469 L 2790 1170.730469 Z M 2790 1154 " clip-rule="nonzero"/></clipPath><clipPath id="e41def51e2"><path d="M 2774.386719 981.066406 L 2881.792969 981.066406 L 2881.792969 1151 L 2774.386719 1151 Z M 2774.386719 981.066406 " clip-rule="nonzero"/></clipPath></defs><g transform="matrix(1, 0, 0, 1, 861, 349)"><g clip-path="url(#3e2e9e006a)"><g fill="#ffffff" fill-opacity="1"><g transform="translate(0.604266, 858.319785)"><g><path d="M 21.375 -620.578125 C 27.207031 -621.554688 30.9375 -622.046875 32.5625 -622.046875 C 43.570312 -622.046875 61.710938 -621.394531 86.984375 -620.09375 C 100.265625 -619.769531 109.335938 -619.609375 114.203125 -619.609375 C 121.328125 -619.609375 136.390625 -620.257812 159.390625 -621.5625 L 242.015625 -626.421875 C 263.722656 -628.359375 288.992188 -629.328125 317.828125 -629.328125 C 368.691406 -629.328125 409.1875 -622.117188 439.3125 -607.703125 C 469.445312 -593.285156 492.691406 -570.6875 509.046875 -539.90625 C 525.410156 -509.132812 533.59375 -478.519531 533.59375 -448.0625 C 533.59375 -397.195312 515.773438 -353.296875 480.140625 -316.359375 C 444.503906 -279.429688 396.554688 -260.96875 336.296875 -260.96875 C 319.441406 -260.96875 305.34375 -262.664062 294 -266.0625 C 282.664062 -269.46875 269.710938 -276.03125 255.140625 -285.75 C 248.984375 -289.957031 245.253906 -294.332031 243.953125 -298.875 C 245.253906 -301.132812 247.035156 -302.753906 249.296875 -303.734375 C 253.835938 -303.734375 258.535156 -302.757812 263.390625 -300.8125 C 274.410156 -296.925781 288.34375 -294.984375 305.1875 -294.984375 C 330.78125 -294.984375 355 -301.300781 377.84375 -313.9375 C 400.6875 -326.570312 417.9375 -344.550781 429.59375 -367.875 C 441.257812 -391.207031 447.09375 -415.832031 447.09375 -441.75 C 447.09375 -467.019531 440.9375 -491.5625 428.625 -515.375 C 416.3125 -539.1875 400.113281 -558.21875 380.03125 -572.46875 C 368.6875 -580.570312 351.269531 -587.375 327.78125 -592.875 C 304.289062 -598.382812 286.066406 -601.140625 273.109375 -601.140625 C 232.941406 -601.140625 209.128906 -598.222656 201.671875 -592.390625 L 201.1875 -585.59375 L 203.140625 -530.671875 L 202.65625 -520.953125 C 202 -512.210938 201.671875 -498.769531 201.671875 -480.625 C 201.671875 -414.53125 202.644531 -373.382812 204.59375 -357.1875 L 204.59375 -329.96875 L 210.90625 -107.890625 C 210.90625 -104.648438 210.5 -98.65625 209.6875 -89.90625 C 208.882812 -81.15625 208.484375 -73.539062 208.484375 -67.0625 C 208.484375 -51.507812 209.78125 -39.6875 212.375 -31.59375 C 220.144531 -29.320312 242.820312 -23.972656 280.40625 -15.546875 C 297.894531 -11.335938 307.453125 -8.910156 309.078125 -8.265625 C 311.671875 -7.285156 313.9375 -5.175781 315.875 -1.9375 C 314.582031 2.914062 312.882812 6.070312 310.78125 7.53125 C 308.675781 8.988281 304.546875 9.71875 298.390625 9.71875 C 294.492188 9.71875 285.421875 8.910156 271.171875 7.296875 C 243.304688 4.378906 221.4375 2.921875 205.5625 2.921875 L 120.03125 6.3125 L 69 4.859375 C 65.757812 4.859375 56.367188 5.179688 40.828125 5.828125 L 40.328125 -6.796875 L 103.515625 -18.953125 C 113.878906 -21.867188 120.195312 -24.785156 122.46875 -27.703125 C 125.707031 -32.234375 127.328125 -41.140625 127.328125 -54.421875 C 127.328125 -57.335938 127.488281 -63.65625 127.8125 -73.375 C 128.132812 -80.1875 128.296875 -89.582031 128.296875 -101.5625 C 128.296875 -139.789062 126.675781 -221.273438 123.4375 -346.015625 C 122.144531 -404.328125 121.5 -463.613281 121.5 -523.875 L 121.5 -532.140625 C 121.5 -555.460938 117.929688 -570.203125 110.796875 -576.359375 C 98.804688 -587.046875 68.835938 -595.796875 20.890625 -602.609375 C 19.273438 -606.171875 18.46875 -609.082031 18.46875 -611.34375 C 18.46875 -613.9375 19.4375 -617.015625 21.375 -620.578125 Z M 21.375 -620.578125 "/></g></g></g></g></g><g transform="matrix(1, 0, 0, 1, 245, 931)"><g clip-path="url(#5439340641)"><g fill="#ffffff" fill-opacity="1"><g transform="translate(0.871153, 235.96386)"><g><path d="M 97.296875 0 L 97.296875 -165.578125 L 166.09375 -165.578125 L 166.09375 -179.6875 L 5.140625 -179.6875 L 5.140625 -165.578125 L 73.9375 -165.578125 L 73.9375 0 Z M 97.296875 0 "/></g></g></g><g fill="#ffffff" fill-opacity="1"><g transform="translate(172.076148, 235.96386)"><g><path d="M 54.171875 -89.328125 L 161.71875 -89.328125 L 161.71875 0 L 185.078125 0 L 185.078125 -179.6875 L 161.71875 -179.6875 L 161.71875 -101.140625 L 54.171875 -101.140625 L 54.171875 -179.6875 L 30.796875 -179.6875 L 30.796875 0 L 54.171875 0 Z M 54.171875 -89.328125 "/></g></g></g><g fill="#ffffff" fill-opacity="1"><g transform="translate(387.94332, 235.96386)"><g><path d="M 30.796875 -179.6875 L 30.796875 0 L 146.828125 0 L 146.828125 -14.125 L 54.171875 -14.125 L 54.171875 -89.328125 L 133.75 -89.328125 L 133.75 -101.140625 L 54.171875 -101.140625 L 54.171875 -165.578125 L 146.828125 -165.578125 L 146.828125 -179.6875 Z M 30.796875 -179.6875 "/></g></g></g><g fill="#ffffff" fill-opacity="1"><g transform="translate(542.485004, 235.96386)"><g/></g></g><g fill="#ffffff" fill-opacity="1"><g transform="translate(632.322705, 235.96386)"><g/></g></g><g fill="#ffffff" fill-opacity="1"><g transform="translate(722.160406, 235.96386)"><g/></g></g><g fill="#ffffff" fill-opacity="1"><g transform="translate(901.844513, 235.96386)"><g><path d="M 30.796875 -179.6875 L 30.796875 0 L 54.171875 0 L 54.171875 -79.328125 L 65.453125 -79.328125 C 70.242188 -79.328125 74.222656 -78.894531 77.390625 -78.03125 C 80.554688 -77.175781 83.421875 -75.722656 85.984375 -73.671875 C 88.554688 -71.617188 90.953125 -68.96875 93.171875 -65.71875 C 95.398438 -62.46875 98.054688 -58.445312 101.140625 -53.65625 L 121.421875 -23.609375 C 123.984375 -19.679688 126.503906 -16.085938 128.984375 -12.828125 C 131.472656 -9.578125 134.171875 -6.796875 137.078125 -4.484375 C 139.984375 -2.179688 143.273438 -0.347656 146.953125 1.015625 C 150.640625 2.390625 155.050781 3.078125 160.1875 3.078125 C 163.945312 3.078125 167.023438 2.90625 169.421875 2.5625 C 171.816406 2.21875 174.210938 1.363281 176.609375 0 L 176.609375 -9.5 C 175.753906 -9.320312 174.898438 -9.191406 174.046875 -9.109375 C 173.191406 -9.023438 172.335938 -8.984375 171.484375 -8.984375 C 167.890625 -8.984375 164.722656 -9.492188 161.984375 -10.515625 C 159.242188 -11.546875 156.675781 -13.046875 154.28125 -15.015625 C 151.882812 -16.984375 149.570312 -19.378906 147.34375 -22.203125 C 145.125 -25.023438 142.816406 -28.234375 140.421875 -31.828125 C 133.234375 -42.265625 127.671875 -50.609375 123.734375 -56.859375 C 119.796875 -63.109375 116.671875 -67.941406 114.359375 -71.359375 C 112.046875 -74.785156 110.160156 -77.269531 108.703125 -78.8125 C 107.253906 -80.351562 105.503906 -81.632812 103.453125 -82.65625 L 100.890625 -83.9375 L 100.890625 -84.96875 C 109.097656 -85.476562 116.15625 -87.273438 122.0625 -90.359375 C 127.96875 -93.441406 132.800781 -97.289062 136.5625 -101.90625 C 140.332031 -106.53125 143.070312 -111.535156 144.78125 -116.921875 C 146.488281 -122.316406 147.34375 -127.582031 147.34375 -132.71875 C 147.34375 -137.332031 146.441406 -142.378906 144.640625 -147.859375 C 142.847656 -153.335938 139.769531 -158.425781 135.40625 -163.125 C 131.039062 -167.832031 125.09375 -171.769531 117.5625 -174.9375 C 110.039062 -178.101562 100.546875 -179.6875 89.078125 -179.6875 Z M 54.171875 -168.390625 L 80.09375 -168.390625 C 86.59375 -168.390625 92.453125 -167.445312 97.671875 -165.5625 C 102.890625 -163.6875 107.378906 -161.078125 111.140625 -157.734375 C 114.910156 -154.398438 117.78125 -150.421875 119.75 -145.796875 C 121.71875 -141.179688 122.703125 -136.132812 122.703125 -130.65625 C 122.703125 -126.039062 121.800781 -121.378906 120 -116.671875 C 118.207031 -111.960938 115.515625 -107.679688 111.921875 -103.828125 C 108.328125 -99.984375 103.921875 -96.863281 98.703125 -94.46875 C 93.484375 -92.070312 87.453125 -90.875 80.609375 -90.875 L 54.171875 -90.875 Z M 54.171875 -168.390625 "/></g></g></g><g fill="#ffffff" fill-opacity="1"><g transform="translate(1086.140135, 235.96386)"><g><path d="M 41.078125 -179.6875 L 41.078125 0 L 64.4375 0 L 64.4375 -179.6875 Z M 41.078125 -179.6875 "/></g></g></g><g fill="#ffffff" fill-opacity="1"><g transform="translate(1191.635268, 235.96386)"><g><path d="M 7.703125 -179.6875 L 82.921875 0 L 98.3125 0 L 171.21875 -179.6875 L 157.875 -179.6875 L 98.0625 -31.828125 L 97.03125 -31.828125 L 35.421875 -179.6875 Z M 7.703125 -179.6875 "/></g></g></g><g fill="#ffffff" fill-opacity="1"><g transform="translate(1370.540616, 235.96386)"><g><path d="M 130.65625 -52.875 L 155.3125 0 L 180.203125 0 L 96.515625 -179.6875 L 83.6875 -179.6875 L 7.703125 0 L 19.515625 0 L 42.09375 -52.875 Z M 125.265625 -64.4375 L 46.984375 -64.4375 L 83.9375 -150.9375 L 84.96875 -150.9375 Z M 125.265625 -64.4375 "/></g></g></g><g fill="#ffffff" fill-opacity="1"><g transform="translate(1558.429803, 235.96386)"><g><path d="M 97.296875 0 L 97.296875 -165.578125 L 166.09375 -165.578125 L 166.09375 -179.6875 L 5.140625 -179.6875 L 5.140625 -165.578125 L 73.9375 -165.578125 L 73.9375 0 Z M 97.296875 0 "/></g></g></g><g fill="#ffffff" fill-opacity="1"><g transform="translate(1729.634757, 235.96386)"><g><path d="M 41.078125 -179.6875 L 41.078125 0 L 64.4375 0 L 64.4375 -179.6875 Z M 41.078125 -179.6875 "/></g></g></g><g fill="#ffffff" fill-opacity="1"><g transform="translate(1835.129932, 235.96386)"><g><path d="M 130.65625 -52.875 L 155.3125 0 L 180.203125 0 L 96.515625 -179.6875 L 83.6875 -179.6875 L 7.703125 0 L 19.515625 0 L 42.09375 -52.875 Z M 125.265625 -64.4375 L 46.984375 -64.4375 L 83.9375 -150.9375 L 84.96875 -150.9375 Z M 125.265625 -64.4375 "/></g></g></g><g fill="#ffffff" fill-opacity="1"><g transform="translate(2023.019035, 235.96386)"><g><path d="M 175.578125 -179.6875 L 175.578125 -42.359375 L 174.5625 -42.359375 L 32.09375 -182.765625 L 30.796875 -182.765625 L 30.796875 0 L 42.609375 0 L 42.609375 -137.34375 L 43.640625 -137.34375 L 186.109375 3.078125 L 187.390625 3.078125 L 187.390625 -179.6875 Z M 175.578125 -179.6875 "/></g></g></g><g fill="#ffffff" fill-opacity="1"><g transform="translate(2241.196307, 235.96386)"><g/></g></g><g fill="#ffffff" fill-opacity="1"><g transform="translate(2331.033987, 235.96386)"><g><path d="M 30.796875 -179.6875 L 30.796875 0 L 54.171875 0 L 54.171875 -89.328125 L 133.75 -89.328125 L 133.75 -101.140625 L 54.171875 -101.140625 L 54.171875 -165.578125 L 146.828125 -165.578125 L 146.828125 -179.6875 Z M 30.796875 -179.6875 "/></g></g></g><g fill="#ffffff" fill-opacity="1"><g transform="translate(2485.557655, 235.96386)"><g/></g></g><g fill="#ffffff" fill-opacity="1"><g transform="translate(2575.395356, 235.96386)"><g/></g></g><g fill="#ffffff" fill-opacity="1"><g transform="translate(2665.237374, 235.96386)"><g><path d="M 48.265625 -179.6875 L 30.796875 -179.6875 L 30.796875 0 L 42.09375 0 L 42.09375 -146.578125 L 43.125 -146.578125 L 122.453125 3.078125 L 127.0625 3.078125 L 208.1875 -145.546875 L 209.21875 -145.546875 L 209.21875 0 L 232.578125 0 L 232.578125 -179.6875 L 214.859375 -179.6875 L 131.6875 -25.40625 L 130.65625 -25.40625 Z M 48.265625 -179.6875 "/></g></g></g><g fill="#ffffff" fill-opacity="1"><g transform="translate(2928.590174, 235.96386)"><g><path d="M 41.078125 -179.6875 L 41.078125 0 L 64.4375 0 L 64.4375 -179.6875 Z M 41.078125 -179.6875 "/></g></g></g><g fill="#ffffff" fill-opacity="1"><g transform="translate(3034.085328, 235.96386)"><g><path d="M 30.796875 0 L 30.796875 -179.6875 L 54.171875 -179.6875 L 54.171875 -14.125 L 146.828125 -14.125 L 146.828125 0 Z M 30.796875 0 "/></g></g></g><g fill="#ffffff" fill-opacity="1"><g transform="translate(3188.606131, 235.96386)"><g><path d="M 7.703125 -179.6875 L 69.828125 -68.03125 L 69.828125 0 L 93.1875 0 L 93.1875 -70.34375 L 156.328125 -179.6875 L 142.46875 -179.6875 L 87.53125 -84.96875 L 86.515625 -84.96875 L 34.140625 -179.6875 Z M 7.703125 -179.6875 "/></g></g></g></g></g><g clip-path="url(#0e3ea0e472)"><path fill="#ffffff" d="M 2793.894531 1154.117188 L 2790.078125 1171.03125 C 2794.308594 1171.03125 2861.871094 1171.03125 2866.101562 1171.03125 L 2862.28125 1154.117188 C 2860.355469 1154.117188 2795.824219 1154.117188 2793.894531 1154.117188 " fill-opacity="1" fill-rule="nonzero"/></g><g clip-path="url(#e41def51e2)"><path fill="#ffffff" d="M 2861.273438 1150.296875 C 2865.835938 1128.109375 2872.757812 1107.109375 2881.792969 1087.175781 C 2856.460938 1069.894531 2842.941406 1031.542969 2831.167969 990.078125 C 2832.453125 989.128906 2833.289062 987.613281 2833.289062 985.894531 C 2833.289062 983.699219 2831.921875 981.832031 2829.992188 981.066406 C 2829.992188 989.628906 2829.992188 1092.195312 2829.992188 1096.921875 C 2834.589844 1097.808594 2838.042969 1101.847656 2838.042969 1106.695312 C 2838.042969 1112.1875 2833.59375 1116.652344 2828.089844 1116.652344 C 2822.597656 1116.652344 2818.132812 1112.1875 2818.132812 1106.695312 C 2818.132812 1101.847656 2821.601562 1097.808594 2826.183594 1096.921875 C 2826.183594 1092.195312 2826.183594 989.628906 2826.183594 981.066406 C 2824.257812 981.832031 2822.886719 983.699219 2822.886719 985.894531 C 2822.886719 987.613281 2823.722656 989.128906 2825.007812 990.078125 C 2813.234375 1031.542969 2799.714844 1069.894531 2774.386719 1087.175781 C 2783.417969 1107.109375 2790.34375 1128.109375 2794.902344 1150.296875 C 2796.769531 1150.296875 2859.40625 1150.296875 2861.273438 1150.296875 " fill-opacity="1" fill-rule="nonzero"/></g></svg>`;
+
 const DEFAULT_FOOTER_CONFIG = {
   sectionsTitle: 'Sections',
   enabledSections: null,
@@ -3765,6 +3767,8 @@ const DEFAULT_FOOTER_CONFIG = {
     { id: 'f-soc-5', platform: 'youtube', label: 'YouTube', href: 'https://youtube.com', enabled: true },
     { id: 'f-soc-6', platform: 'email', label: 'Email', href: 'mailto:contact@privatian.org', enabled: true }
   ],
+  logoSvg: '',
+  logoHeight: 80,
   tagline: 'The Official Publication of The Privatian Society — Cambridge, Massachusetts',
   copyright: '© 2026 The Privatian Family. All rights reserved.',
   bottomLinks: [
@@ -3923,6 +3927,9 @@ function onFooterTitleInput(key, value) {
   recordFooterState(`Update ${key}`);
   footerDraftConfig[key] = value;
   updateFooterSaveStatus();
+  if (key === 'tagline' || key === 'copyright') {
+    updateFooterLogoPreview();
+  }
 }
 
 // ── TAB: LIVE INTERACTIVE VISUAL CANVAS ───────────────────────────
@@ -4031,13 +4038,20 @@ function renderFooterPreview() {
 
     <!-- Bottom Bar Interactive -->
     <div class="ft-preview-bottom">
-      <div class="ft-interactive-col" style="flex:1;min-width:280px;cursor:pointer;" onclick="switchFooterTab('brand')" title="Click to edit Tagline &amp; Copyright">
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
-          <span style="font-family:var(--font-serif);font-size:15px;font-weight:700;letter-spacing:0.04em;color:#ffffff;">THE PRIVATIAN FAMILY</span>
-          <span class="ft-col-quick-btn" style="padding:1px 6px;font-size:10px;">✏️ Edit Branding</span>
+      <div class="ft-interactive-col" style="flex:1;min-width:280px;cursor:pointer;" onclick="switchFooterTab('brand')" title="Click to edit Footer Logo, Tagline &amp; Copyright">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+          <span class="ft-col-title-badge" style="font-size:11px;">🏛️ Brand Identity</span>
+          <span class="ft-col-quick-btn" style="padding:1px 6px;font-size:10px;">✏️ Edit Logo &amp; Brand</span>
         </div>
-        ${cfg.tagline ? `<div style="font-size:12px;color:#94a3b8;margin-bottom:3px;">${escapeHtml(cfg.tagline)}</div>` : ''}
-        ${cfg.copyright ? `<div style="font-size:11px;color:#64748b;">${escapeHtml(cfg.copyright)}</div>` : ''}
+        <div style="display:inline-block;margin-bottom:8px;max-width:100%;">
+          ${(() => {
+            const rawSvg = (cfg.logoSvg && cfg.logoSvg.trim().indexOf('<svg') !== -1) ? cfg.logoSvg : FOOTER_LOGO_DEFAULT_SVG;
+            const h = cfg.logoHeight || 80;
+            return rawSvg.replace('<svg', `<svg style="height:${h}px;max-width:100%;width:auto;display:block;"`);
+          })()}
+        </div>
+        ${cfg.tagline ? `<div style="font-size:12px;color:rgba(255,255,255,0.7);margin-top:2px;line-height:1.4;">${escapeHtml(cfg.tagline)}</div>` : ''}
+        ${cfg.copyright ? `<div style="font-size:11.5px;color:rgba(255,255,255,0.45);margin-top:4px;">${escapeHtml(cfg.copyright)}</div>` : ''}
       </div>
 
       <div class="ft-interactive-col" style="flex:1;min-width:260px;">
@@ -4258,13 +4272,24 @@ function selectAllFooterSections(enableAll) {
 
 // ── TAB: BRAND & LEGAL LINKS ──────────────────────────────────────
 function renderFooterBrand() {
+  if (!footerDraftConfig) return;
+  const svgInput = document.getElementById('ft-logo-svg-input');
+  const heightSlider = document.getElementById('ft-logo-height-slider');
+  const heightVal = document.getElementById('ft-logo-height-val');
   const taglineInput = document.getElementById('ft-tagline-input');
   const copyrightInput = document.getElementById('ft-copyright-input');
   const container = document.getElementById('ft-bottom-links-container');
-  if (!footerDraftConfig) return;
 
+  if (svgInput) svgInput.value = footerDraftConfig.logoSvg || '';
+  if (heightSlider) {
+    heightSlider.value = footerDraftConfig.logoHeight || 80;
+    if (heightVal) heightVal.textContent = heightSlider.value;
+  }
   if (taglineInput) taglineInput.value = footerDraftConfig.tagline || '';
   if (copyrightInput) copyrightInput.value = footerDraftConfig.copyright || '';
+
+  updateFooterLogoPreview();
+
   if (!container) return;
 
   const items = footerDraftConfig.bottomLinks || [];
@@ -4298,6 +4323,97 @@ function renderFooterBrand() {
       </div>
     </div>
   `).join('');
+}
+
+function handleFooterSvgFileUpload(event) {
+  const file = event.target.files && event.target.files[0];
+  if (!file) return;
+  if (!file.name.toLowerCase().endsWith('.svg') && file.type !== 'image/svg+xml') {
+    showToast('error', 'Only .svg files are supported!');
+    event.target.value = '';
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const text = e.target.result;
+    if (text && text.trim().indexOf('<svg') !== -1) {
+      const cleanSvg = text.trim();
+      onFooterLogoSvgInput(cleanSvg);
+      const textarea = document.getElementById('ft-logo-svg-input');
+      if (textarea) textarea.value = cleanSvg;
+      showToast('success', 'SVG Logo loaded successfully!');
+    } else {
+      showToast('error', 'Invalid SVG file: Could not find <svg> element.');
+    }
+  };
+  reader.readAsText(file);
+  event.target.value = '';
+}
+
+function onFooterLogoSvgInput(svgCode) {
+  if (!footerDraftConfig) return;
+  recordFooterState('Change Footer Logo SVG');
+  footerDraftConfig.logoSvg = svgCode ? svgCode.trim() : '';
+  updateFooterSaveStatus();
+  updateFooterLogoPreview();
+}
+
+function onFooterLogoHeightInput(heightVal) {
+  if (!footerDraftConfig) return;
+  const h = parseInt(heightVal) || 80;
+  recordFooterState('Resize Footer Logo');
+  footerDraftConfig.logoHeight = h;
+  const label = document.getElementById('ft-logo-height-val');
+  if (label) label.textContent = h;
+  updateFooterSaveStatus();
+  updateFooterLogoPreview();
+}
+
+function resetFooterLogoToDefault() {
+  if (!footerDraftConfig) return;
+  recordFooterState('Reset Footer Logo to Default');
+  footerDraftConfig.logoSvg = '';
+  footerDraftConfig.logoHeight = 80;
+  const textarea = document.getElementById('ft-logo-svg-input');
+  if (textarea) textarea.value = '';
+  const slider = document.getElementById('ft-logo-height-slider');
+  if (slider) slider.value = 80;
+  const label = document.getElementById('ft-logo-height-val');
+  if (label) label.textContent = 80;
+  updateFooterSaveStatus();
+  updateFooterLogoPreview();
+  showToast('info', 'Footer logo reset to default.');
+}
+
+function updateFooterLogoPreview() {
+  if (!footerDraftConfig) return;
+  const logoRenderEl = document.getElementById('ft-logo-render-preview');
+  const taglineEl = document.getElementById('ft-tagline-preview-text');
+  const copyrightEl = document.getElementById('ft-copyright-preview-text');
+
+  const rawSvg = (footerDraftConfig.logoSvg && footerDraftConfig.logoSvg.trim().indexOf('<svg') !== -1) ? footerDraftConfig.logoSvg : FOOTER_LOGO_DEFAULT_SVG;
+  const h = footerDraftConfig.logoHeight || 80;
+
+  if (logoRenderEl) {
+    logoRenderEl.innerHTML = rawSvg;
+    const svgEl = logoRenderEl.querySelector('svg');
+    if (svgEl) {
+      svgEl.style.height = h + 'px';
+      svgEl.style.width = 'auto';
+      svgEl.style.maxWidth = '100%';
+      svgEl.style.display = 'block';
+    }
+  }
+
+  if (taglineEl) {
+    taglineEl.textContent = footerDraftConfig.tagline || '';
+    taglineEl.style.display = footerDraftConfig.tagline ? 'block' : 'none';
+  }
+
+  if (copyrightEl) {
+    copyrightEl.textContent = footerDraftConfig.copyright || '';
+    copyrightEl.style.display = footerDraftConfig.copyright ? 'block' : 'none';
+  }
 }
 
 // ── REORDERING HELPER ─────────────────────────────────────────────

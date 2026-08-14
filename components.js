@@ -49,6 +49,8 @@
       { id: 'f-soc-5', platform: 'youtube', label: 'YouTube', href: 'https://youtube.com', enabled: true },
       { id: 'f-soc-6', platform: 'email', label: 'Email', href: 'mailto:contact@privatian.org', enabled: true }
     ],
+    logoSvg: '',
+    logoHeight: 80,
     tagline: 'The Official Publication of The Privatian Society — Cambridge, Massachusetts',
     copyright: '© 2026 The Privatian Family. All rights reserved.',
     bottomLinks: [
@@ -295,6 +297,10 @@
       return `<a href="${escapeHTML(b.href || '#')}" target="${escapeHTML(b.target || '_self')}">${escapeHTML(b.label || '')}</a>`;
     }).join('');
 
+    var rawLogoSvg = (cfg.logoSvg && cfg.logoSvg.trim().indexOf('<svg') !== -1) ? cfg.logoSvg : FOOTER_LOGO_SVG;
+    var logoH = cfg.logoHeight || 80;
+    var sizedLogoSvg = rawLogoSvg.replace('<svg', `<svg style="height:${logoH}px;max-width:100%;width:auto;display:block;"`);
+
     var footerHTML = `
   <footer class="site-footer" id="site-footer">
     <div class="footer-main" id="footer-main">
@@ -324,9 +330,11 @@
     <div class="footer-bottom" id="footer-bottom">
       <div class="footer-bottom-inner">
         <div class="footer-brand">
-          ${FOOTER_LOGO_SVG}
-          ${cfg.tagline ? `<div class="footer-tagline" style="font-size:12px;color:rgba(255,255,255,0.65);margin-top:6px;font-family:inherit;">${escapeHTML(cfg.tagline)}</div>` : ''}
-          ${cfg.copyright ? `<div class="footer-copyright" style="font-size:11.5px;color:rgba(255,255,255,0.45);margin-top:3px;">${escapeHTML(cfg.copyright)}</div>` : ''}
+          <div class="footer-logo-wrap" style="display:inline-block;margin-bottom:8px;max-width:100%;">
+            ${sizedLogoSvg}
+          </div>
+          ${cfg.tagline ? `<div class="footer-tagline" style="font-size:12px;color:rgba(255,255,255,0.7);margin-top:2px;line-height:1.4;">${escapeHTML(cfg.tagline)}</div>` : ''}
+          ${cfg.copyright ? `<div class="footer-copyright" style="font-size:11.5px;color:rgba(255,255,255,0.45);margin-top:4px;">${escapeHTML(cfg.copyright)}</div>` : ''}
         </div>
         <nav class="footer-bottom-links" aria-label="Footer legal links">
           ${bottomLinksHtml}
