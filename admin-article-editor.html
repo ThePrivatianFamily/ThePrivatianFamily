@@ -171,6 +171,17 @@ body{font-family:var(--sans);background:var(--bg);padding-top:calc(var(--tb)+var
 #ed-rt blockquote.classic::before,
 #ed-rt blockquote.classic::after{display:none}
 #ed-rt blockquote.classic p{font-size:18.5px;line-height:1.65;color:#3a5568}
+/* ─ Featured quote — combines left border + decorative marks ──────── */
+#ed-rt blockquote.featured{padding:26px 30px 26px 72px;
+  background:linear-gradient(135deg,#f0f5fa 0%,#e8f1f9 100%);
+  border-left:4px solid var(--navy);border-radius:0 10px 10px 0;
+  font-style:italic;color:#1a3a5c;position:relative;overflow:visible;
+  box-shadow:inset 0 0 0 1px rgba(10,82,142,.1)}
+#ed-rt blockquote.featured::before{content:'“';position:absolute;
+  left:16px;top:-2px;font:900 80px/1 Georgia,'Times New Roman',serif;
+  color:var(--navy);opacity:.3;line-height:1;pointer-events:none;user-select:none}
+#ed-rt blockquote.featured::after{display:none}
+#ed-rt blockquote.featured p{margin:0;font-size:19px;line-height:1.72;color:#1a3a5c}
 #ed-rt a{color:var(--navy);text-decoration:underline;text-underline-offset:3px}
 #ed-rt hr{border:none;border-top:2px solid #e4ddd5;margin:2.5em 0}
 #ed-rt figure{margin:2em 0;text-align:center}
@@ -461,6 +472,7 @@ body{padding-bottom:34px}
     <option value="h4">Heading 4</option>
     <option value="blockquote">❝ Pull Quote</option>
     <option value="blockquote-classic">▎ Classic Quote</option>
+    <option value="blockquote-featured">❝▎ Featured Quote</option>
     <option value="pre">Code Block</option>
   </select>
 
@@ -1183,18 +1195,22 @@ function fv(ev, cmd, val, swatchId) {
   g('ed-rt').focus();
 }
 
+function _getSelBq() {
+  const sel = getSelection();
+  const node = sel?.anchorNode;
+  return node?.nodeType === 3
+    ? node.parentElement?.closest('blockquote')
+    : node?.closest?.('blockquote');
+}
+
 function setBlock(tag) {
   g('ed-rt').focus();
   if (tag === 'blockquote-classic') {
-    // Insert a classic blockquote element
     document.execCommand('formatBlock', false, 'blockquote');
-    // Find the newly created blockquote and add class
-    const sel = getSelection();
-    const node = sel?.anchorNode;
-    const bq = node?.nodeType === 3
-      ? node.parentElement?.closest('blockquote')
-      : node?.closest?.('blockquote');
-    if (bq) { bq.className = 'classic'; }
+    const bq = _getSelBq(); if (bq) { bq.className = 'classic'; }
+  } else if (tag === 'blockquote-featured') {
+    document.execCommand('formatBlock', false, 'blockquote');
+    const bq = _getSelBq(); if (bq) { bq.className = 'featured'; }
   } else {
     // For regular blockquote, remove classic class if present
     if (tag === 'blockquote') {
@@ -1204,7 +1220,7 @@ function setBlock(tag) {
       const bq = node?.nodeType === 3
         ? node.parentElement?.closest('blockquote')
         : node?.closest?.('blockquote');
-      if (bq) bq.classList.remove('classic');
+      if (bq) bq.classList.remove('classic', 'featured');
     } else {
       document.execCommand('formatBlock', false, tag);
     }
