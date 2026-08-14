@@ -785,6 +785,27 @@ body{padding-bottom:34px}
 <div id="sd">
   <div class="sd-scroll">
 
+    <!-- ── URL & Permalink (Slug) ─── -->
+    <div class="sd-sec" id="sds-slug">
+      <button class="sd-sec-hd" onclick="toggleSdSec('sds-slug')">
+        URL & Permalink (Slug)
+        <svg class="sd-chevron" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      <div class="sd-sec-body">
+        <div class="sd-field">
+          <label class="sd-lbl">Article URL Identifier</label>
+          <div style="display:flex;align-items:center;background:#f8fafc;border:1px solid var(--border);border-radius:6px;overflow:hidden;padding:0 8px;">
+            <span style="font:600 11.5px/1 var(--sans);color:#64748b;white-space:nowrap;">/article/</span>
+            <input type="text" class="sd-inp" id="sd-slug-input" placeholder="article-slug" style="border:none;background:transparent;padding-left:4px;font-family:monospace;font-size:12px;"
+              oninput="syncSlug(this.value, 'sd'); DIRTY=true;" />
+          </div>
+          <div id="sd-slug-preview" style="font:400 11px/1.4 var(--sans);color:#64748b;margin-top:7px;word-break:break-all;">
+            Live Link: <span style="color:#0a528e;font-weight:600;">theprivatianfamily.vercel.app/article/<span id="sd-slug-val">untitled</span></span>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- ── Featured Image ─── -->
     <div class="sd-sec" id="sds-feat">
       <button class="sd-sec-hd" onclick="toggleSdSec('sds-feat')">
@@ -947,7 +968,7 @@ function fill(a) {
   tx('bio-name', a.author      || '');
   tx('bio-role', a.author_role || '');
   tx('bio-desc', a.author_bio  || '');
-  g('tb-slug').value = a.slug || '';
+  syncSlug(a.slug || '', 'load');
   if (a.section) setSec(a.section);
   if (a.content_html) g('ed-rt').innerHTML = a.content_html;
   if (a.author_photo_url) showAuthorPhoto(a.author_photo_url);
@@ -963,6 +984,16 @@ function fill(a) {
   g('sp-ttl').textContent = a.seo_title || a.title || 'Article Title';
   if (a.meta_description) g('sp-desc').textContent = a.meta_description;
   refreshStatus(); updateMetrics();
+}
+
+function syncSlug(val, src) {
+  const clean = (val || '').toLowerCase().trim().replace(/[^a-z0-9-_]/g, '-').replace(/-+/g, '-');
+  if (src !== 'tb' && g('tb-slug')) g('tb-slug').value = clean;
+  if (src !== 'sd' && g('sd-slug-input')) g('sd-slug-input').value = clean;
+  const slugVal = g('sd-slug-val');
+  if (slugVal) slugVal.textContent = clean || 'untitled';
+  const spUrl = g('sp-url');
+  if (spUrl) spUrl.textContent = 'theprivatianfamily.vercel.app/article/' + (clean || '…');
 }
 
 // ── SECTIONS FROM DB ─────────────────────────────────────────
@@ -1002,10 +1033,35 @@ function bindInput() {
     if (!el) return;
     el.addEventListener('input', onInput);
   });
+
+  const tbSlug = g('tb-slug');
+  if (tbSlug) {
+    tbSlug.addEventListener('input', e => {
+      tbSlug.dataset.manual = 'true';
+      syncSlug(e.target.value, 'tb');
+      onInput();
+    });
+  }
+
+  const sdSlug = g('sd-slug-input');
+  if (sdSlug) {
+    sdSlug.addEventListener('input', e => {
+      if (tbSlug) tbSlug.dataset.manual = 'true';
+      syncSlug(e.target.value, 'sd');
+      onInput();
+    });
+  }
 }
 
-function onInput() {
+function onInput(ev) {
   DIRTY = true;
+  if (ev && ev.target && ev.target.id === 'ed-headline') {
+    const tbSlug = g('tb-slug');
+    if (tbSlug && tbSlug.dataset.manual !== 'true' && (!tbSlug.value || !ART_ID)) {
+      const auto = slugify(gt('ed-headline'));
+      syncSlug(auto, 'auto');
+    }
+  }
   updateMetrics();
   // 1. localStorage — 300ms debounce
   clearTimeout(_lsTimer);
@@ -1014,6 +1070,13 @@ function onInput() {
   clearTimeout(_srvTimer);
   _srvTimer = setTimeout(() => { if (DIRTY) saveArt(true); }, 3000);
   setSaveStatus('Unsaved changes');
+}
+
+function slugify(text) {
+  return (text || '').toString().toLowerCase().trim()
+    .replace(/[^\w\s-]/g, '')
+    .replace(/[\s_-]+/g, '-')
+    .replace(/^-+|-+$/g, '');
 }
 
 // ── LOCALSTORAGE DRAFT ───────────────────────────────────────
@@ -1166,9 +1229,10 @@ async function doPublish() {
 }
 
 function buildPayload() {
+  const currentSlug = (g('sd-slug-input')?.value || g('tb-slug')?.value || '').trim();
   return {
     id:              ART_ID,
-    slug:            g('tb-slug').value.trim() || undefined,
+    slug:            currentSlug || undefined,
     title:           gt('ed-headline'),
     deck:            gt('ed-deck'),
     section:         g('sec-lbl').textContent === 'Select Section' ? '' : g('sec-lbl').textContent,
@@ -1767,7 +1831,12 @@ function updateMetrics() {
 function updateReadTime() { updateMetrics(); }
 function previewArt() {
   if (!ART_ID) { toast('Save first to preview', 'info'); return; }
-  window.open('/article.html?id=' + ART_ID, '_blank');
+  const s = (g('sd-slug-input')?.value || g('tb-slug')?.value || '').trim();
+  if (s) {
+    window.open('/article/' + encodeURIComponent(s), '_blank');
+  } else {
+    window.open('/article.html?id=' + ART_ID, '_blank');
+  }
 }
 
 // ── TINY UTILS ────────────────────────────────────────────────

@@ -1,1 +1,8 @@
-{"cleanUrls":true,"trailingSlash":false}
+{
+  "cleanUrls": true,
+  "trailingSlash": false,
+  "rewrites": [
+    { "source": "/article/:slug", "destination": "/article.html?slug=:slug" },
+    { "source": "/section/:slug", "destination": "/section.html?slug=:slug" }
+  ]
+}

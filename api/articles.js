@@ -142,17 +142,21 @@ module.exports = async function handler(req, res) {
         seo_title, meta_description, tags,
         updated_at: new Date().toISOString(),
       };
-      if (bodySlug) updates.slug = bodySlug.toLowerCase().trim();
+      if (bodySlug) updates.slug = slugify(bodySlug);
       const { data, error } = await client.from('articles').update(updates).eq('id', bodyId).select().single();
       if (error) return res.status(500).json({ error: error.message });
       return res.status(200).json(data);
     } else {
-      // CREATE — auto unique slug
-      let slug = slugify(title || 'untitled');
-      const { data: existing } = await client.from('articles').select('slug').ilike('slug', slug + '%');
+      // CREATE — custom slug or auto unique slug from title
+      let rawSlug = (bodySlug || '').trim() ? slugify(bodySlug) : slugify(title || 'untitled');
+      let slug = rawSlug;
+      const { data: existing } = await client.from('articles').select('id, slug').ilike('slug', rawSlug + '%');
       if (existing && existing.length > 0) {
-        const nums = existing.map(a => { const m = a.slug.match(/-(\d+)$/); return m ? parseInt(m[1]) : 0; });
-        slug = slug + '-' + (Math.max(...nums) + 1);
+        const hasExact = existing.some(a => a.slug === rawSlug);
+        if (hasExact) {
+          const nums = existing.map(a => { const m = a.slug.match(/-(\d+)$/); return m ? parseInt(m[1]) : 0; });
+          slug = rawSlug + '-' + (Math.max(...nums, 0) + 1);
+        }
       }
       const { data, error } = await client.from('articles').insert({
         slug, title, deck, section, author, author_role, author_bio, author_photo_url,
