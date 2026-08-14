@@ -34,7 +34,7 @@ module.exports = async function handler(req, res) {
 
   const { action, id } = req.query;
 
-  // ── PUBLIC: list published articles (no auth) ────────────────────
+  // ── PUBLIC: list published articles (no auth) ───────────────────
   if (action === 'public' && req.method === 'GET') {
     const section = req.query.section || '';
     const limit   = Math.min(parseInt(req.query.limit  || '50', 10), 100);
@@ -42,10 +42,10 @@ module.exports = async function handler(req, res) {
     let query = sb().from('articles')
       .select('id, slug, title, deck, section, author, published_at, hero_img_url, tags')
       .eq('status', 'published')
+      .or('is_deleted.is.null,is_deleted.eq.false')
       .order('published_at', { ascending: false })
       .range(offset, offset + limit - 1);
     if (section && section !== 'all') {
-      // Match section name case-insensitively via ilike
       query = query.ilike('section', '%' + section.replace(/-/g, '%') + '%');
     }
     const { data, error } = await query;
@@ -56,7 +56,9 @@ module.exports = async function handler(req, res) {
   // ── PUBLIC GET: single published article by id or slug (no auth) ─────
   if (action === 'public-get' && req.method === 'GET') {
     const slug = req.query.slug || '';
-    let query = sb().from('articles').select('*').eq('status', 'published');
+    let query = sb().from('articles').select('*')
+      .eq('status', 'published')
+      .or('is_deleted.is.null,is_deleted.eq.false');
     if (id)   query = query.eq('id', id);
     else if (slug) query = query.eq('slug', slug);
     else return res.status(400).json({ error: 'id or slug required' });
@@ -65,14 +67,14 @@ module.exports = async function handler(req, res) {
     return res.status(200).json(data);
   }
 
-  // ── LIST (admin — active only) ──────────────────────────────
+  // ── LIST (admin — active only) ────────────────────────────
   if (action === 'list' && req.method === 'GET') {
     const session = requireAuth(req, res);
     if (!session) return;
     const { data, error } = await sb()
       .from('articles')
       .select('id, slug, title, deck, section, author, status, created_at, updated_at, published_at, hero_img_url')
-      .neq('is_deleted', true)
+      .or('is_deleted.is.null,is_deleted.eq.false')
       .order('updated_at', { ascending: false });
     if (error) return res.status(500).json({ error: error.message });
     return res.status(200).json(data || []);

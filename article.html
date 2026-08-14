@@ -329,9 +329,20 @@
           }).catch(function(){});
       })
       .catch(function(e){
-        revealPage();
-        var body = document.getElementById('article-body');
-        if(body) body.innerHTML = '<div style="padding:60px 24px;text-align:center;"><svg viewBox="0 0 24 24" fill="none" stroke="#d1d5db" stroke-width="1.5" width="48" height="48" style="margin:0 auto 16px;display:block;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><p style="color:#9ca3af;font-size:15px;margin:0;">Article not found or not yet published.</p></div>';
+        // Hide skeleton
+        var sk = g('article-skeleton'); if (sk) sk.style.display = 'none';
+        // Keep hero band hidden (don't reveal placeholder content)
+        var band = g('article-hero-band'); if (band) band.style.display = 'none';
+        var layout = g('article-layout'); if (layout) layout.style.display = 'none';
+        var related = g('article-related'); if (related) related.style.display = 'none';
+        // Show full-page error in place of skeleton
+        var err = document.createElement('div');
+        err.style.cssText = 'max-width:520px;margin:80px auto;padding:0 24px;text-align:center;';
+        err.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="#d1d5db" stroke-width="1.2" width="56" height="56" style="margin:0 auto 20px;display:block;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>'
+          + '<h2 style="font-family:var(--font-serif,serif);font-size:22px;color:#1a2d3e;margin:0 0 10px;">Article not available</h2>'
+          + '<p style="font-family:var(--font-sans,sans-serif);font-size:14px;color:#9ca3af;margin:0 0 24px;line-height:1.6;">This article may not be published yet, or the link may be incorrect.</p>'
+          + '<a href="/" style="font-family:var(--font-sans,sans-serif);font-size:13px;font-weight:600;color:#0a528e;text-decoration:none;">← Back to Home</a>';
+        document.body.appendChild(err);
       });
   })();
 
