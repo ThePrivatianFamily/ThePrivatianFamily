@@ -584,7 +584,7 @@ navigateTo('sections');
 sections = [ALL_SECTION]; // show immediately while API loads
 render();
 loadSectionsFromAPI();   // async: fetches /api/sections?status=all
-
+initAccessPage();        // boot access page guard immediately
 
 // -- Sync utility (API-based) --
 let _lastSyncedAt = null;
@@ -629,24 +629,25 @@ document.addEventListener('visibilitychange', function() {
   }
 })();
 
-
-
-
-
-
-
-
 // =================================================================
 // MANAGE ACCESS PAGE
 // =================================================================
 
 function initAccessPage() {
   const user = window.PRIVATIAN_USER;
-  if (!user || user.role !== 'Admin') return;
   const li = document.getElementById('nav-access-li');
-  if (li) li.style.display = '';
+  if (li) {
+    if (!user || user.role === 'Admin') {
+      li.style.display = '';
+    } else {
+      li.style.display = 'none';
+    }
+  }
   const addBtn = document.getElementById('access-add-btn');
-  if (addBtn) addBtn.addEventListener('click', addAdminEmail);
+  if (addBtn && !addBtn._hasClick) {
+    addBtn._hasClick = true;
+    addBtn.addEventListener('click', addAdminEmail);
+  }
 }
 
 // ── Reusable confirmation modal ─────────────────────────────────

@@ -147,6 +147,7 @@
 
       // Update in-memory user with latest server data
       window.PRIVATIAN_USER = verifiedUser;
+      window.dispatchEvent(new CustomEvent('privatian:ready', { detail: verifiedUser }));
       injectSidebarUser(verifiedUser);
     } catch(e) {
       // Network hiccup - allow local session to continue
