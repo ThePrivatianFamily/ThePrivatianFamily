@@ -14,23 +14,19 @@ function verifySession(req) {
   catch(e) { return null; }
 }
 
-function requireAuth(req, res) {
-  const s = verifySession(req);
-  if (!s) { res.status(401).json({ error: 'Not authenticated', redirect: '/admin-login.html' }); return null; }
-  return s;
-}
-
 /**
- * requireAdmin: JWT check + live DB role check.
- * Prevents stale-JWT privilege escalation when a user is downgraded mid-session.
- * Returns the session object on success, null on failure (after sending error response).
+ * requireAuth: JWT check + LIVE DB active status check.
+ * If user is suspended or deleted in DB, instantly revokes access (401).
+ * Returns the session object on success, null on failure.
  */
-async function requireAdmin(req, res) {
-  const s = requireAuth(req, res);
-  if (!s) return null;
+async function requireAuth(req, res) {
+  const s = verifySession(req);
+  if (!s) {
+    res.status(401).json({ error: 'Not authenticated', redirect: '/admin-login.html' });
+    return null;
+  }
 
-  // Live DB check: verify the role in DB is still 'Admin' and account is active.
-  // This catches mid-session role downgrades (Admin → Moderator) even before JWT expires.
+  // Live DB check: verify account exists and status is 'active'
   try {
     const sb = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
     const { data } = await sb
@@ -39,19 +35,34 @@ async function requireAdmin(req, res) {
       .ilike('email', s.email)
       .maybeSingle();
 
-    if (!data || data.status !== 'active' || data.role !== 'Admin') {
-      res.status(403).json({
-        error: 'Admin role required',
-        reason: !data ? 'not_found' : data.role !== 'Admin' ? 'role_changed' : data.status
+    if (!data || data.status !== 'active') {
+      res.status(401).json({
+        error: 'Account access revoked or suspended',
+        reason: !data ? 'not_found' : data.status,
+        redirect: '/admin-login.html'
       });
       return null;
     }
+    // Update live role
+    s.role = data.role;
   } catch(e) {
-    // If DB check fails (network/config), fall back to JWT role as a safety net
-    if (s.role !== 'Admin') {
-      res.status(403).json({ error: 'Admin role required' });
-      return null;
-    }
+    // Fallback in case of DB connection glitch
+  }
+
+  return s;
+}
+
+/**
+ * requireAdmin: JWT check + live DB role check.
+ * Ensures the account is active AND role is 'Admin'.
+ */
+async function requireAdmin(req, res) {
+  const s = await requireAuth(req, res);
+  if (!s) return null;
+
+  if (s.role !== 'Admin') {
+    res.status(403).json({ error: 'Admin role required', reason: 'insufficient_permissions' });
+    return null;
   }
 
   return s;

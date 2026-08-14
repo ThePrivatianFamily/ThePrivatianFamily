@@ -69,7 +69,7 @@ module.exports = async function handler(req, res) {
 
   // ── POST: create section ─────────────────────────────────────────────────
   if (req.method === 'POST') {
-    const session = requireAuth(req, res);
+    const session = await requireAuth(req, res);
     if (!session) return;
 
     const body = req.body || {};
@@ -104,7 +104,7 @@ module.exports = async function handler(req, res) {
 
   // ── PUT: rename / re-slug ────────────────────────────────────────────────
   if (req.method === 'PUT') {
-    const session = requireAuth(req, res);
+    const session = await requireAuth(req, res);
     if (!session) return;
 
     const id   = req.query && req.query.id;
@@ -126,7 +126,7 @@ module.exports = async function handler(req, res) {
 
   // ── PATCH: restore from trash ─────────────────────────────────────────────
   if (req.method === 'PATCH') {
-    const session = requireAuth(req, res);
+    const session = await requireAuth(req, res);
     if (!session) return;
 
     const id = req.query && req.query.id;
@@ -158,7 +158,7 @@ module.exports = async function handler(req, res) {
     }
 
     // Soft delete (move to trash)
-    const session = requireAuth(req, res);
+    const session = await requireAuth(req, res);
     if (!session) return;
 
     const { data, error } = await sb.from('sections')

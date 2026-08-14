@@ -10,7 +10,7 @@
 const { OAuth2Client } = require('google-auth-library');
 const { createClient }  = require('@supabase/supabase-js');
 const jwt               = require('jsonwebtoken');
-const { verifySession } = require('./_lib/auth');
+const { verifySession, requireAuth } = require('./_lib/auth');
 
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', req.headers.origin || '*');
@@ -23,8 +23,8 @@ module.exports = async function handler(req, res) {
 
   // ── ME ──────────────────────────────────────────────────────────
   if (action === 'me') {
-    const s = verifySession(req);
-    if (!s) return res.status(401).json({ error: 'Not authenticated' });
+    const s = await requireAuth(req, res);
+    if (!s) return;
     return res.status(200).json({ email: s.email, role: s.role, name: s.name || s.email, picture: s.picture || '' });
   }
 

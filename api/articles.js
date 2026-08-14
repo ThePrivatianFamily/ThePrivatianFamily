@@ -74,7 +74,7 @@ module.exports = async function handler(req, res) {
 
   // ── LIST (admin — active only) ────────────────────────────
   if (action === 'list' && req.method === 'GET') {
-    const session = requireAuth(req, res);
+    const session = await requireAuth(req, res);
     if (!session) return;
     const { data, error } = await sb()
       .from('articles')
@@ -87,7 +87,7 @@ module.exports = async function handler(req, res) {
 
   // ── TRASH LIST (admin) ──────────────────────────────────────
   if (action === 'trash' && req.method === 'GET') {
-    const session = requireAuth(req, res);
+    const session = await requireAuth(req, res);
     if (!session) return;
     const { data, error } = await sb()
       .from('articles')
@@ -100,7 +100,7 @@ module.exports = async function handler(req, res) {
 
   // ── RESTORE (from trash) ────────────────────────────────────
   if (action === 'restore' && req.method === 'PATCH') {
-    const session = requireAuth(req, res);
+    const session = await requireAuth(req, res);
     if (!session) return;
     if (!id) return res.status(400).json({ error: 'id required' });
     const { error } = await sb().from('articles')
@@ -112,7 +112,7 @@ module.exports = async function handler(req, res) {
 
   // ── GET (admin — any status) ───────────────────────────────
   if (action === 'get' && req.method === 'GET') {
-    const session = requireAuth(req, res);
+    const session = await requireAuth(req, res);
     if (!session) return;
     if (!id) return res.status(400).json({ error: 'id required' });
     const { data, error } = await sb().from('articles').select('*').eq('id', id).single();
@@ -122,7 +122,7 @@ module.exports = async function handler(req, res) {
 
   // ── SAVE (create or update) ───────────────────────────────────────
   if (action === 'save' && req.method === 'POST') {
-    const session = requireAuth(req, res);
+    const session = await requireAuth(req, res);
     if (!session) return;
 
     const {
@@ -200,7 +200,7 @@ module.exports = async function handler(req, res) {
       return res.status(200).json({ success: true, permanent: true });
     }
     // Soft delete — move to trash (allowed for authenticated staff)
-    const session = requireAuth(req, res);
+    const session = await requireAuth(req, res);
     if (!session) return;
     const { error } = await sb().from('articles')
       .update({ is_deleted: true, deleted_at: new Date().toISOString() })
@@ -212,7 +212,7 @@ module.exports = async function handler(req, res) {
   // ── UPLOAD (image) ───────────────────────────────────────────────
   // POST /api/articles?action=upload  multipart/form-data  field: file
   if (action === 'upload' && req.method === 'POST') {
-    const session = requireAuth(req, res);
+    const session = await requireAuth(req, res);
     if (!session) return;
 
     // Parse multipart — use built-in formidable-style via Vercel's body parser
