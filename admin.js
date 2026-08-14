@@ -1513,15 +1513,33 @@ function restoreArticleConfirm(id, title) {
 }
 
 async function _doRestoreArticle(id) {
+  // 1. Instant optimistic UI removal from trash table
+  const tbody = document.getElementById('art-trash-tbody');
+  const countEl = document.getElementById('art-trash-count');
+  if (tbody) {
+    const rows = Array.from(tbody.querySelectorAll('tr'));
+    const targetRow = rows.find(r => r.innerHTML.includes(`'${id}'`));
+    if (targetRow) {
+      targetRow.style.transition = 'opacity 0.2s, transform 0.2s';
+      targetRow.style.opacity = '0';
+      targetRow.style.transform = 'scale(0.96)';
+      setTimeout(() => targetRow.remove(), 200);
+      if (countEl) {
+        const current = parseInt(countEl.textContent || '1', 10);
+        countEl.textContent = Math.max(0, current - 1);
+      }
+    }
+  }
+
   try {
     const res = await fetch('/api/articles?action=restore&id=' + id, {
       method: 'PATCH', headers: { 'Authorization': 'Bearer ' + window.PRIVATIAN_TOKEN }
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Failed');
-    _showAdminToast('Article restored', 'success');
+    _showAdminToast('Article restored to active list', 'success');
 
-    // 1. Immediately reload active articles from server
+    // Reload active articles from server
     try {
       const listRes = await fetch('/api/articles?action=list', {
         headers: { 'Authorization': 'Bearer ' + window.PRIVATIAN_TOKEN }
@@ -1532,9 +1550,12 @@ async function _doRestoreArticle(id) {
       filterArticles();
     } catch(err) {}
 
-    // 2. Reload trash table & count
+    // Reload trash table & count
     await _loadArticleTrash();
-  } catch(e) { _showAdminToast(e.message, 'error'); }
+  } catch(e) {
+    _showAdminToast(e.message, 'error');
+    await _loadArticleTrash();
+  }
 }
 
 function permanentDeleteArticleConfirm(id, title) {
@@ -1548,6 +1569,24 @@ function permanentDeleteArticleConfirm(id, title) {
 }
 
 async function _doPermanentDeleteArticle(id) {
+  // 1. Instant optimistic UI removal from trash table
+  const tbody = document.getElementById('art-trash-tbody');
+  const countEl = document.getElementById('art-trash-count');
+  if (tbody) {
+    const rows = Array.from(tbody.querySelectorAll('tr'));
+    const targetRow = rows.find(r => r.innerHTML.includes(`'${id}'`));
+    if (targetRow) {
+      targetRow.style.transition = 'opacity 0.2s, transform 0.2s';
+      targetRow.style.opacity = '0';
+      targetRow.style.transform = 'scale(0.96)';
+      setTimeout(() => targetRow.remove(), 200);
+      if (countEl) {
+        const current = parseInt(countEl.textContent || '1', 10);
+        countEl.textContent = Math.max(0, current - 1);
+      }
+    }
+  }
+
   try {
     const res = await fetch('/api/articles?action=delete&id=' + id + '&mode=permanent', {
       method: 'DELETE', headers: { 'Authorization': 'Bearer ' + window.PRIVATIAN_TOKEN }
@@ -1555,8 +1594,11 @@ async function _doPermanentDeleteArticle(id) {
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Failed');
     _showAdminToast('Article permanently deleted', 'success');
-    _loadArticleTrash();
-  } catch(e) { _showAdminToast(e.message, 'error'); }
+    await _loadArticleTrash();
+  } catch(e) {
+    _showAdminToast(e.message, 'error');
+    await _loadArticleTrash();
+  }
 }
 
 let _currentArticlesView = 'active';
@@ -1603,7 +1645,9 @@ async function _loadArticleTrash() {
     if (count) count.textContent = Array.isArray(arts) ? arts.length : '0';
     if (loading) loading.style.display = 'none';
     if (!Array.isArray(arts) || arts.length === 0) {
+      tbody.innerHTML = '';
       if (empty) empty.style.display = 'block';
+      if (table) table.style.display = 'none';
       return;
     }
     if (table) table.style.display = 'table';
