@@ -176,7 +176,7 @@ function applyHomepageConfig(cfg) {
           var oldItems = evPanel.querySelectorAll('.event-item, .event-divider');
           oldItems.forEach(function(el) { el.remove(); });
           if (seeAllEl) {
-            seeAllEl.href = evSec.seeAllHref || 'events.html';
+            seeAllEl.href = evSec.seeAllHref || '/events';
             seeAllEl.textContent = evSec.seeAllText || 'See all events';
             seeAllEl.insertAdjacentHTML('beforebegin', eventsListHtml);
           }

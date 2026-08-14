@@ -3024,7 +3024,7 @@ function renderHomepageVisualCanvas() {
               </div>
             `).join('');
           })()}
-          ${events.length > 2 ? `<div style="font-size:11.5px;color:#64748b;margin-top:8px;padding:4px 8px;background:#f1f5f9;border-radius:4px;display:inline-block;">+ ${events.length - 2} more event(s) listed on <a href="events.html" target="_blank" style="color:#0a528e;font-weight:600;">events.html</a></div>` : ''}
+          ${events.length > 2 ? `<div style="font-size:11.5px;color:#64748b;margin-top:8px;padding:4px 8px;background:#f1f5f9;border-radius:4px;display:inline-block;">+ ${events.length - 2} more event(s) listed on <a href="/events" target="_blank" style="color:#0a528e;font-weight:600;">/events</a></div>` : ''}
           <div style="margin-top:10px;font-size:13px;font-weight:600;color:#0a528e;cursor:pointer;" onclick="switchHpTab('events')">
             ${escapeHtml(evSec.seeAllText || 'See all events')} &rarr;
           </div>
@@ -3191,7 +3191,7 @@ function renderEventsEditor() {
       <!-- Events Settings Card -->
       <div class="card" style="padding:22px;">
         <div style="background:#e0f2fe;border:1px solid #bae6fd;border-radius:8px;padding:12px 14px;margin-bottom:18px;font-size:12.5px;color:#0369a1;line-height:1.45;">
-          <strong>ℹ Event Display Rule:</strong> The top <strong>2 active events</strong> in this list will automatically show on the Homepage "Upcoming Events" section. All scheduled events will be displayed on the dedicated <a href="events.html" target="_blank" style="color:#0284c7;font-weight:700;text-decoration:underline;">All Events Page (events.html)</a>. Use the <strong>▲ / ▼</strong> arrows to reorder events.
+          <strong>ℹ Event Display Rule:</strong> The top <strong>2 active events</strong> in this list will automatically show on the Homepage "Upcoming Events" section. All scheduled events will be displayed on the dedicated <a href="/events" target="_blank" style="color:#0284c7;font-weight:700;text-decoration:underline;">All Events Page (/events)</a>. Use the <strong>▲ / ▼</strong> arrows to reorder events.
         </div>
 
         <div class="form-group" style="margin-bottom:16px;">
@@ -3205,7 +3205,7 @@ function renderEventsEditor() {
           </div>
           <div class="form-group">
             <label class="form-label" for="hp-events-seeall-href">"See All" Link URL</label>
-            <input type="text" id="hp-events-seeall-href" class="form-input" value="${escapeHtml(evSec.seeAllHref || 'events.html')}" oninput="onHpSectionTitleInput('seeAllHref', this.value)" />
+            <input type="text" id="hp-events-seeall-href" class="form-input" value="${escapeHtml(evSec.seeAllHref || '/events')}" oninput="onHpSectionTitleInput('seeAllHref', this.value)" />
           </div>
         </div>
 
