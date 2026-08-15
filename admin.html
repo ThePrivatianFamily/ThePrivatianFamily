@@ -360,32 +360,50 @@
           </div>
         </div>
 
-        <!-- LOGO CARD -->
-        <div class="hs-card-title">Logo Settings</div>
-        <div class="card hs-card" id="hs-logo-card">
-          <div class="hs-logo-layout">
-            <div class="hs-logo-preview-wrap">
-              <div class="hs-preview-label">Preview</div>
-              <div class="hs-logo-preview" id="hs-logo-preview">
-                <div class="hs-logo-preview-default">Default logo will appear here</div>
-              </div>
+        <!-- HEADER BRAND LOGO & LIVE PREVIEW CARD (MATCHING FOOTER STYLE) -->
+        <div class="hs-card-title">Header Brand Logo &amp; Settings</div>
+        <div class="card hs-card" id="hs-logo-card" style="padding:24px;border-radius:12px;margin-bottom:24px;">
+          <!-- BRAND LOGO & LIVE PREVIEW CARD -->
+          <div style="background:#090e17;border:1px solid #1e293b;border-radius:12px;padding:24px;margin-bottom:0;color:#fff;">
+            <div style="font-size:12px;font-weight:700;letter-spacing:0.06em;color:#38bdf8;text-transform:uppercase;margin-bottom:14px;display:flex;align-items:center;gap:6px;">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" style="display:inline-block;vertical-align:-2px;"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+              Header Brand Logo &amp; Live Composite Preview
             </div>
-            <div class="hs-logo-controls">
-              <div class="form-group">
-                <label class="form-label" for="hs-logo-svg-input">SVG Code <span style="font-weight:400;color:var(--text-muted)">(paste full &lt;svg&gt; tag — SVG only)</span></label>
-                <textarea id="hs-logo-svg-input" class="form-input hs-svg-textarea" placeholder="Paste your SVG code here&#10;Leave empty to use the default site logo." rows="6"></textarea>
-              </div>
-              <div class="form-group" style="margin-top:14px">
-                <label class="form-label">Logo Height: <strong id="hs-logo-height-val">80</strong>px</label>
-                <div class="hs-range-wrap">
-                  <span class="hs-range-min">40</span>
-                  <input type="range" id="hs-logo-height" class="hs-range" min="40" max="140" value="80" step="2">
-                  <span class="hs-range-max">140</span>
+
+            <!-- Composite Preview on dark luxury background -->
+            <div style="background:#05080e;border:1px dashed rgba(255,255,255,0.15);border-radius:10px;padding:22px;margin-bottom:20px;display:flex;flex-direction:column;align-items:flex-start;">
+              <div id="hs-logo-render-preview" style="margin-bottom:8px;display:inline-block;"></div>
+              <div id="hs-tagline-preview-text" style="font-size:12px;color:rgba(255,255,255,0.7);margin-top:2px;line-height:1.4;">Insights, Stories &amp; Heritage</div>
+            </div>
+
+            <!-- Logo Configuration Controls -->
+            <div style="display:grid;grid-template-columns:1fr;gap:18px;">
+              <div>
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+                  <label class="form-label" for="hs-logo-svg-input" style="color:#e2e8f0;margin:0;font-weight:700;">SVG Logo Code <span style="font-weight:400;color:#94a3b8;">(SVG only — paste &lt;svg&gt;...&lt;/svg&gt; code)</span></label>
+                  <input type="file" id="hs-logo-file-input" accept=".svg,image/svg+xml" style="display:none;" onchange="handleHeaderSvgFileUpload(event)" />
+                  <button type="button" class="btn btn--ghost btn--sm" onclick="document.getElementById('hs-logo-file-input').click()" style="color:#38bdf8;border-color:rgba(56,189,248,0.3);padding:4px 10px;font-size:11.5px;display:flex;align-items:center;gap:5px;">
+                    <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                    Upload .SVG File
+                  </button>
                 </div>
+                <textarea id="hs-logo-svg-input" class="form-input hs-svg-textarea" placeholder="Paste your custom <svg>...</svg> code here&#10;Leave empty to use the default site logo." rows="5" oninput="onHeaderLogoSvgInput(this.value)" style="background:#0f172a;color:#f8fafc;border-color:#334155;font-family:monospace;font-size:12px;"></textarea>
               </div>
-              <div class="hs-logo-btn-row">
-                <button class="btn btn--ghost btn--sm" id="hs-logo-reset-btn">Reset to Default</button>
-                <button class="btn btn--primary btn--sm" id="hs-logo-apply-btn">Apply Logo</button>
+
+              <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;background:#0f172a;border:1px solid #1e293b;border-radius:8px;padding:14px 18px;">
+                <div style="flex:1;min-width:240px;">
+                  <label class="form-label" style="color:#e2e8f0;margin-bottom:6px;font-weight:700;">Logo Height / Scale: <strong id="hs-logo-height-val" style="color:#38bdf8;">80</strong>px</label>
+                  <div class="hs-range-wrap">
+                    <span class="hs-range-min" style="color:#94a3b8;">30</span>
+                    <input type="range" id="hs-logo-height-slider" class="hs-range" min="30" max="160" value="80" step="2" oninput="onHeaderLogoHeightInput(this.value)" />
+                    <span class="hs-range-max" style="color:#94a3b8;">160</span>
+                  </div>
+                </div>
+                <div style="display:flex;gap:8px;align-items:center;">
+                  <button type="button" class="btn btn--ghost btn--sm" onclick="resetHeaderLogoToDefault()" style="color:#cbd5e1;border-color:#475569;">
+                    Reset to Default Logo
+                  </button>
+                </div>
               </div>
             </div>
           </div>

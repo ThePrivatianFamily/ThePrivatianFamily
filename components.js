@@ -675,6 +675,9 @@
         var customSvg = logoLink.querySelector('svg');
         if (customSvg) {
           customSvg.style.height = height + 'px';
+          customSvg.style.width = 'auto';
+          customSvg.style.maxWidth = '100%';
+          customSvg.style.display = 'block';
           customSvg.addEventListener('contextmenu', function(e) { e.preventDefault(); });
           customSvg.addEventListener('dragstart', function(e) { e.preventDefault(); });
         }

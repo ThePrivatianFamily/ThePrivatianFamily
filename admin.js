@@ -2267,100 +2267,116 @@ async function saveHeaderSettings(hs) {
   }
 }
 
-// ── Logo card ───────────────────────────────────────────────────
+// ── HEADER BRAND LOGO & LIVE PREVIEW (MATCHING FOOTER STYLE) ─────────────
+function handleHeaderSvgFileUpload(event) {
+  const file = event.target.files && event.target.files[0];
+  if (!file) return;
+  if (!file.name.toLowerCase().endsWith('.svg') && file.type !== 'image/svg+xml') {
+    showToast('error', 'Only .svg files are supported!');
+    event.target.value = '';
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const text = e.target.result;
+    if (text && text.trim().indexOf('<svg') !== -1) {
+      const cleanSvg = text.trim();
+      onHeaderLogoSvgInput(cleanSvg);
+      const textarea = document.getElementById('hs-logo-svg-input');
+      if (textarea) textarea.value = cleanSvg;
+      showToast('success', 'Header SVG Logo loaded successfully!');
+    } else {
+      showToast('error', 'Invalid SVG file: Could not find <svg> element.');
+    }
+  };
+  reader.readAsText(file);
+  event.target.value = '';
+}
+
+function onHeaderLogoSvgInput(svgCode) {
+  if (!_hsInstance) return;
+  _hsInstance.logoSvg = svgCode ? svgCode.trim() : null;
+  updateGlobalSyncStatus();
+  updateHeaderLogoPreview();
+  recordActivityLog({
+    action: 'layout.header_logo_update',
+    category: 'layout',
+    summary: `Updated Header logo SVG in Header Settings`,
+    target_id: 'header_logo',
+    target_name: 'Header Logo',
+    details: {}
+  });
+}
+
+function onHeaderLogoHeightInput(heightVal) {
+  if (!_hsInstance) return;
+  const h = parseInt(heightVal) || 80;
+  _hsInstance.logoHeight = h;
+  const label = document.getElementById('hs-logo-height-val');
+  if (label) label.textContent = h;
+  updateGlobalSyncStatus();
+  updateHeaderLogoPreview();
+  recordActivityLog({
+    action: 'layout.header_logo_resize',
+    category: 'layout',
+    summary: `Resized Header logo to ${h}px`,
+    target_id: 'header_logo',
+    target_name: 'Header Logo',
+    details: { height: h }
+  });
+}
+
+function resetHeaderLogoToDefault() {
+  if (!_hsInstance) return;
+  _hsInstance.logoSvg = null;
+  _hsInstance.logoHeight = 80;
+  const textarea = document.getElementById('hs-logo-svg-input');
+  if (textarea) textarea.value = '';
+  const slider = document.getElementById('hs-logo-height-slider') || document.getElementById('hs-logo-height');
+  if (slider) slider.value = 80;
+  const label = document.getElementById('hs-logo-height-val');
+  if (label) label.textContent = 80;
+  updateGlobalSyncStatus();
+  updateHeaderLogoPreview();
+  showToast('info', 'Header logo reset to default.');
+  recordActivityLog({
+    action: 'layout.header_logo_reset',
+    category: 'layout',
+    summary: `Reset Header logo to default in Header Settings`,
+    target_id: 'header_logo',
+    target_name: 'Header Logo',
+    details: {}
+  });
+}
+
+function updateHeaderLogoPreview() {
+  if (!_hsInstance) return;
+  const logoRenderEl = document.getElementById('hs-logo-render-preview');
+  const taglineEl = document.getElementById('hs-tagline-preview-text');
+
+  if (logoRenderEl) {
+    logoRenderEl.innerHTML = formatSvgWithSize(_hsInstance.logoSvg, _hsInstance.logoHeight);
+  }
+
+  if (taglineEl) {
+    taglineEl.textContent = _hsInstance.tabTagline || (_adminContentLang === 'bn' ? 'জ্ঞান, ঐতিহ্য ও জীবনের কথা' : 'Insights, Stories & Heritage');
+    taglineEl.style.display = _hsInstance.tabTagline ? 'block' : 'none';
+  }
+}
+
 function renderHsLogoCard(hs) {
-  const preview = document.getElementById('hs-logo-preview');
+  _hsInstance = hs;
   const svgInput = document.getElementById('hs-logo-svg-input');
-  const slider = document.getElementById('hs-logo-height');
+  const slider = document.getElementById('hs-logo-height-slider') || document.getElementById('hs-logo-height');
   const heightVal = document.getElementById('hs-logo-height-val');
 
-  // Set initial values
   if (svgInput) svgInput.value = hs.logoSvg || '';
-  if (slider) { slider.value = hs.logoHeight || 80; if (heightVal) heightVal.textContent = slider.value; }
-
-  // Preview render
-  function refreshPreview(svgOverride, hOverride) {
-    if (!preview) return;
-    const svg = svgOverride !== undefined ? svgOverride : hs.logoSvg;
-    const h   = hOverride  !== undefined ? hOverride  : (hs.logoHeight || 80);
-    if (svg) {
-      preview.innerHTML = svg;
-      const svgEl = preview.querySelector('svg');
-      if (svgEl) { svgEl.style.height = h + 'px'; svgEl.style.width = 'auto'; svgEl.style.display = 'block'; }
-    } else {
-      preview.innerHTML = '<div class="hs-preview-placeholder"><svg viewBox="0 0 24 24" fill="none" stroke="#c8d8e8" stroke-width="1.2" width="32" height="32"><rect x="2" y="3" width="20" height="6" rx="1"/><line x1="2" y1="14" x2="22" y2="14"/><line x1="2" y1="19" x2="13" y2="19"/></svg><span>Default site logo</span><small>' + h + 'px height</small></div>';
-    }
-  }
-  refreshPreview();
-
   if (slider) {
-    slider.addEventListener('input', () => {
-      if (heightVal) heightVal.textContent = slider.value;
-      hs.logoHeight = parseInt(slider.value) || 80;
-      refreshPreview(undefined, hs.logoHeight);
-      updateGlobalSyncStatus();
-    });
+    slider.value = hs.logoHeight || 80;
+    if (heightVal) heightVal.textContent = slider.value;
   }
 
-  if (svgInput) {
-    svgInput.addEventListener('input', () => {
-      hs.logoSvg = svgInput.value.trim() || null;
-      refreshPreview(hs.logoSvg, undefined);
-      updateGlobalSyncStatus();
-    });
-  }
-
-  const applyBtn = document.getElementById('hs-logo-apply-btn');
-  if (applyBtn) {
-    applyBtn.addEventListener('click', async () => {
-      const svgVal = svgInput ? svgInput.value.trim() : '';
-      const h = parseInt(slider ? slider.value : 80);
-      // Validate SVG
-      if (svgVal && !svgVal.startsWith('<svg')) {
-        showToast('error', 'Please paste a valid SVG (must start with <svg...)'); return;
-      }
-      hs.logoSvg = svgVal || null;
-      hs.logoHeight = h;
-      updateGlobalSyncStatus('syncing', 'Saving to database...');
-      await saveHeaderSettings(hs);
-      window._appliedHeaderConfig = JSON.parse(JSON.stringify(hs));
-      refreshPreview();
-      updateGlobalSyncStatus('synced', 'Synced with database');
-      showToast('success', 'Logo saved to database & applied!');
-      recordActivityLog({
-        action: 'layout.header_logo_apply',
-        category: 'layout',
-        summary: `Applied custom logo (height: ${h}px) in Header Settings`,
-        target_id: 'site_logo',
-        target_name: 'Site Logo',
-        details: { logoHeight: h }
-      });
-    });
-  }
-
-  const resetBtn = document.getElementById('hs-logo-reset-btn');
-  if (resetBtn) {
-    resetBtn.addEventListener('click', async () => {
-      if (svgInput) svgInput.value = '';
-      if (slider) { slider.value = 80; if (heightVal) heightVal.textContent = '80'; }
-      hs.logoSvg = null;
-      hs.logoHeight = 80;
-      updateGlobalSyncStatus('syncing', 'Saving to database...');
-      await saveHeaderSettings(hs);
-      window._appliedHeaderConfig = JSON.parse(JSON.stringify(hs));
-      refreshPreview('', 80);
-      updateGlobalSyncStatus('synced', 'Synced with database');
-      showToast('success', 'Logo reset to default.');
-      recordActivityLog({
-        action: 'layout.header_logo_reset',
-        category: 'layout',
-        summary: `Reset site logo to default in Header Settings`,
-        target_id: 'site_logo',
-        target_name: 'Site Logo',
-        details: {}
-      });
-    });
-  }
+  updateHeaderLogoPreview();
 }
 
 // ── Nav sections card ───────────────────────────────────────────
