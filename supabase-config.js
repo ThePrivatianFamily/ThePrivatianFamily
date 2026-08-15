@@ -48,6 +48,7 @@ async function db_saveSections(allSections) {
       .map(function(s, i) {
         return {
           name:          s.name,
+          name_bn:       s.name_bn || '',
           slug:          s.slug || s.id,
           display_order: i + 1,
           is_active:     !s.deleted,
@@ -139,6 +140,7 @@ document.addEventListener('DOMContentLoaded', function() {
 function _sectionToRow(s, order) {
   return {
     name:          s.name,
+    name_bn:       s.name_bn || '',
     slug:          s.slug || s.id,
     display_order: order || 0,
     is_active:     !s.deleted && !s.locked,
@@ -153,6 +155,7 @@ function _rowToSection(row) {
   return {
     id:        row.admin_id || row.slug,
     name:      row.name,
+    name_bn:   row.name_bn || '',
     slug:      row.slug || '',
     locked:    row.locked     || false,
     deleted:   row.is_deleted || false,
