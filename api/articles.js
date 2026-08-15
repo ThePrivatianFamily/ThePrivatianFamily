@@ -53,22 +53,23 @@ module.exports = async function handler(req, res) {
     return res.status(200).json(data || []);
   }
 
-  // ── PUBLIC GET: single published article by id or slug (no auth required for published) ─────
+  // ── PUBLIC GET: single published article by slug, or any article by Unique ID (preview/draft) ─────
   if (action === 'public-get' && req.method === 'GET') {
     const slug = req.query.slug || '';
     let query = sb().from('articles').select('*')
       .or('is_deleted.is.null,is_deleted.eq.false');
-    if (id)   query = query.eq('id', id);
-    else if (slug) query = query.eq('slug', slug);
-    else return res.status(400).json({ error: 'id or slug required' });
-
-    // If no Authorization header or invalid, enforce status: 'published'
-    const authHeader = req.headers.authorization || '';
-    if (!authHeader.startsWith('Bearer ')) {
-      query = query.eq('status', 'published');
+    if (id) {
+      // By Unique ID -> accessible for preview & draft lookup
+      query = query.eq('id', id);
+    } else if (slug) {
+      // By slug -> published articles only on public site
+      query = query.eq('slug', slug).eq('status', 'published');
+    } else {
+      return res.status(400).json({ error: 'id or slug required' });
     }
+
     const { data, error } = await query.single();
-    if (error || !data) return res.status(404).json({ error: 'Article not found' });
+    if (error || !data) return res.status(404).json({ error: 'Article not found or not published' });
     return res.status(200).json(data);
   }
 
@@ -129,7 +130,7 @@ module.exports = async function handler(req, res) {
       id: bodyId, title = '', deck = '', section = '', author = '', author_role = '',
       author_bio = '', author_photo_url = '', hero_img_url = '', hero_img_alt = '',
       hero_caption = '', hero_credit = '', content_html = '', slug: bodySlug,
-      seo_title = '', meta_description = '', tags = '',
+      seo_title = '', meta_description = '', tags = '', status: bodyStatus,
     } = req.body || {};
 
     const client = sb();
@@ -142,6 +143,14 @@ module.exports = async function handler(req, res) {
         seo_title, meta_description, tags,
         updated_at: new Date().toISOString(),
       };
+      if (bodyStatus) {
+        updates.status = bodyStatus;
+        if (bodyStatus === 'published') {
+          updates.published_at = new Date().toISOString();
+        } else if (bodyStatus === 'draft') {
+          updates.published_at = null;
+        }
+      }
       if (bodySlug) updates.slug = slugify(bodySlug);
       const { data, error } = await client.from('articles').update(updates).eq('id', bodyId).select().single();
       if (error) return res.status(500).json({ error: error.message });
@@ -158,12 +167,16 @@ module.exports = async function handler(req, res) {
           slug = rawSlug + '-' + (Math.max(...nums, 0) + 1);
         }
       }
-      const { data, error } = await client.from('articles').insert({
+      const newArticle = {
         slug, title, deck, section, author, author_role, author_bio, author_photo_url,
         hero_img_url, hero_img_alt, hero_caption, hero_credit, content_html,
         seo_title, meta_description, tags,
-        status: 'draft', created_by: session.email,
-      }).select().single();
+        status: bodyStatus || 'draft',
+        created_by: session.email,
+      };
+      if (bodyId) newArticle.id = bodyId;
+      if (bodyStatus === 'published') newArticle.published_at = new Date().toISOString();
+      const { data, error } = await client.from('articles').insert(newArticle).select().single();
       if (error) return res.status(500).json({ error: error.message });
       return res.status(201).json(data);
     }

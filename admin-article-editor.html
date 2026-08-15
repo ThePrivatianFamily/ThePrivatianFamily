@@ -1356,7 +1356,12 @@ async function saveArt(silent = false) {
   if (SAVING) return;
   SAVING = true;
   const btn = g('tb-save-btn');
-  if (!silent) { btn.disabled = true; btn.textContent = 'Saving…'; }
+  if (!silent) {
+    btn.disabled = true;
+    btn.textContent = 'Saving…';
+    STATUS = 'draft';
+    refreshStatus();
+  }
   setSaveStatus('Saving…');
 
   const payload = buildPayload();
@@ -1413,7 +1418,9 @@ async function saveArt(silent = false) {
       history.replaceState({}, '', u.toString());
       if (g('tb-slug')) g('tb-slug').value = savedData.slug || '';
     }
+    if (savedData.status) STATUS = savedData.status;
     refreshArticleIdDisplay();
+    refreshStatus();
     _serverTS = Date.now();
     DIRTY = false;
     lsSave();
@@ -1500,6 +1507,7 @@ function buildPayload() {
   return {
     id:              ART_ID,
     slug:            currentSlug || undefined,
+    status:          STATUS || 'draft',
     title:           gt('ed-headline'),
     deck:            gt('ed-deck'),
     section:         g('sec-lbl').textContent === 'Select Section' ? '' : g('sec-lbl').textContent,
@@ -2175,14 +2183,16 @@ function updateMetrics() {
 }
 // Legacy alias
 function updateReadTime() { updateMetrics(); }
-function previewArt() {
-  if (!ART_ID) { toast('Save first to preview', 'info'); return; }
-  const s = (g('sd-slug-input')?.value || g('tb-slug')?.value || '').trim();
-  if (s) {
-    window.open('/article/' + encodeURIComponent(s), '_blank');
+async function previewArt() {
+  if (!ART_ID) {
+    await saveArt(true);
+    if (!ART_ID) { toast('Save first to preview', 'info'); return; }
   } else {
-    window.open('/article.html?id=' + ART_ID, '_blank');
+    // Save draft edits so preview always reflects the latest content
+    await saveArt(true);
   }
+  // Always preview using permanent Article Unique ID
+  window.open('/article.html?id=' + encodeURIComponent(ART_ID) + '&preview=1', '_blank');
 }
 
 // ── TINY UTILS ────────────────────────────────────────────────

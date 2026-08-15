@@ -139,11 +139,17 @@
     var params = new URLSearchParams(location.search);
     var id   = params.get('id');
     var slug = params.get('slug');
+    var isPreview = params.get('preview') === '1';
 
     if (!id && !slug) {
       var match = location.pathname.match(/\/article\/([^\/\?#]+)/);
       if (match && match[1] && match[1] !== 'article.html' && match[1] !== 'article') {
-        slug = decodeURIComponent(match[1]);
+        var raw = decodeURIComponent(match[1]);
+        if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(raw) || raw.startsWith('art_')) {
+          id = raw;
+        } else {
+          slug = raw;
+        }
       }
     }
 
@@ -181,6 +187,19 @@
     }
 
     async function fetchArticleData() {
+      // 1. If querying by ID (Draft / Preview Mode), check local draft cache first for instantaneous preview
+      if (id) {
+        try {
+          var lsRaw = localStorage.getItem('pf_draft_' + id);
+          if (lsRaw) {
+            var lsDraft = JSON.parse(lsRaw);
+            if (lsDraft && (lsDraft.title || lsDraft.content_html)) {
+              return Object.assign({ id: id, status: 'draft' }, lsDraft);
+            }
+          }
+        } catch(e) {}
+      }
+
       var url = '/api/articles?action=public-get';
       if (id)   url += '&id='   + encodeURIComponent(id);
       if (slug) url += '&slug=' + encodeURIComponent(slug);
@@ -195,26 +214,41 @@
         var r = await fetch(url, { headers: fetchHeaders });
         if (r.ok) {
           var data = await r.json();
-          if (data && data.title) return data;
+          if (data && data.title) {
+            if (slug && data.status !== 'published') {
+              throw new Error('This article is currently in draft mode or unpublished.');
+            }
+            return data;
+          }
         }
-      } catch(e) {}
+      } catch(e) {
+        if (e.message && e.message.includes('draft')) throw e;
+      }
 
       // Supabase Client Fallback
       try {
         var sb = window._sb || (window.initSupabaseClient && window.initSupabaseClient());
         if (sb) {
           var query = sb.from('articles').select('*').or('is_deleted.is.null,is_deleted.eq.false');
-          if (id) query = query.eq('id', id);
-          else if (slug) query = query.eq('slug', slug);
+          if (id) {
+            query = query.eq('id', id);
+          } else if (slug) {
+            query = query.eq('slug', slug).eq('status', 'published');
+          }
           var res = await query.maybeSingle();
-          if (!res.error && res.data && res.data.title) return res.data;
+          if (!res.error && res.data && res.data.title) {
+            if (slug && res.data.status !== 'published') throw new Error('This article is currently in draft mode.');
+            return res.data;
+          }
         }
-      } catch(e) {}
+      } catch(e) {
+        if (e.message && e.message.includes('draft')) throw e;
+      }
 
       // Direct Supabase REST Fallback
       try {
         if (typeof PRIVATIAN_SUPABASE_URL !== 'undefined' && typeof PRIVATIAN_SUPABASE_KEY !== 'undefined') {
-          var filter = id ? ('id=eq.' + encodeURIComponent(id)) : ('slug=eq.' + encodeURIComponent(slug));
+          var filter = id ? ('id=eq.' + encodeURIComponent(id)) : ('slug=eq.' + encodeURIComponent(slug) + '&status=eq.published');
           var res = await fetch(PRIVATIAN_SUPABASE_URL + '/rest/v1/articles?' + filter + '&or=(is_deleted.is.null,is_deleted.eq.false)&select=*', {
             headers: {
               'apikey': PRIVATIAN_SUPABASE_KEY,
@@ -234,6 +268,28 @@
     fetchArticleData()
       .then(function(a){
         if (!a || !a.title) throw new Error('Article not found');
+
+        // Render Draft Preview Mode Banner if draft or preview parameter
+        if (a.status === 'draft' || isPreview || id) {
+          var prevBanner = g('preview-mode-bar');
+          if (!prevBanner) {
+            prevBanner = document.createElement('div');
+            prevBanner.id = 'preview-mode-bar';
+            prevBanner.style.cssText = 'background:#fffbeb;border-bottom:1px solid #fde68a;padding:10px 16px;text-align:center;font-size:12.5px;font-weight:600;color:#92400e;display:flex;align-items:center;justify-content:center;gap:10px;position:sticky;top:0;z-index:9999;box-shadow:0 2px 8px rgba(0,0,0,0.06);flex-wrap:wrap;';
+            prevBanner.innerHTML = `
+              <span style="display:inline-flex;align-items:center;gap:6px;">
+                <span style="width:8px;height:8px;border-radius:50%;background:#eab308;display:inline-block;"></span>
+                <strong>DRAFT PREVIEW MODE</strong> (Article ID: <code style="font-family:monospace;background:#fde68a;padding:2px 6px;border-radius:4px;color:#78350f;">${a.id || id}</code>)
+              </span>
+              <span style="color:#d97706;">•</span>
+              <span style="font-weight:400;">This preview reflects the draft version and is not publicly visible on the live site.</span>
+              <a href="/admin-article-editor.html?id=${encodeURIComponent(a.id || id)}" style="display:inline-flex;align-items:center;gap:4px;background:#d97706;color:#fff;padding:4px 12px;border-radius:4px;text-decoration:none;font-size:11.5px;font-weight:600;margin-left:6px;">
+                Edit in Article Editor
+              </a>
+            `;
+            document.body.insertBefore(prevBanner, document.body.firstChild);
+          }
+        }
 
         // ── <head> meta ──
         document.title = (a.seo_title || a.title || 'Article') + ' — The Privatian Family';
