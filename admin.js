@@ -1513,6 +1513,13 @@ function navigateTo(page) {
     topbarActions.appendChild(btn);
   }
 
+  // Show/Hide topbar content language switcher (only relevant for content editors: sections, homepage, menu, header, footer)
+  const langSwitcher = document.getElementById('admin-lang-switcher');
+  if (langSwitcher) {
+    const showLangSwitcher = ['sections', 'homepage', 'menu', 'header', 'footer'].includes(page);
+    langSwitcher.style.display = showLangSwitcher ? 'flex' : 'none';
+  }
+
   // Update Global Sync status immediately
   updateGlobalSyncStatus();
 }
