@@ -1564,8 +1564,42 @@
         </div>
       </div>
 
+      <!-- ══ GALLERY FOLDERS EXPLORER ══ -->
+      <div class="card gallery-folders-card">
+        <div class="gallery-folders-header">
+          <div class="gallery-folders-title-wrap">
+            <div class="gallery-folders-icon">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+            </div>
+            <div>
+              <span class="gallery-folders-title">Folders &amp; Collections</span>
+              <span class="gallery-folders-count" id="gallery-folders-badge">0 Folders</span>
+            </div>
+          </div>
+          <div class="gallery-folders-actions">
+            <button type="button" class="btn btn--secondary btn--sm" onclick="_openNewFolderModal()" title="Create a new folder">
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              <span>New Folder</span>
+            </button>
+          </div>
+        </div>
+        <div class="gallery-folders-scroll" id="gallery-folders-list">
+          <!-- Dynamically populated folder chips -->
+        </div>
+      </div>
+
       <!-- Upload Dropzone Card -->
       <div class="card gallery-upload-card" id="gallery-upload-zone-wrap">
+        <div class="gallery-upload-header-row" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
+          <div style="display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--text-secondary);">
+            <span>📁 Uploading directly to:</span>
+            <select id="gallery-upload-target-select" class="gallery-folder-select" onchange="_handleTargetFolderChange(this.value)">
+              <option value="">📁 Root / All Media</option>
+            </select>
+          </div>
+          <div style="font-size:11.5px;color:var(--text-muted);">Max 25 MB/file • Automated WebP &amp; CDN Cache</div>
+        </div>
+
         <div class="gallery-dropzone" id="gallery-dropzone" onclick="document.getElementById('gallery-file-input').click()">
           <input type="file" id="gallery-file-input" multiple accept="image/jpeg,image/png,image/webp,image/avif,image/svg+xml,image/gif" style="display:none;" />
           <div class="gallery-dropzone-icon-wrap">
@@ -1577,7 +1611,7 @@
           </div>
           <div class="gallery-dropzone-content">
             <h3 class="gallery-dropzone-title">Drop your images here, or <span class="gallery-browse-link">browse files</span></h3>
-            <p class="gallery-dropzone-subtitle">Supports JPG, PNG, WebP, AVIF, SVG, GIF up to 25 MB per file. Direct high-speed upload to Cloudflare R2.</p>
+            <p class="gallery-dropzone-subtitle" id="gallery-dropzone-sub">Supports JPG, PNG, WebP, AVIF, SVG, GIF. Direct high-speed upload to Cloudflare R2.</p>
           </div>
         </div>
 
@@ -2492,6 +2526,15 @@
               <input type="text" id="media-insp-title-input" class="form-input" placeholder="Display caption for this image" maxlength="120" />
             </div>
             <div class="form-group" style="margin-top:12px;">
+              <label class="form-label" for="media-insp-folder-select">Folder / Collection</label>
+              <div style="display:flex;gap:8px;">
+                <select id="media-insp-folder-select" class="form-input" style="flex:1;">
+                  <option value="">📁 Root / Uncategorized</option>
+                </select>
+                <button type="button" class="btn btn--secondary btn--sm" onclick="_openNewFolderModal()" title="Create New Folder">➕ New</button>
+              </div>
+            </div>
+            <div class="form-group" style="margin-top:12px;">
               <label class="form-label" for="media-insp-alt-input">Alt Text (English)</label>
               <input type="text" id="media-insp-alt-input" class="form-input" placeholder="Accessible description for screen readers" maxlength="200" />
             </div>
@@ -2534,14 +2577,21 @@
       <div class="modal-body" style="padding:16px 24px;max-height:calc(80vh - 130px);overflow-y:auto;">
         <!-- Picker Top Action Bar -->
         <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap;">
-          <div class="gallery-search-wrap" style="flex:1;min-width:220px;">
+          <div class="gallery-search-wrap" style="flex:1;min-width:200px;">
             <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
             <input type="text" id="picker-search-input" placeholder="Search gallery images..." oninput="_handlePickerSearch()" />
           </div>
-          <button type="button" class="btn btn--secondary btn--sm" onclick="document.getElementById('picker-file-upload').click()">
-            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-            <span>Upload New to R2</span>
-          </button>
+
+          <div style="display:flex;align-items:center;gap:8px;">
+            <select id="picker-folder-filter" class="form-input" style="width:auto;min-width:140px;font-size:12px;height:36px;" onchange="_handlePickerFolderFilter(this.value)">
+              <option value="all">📁 All Folders</option>
+            </select>
+
+            <button type="button" class="btn btn--secondary btn--sm" style="height:36px;" onclick="document.getElementById('picker-file-upload').click()">
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              <span>Upload New</span>
+            </button>
+          </div>
           <input type="file" id="picker-file-upload" accept="image/*,.svg" style="display:none;" onchange="_handlePickerQuickUpload(event)" />
         </div>
 
@@ -2557,6 +2607,44 @@
           <button class="btn btn--ghost" type="button" onclick="closeGalleryPicker()">Cancel</button>
           <button class="btn btn--primary" type="button" id="picker-confirm-btn" disabled onclick="_confirmGalleryPickerSelection()">Insert Selected Image</button>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ MODAL: CREATE / RENAME FOLDER ═════════════════════════════════════ -->
+  <div class="modal-overlay" id="modal-gallery-folder" hidden>
+    <div class="modal modal--sm" role="dialog" aria-modal="true" style="max-width: 440px; width: 95%;">
+      <div class="modal-header" style="display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid #e2e8f0;background:#fafbfc;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span style="display:flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:6px;background:#e0e7ff;color:#4338ca;">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+          </span>
+          <h2 class="modal-title" id="gallery-folder-modal-title" style="font-size:15px;margin:0;font-weight:700;color:var(--text-primary);">New Folder</h2>
+        </div>
+        <button type="button" class="btn-close" onclick="closeFolderModal()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text-muted);">✕</button>
+      </div>
+      <div class="modal-body" style="padding: 18px 20px;">
+        <input type="hidden" id="gallery-folder-mode" value="create" />
+        <input type="hidden" id="gallery-folder-old-name" value="" />
+        <div class="form-group">
+          <label class="form-label" for="gallery-folder-name-input">Folder Name</label>
+          <input type="text" id="gallery-folder-name-input" class="form-input" placeholder="e.g. Articles, Banners, Events 2026…" maxlength="40" autocomplete="off" />
+        </div>
+        <div style="margin-top:14px;">
+          <label style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;display:block;margin-bottom:6px;">Suggestions</label>
+          <div style="display:flex;flex-wrap:wrap;gap:6px;" id="gallery-folder-suggestions">
+            <button type="button" class="folder-sug-chip" onclick="_useFolderSuggestion('Articles')">Articles</button>
+            <button type="button" class="folder-sug-chip" onclick="_useFolderSuggestion('Hero Banners')">Hero Banners</button>
+            <button type="button" class="folder-sug-chip" onclick="_useFolderSuggestion('Authors')">Authors</button>
+            <button type="button" class="folder-sug-chip" onclick="_useFolderSuggestion('Logos & Icons')">Logos &amp; Icons</button>
+            <button type="button" class="folder-sug-chip" onclick="_useFolderSuggestion('Section Covers')">Section Covers</button>
+            <button type="button" class="folder-sug-chip" onclick="_useFolderSuggestion('Heritage & Archive')">Heritage &amp; Archive</button>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer" style="display:flex;justify-content:flex-end;gap:10px;padding:12px 20px;border-top:1px solid #e2e8f0;background:#fafbfc;">
+        <button type="button" class="btn btn--ghost" onclick="closeFolderModal()">Cancel</button>
+        <button type="button" class="btn btn--primary" id="gallery-folder-save-btn" onclick="_saveFolderModal()">Create Folder</button>
       </div>
     </div>
   </div>

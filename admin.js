@@ -8360,12 +8360,16 @@ window.permanentDeleteSectionConfirm = permanentDeleteSectionConfirm;
 // =================================================================
 
 var _rawGalleryList = [];
+var _galleryFolders = ['Articles', 'Hero Banners', 'Authors', 'Logos & Icons', 'Heritage & Archive'];
+var _galleryActiveFolder = 'all'; // 'all', '__root__', or folder name e.g. 'Articles'
+var _galleryTargetUploadFolder = '';
 var _galleryFilter = 'all';
 var _gallerySort = 'newest';
 var _gallerySearchQuery = '';
 var _galleryCurrentInspectorItem = null;
 var _galleryPickerCallback = null;
 var _galleryPickerSelectedItem = null;
+var _galleryPickerActiveFolder = 'all';
 
 // ── 1. Load Gallery Assets ───────────────────────────────────────
 async function loadGalleryAssets() {
@@ -8381,8 +8385,11 @@ async function loadGalleryAssets() {
 
   try {
     const data = await _apiGet('/api/media?action=list');
-    if (data && Array.isArray(data.items)) {
-      _rawGalleryList = data.items;
+    if (data) {
+      if (Array.isArray(data.items)) _rawGalleryList = data.items;
+      if (data.folders && Array.isArray(data.folders)) _galleryFolders = data.folders;
+      renderGalleryFolders();
+      _syncFolderSelectDropdowns();
       _updateGalleryCounts();
       renderGalleryGrid();
     }
@@ -8402,7 +8409,228 @@ async function loadGalleryAssets() {
   }
 }
 
-// ── 2. Update Badge, Analytics & Storage Quota Dashboard ────────
+// ── 2. Render Gallery Folders Strip ──────────────────────────────
+function renderGalleryFolders() {
+  const container = document.getElementById('gallery-folders-list');
+  const badge = document.getElementById('gallery-folders-badge');
+  if (!container) return;
+
+  const totalFiles = _rawGalleryList.length;
+  const rootFiles = _rawGalleryList.filter(x => !x.folder).length;
+
+  if (badge) {
+    badge.textContent = `${_galleryFolders.length} ${_galleryFolders.length === 1 ? 'Folder' : 'Folders'}`;
+  }
+
+  let html = `
+    <!-- All Media Chip -->
+    <div class="gallery-folder-chip ${_galleryActiveFolder === 'all' ? 'active' : ''}" onclick="_setGalleryFolder('all')">
+      <span>📁 All Media</span>
+      <span class="gallery-folder-chip-count">${totalFiles}</span>
+    </div>
+
+    <!-- Root / Uncategorized Chip -->
+    <div class="gallery-folder-chip ${_galleryActiveFolder === '__root__' ? 'active' : ''}" onclick="_setGalleryFolder('__root__')">
+      <span>📂 Root / Uncategorized</span>
+      <span class="gallery-folder-chip-count">${rootFiles}</span>
+    </div>
+  `;
+
+  _galleryFolders.forEach(folder => {
+    const count = _rawGalleryList.filter(x => x.folder === folder).length;
+    const isActive = _galleryActiveFolder === folder;
+    html += `
+      <div class="gallery-folder-chip ${isActive ? 'active' : ''}" onclick="_setGalleryFolder('${escapeHtml(folder)}')">
+        <span>📁 ${escapeHtml(folder)}</span>
+        <span class="gallery-folder-chip-count">${count}</span>
+        <span class="gallery-folder-chip-actions" onclick="event.stopPropagation();">
+          <button type="button" class="gallery-folder-chip-btn" onclick="_openRenameFolderModal('${escapeHtml(folder)}')" title="Rename Folder">
+            <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          </button>
+          <button type="button" class="gallery-folder-chip-btn" onclick="_deleteFolderConfirm('${escapeHtml(folder)}')" title="Delete Folder">
+            <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+          </button>
+        </span>
+      </div>
+    `;
+  });
+
+  container.innerHTML = html;
+}
+
+function _setGalleryFolder(folder) {
+  _galleryActiveFolder = folder;
+  if (folder === 'all' || folder === '__root__') {
+    _galleryTargetUploadFolder = '';
+  } else {
+    _galleryTargetUploadFolder = folder;
+  }
+
+  const select = document.getElementById('gallery-upload-target-select');
+  if (select) select.value = _galleryTargetUploadFolder;
+
+  const sub = document.getElementById('gallery-dropzone-sub');
+  if (sub) {
+    sub.textContent = _galleryTargetUploadFolder ? 
+      `Direct high-speed upload to folder: 📁 ${_galleryTargetUploadFolder}` : 
+      'Supports JPG, PNG, WebP, AVIF, SVG, GIF. Direct high-speed upload to Cloudflare R2.';
+  }
+
+  renderGalleryFolders();
+  renderGalleryGrid();
+}
+
+function _handleTargetFolderChange(val) {
+  _galleryTargetUploadFolder = val || '';
+  const sub = document.getElementById('gallery-dropzone-sub');
+  if (sub) {
+    sub.textContent = _galleryTargetUploadFolder ? 
+      `Direct high-speed upload to folder: 📁 ${_galleryTargetUploadFolder}` : 
+      'Supports JPG, PNG, WebP, AVIF, SVG, GIF. Direct high-speed upload to Cloudflare R2.';
+  }
+}
+
+function _syncFolderSelectDropdowns() {
+  const uploadSelect = document.getElementById('gallery-upload-target-select');
+  const inspSelect = document.getElementById('media-insp-folder-select');
+  const pickerSelect = document.getElementById('picker-folder-filter');
+
+  let opts = `<option value="">📁 Root / All Media</option>`;
+  _galleryFolders.forEach(f => {
+    opts += `<option value="${escapeHtml(f)}">📁 ${escapeHtml(f)}</option>`;
+  });
+
+  if (uploadSelect) {
+    uploadSelect.innerHTML = opts;
+    uploadSelect.value = _galleryTargetUploadFolder || '';
+  }
+  if (inspSelect) {
+    inspSelect.innerHTML = `<option value="">📁 Root / Uncategorized</option>` + _galleryFolders.map(f => `<option value="${escapeHtml(f)}">📁 ${escapeHtml(f)}</option>`).join('');
+  }
+  if (pickerSelect) {
+    pickerSelect.innerHTML = `<option value="all">📁 All Folders</option><option value="__root__">📂 Root / Uncategorized</option>` + _galleryFolders.map(f => `<option value="${escapeHtml(f)}">📁 ${escapeHtml(f)}</option>`).join('');
+    pickerSelect.value = _galleryPickerActiveFolder;
+  }
+}
+
+// ── Folder Modal Actions ──────────────────────────────────────────
+function _openNewFolderModal() {
+  const modal = document.getElementById('modal-gallery-folder');
+  const title = document.getElementById('gallery-folder-modal-title');
+  const modeInp = document.getElementById('gallery-folder-mode');
+  const oldNameInp = document.getElementById('gallery-folder-old-name');
+  const nameInp = document.getElementById('gallery-folder-name-input');
+  const saveBtn = document.getElementById('gallery-folder-save-btn');
+
+  if (title) title.textContent = 'Create New Folder';
+  if (modeInp) modeInp.value = 'create';
+  if (oldNameInp) oldNameInp.value = '';
+  if (nameInp) { nameInp.value = ''; nameInp.focus(); }
+  if (saveBtn) saveBtn.textContent = 'Create Folder';
+  if (modal) modal.hidden = false;
+}
+
+function _openRenameFolderModal(folderName) {
+  const modal = document.getElementById('modal-gallery-folder');
+  const title = document.getElementById('gallery-folder-modal-title');
+  const modeInp = document.getElementById('gallery-folder-mode');
+  const oldNameInp = document.getElementById('gallery-folder-old-name');
+  const nameInp = document.getElementById('gallery-folder-name-input');
+  const saveBtn = document.getElementById('gallery-folder-save-btn');
+
+  if (title) title.textContent = `Rename Folder: ${folderName}`;
+  if (modeInp) modeInp.value = 'rename';
+  if (oldNameInp) oldNameInp.value = folderName;
+  if (nameInp) { nameInp.value = folderName; nameInp.focus(); }
+  if (saveBtn) saveBtn.textContent = 'Save Name';
+  if (modal) modal.hidden = false;
+}
+
+function _useFolderSuggestion(name) {
+  const nameInp = document.getElementById('gallery-folder-name-input');
+  if (nameInp) nameInp.value = name;
+}
+
+function closeFolderModal() {
+  const modal = document.getElementById('modal-gallery-folder');
+  if (modal) modal.hidden = true;
+}
+
+async function _saveFolderModal() {
+  const mode = (document.getElementById('gallery-folder-mode').value || 'create');
+  const oldName = (document.getElementById('gallery-folder-old-name').value || '').trim();
+  const name = (document.getElementById('gallery-folder-name-input').value || '').trim();
+  const saveBtn = document.getElementById('gallery-folder-save-btn');
+
+  if (!name) {
+    showToast('error', 'Please enter a valid folder name.');
+    return;
+  }
+
+  if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = 'Saving...'; }
+
+  try {
+    if (mode === 'create') {
+      const res = await _apiPost('/api/media?action=create_folder', { name });
+      if (res && res.ok && Array.isArray(res.folders)) {
+        _galleryFolders = res.folders;
+        _galleryActiveFolder = name;
+        _galleryTargetUploadFolder = name;
+        showToast('success', `Folder "${name}" created successfully.`);
+      }
+    } else if (mode === 'rename') {
+      const res = await _apiPut('/api/media?action=rename_folder', { oldName, newName: name });
+      if (res && res.ok && Array.isArray(res.folders)) {
+        _galleryFolders = res.folders;
+        if (_galleryActiveFolder === oldName) _galleryActiveFolder = name;
+        if (_galleryTargetUploadFolder === oldName) _galleryTargetUploadFolder = name;
+        _rawGalleryList.forEach(item => {
+          if (item.folder === oldName) item.folder = name;
+        });
+        showToast('success', `Folder renamed to "${name}".`);
+      }
+    }
+
+    closeFolderModal();
+    renderGalleryFolders();
+    _syncFolderSelectDropdowns();
+    renderGalleryGrid();
+  } catch(err) {
+    showToast('error', 'Failed to save folder: ' + err.message);
+  } finally {
+    if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = mode === 'create' ? 'Create Folder' : 'Save Name'; }
+  }
+}
+
+function _deleteFolderConfirm(folderName) {
+  _confirmModal({
+    title: `Delete Folder "${folderName}"`,
+    body: `Are you sure you want to delete the folder <strong>${escapeHtml(folderName)}</strong>?<br><div style="margin-top:8px;font-size:12px;color:#1e293b;background:#f1f5f9;border:1px solid #cbd5e1;padding:8px 12px;border-radius:8px;">Images inside this folder will not be deleted; they will be moved to <strong>Root / Uncategorized</strong>.</div>`,
+    confirmText: 'Delete Folder',
+    variant: 'danger',
+    onConfirm: async () => {
+      try {
+        const res = await _apiDelete(`/api/media?action=delete_folder&name=${encodeURIComponent(folderName)}`);
+        if (res && res.ok && Array.isArray(res.folders)) {
+          _galleryFolders = res.folders;
+          if (_galleryActiveFolder === folderName) _galleryActiveFolder = 'all';
+          if (_galleryTargetUploadFolder === folderName) _galleryTargetUploadFolder = '';
+          _rawGalleryList.forEach(item => {
+            if (item.folder === folderName) item.folder = '';
+          });
+          renderGalleryFolders();
+          _syncFolderSelectDropdowns();
+          renderGalleryGrid();
+          showToast('success', `Folder "${folderName}" removed.`);
+        }
+      } catch(e) {
+        showToast('error', 'Failed to delete folder: ' + e.message);
+      }
+    }
+  });
+}
+
+// ── 3. Update Badge, Analytics & Storage Quota Dashboard ────────
 function _updateGalleryCounts() {
   const badge = document.getElementById('gallery-count-badge');
   const countAll = document.getElementById('gallery-filter-count-all');
@@ -8481,17 +8709,24 @@ function _updateGalleryCounts() {
   }
 }
 
-// ── 3. Render Gallery Grid ───────────────────────────────────────
+// ── 4. Render Gallery Grid ───────────────────────────────────────
 function renderGalleryGrid() {
   const grid = document.getElementById('gallery-grid');
   if (!grid) return;
 
-  // Filter
+  // Filter by media type
   let filtered = [..._rawGalleryList];
   if (_galleryFilter === 'photos') {
     filtered = filtered.filter(x => !x.mime_type?.includes('svg') && !x.filename?.toLowerCase().endsWith('.svg'));
   } else if (_galleryFilter === 'svg') {
     filtered = filtered.filter(x => x.mime_type?.includes('svg') || x.filename?.toLowerCase().endsWith('.svg'));
+  }
+
+  // Filter by Active Folder
+  if (_galleryActiveFolder === '__root__') {
+    filtered = filtered.filter(x => !x.folder);
+  } else if (_galleryActiveFolder !== 'all') {
+    filtered = filtered.filter(x => x.folder === _galleryActiveFolder);
   }
 
   // Search query
@@ -8501,6 +8736,7 @@ function renderGalleryGrid() {
       (x.filename && x.filename.toLowerCase().includes(q)) ||
       (x.unique_id && x.unique_id.toLowerCase().includes(q)) ||
       (x.title && x.title.toLowerCase().includes(q)) ||
+      (x.folder && x.folder.toLowerCase().includes(q)) ||
       (x.alt_text && x.alt_text.toLowerCase().includes(q)) ||
       (x.alt_text_bn && x.alt_text_bn.toLowerCase().includes(q)) ||
       (Array.isArray(x.tags) && x.tags.some(t => t.toLowerCase().includes(q)))
@@ -8526,9 +8762,9 @@ function renderGalleryGrid() {
         <div class="gallery-empty-icon">
           <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
         </div>
-        <h3 style="margin:0;font-size:15px;color:var(--text-primary);">${_gallerySearchQuery ? 'No matching images found' : 'No images uploaded yet'}</h3>
+        <h3 style="margin:0;font-size:15px;color:var(--text-primary);">${_gallerySearchQuery ? 'No matching images found' : (_galleryActiveFolder !== 'all' ? `No images in "${_galleryActiveFolder}" folder` : 'No images uploaded yet')}</h3>
         <p style="margin:0;font-size:12.5px;color:var(--text-muted);max-width:360px;">${_gallerySearchQuery ? 'Try searching for a different keyword or filename.' : 'Drag & drop images into the upload area above to store them in Cloudflare R2.'}</p>
-        ${!_gallerySearchQuery ? `<button class="btn btn--primary btn--sm" onclick="document.getElementById('gallery-file-input').click()" style="margin-top:4px;">Upload First Image</button>` : ''}
+        ${!_gallerySearchQuery ? `<button class="btn btn--primary btn--sm" onclick="document.getElementById('gallery-file-input').click()" style="margin-top:4px;">Upload to this folder</button>` : ''}
       </div>
     `;
     return;
@@ -8545,6 +8781,7 @@ function renderGalleryGrid() {
           <img src="${escapeHtml(item.url)}" alt="${escapeHtml(item.alt_text || item.title || item.filename)}" class="gallery-thumb-img" loading="lazy" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\\'http://www.w3.org/2000/svg\\' width=\\'100\\' height=\\'100\\' viewBox=\\'0 0 24 24\\' fill=\\'none\\' stroke=\\'%2364748b\\' stroke-width=\\'2\\'><rect x=\\'3\\' y=\\'3\\' width=\\'18\\' height=\\'18\\' rx=\\'2\\'/><circle cx=\\'8.5\\' cy=\\'8.5\\' r=\\'1.5\\'/><polyline points=\\'21 15 16 10 5 21\\'/></svg>'" />
           <span class="gallery-badge-format">${escapeHtml(ext.toUpperCase())}</span>
           <span class="gallery-badge-size">${sizeStr}</span>
+          ${item.folder ? `<span class="gallery-card-folder-badge" title="Folder: ${escapeHtml(item.folder)}">📁 ${escapeHtml(item.folder)}</span>` : ''}
         </div>
         <div class="gallery-card-body">
           <div class="gallery-id-row">
@@ -8574,7 +8811,7 @@ function renderGalleryGrid() {
   }).join('');
 }
 
-// ── 4. File Upload & Drag-and-Drop Pipeline ───────────────────────
+// ── 5. File Upload & Drag-and-Drop Pipeline ───────────────────────
 function initGalleryUploadDropzone() {
   const dropzone = document.getElementById('gallery-dropzone');
   const fileInput = document.getElementById('gallery-file-input');
@@ -8626,6 +8863,7 @@ async function handleGalleryFilesUpload(files) {
 
   let successCount = 0;
   let errorCount = 0;
+  const targetFolder = _galleryTargetUploadFolder || '';
 
   for (let i = 0; i < files.length; i++) {
     const file = files[i];
@@ -8656,7 +8894,8 @@ async function handleGalleryFilesUpload(files) {
         fileData: base64Data,
         filename: file.name,
         mimeType: file.type || 'image/jpeg',
-        fileSize: file.size
+        fileSize: file.size,
+        folder: targetFolder
       });
 
       if (res && res.ok && res.media) {
@@ -8678,11 +8917,12 @@ async function handleGalleryFilesUpload(files) {
     }
   }
 
+  renderGalleryFolders();
   _updateGalleryCounts();
   renderGalleryGrid();
 
   if (successCount > 0) {
-    showToast('success', `Successfully uploaded ${successCount} ${successCount === 1 ? 'image' : 'images'} to Cloudflare R2.`);
+    showToast('success', `Uploaded ${successCount} ${successCount === 1 ? 'image' : 'images'} to Cloudflare R2${targetFolder ? ' in ' + targetFolder : ''}.`);
   }
   if (errorCount > 0) {
     showToast('error', `Failed to upload ${errorCount} ${errorCount === 1 ? 'image' : 'images'}.`);
@@ -8702,7 +8942,7 @@ function _readFileAsBase64(file) {
   });
 }
 
-// ── 5. Toolbar Handlers ──────────────────────────────────────────
+// ── 6. Toolbar Handlers ──────────────────────────────────────────
 function _setGalleryFilter(filter) {
   _galleryFilter = filter;
   document.querySelectorAll('.gallery-tab-pill').forEach(btn => {
@@ -8734,7 +8974,7 @@ function _handleGallerySort() {
   renderGalleryGrid();
 }
 
-// ── 6. Copy Helpers ──────────────────────────────────────────────
+// ── 7. Copy Helpers ──────────────────────────────────────────────
 function _copyUniqueId(uniqueId) {
   if (!uniqueId) return;
   navigator.clipboard.writeText(uniqueId).then(() => {
@@ -8753,7 +8993,7 @@ function _copyMediaDirectUrl(url) {
   });
 }
 
-// ── 7. Media Inspector Modal ─────────────────────────────────────
+// ── 8. Media Inspector Modal ─────────────────────────────────────
 function openMediaInspector(uniqueId) {
   const item = _rawGalleryList.find(x => x.unique_id === uniqueId || x.id === uniqueId);
   if (!item) return;
@@ -8770,6 +9010,7 @@ function openMediaInspector(uniqueId) {
   const dateEl = document.getElementById('media-insp-date');
   const urlInp = document.getElementById('media-insp-direct-url-input');
   const titleInp = document.getElementById('media-insp-title-input');
+  const folderSelect = document.getElementById('media-insp-folder-select');
   const altInp = document.getElementById('media-insp-alt-input');
   const altBnInp = document.getElementById('media-insp-alt-bn-input');
   const currIdInp = document.getElementById('media-insp-current-id');
@@ -8783,6 +9024,7 @@ function openMediaInspector(uniqueId) {
   if (dateEl) dateEl.textContent = _formatLongDate(item.created_at);
   if (urlInp) urlInp.value = item.url;
   if (titleInp) titleInp.value = item.title || '';
+  if (folderSelect) folderSelect.value = item.folder || '';
   if (altInp) altInp.value = item.alt_text || '';
   if (altBnInp) altBnInp.value = item.alt_text_bn || '';
   if (currIdInp) currIdInp.value = item.unique_id;
@@ -8817,6 +9059,7 @@ async function _saveInspectorMetadata() {
   if (!_galleryCurrentInspectorItem) return;
   const btn = document.getElementById('media-insp-save-btn');
   const title = (document.getElementById('media-insp-title-input').value || '').trim();
+  const folder = (document.getElementById('media-insp-folder-select').value || '').trim();
   const altText = (document.getElementById('media-insp-alt-input').value || '').trim();
   const altTextBn = (document.getElementById('media-insp-alt-bn-input').value || '').trim();
 
@@ -8825,16 +9068,19 @@ async function _saveInspectorMetadata() {
   try {
     const res = await _apiPut(`/api/media?action=update&id=${encodeURIComponent(_galleryCurrentInspectorItem.unique_id)}`, {
       title,
+      folder,
       alt_text: altText,
       alt_text_bn: altTextBn
     });
 
     if (res && res.ok && res.media) {
       _galleryCurrentInspectorItem.title = title;
+      _galleryCurrentInspectorItem.folder = folder;
       _galleryCurrentInspectorItem.alt_text = altText;
       _galleryCurrentInspectorItem.alt_text_bn = altTextBn;
       const idx = _rawGalleryList.findIndex(x => x.unique_id === _galleryCurrentInspectorItem.unique_id);
       if (idx !== -1) _rawGalleryList[idx] = { ..._rawGalleryList[idx], ...res.media };
+      renderGalleryFolders();
       renderGalleryGrid();
       showToast('success', 'Metadata saved successfully.');
     }
@@ -8863,6 +9109,7 @@ function deleteMediaConfirm(uniqueId, filename) {
         const res = await _apiDelete(`/api/media?action=delete&id=${encodeURIComponent(uniqueId)}`);
         if (res && res.ok) {
           _rawGalleryList = _rawGalleryList.filter(x => x.unique_id !== uniqueId && x.id !== uniqueId);
+          renderGalleryFolders();
           _updateGalleryCounts();
           renderGalleryGrid();
           showToast('success', `Asset ${filename} deleted from Cloudflare R2.`);
@@ -8874,21 +9121,27 @@ function deleteMediaConfirm(uniqueId, filename) {
   });
 }
 
-// ── 8. Universal Gallery Picker Modal (for Articles / Sections) ───
+// ── 9. Universal Gallery Picker Modal (for Articles / Sections) ───
 function openGalleryPicker(callback) {
   _galleryPickerCallback = callback;
   _galleryPickerSelectedItem = null;
+  _galleryPickerActiveFolder = 'all';
+
   const modal = document.getElementById('modal-gallery-picker');
   const confirmBtn = document.getElementById('picker-confirm-btn');
   const summaryEl = document.getElementById('picker-selected-summary');
+  const folderFilter = document.getElementById('picker-folder-filter');
+
   if (confirmBtn) confirmBtn.disabled = true;
   if (summaryEl) summaryEl.textContent = 'No image selected';
+  if (folderFilter) folderFilter.value = 'all';
 
   if (modal) modal.hidden = false;
 
   if (!_rawGalleryList || !_rawGalleryList.length) {
     loadGalleryAssets().then(() => _renderPickerGrid());
   } else {
+    _syncFolderSelectDropdowns();
     _renderPickerGrid();
   }
 }
@@ -8900,24 +9153,40 @@ function closeGalleryPicker() {
   _galleryPickerSelectedItem = null;
 }
 
+function _handlePickerFolderFilter(folderVal) {
+  _galleryPickerActiveFolder = folderVal || 'all';
+  const searchInp = document.getElementById('picker-search-input');
+  _renderPickerGrid(searchInp ? searchInp.value.trim() : '');
+}
+
 function _renderPickerGrid(searchQuery = '') {
   const grid = document.getElementById('picker-gallery-grid');
   if (!grid) return;
 
   let items = [..._rawGalleryList];
+
+  // Filter by folder
+  if (_galleryPickerActiveFolder === '__root__') {
+    items = items.filter(x => !x.folder);
+  } else if (_galleryPickerActiveFolder !== 'all') {
+    items = items.filter(x => x.folder === _galleryPickerActiveFolder);
+  }
+
+  // Filter by search query
   if (searchQuery) {
     const q = searchQuery.toLowerCase();
     items = items.filter(x => 
       (x.filename && x.filename.toLowerCase().includes(q)) ||
       (x.title && x.title.toLowerCase().includes(q)) ||
-      (x.unique_id && x.unique_id.toLowerCase().includes(q))
+      (x.unique_id && x.unique_id.toLowerCase().includes(q)) ||
+      (x.folder && x.folder.toLowerCase().includes(q))
     );
   }
 
   if (items.length === 0) {
     grid.innerHTML = `
       <div style="grid-column:1/-1;text-align:center;padding:32px 14px;color:var(--text-muted);">
-        <p style="margin:0;font-size:13px;">No images found in gallery.</p>
+        <p style="margin:0;font-size:13px;">No images found in this folder.</p>
       </div>
     `;
     return;
@@ -8929,6 +9198,7 @@ function _renderPickerGrid(searchQuery = '') {
       <div class="picker-item-card ${isSel ? 'selected' : ''}" onclick="_selectGalleryPickerItem('${item.unique_id}')" title="${escapeHtml(item.title || item.filename)}">
         <img src="${escapeHtml(item.url)}" alt="" class="picker-item-thumb" />
         <div class="picker-item-name">${escapeHtml(item.title || item.filename)}</div>
+        ${item.folder ? `<span style="position:absolute;top:6px;left:6px;font-size:9px;background:rgba(15,23,42,0.75);color:#fff;padding:1px 5px;border-radius:4px;">📁 ${escapeHtml(item.folder)}</span>` : ''}
         <div class="picker-item-check">
           <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
         </div>
@@ -8977,6 +9247,7 @@ function _confirmGalleryPickerSelection() {
 async function _handlePickerQuickUpload(e) {
   const file = e.target.files && e.target.files[0];
   if (!file) return;
+  const targetFolder = _galleryPickerActiveFolder !== 'all' && _galleryPickerActiveFolder !== '__root__' ? _galleryPickerActiveFolder : '';
 
   try {
     showToast('info', 'Uploading to Cloudflare R2...');
@@ -8985,11 +9256,13 @@ async function _handlePickerQuickUpload(e) {
       fileData: base64,
       filename: file.name,
       mimeType: file.type || 'image/jpeg',
-      fileSize: file.size
+      fileSize: file.size,
+      folder: targetFolder
     });
 
     if (res && res.ok && res.media) {
       _rawGalleryList.unshift(res.media);
+      renderGalleryFolders();
       _updateGalleryCounts();
       _renderPickerGrid();
       _selectGalleryPickerItem(res.media.unique_id);
@@ -9000,7 +9273,7 @@ async function _handlePickerQuickUpload(e) {
   }
 }
 
-// ── 9. Formatting Helpers ─────────────────────────────────────────
+// ── 10. Formatting Helpers ─────────────────────────────────────────
 function _formatFileSize(bytes) {
   if (!bytes || bytes <= 0) return '0 B';
   const k = 1024;
@@ -9026,9 +9299,17 @@ function _formatLongDate(isoString) {
   } catch(e) { return '—'; }
 }
 
-// Window global exports for Gallery
+// Window global exports for Gallery & Folders
 window.loadGalleryAssets = loadGalleryAssets;
 window.initGalleryUploadDropzone = initGalleryUploadDropzone;
+window._setGalleryFolder = _setGalleryFolder;
+window._handleTargetFolderChange = _handleTargetFolderChange;
+window._openNewFolderModal = _openNewFolderModal;
+window._openRenameFolderModal = _openRenameFolderModal;
+window._useFolderSuggestion = _useFolderSuggestion;
+window.closeFolderModal = closeFolderModal;
+window._saveFolderModal = _saveFolderModal;
+window._deleteFolderConfirm = _deleteFolderConfirm;
 window._setGalleryFilter = _setGalleryFilter;
 window._handleGallerySearch = _handleGallerySearch;
 window._clearGallerySearch = _clearGallerySearch;
@@ -9045,6 +9326,7 @@ window._deleteInspectorMedia = _deleteInspectorMedia;
 window.deleteMediaConfirm = deleteMediaConfirm;
 window.openGalleryPicker = openGalleryPicker;
 window.closeGalleryPicker = closeGalleryPicker;
+window._handlePickerFolderFilter = _handlePickerFolderFilter;
 window._handlePickerSearch = _handlePickerSearch;
 window._selectGalleryPickerItem = _selectGalleryPickerItem;
 window._confirmGalleryPickerSelection = _confirmGalleryPickerSelection;

@@ -71,6 +71,34 @@ function getExtFromMimeOrName(mimeType, filename) {
 
 // ── METADATA STORAGE HELPERS (with fallback to site_settings store) ───────
 const FALLBACK_STORE_KEY = 'privatian_media_library_items';
+const FALLBACK_FOLDERS_KEY = 'privatian_media_folders';
+const DEFAULT_FOLDERS = ['Articles', 'Hero Banners', 'Authors', 'Logos & Icons', 'Heritage & Archive'];
+
+async function getStoredFolderList(sb) {
+  if (sb) {
+    try {
+      const { data } = await sb.from('site_settings').select('value').eq('key', FALLBACK_FOLDERS_KEY).maybeSingle();
+      if (data && data.value && Array.isArray(data.value) && data.value.length > 0) {
+        return data.value;
+      }
+    } catch(e) {}
+  }
+  return [...DEFAULT_FOLDERS];
+}
+
+async function saveStoredFolderList(sb, folders) {
+  if (!sb || !Array.isArray(folders)) return false;
+  try {
+    await sb.from('site_settings').upsert({
+      key: FALLBACK_FOLDERS_KEY,
+      value: folders,
+      updated_at: new Date().toISOString()
+    }, { onConflict: 'key' });
+    return true;
+  } catch(e) {
+    return false;
+  }
+}
 
 async function getStoredMediaList(sb) {
   if (!sb) return [];
@@ -81,17 +109,17 @@ async function getStoredMediaList(sb) {
       .from('media_library')
       .select('*')
       .order('created_at', { ascending: false });
-    if (!error && Array.isArray(data)) return data;
+    if (!error && Array.isArray(data) && data.length > 0) return data;
   } catch(e) {}
 
-  // Try 2: site_settings key
+  // Try 2: site_settings JSON blob
   try {
     const { data, error } = await sb
       .from('site_settings')
       .select('value')
       .eq('key', FALLBACK_STORE_KEY)
       .maybeSingle();
-    if (!error && data && data.value && Array.isArray(data.value)) {
+    if (!error && data && data.value && Array.isArray(data.value) && data.value.length > 0) {
       return data.value;
     }
   } catch(e) {}
@@ -112,7 +140,7 @@ async function getStoredMediaList(sb) {
   // Try 4: S3 R2 bucket scan fallback (recovers all objects directly from Cloudflare)
   try {
     const listRes = await s3.send(new ListObjectsV2Command({
-      Bucket: R2_BUCKET,
+      Bucket: R2_BUCKET_NAME,
       Prefix: 'gallery/',
       MaxKeys: 100
     }));
@@ -132,6 +160,7 @@ async function getStoredMediaList(sb) {
             url: `${R2_PUBLIC_URL}/${obj.Key}`,
             mime_type: fname.endsWith('.svg') ? 'image/svg+xml' : (fname.endsWith('.png') ? 'image/png' : (fname.endsWith('.webp') ? 'image/webp' : 'image/jpeg')),
             file_size: obj.Size,
+            folder: '',
             title: cleanName,
             alt_text: cleanName,
             alt_text_bn: '',
@@ -164,39 +193,27 @@ async function saveMediaItemMetadata(sb, item) {
       current.unshift(item);
     }
 
-    const { error: setErr } = await sb.from('site_settings').upsert({
+    return await saveAllMediaItems(sb, current);
+  } catch(e) {
+    console.error('[Media] saveMediaItemMetadata error:', e.message);
+    return false;
+  }
+}
+
+async function saveAllMediaItems(sb, items) {
+  if (!sb || !Array.isArray(items)) return false;
+  try {
+    await sb.from('site_settings').upsert({
       key: FALLBACK_STORE_KEY,
-      value: current,
+      value: items,
       updated_at: new Date().toISOString()
     }, { onConflict: 'key' });
 
-    if (!setErr) return true;
-
-    // Try 3: sections table
-    const { data: ex } = await sb.from('sections').select('id').eq('admin_id', '__media_library_store__').maybeSingle();
-    if (ex) {
-      await sb.from('sections').update({
-        name: JSON.stringify(current),
-        slug: '__media_library_store__',
-        display_order: 9991,
-        is_active: false,
-        locked: true,
-        is_deleted: true
-      }).eq('admin_id', '__media_library_store__');
-    } else {
-      await sb.from('sections').insert({
-        admin_id: '__media_library_store__',
-        name: JSON.stringify(current),
-        slug: '__media_library_store__',
-        display_order: 9991,
-        is_active: false,
-        locked: true,
-        is_deleted: true
-      });
-    }
+    await sb.from('sections').update({
+      name: JSON.stringify(items)
+    }).eq('admin_id', '__media_library_store__');
     return true;
   } catch(e) {
-    console.error('[Media] saveMediaItemMetadata error:', e.message);
     return false;
   }
 }
@@ -213,12 +230,6 @@ async function removeMediaItemMetadata(sb, uniqueId) {
   try {
     const current = await getStoredMediaList(sb);
     const updated = current.filter(x => x.unique_id !== uniqueId && x.id !== uniqueId);
-    await sb.from('site_settings').upsert({
-      key: FALLBACK_STORE_KEY,
-      value: updated,
-      updated_at: new Date().toISOString()
-    }, { onConflict: 'key' });
-
     await sb.from('sections').update({
       name: JSON.stringify(updated)
     }).eq('admin_id', '__media_library_store__');
@@ -248,10 +259,12 @@ module.exports = async (req, res) => {
 
     try {
       const items = await getStoredMediaList(sb);
+      const folders = await getStoredFolderList(sb);
       return res.status(200).json({
         ok: true,
         count: items.length,
         items,
+        folders,
         publicUrlPrefix: R2_PUBLIC_URL
       });
     } catch(err) {
@@ -271,6 +284,7 @@ module.exports = async (req, res) => {
         fileData,        // Base64 data string (data:image/png;base64,... or raw base64)
         filename,        // Original filename
         mimeType,        // image/jpeg, image/png, etc.
+        folder,          // Target folder name (e.g. 'Articles')
         title,           // Human title
         altText,         // Accessibility alt text
         altTextBn,       // Bengali alt text
@@ -306,6 +320,7 @@ module.exports = async (req, res) => {
       const ext = getExtFromMimeOrName(detectedMime, filename);
       const safeName = sanitizeFilename(filename);
       const datePath = new Date().toISOString().slice(0, 7).replace('-', '/'); // '2026/08'
+      const targetFolder = (folder || '').trim();
       const r2Key = `gallery/${datePath}/${uniqueId}_${safeName}.${ext}`;
       const publicUrl = `${R2_PUBLIC_URL}/${r2Key}`;
 
@@ -319,6 +334,7 @@ module.exports = async (req, res) => {
         Metadata: {
           'unique-id': uniqueId,
           'original-name': filename || 'image',
+          'folder': targetFolder,
           'uploaded-by': session.email || 'admin'
         }
       };
@@ -331,6 +347,7 @@ module.exports = async (req, res) => {
         unique_id: uniqueId,
         url: publicUrl,
         r2_key: r2Key,
+        folder: targetFolder,
         filename: filename || `${uniqueId}.${ext}`,
         title: title || (filename ? filename.replace(/\.[^/.]+$/, '') : uniqueId),
         alt_text: altText || '',
@@ -356,10 +373,10 @@ module.exports = async (req, res) => {
           actor: session,
           action: 'media.upload',
           category: 'media',
-          summary: `${session.name || session.email} uploaded image "${mediaItem.filename}" (ID: ${uniqueId}) to R2 Gallery`,
+          summary: `${session.name || session.email} uploaded image "${mediaItem.filename}" (ID: ${uniqueId}${targetFolder ? ' in ' + targetFolder : ''}) to R2 Gallery`,
           target_id: uniqueId,
           target_name: mediaItem.filename,
-          details: { unique_id: uniqueId, url: publicUrl, size: fileSize, mime_type: detectedMime },
+          details: { unique_id: uniqueId, url: publicUrl, folder: targetFolder, size: fileSize, mime_type: detectedMime },
           req
         });
       } catch(e) {}
@@ -375,7 +392,184 @@ module.exports = async (req, res) => {
     }
   }
 
-  // ── 3. UPDATE METADATA (PUT) ───────────────────────────────────────────
+  // ── 3. FOLDER ACTIONS ──────────────────────────────────────────────────
+  // 3a. CREATE FOLDER
+  if (req.method === 'POST' && action === 'create_folder') {
+    const session = await requireAuth(req, res);
+    if (!session) return;
+
+    const name = (req.body && req.body.name || '').trim();
+    if (!name) return res.status(400).json({ error: 'Folder name is required.' });
+
+    try {
+      const folders = await getStoredFolderList(sb);
+      if (!folders.includes(name)) {
+        folders.push(name);
+        await saveStoredFolderList(sb, folders);
+      }
+
+      try {
+        await logActivity({
+          actor: session,
+          action: 'media.create_folder',
+          category: 'media',
+          summary: `${session.name || session.email} created media folder "${name}"`,
+          target_id: name,
+          target_name: name,
+          details: { folder: name },
+          req
+        });
+      } catch(e) {}
+
+      return res.status(200).json({ ok: true, folders });
+    } catch(err) {
+      console.error('[Media] create_folder error:', err);
+      return res.status(500).json({ error: 'Failed to create folder.' });
+    }
+  }
+
+  // 3b. RENAME FOLDER
+  if (req.method === 'PUT' && action === 'rename_folder') {
+    const session = await requireAuth(req, res);
+    if (!session) return;
+
+    const oldName = (req.body && req.body.oldName || '').trim();
+    const newName = (req.body && req.body.newName || '').trim();
+    if (!oldName || !newName) return res.status(400).json({ error: 'Both oldName and newName are required.' });
+
+    try {
+      const folders = await getStoredFolderList(sb);
+      const idx = folders.indexOf(oldName);
+      if (idx !== -1) {
+        folders[idx] = newName;
+        await saveStoredFolderList(sb, folders);
+      }
+
+      // Update all media items assigned to old folder
+      const items = await getStoredMediaList(sb);
+      let updatedCount = 0;
+      items.forEach(item => {
+        if (item.folder === oldName) {
+          item.folder = newName;
+          updatedCount++;
+        }
+      });
+      if (updatedCount > 0) {
+        await saveAllMediaItems(sb, items);
+      }
+
+      try {
+        await logActivity({
+          actor: session,
+          action: 'media.rename_folder',
+          category: 'media',
+          summary: `${session.name || session.email} renamed folder "${oldName}" to "${newName}" (${updatedCount} assets updated)`,
+          target_id: newName,
+          target_name: newName,
+          details: { oldName, newName, updatedCount },
+          req
+        });
+      } catch(e) {}
+
+      return res.status(200).json({ ok: true, folders });
+    } catch(err) {
+      console.error('[Media] rename_folder error:', err);
+      return res.status(500).json({ error: 'Failed to rename folder.' });
+    }
+  }
+
+  // 3c. DELETE FOLDER
+  if (req.method === 'DELETE' && action === 'delete_folder') {
+    const session = await requireAuth(req, res);
+    if (!session) return;
+
+    const name = (req.query.name || req.body && req.body.name || '').trim();
+    if (!name) return res.status(400).json({ error: 'Folder name is required.' });
+
+    try {
+      let folders = await getStoredFolderList(sb);
+      folders = folders.filter(f => f !== name);
+      await saveStoredFolderList(sb, folders);
+
+      // Re-assign media items inside deleted folder to Root ('')
+      const items = await getStoredMediaList(sb);
+      let updatedCount = 0;
+      items.forEach(item => {
+        if (item.folder === name) {
+          item.folder = '';
+          updatedCount++;
+        }
+      });
+      if (updatedCount > 0) {
+        await saveAllMediaItems(sb, items);
+      }
+
+      try {
+        await logActivity({
+          actor: session,
+          action: 'media.delete_folder',
+          category: 'media',
+          summary: `${session.name || session.email} deleted folder "${name}"`,
+          target_id: name,
+          target_name: name,
+          details: { folder: name, movedAssets: updatedCount },
+          req
+        });
+      } catch(e) {}
+
+      return res.status(200).json({ ok: true, folders });
+    } catch(err) {
+      console.error('[Media] delete_folder error:', err);
+      return res.status(500).json({ error: 'Failed to delete folder.' });
+    }
+  }
+
+  // 3d. MOVE ASSET(S) TO FOLDER
+  if (req.method === 'PUT' && action === 'move') {
+    const session = await requireAuth(req, res);
+    if (!session) return;
+
+    const targetFolder = (req.body && req.body.folder !== undefined ? req.body.folder : '').trim();
+    const rawIds = req.body && (req.body.ids || [req.body.id]);
+    const ids = Array.isArray(rawIds) ? rawIds.filter(Boolean) : [];
+
+    if (!ids.length) return res.status(400).json({ error: 'At least one asset id is required.' });
+
+    try {
+      const items = await getStoredMediaList(sb);
+      let movedCount = 0;
+
+      items.forEach(item => {
+        if (ids.includes(item.unique_id) || ids.includes(item.id)) {
+          item.folder = targetFolder;
+          item.updated_at = new Date().toISOString();
+          movedCount++;
+        }
+      });
+
+      await saveAllMediaItems(sb, items);
+
+      try {
+        await logActivity({
+          actor: session,
+          action: 'media.move',
+          category: 'media',
+          summary: `${session.name || session.email} moved ${movedCount} asset(s) to "${targetFolder || 'Root'}"`,
+          target_id: ids.join(','),
+          target_name: targetFolder || 'Root',
+          details: { ids, targetFolder, movedCount },
+          req
+        });
+      } catch(e) {}
+
+      return res.status(200).json({ ok: true, movedCount, targetFolder });
+    } catch(err) {
+      console.error('[Media] move error:', err);
+      return res.status(500).json({ error: 'Failed to move assets.' });
+    }
+  }
+
+  // ── 4. UPDATE METADATA (PUT) ───────────────────────────────────────────
   if (req.method === 'PUT' && action === 'update') {
     const session = await requireAuth(req, res);
     if (!session) return;
@@ -390,6 +584,7 @@ module.exports = async (req, res) => {
 
       const body = req.body || {};
       if (body.title !== undefined) item.title = body.title;
+      if (body.folder !== undefined) item.folder = (body.folder || '').trim();
       if (body.alt_text !== undefined) item.alt_text = body.alt_text;
       if (body.alt_text_bn !== undefined) item.alt_text_bn = body.alt_text_bn;
       if (body.tags !== undefined) {
@@ -407,7 +602,7 @@ module.exports = async (req, res) => {
           summary: `${session.name || session.email} updated metadata for image "${item.filename}" (${item.unique_id})`,
           target_id: item.unique_id,
           target_name: item.filename,
-          details: { title: item.title, alt_text: item.alt_text },
+          details: { title: item.title, folder: item.folder, alt_text: item.alt_text },
           req
         });
       } catch(e) {}
@@ -419,7 +614,7 @@ module.exports = async (req, res) => {
     }
   }
 
-  // ── 4. DELETE MEDIA (DELETE) ───────────────────────────────────────────
+  // ── 5. DELETE MEDIA (DELETE) ───────────────────────────────────────────
   if (req.method === 'DELETE' && action === 'delete') {
     const session = await requireAuth(req, res);
     if (!session) return;
