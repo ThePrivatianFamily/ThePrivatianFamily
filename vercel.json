@@ -4,6 +4,6 @@
   "rewrites": [
     { "source": "/sitemap.xml", "destination": "/api/sitemap" },
     { "source": "/section/:path*", "destination": "/section" },
-    { "source": "/article/:slug*", "destination": "/api/article-seo?slug=:slug*" }
+    { "source": "/article/:slug", "destination": "/api/article-seo?slug=:slug" }
   ]
 }
