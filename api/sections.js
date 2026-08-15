@@ -781,7 +781,8 @@ module.exports = async function handler(req, res) {
             is_deleted: true
           });
         }
-      } catch(err) {
+      } catch(err) {}
+
       logActivity({
         actor: session,
         action: 'section.customize',
