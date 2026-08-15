@@ -838,7 +838,7 @@ kbd {
    Fluid touch-swipeable toolbars, scalable canvas & seamless UX
 ═════════════════════════════════════════════════════════════════ */
 
-/* Global Toolbar layout (Fluid Swipeable on All Screens) */
+/* Global Toolbar layout (PC space-between on desktop, smoothly compressing and swipeable on smaller screens) */
 #tb {
   position: fixed;
   top: 0;
@@ -853,22 +853,31 @@ kbd {
   overflow-y: hidden;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  gap: 12px;
 }
 #tb::-webkit-scrollbar {
   display: none;
 }
 
-.tb-scroll-strip {
+.tb-left {
   display: flex;
   align-items: center;
   gap: 8px;
-  min-width: max-content;
-  height: 100%;
-  padding: 0 14px;
-  box-sizing: border-box;
+  flex-shrink: 0;
 }
 
-.tb-scroll-strip > * {
+.tb-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.tb-left > *, .tb-right > * {
   flex-shrink: 0;
   white-space: nowrap;
 }
@@ -1277,9 +1286,10 @@ button, input, select, textarea, [contenteditable] {
 </head>
 <body>
 
-<!-- ═══ ADMIN TOOLBAR (FLUID HORIZONTALLY SCROLLABLE ON ALL SCREENS) ═══ -->
+<!-- ═══ ADMIN TOOLBAR ════════════════════════════════════════════ -->
 <div id="tb">
-  <div class="tb-scroll-strip" id="tb-scroll-strip">
+  <!-- Left Side: Navigation, Slug, Status, ID, Sync -->
+  <div class="tb-left">
     <!-- Back to Articles -->
     <a href="admin.html#articles" class="tb-back" title="Back to Articles (Admin Panel)">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
@@ -1302,7 +1312,7 @@ button, input, select, textarea, [contenteditable] {
     <!-- Permanent Article Unique ID Pill -->
     <div id="tb-art-id-pill" class="tb-id-pill" onclick="copyArticleId()" title="Click to copy permanent Article Unique ID">
       <span style="opacity:0.6;font-size:9.5px;text-transform:uppercase;">ID:</span>
-      <span id="tb-art-id-txt" style="font-family:monospace;">...</span>
+      <span id="tb-art-id-txt" style="font-family:monospace;font-size:11px;">...</span>
       <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
     </div>
     
@@ -1311,9 +1321,10 @@ button, input, select, textarea, [contenteditable] {
       <span class="ft-pulse-dot" id="art-status-dot"></span>
       <span id="art-sync-status">Saved</span>
     </div>
-    
-    <div class="tb-vr"></div>
-    
+  </div>
+
+  <!-- Right Side: Focus, Outline, Shortcuts, Settings, Preview, Save, Publish -->
+  <div class="tb-right">
     <!-- Focus Mode (Zen) -->
     <button type="button" class="tb-btn tb-preview" id="tb-zen-btn" onclick="toggleZenMode()" title="Distraction-Free Focus Mode (Ctrl+Shift+F)">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
@@ -1335,7 +1346,7 @@ button, input, select, textarea, [contenteditable] {
     
     <!-- Article Settings Drawer Toggle -->
     <button type="button" class="tb-btn tb-settings" id="sd-toggle" onclick="toggleDrawer()" title="Article Settings Drawer">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
       <span>Settings</span>
     </button>
     
