@@ -117,10 +117,21 @@ async function loadSectionsFromAPI() {
     if (savedAllSlug !== null && savedAllSlug !== undefined) ALL_SECTION.slug = savedAllSlug;
   } catch(e){}
 
+  const isSystemConfig = r => {
+    const adminId = r.admin_id || r.id || '';
+    const slug = r.slug || '';
+    const name = r.name || '';
+    return adminId.startsWith('__') || 
+           slug.startsWith('__') || 
+           adminId.endsWith('_config__') || 
+           name.startsWith('{') ||
+           ['__homepage_config__', '__header_config__', '__menu_config__', '__footer_config__', '__section_configs__', '__activity_logs_store__'].includes(adminId);
+  };
+
   try {
     const data = await _apiGet('/api/sections?status=all');
     if (Array.isArray(data)) {
-      loaded = data;
+      loaded = data.filter(r => !isSystemConfig(r));
     }
   } catch(e) {
     console.warn('[Admin] loadSectionsFromAPI endpoint failed, trying Supabase direct:', e.message);
@@ -132,8 +143,7 @@ async function loadSectionsFromAPI() {
       if (sb) {
         const { data, error } = await sb.from('sections').select('*').order('display_order');
         if (!error && Array.isArray(data)) {
-          const sys = ['__homepage_config__', '__header_config__', '__menu_config__', '__footer_config__'];
-          loaded = data.filter(r => !sys.includes(r.admin_id)).map(r => ({
+          loaded = data.filter(r => !isSystemConfig(r)).map(r => ({
             id:        r.admin_id || r.slug,
             name:      r.name,
             slug:      r.slug || '',
@@ -159,8 +169,7 @@ async function loadSectionsFromAPI() {
         if (res.ok) {
           const data = await res.json();
           if (Array.isArray(data)) {
-            const sys = ['__homepage_config__', '__header_config__', '__menu_config__', '__footer_config__'];
-            loaded = data.filter(r => !sys.includes(r.admin_id)).map(r => ({
+            loaded = data.filter(r => !isSystemConfig(r)).map(r => ({
               id:        r.admin_id || r.slug,
               name:      r.name,
               slug:      r.slug || '',
@@ -341,7 +350,7 @@ function renderActive(active) {
     btn.addEventListener('click', () => openSectionStudio(btn.dataset.id));
   });
   sectionsTable.querySelectorAll('.action-btn--delete').forEach(btn => {
-    btn.addEventListener('click', () => deleteSection(btn.dataset.id));
+    btn.addEventListener('click', () => deleteSectionConfirm(btn.dataset.id));
   });
 }
 
@@ -382,7 +391,36 @@ function renderTrash(trash) {
     btn.addEventListener('click', () => restoreSection(btn.dataset.id));
   });
   trashTable.querySelectorAll('.action-btn--perm-delete').forEach(btn => {
-    btn.addEventListener('click', () => openConfirmDelete(btn.dataset.id));
+    btn.addEventListener('click', () => permanentDeleteSectionConfirm(btn.dataset.id));
+  });
+}
+
+function deleteSectionConfirm(id) {
+  const s = sections.find(s => s.id === id);
+  if (!s || s.id === 'all' || s.isPermanent) {
+    showToast('error', 'The "All" section is a permanent core section and cannot be deleted.');
+    return;
+  }
+  _confirmModal({
+    title: 'Move Section to Trash',
+    body: `Are you sure you want to move "<strong>${escapeHtml(s.name)}</strong>" to Trash?<br><br>It will be hidden from the public navigation and footer menus. You can restore it anytime from the Section Trash tab.`,
+    confirmText: 'Move to Trash',
+    confirmColor: '#dc2626',
+    variant: 'danger',
+    onConfirm: () => deleteSection(id)
+  });
+}
+
+function permanentDeleteSectionConfirm(id) {
+  const s = sections.find(s => s.id === id);
+  if (!s) return;
+  _confirmModal({
+    title: 'Delete Section Permanently',
+    body: `<strong style="color:#dc2626">Warning: This action cannot be undone!</strong><br><br>Permanently delete section "<strong>${escapeHtml(s.name)}</strong>" from the database?`,
+    confirmText: 'Delete Forever',
+    confirmColor: '#dc2626',
+    variant: 'danger',
+    onConfirm: () => permanentlyDelete(id)
   });
 }
 
@@ -6920,20 +6958,67 @@ async function loadActivityLogs(showToastFeedback = false) {
   }
 }
 
+let _activityCurrentPage = 1;
+let _activityPageSize = 25;
+let _filteredActivityLogs = [];
+
+function changeActivityPageSize(size) {
+  _activityPageSize = parseInt(size, 10) || 25;
+  _activityCurrentPage = 1;
+  renderActivityPage();
+}
+
+function goToActivityPage(page) {
+  const totalPages = Math.ceil(_filteredActivityLogs.length / _activityPageSize) || 1;
+  if (page < 1) page = 1;
+  if (page > totalPages) page = totalPages;
+  _activityCurrentPage = page;
+  renderActivityPage();
+}
+
 function renderActivityLogs(logs) {
+  _filteredActivityLogs = Array.isArray(logs) ? logs : [];
+  _activityCurrentPage = 1;
+  renderActivityPage();
+}
+
+function renderActivityPage() {
   const tbody = document.getElementById('activity-table-tbody');
   const emptyEl = document.getElementById('activity-table-empty');
+  const pageInfoEl = document.getElementById('activity-page-info');
+  const paginationBtnsEl = document.getElementById('activity-pagination-buttons');
+  const paginationWrap = document.getElementById('activity-pagination-wrap');
   if (!tbody) return;
 
-  if (!logs || logs.length === 0) {
+  const total = _filteredActivityLogs.length;
+
+  if (total === 0) {
     tbody.innerHTML = '';
     if (emptyEl) emptyEl.style.display = 'block';
+    if (pageInfoEl) pageInfoEl.textContent = 'Showing 0 of 0 events';
+    if (paginationBtnsEl) paginationBtnsEl.innerHTML = '';
+    if (paginationWrap) paginationWrap.style.display = 'none';
     return;
   }
 
   if (emptyEl) emptyEl.style.display = 'none';
+  if (paginationWrap) paginationWrap.style.display = 'flex';
 
-  tbody.innerHTML = logs.map(log => {
+  const totalPages = Math.ceil(total / _activityPageSize) || 1;
+  if (_activityCurrentPage > totalPages) _activityCurrentPage = totalPages;
+  if (_activityCurrentPage < 1) _activityCurrentPage = 1;
+
+  const startIdx = (_activityCurrentPage - 1) * _activityPageSize;
+  const endIdx = Math.min(startIdx + _activityPageSize, total);
+  const currentLogs = _filteredActivityLogs.slice(startIdx, endIdx);
+
+  // Update page range info
+  if (pageInfoEl) {
+    pageInfoEl.textContent = `Showing ${startIdx + 1}–${endIdx} of ${total} events`;
+  }
+
+  // Render Table Rows
+  tbody.innerHTML = currentLogs.map(log => {
     const actorEmail = log.actor_email || 'system';
     const actorName = log.actor_name || actorEmail;
     const actorRole = log.actor_role || 'Admin';
@@ -6985,6 +7070,61 @@ function renderActivityLogs(logs) {
       </tr>
     `;
   }).join('');
+
+  // Render Pagination Buttons
+  if (paginationBtnsEl) {
+    if (totalPages <= 1) {
+      paginationBtnsEl.innerHTML = '';
+      return;
+    }
+
+    let btnsHtml = '';
+    const btnStyle = (active, disabled) => `
+      padding: 4px 10px;
+      font-size: 12px;
+      font-weight: ${active ? '700' : '500'};
+      border: 1px solid ${active ? 'var(--brand-navy,#0a528e)' : '#cbd5e1'};
+      background: ${active ? 'var(--brand-navy,#0a528e)' : '#fff'};
+      color: ${active ? '#fff' : (disabled ? '#94a3b8' : 'var(--text-primary)')};
+      border-radius: 6px;
+      cursor: ${disabled ? 'not-allowed' : 'pointer'};
+      opacity: ${disabled ? '0.5' : '1'};
+      transition: all 0.15s;
+    `;
+
+    // First & Prev Buttons
+    btnsHtml += `<button type="button" class="btn-pg" onclick="goToActivityPage(1)" ${(_activityCurrentPage === 1) ? 'disabled' : ''} style="${btnStyle(false, _activityCurrentPage === 1)}" title="First Page">«</button>`;
+    btnsHtml += `<button type="button" class="btn-pg" onclick="goToActivityPage(${_activityCurrentPage - 1})" ${(_activityCurrentPage === 1) ? 'disabled' : ''} style="${btnStyle(false, _activityCurrentPage === 1)}" title="Previous Page">‹</button>`;
+
+    // Page Number Windows
+    const maxVisible = 5;
+    let startPage = Math.max(1, _activityCurrentPage - Math.floor(maxVisible / 2));
+    let endPage = Math.min(totalPages, startPage + maxVisible - 1);
+    if (endPage - startPage + 1 < maxVisible) {
+      startPage = Math.max(1, endPage - maxVisible + 1);
+    }
+
+    if (startPage > 1) {
+      btnsHtml += `<button type="button" class="btn-pg" onclick="goToActivityPage(1)" style="${btnStyle(false, false)}">1</button>`;
+      if (startPage > 2) btnsHtml += `<span style="padding:0 4px;color:#94a3b8;">…</span>`;
+    }
+
+    for (let p = startPage; p <= endPage; p++) {
+      const isCurrent = p === _activityCurrentPage;
+      btnsHtml += `<button type="button" class="btn-pg" onclick="goToActivityPage(${p})" style="${btnStyle(isCurrent, false)}">${p}</button>`;
+    }
+
+    if (endPage < totalPages) {
+      if (endPage < totalPages - 1) btnsHtml += `<span style="padding:0 4px;color:#94a3b8;">…</span>`;
+      btnsHtml += `<button type="button" class="btn-pg" onclick="goToActivityPage(${totalPages})" style="${btnStyle(false, false)}">${totalPages}</button>`;
+    }
+
+    // Next & Last Buttons
+    btnsHtml += `<button type="button" class="btn-pg" onclick="goToActivityPage(${_activityCurrentPage + 1})" ${(_activityCurrentPage === totalPages) ? 'disabled' : ''} style="${btnStyle(false, _activityCurrentPage === totalPages)}" title="Next Page">›</button>`;
+    btnsHtml += `<button type="button" class="btn-pg" onclick="goToActivityPage(${totalPages})" ${(_activityCurrentPage === totalPages) ? 'disabled' : ''} style="${btnStyle(false, _activityCurrentPage === totalPages)}" title="Last Page">»</button>`;
+
+    paginationBtnsEl.innerHTML = btnsHtml;
+  }
 }
 
 function openActivityDetails(logId) {
@@ -7089,6 +7229,18 @@ function exportActivityLogs(format) {
     showToast('success', 'Activity logs exported as CSV.');
   }
 }
+
+// Window global exports for Activity Log
+window.loadActivityLogs = loadActivityLogs;
+window.renderActivityLogs = renderActivityLogs;
+window.goToActivityPage = goToActivityPage;
+window.changeActivityPageSize = changeActivityPageSize;
+window.openActivityDetails = openActivityDetails;
+window.closeActivityDetails = closeActivityDetails;
+window.copyActivityJSON = copyActivityJSON;
+window.exportActivityLogs = exportActivityLogs;
+window.deleteSectionConfirm = deleteSectionConfirm;
+window.permanentDeleteSectionConfirm = permanentDeleteSectionConfirm;
 
 
 

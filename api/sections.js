@@ -815,7 +815,11 @@ module.exports = async function handler(req, res) {
     const { data, error } = await query;
     if (error) return res.status(500).json({ error: error.message });
 
-    const rows = (data || []).filter(r => r.admin_id !== '__menu_config__' && r.admin_id !== '__header_config__' && r.admin_id !== '__homepage_config__' && r.admin_id !== '__footer_config__' && r.admin_id !== '__section_configs__');
+    const rows = (data || []).filter(r => 
+      !r.admin_id?.startsWith('__') && 
+      !r.slug?.startsWith('__') && 
+      !r.name?.startsWith('{')
+    );
 
     if (statusParam === 'all' && session) {
       // Admin format: full section objects

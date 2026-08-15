@@ -34,7 +34,7 @@ module.exports = async function handler(req, res) {
     const category = req.query.category || 'all';
     const actor    = req.query.actor || '';
     const search   = (req.query.search || '').trim().toLowerCase();
-    const limit    = Math.min(Math.max(parseInt(req.query.limit || '100', 10), 1), 500);
+    const limit    = Math.min(Math.max(parseInt(req.query.limit || '100', 10), 1), 1000);
     const offset   = Math.max(parseInt(req.query.offset || '0', 10), 0);
 
     const client = sb();
