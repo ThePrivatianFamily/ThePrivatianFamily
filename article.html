@@ -311,10 +311,94 @@
           }
         }
 
-        // ── <head> meta ──
-        document.title = (a.seo_title || a.title || 'Article') + ' — The Privatian Family';
-        var metaDesc = document.querySelector('meta[name="description"]');
-        if(metaDesc) metaDesc.content = a.meta_description || a.deck || '';
+        // ── <head> meta & SEO tags ──
+        var pageTitle = (a.seo_title || a.title || 'Article') + ' — The Privatian Family';
+        var pageDesc = a.meta_description || a.deck || 'The Privatian Family — Insights, Stories & Heritage.';
+        var pageUrl = location.origin + (a.slug ? '/article/' + a.slug : '/article.html?id=' + encodeURIComponent(a.id || id));
+        var pageImg = a.hero_img_url || (location.origin + '/img1.png');
+
+        document.title = pageTitle;
+
+        function setMetaTag(attr, key, val) {
+          if (!val) return;
+          var el = document.querySelector('meta[' + attr + '="' + key + '"]');
+          if (!el) {
+            el = document.createElement('meta');
+            el.setAttribute(attr, key);
+            document.head.appendChild(el);
+          }
+          el.setAttribute('content', val);
+        }
+
+        setMetaTag('name', 'description', pageDesc);
+
+        // Canonical Tag
+        var canEl = document.querySelector('link[rel="canonical"]');
+        if (!canEl) {
+          canEl = document.createElement('link');
+          canEl.setAttribute('rel', 'canonical');
+          document.head.appendChild(canEl);
+        }
+        canEl.setAttribute('href', pageUrl);
+
+        // Open Graph Tags
+        setMetaTag('property', 'og:type', 'article');
+        setMetaTag('property', 'og:site_name', 'The Privatian Family');
+        setMetaTag('property', 'og:title', a.seo_title || a.title || '');
+        setMetaTag('property', 'og:description', pageDesc);
+        setMetaTag('property', 'og:url', pageUrl);
+        setMetaTag('property', 'og:image', pageImg);
+        if (a.published_at) setMetaTag('property', 'article:published_time', new Date(a.published_at).toISOString());
+        if (a.updated_at) setMetaTag('property', 'article:modified_time', new Date(a.updated_at).toISOString());
+        if (a.section) setMetaTag('property', 'article:section', a.section);
+        if (a.author) setMetaTag('property', 'article:author', a.author);
+
+        // Twitter / X Card Tags
+        setMetaTag('name', 'twitter:card', 'summary_large_image');
+        setMetaTag('name', 'twitter:title', a.seo_title || a.title || '');
+        setMetaTag('name', 'twitter:description', pageDesc);
+        setMetaTag('name', 'twitter:image', pageImg);
+
+        // Google Structured Data (JSON-LD Schema for NewsArticle)
+        try {
+          var oldLd = document.getElementById('article-jsonld');
+          if (oldLd) oldLd.remove();
+
+          var schemaData = {
+            "@context": "https://schema.org",
+            "@type": "NewsArticle",
+            "mainEntityOfPage": {
+              "@type": "WebPage",
+              "@id": pageUrl
+            },
+            "headline": a.title || pageTitle,
+            "description": pageDesc,
+            "image": a.hero_img_url ? [a.hero_img_url] : [],
+            "datePublished": a.published_at || a.created_at || new Date().toISOString(),
+            "dateModified": a.updated_at || a.published_at || a.created_at || new Date().toISOString(),
+            "author": [{
+              "@type": "Person",
+              "name": a.author || "The Privatian Family",
+              "jobTitle": a.author_role || undefined
+            }],
+            "publisher": {
+              "@type": "Organization",
+              "name": "The Privatian Family",
+              "logo": {
+                "@type": "ImageObject",
+                "url": location.origin + "/logo.png"
+              }
+            },
+            "articleSection": a.section || "General",
+            "keywords": a.tags ? a.tags.split(',').map(function(t){ return t.trim(); }).filter(function(t){ return !t.startsWith('feat_pos:'); }).join(', ') : ""
+          };
+
+          var ldScript = document.createElement('script');
+          ldScript.id = 'article-jsonld';
+          ldScript.type = 'application/ld+json';
+          ldScript.text = JSON.stringify(schemaData, null, 2);
+          document.head.appendChild(ldScript);
+        } catch(e) {}
 
         // ── Section pill & breadcrumb ──
         var secSlug = slugify(a.section || '');

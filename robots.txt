@@ -1,0 +1,22 @@
+# robots.txt for The Privatian Family
+User-agent: *
+Allow: /
+Allow: /section/
+Allow: /article/
+Allow: /events
+Allow: /assets/
+Allow: /img/
+Allow: /sitemap.xml
+
+# Restrict admin & private dashboard routes from search crawlers
+Disallow: /admin
+Disallow: /admin.html
+Disallow: /admin-login
+Disallow: /admin-login.html
+Disallow: /admin-article-editor
+Disallow: /admin-article-editor.html
+Disallow: /api/auth
+Disallow: /api/admins
+
+# XML Sitemaps
+Sitemap: https://theprivatianfamily.vercel.app/sitemap.xml
