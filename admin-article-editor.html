@@ -3186,16 +3186,29 @@ async function handleFeatImgFile(input) {
   const localUrl = URL.createObjectURL(file);
   showFeatPreview(localUrl);
   try {
-    const r = await api('/api/articles?action=upload', { method: 'POST' });
-    const d = await r.json();
-    if (!r.ok) throw new Error(d.error || 'Upload init failed');
-    await fetch(d.uploadUrl, { method: 'PUT', headers: { 'Content-Type': file.type }, body: file });
-    _featImgUrl = d.publicUrl;
-    showFeatPreview(d.publicUrl);
-    DIRTY = true;
-    setSaveStatus('Unsaved changes');
-    lsSave();
-    toast('Featured image uploaded', 'ok');
+    const reader = new FileReader();
+    reader.onload = async () => {
+      try {
+        const r = await api('/api/media?action=upload', {
+          method: 'POST',
+          body: JSON.stringify({
+            fileData: reader.result,
+            filename: file.name,
+            mimeType: file.type || 'image/jpeg',
+            fileSize: file.size
+          })
+        });
+        const d = await r.json();
+        if (!r.ok || !d.ok || !d.media) throw new Error(d.error || 'Upload failed');
+        _featImgUrl = d.media.url;
+        showFeatPreview(d.media.url);
+        DIRTY = true;
+        setSaveStatus('Unsaved changes');
+        lsSave();
+        toast(`Featured image uploaded to R2 (${d.media.unique_id})`, 'ok');
+      } catch(e) { toast('Featured image upload failed: ' + e.message, 'err'); }
+    };
+    reader.readAsDataURL(file);
   } catch(e) { toast('Featured image upload failed: ' + e.message, 'err'); }
 }
 function showFeatPreview(url) {
@@ -3452,22 +3465,31 @@ async function handleImgFile(input) {
   const localUrl = URL.createObjectURL(file);
   insertImgAtCursor(localUrl);
 
-  // Upload via signed URL
   try {
-    const r = await api('/api/articles?action=upload', { method: 'POST' });
-    const d = await r.json();
-    if (!r.ok) throw new Error(d.error || 'Upload init failed');
+    const reader = new FileReader();
+    reader.onload = async () => {
+      try {
+        const r = await api('/api/media?action=upload', {
+          method: 'POST',
+          body: JSON.stringify({
+            fileData: reader.result,
+            filename: file.name,
+            mimeType: file.type || 'image/jpeg',
+            fileSize: file.size
+          })
+        });
+        const d = await r.json();
+        if (!r.ok || !d.ok || !d.media) throw new Error(d.error || 'Upload failed');
 
-    // PUT file directly to Supabase Storage
-    await fetch(d.uploadUrl, {
-      method: 'PUT', headers: { 'Content-Type': file.type }, body: file
-    });
-
-    // Replace blob src with real URL
-    g('ed-rt').querySelectorAll('img').forEach(img => {
-      if (img.src === localUrl) img.src = d.publicUrl;
-    });
-    DIRTY = true; lsSave();
+        // Replace blob src with real Cloudflare R2 URL
+        g('ed-rt').querySelectorAll('img').forEach(img => {
+          if (img.src === localUrl) img.src = d.media.url;
+        });
+        DIRTY = true; lsSave();
+        toast(`Image uploaded to R2 (${d.media.unique_id})`, 'ok');
+      } catch(e) { toast('Upload failed: ' + e.message, 'err'); }
+    };
+    reader.readAsDataURL(file);
   } catch(e) { toast('Upload failed: ' + e.message, 'err'); }
 }
 

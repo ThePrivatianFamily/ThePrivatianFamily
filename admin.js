@@ -1493,6 +1493,7 @@ const PAGE_CONFIG = {
   footer:    { title: 'Footer Settings', breadcrumb: 'Footer' },
   dashboard: { title: 'Dashboard', breadcrumb: 'Dashboard' },
   articles:  { title: 'Articles',  breadcrumb: 'Articles' },
+  gallery:   { title: 'Media Gallery & Asset Library', breadcrumb: 'Gallery' },
   settings:  { title: 'Settings',  breadcrumb: 'Settings' },
   access:    { title: 'Manage Access', breadcrumb: 'Manage Access' },
   activity:  { title: 'Activity Log & Audit Trail', breadcrumb: 'Activity Log' },
@@ -1520,6 +1521,15 @@ function navigateTo(page) {
   if (page === 'footer')   { initFooterPage(); }
   if (page === 'articles') { initArticlesPage(); }
   if (page === 'activity') { loadActivityLogs(); }
+  if (page === 'gallery')  {
+    loadGalleryAssets();
+    initGalleryUploadDropzone();
+    const btn = document.createElement('button');
+    btn.className = 'btn btn--primary';
+    btn.innerHTML = `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Upload Images`;
+    btn.onclick = () => document.getElementById('gallery-file-input').click();
+    topbarActions.appendChild(btn);
+  }
   if (page === 'sections') {
     // New Section button
     const btn = document.createElement('button');
@@ -8345,6 +8355,642 @@ window.exportActivityLogs = exportActivityLogs;
 window.deleteSectionConfirm = deleteSectionConfirm;
 window.permanentDeleteSectionConfirm = permanentDeleteSectionConfirm;
 
+// =================================================================
+// CLOUDFLARE R2 MEDIA GALLERY & ASSET MANAGEMENT ENGINE
+// =================================================================
 
+var _rawGalleryList = [];
+var _galleryFilter = 'all';
+var _gallerySort = 'newest';
+var _gallerySearchQuery = '';
+var _galleryCurrentInspectorItem = null;
+var _galleryPickerCallback = null;
+var _galleryPickerSelectedItem = null;
 
+// ── 1. Load Gallery Assets ───────────────────────────────────────
+async function loadGalleryAssets() {
+  const grid = document.getElementById('gallery-grid');
+  if (grid) {
+    grid.innerHTML = `
+      <div style="grid-column: 1 / -1; text-align: center; padding: 48px 20px; color: var(--text-muted);">
+        <div class="ft-loading-spinner" style="margin: 0 auto 12px; width: 28px; height: 28px; border: 3px solid #e2e8f0; border-top-color: #4f46e5; border-radius: 50%; animation: ftSpin 0.8s linear infinite;"></div>
+        <p style="font-size: 13px; font-weight: 600;">Loading assets from Cloudflare R2...</p>
+      </div>
+    `;
+  }
 
+  try {
+    const data = await _apiGet('/api/media?action=list');
+    if (data && Array.isArray(data.items)) {
+      _rawGalleryList = data.items;
+      _updateGalleryCounts();
+      renderGalleryGrid();
+    }
+  } catch(e) {
+    if (grid) {
+      grid.innerHTML = `
+        <div class="gallery-empty-state">
+          <div class="gallery-empty-icon" style="color:#ef4444;background:#fee2e2;">
+            <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          </div>
+          <h3 style="margin:0;font-size:15px;color:var(--text-primary);">Failed to load media library</h3>
+          <p style="margin:0;font-size:12.5px;color:var(--text-muted);">${escapeHtml(e.message || 'Check database connection')}</p>
+          <button class="btn btn--secondary btn--sm" onclick="loadGalleryAssets()" style="margin-top:8px;">Try Again</button>
+        </div>
+      `;
+    }
+  }
+}
+
+// ── 2. Update Badge & Category Counts ────────────────────────────
+function _updateGalleryCounts() {
+  const badge = document.getElementById('gallery-count-badge');
+  const countAll = document.getElementById('gallery-filter-count-all');
+  const countPhotos = document.getElementById('gallery-filter-count-photos');
+  const countSvg = document.getElementById('gallery-filter-count-svg');
+  const footerText = document.getElementById('gallery-total-count-text');
+
+  const total = _rawGalleryList.length;
+  const photos = _rawGalleryList.filter(x => !x.mime_type?.includes('svg') && !x.filename?.toLowerCase().endsWith('.svg')).length;
+  const svgs = _rawGalleryList.filter(x => x.mime_type?.includes('svg') || x.filename?.toLowerCase().endsWith('.svg')).length;
+
+  if (badge) {
+    badge.textContent = total;
+    badge.style.display = total > 0 ? '' : 'none';
+  }
+  if (countAll) countAll.textContent = total;
+  if (countPhotos) countPhotos.textContent = photos;
+  if (countSvg) countSvg.textContent = svgs;
+  if (footerText) {
+    const totalBytes = _rawGalleryList.reduce((acc, cur) => acc + (cur.file_size || 0), 0);
+    footerText.textContent = `${total} ${total === 1 ? 'item' : 'items'} (${_formatFileSize(totalBytes)}) stored in Cloudflare R2`;
+  }
+}
+
+// ── 3. Render Gallery Grid ───────────────────────────────────────
+function renderGalleryGrid() {
+  const grid = document.getElementById('gallery-grid');
+  if (!grid) return;
+
+  // Filter
+  let filtered = [..._rawGalleryList];
+  if (_galleryFilter === 'photos') {
+    filtered = filtered.filter(x => !x.mime_type?.includes('svg') && !x.filename?.toLowerCase().endsWith('.svg'));
+  } else if (_galleryFilter === 'svg') {
+    filtered = filtered.filter(x => x.mime_type?.includes('svg') || x.filename?.toLowerCase().endsWith('.svg'));
+  }
+
+  // Search query
+  if (_gallerySearchQuery) {
+    const q = _gallerySearchQuery.toLowerCase();
+    filtered = filtered.filter(x => 
+      (x.filename && x.filename.toLowerCase().includes(q)) ||
+      (x.unique_id && x.unique_id.toLowerCase().includes(q)) ||
+      (x.title && x.title.toLowerCase().includes(q)) ||
+      (x.alt_text && x.alt_text.toLowerCase().includes(q)) ||
+      (x.alt_text_bn && x.alt_text_bn.toLowerCase().includes(q)) ||
+      (Array.isArray(x.tags) && x.tags.some(t => t.toLowerCase().includes(q)))
+    );
+  }
+
+  // Sort
+  if (_gallerySort === 'newest') {
+    filtered.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+  } else if (_gallerySort === 'oldest') {
+    filtered.sort((a, b) => new Date(a.created_at || 0) - new Date(b.created_at || 0));
+  } else if (_gallerySort === 'largest') {
+    filtered.sort((a, b) => (b.file_size || 0) - (a.file_size || 0));
+  } else if (_gallerySort === 'smallest') {
+    filtered.sort((a, b) => (a.file_size || 0) - (b.file_size || 0));
+  } else if (_gallerySort === 'name') {
+    filtered.sort((a, b) => (a.filename || '').localeCompare(b.filename || ''));
+  }
+
+  if (filtered.length === 0) {
+    grid.innerHTML = `
+      <div class="gallery-empty-state">
+        <div class="gallery-empty-icon">
+          <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+        </div>
+        <h3 style="margin:0;font-size:15px;color:var(--text-primary);">${_gallerySearchQuery ? 'No matching images found' : 'No images uploaded yet'}</h3>
+        <p style="margin:0;font-size:12.5px;color:var(--text-muted);max-width:360px;">${_gallerySearchQuery ? 'Try searching for a different keyword or filename.' : 'Drag & drop images into the upload area above to store them in Cloudflare R2.'}</p>
+        ${!_gallerySearchQuery ? `<button class="btn btn--primary btn--sm" onclick="document.getElementById('gallery-file-input').click()" style="margin-top:4px;">Upload First Image</button>` : ''}
+      </div>
+    `;
+    return;
+  }
+
+  grid.innerHTML = filtered.map(item => {
+    const ext = (item.filename && item.filename.split('.').pop()) || (item.mime_type ? item.mime_type.split('/').pop() : 'IMG');
+    const sizeStr = _formatFileSize(item.file_size);
+    const dateStr = _formatShortDate(item.created_at);
+
+    return `
+      <div class="gallery-item-card" data-id="${item.unique_id}">
+        <div class="gallery-thumb-wrap" onclick="openMediaInspector('${item.unique_id}')" title="Click to view details &amp; copy code">
+          <img src="${escapeHtml(item.url)}" alt="${escapeHtml(item.alt_text || item.title || item.filename)}" class="gallery-thumb-img" loading="lazy" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\\'http://www.w3.org/2000/svg\\' width=\\'100\\' height=\\'100\\' viewBox=\\'0 0 24 24\\' fill=\\'none\\' stroke=\\'%2364748b\\' stroke-width=\\'2\\'><rect x=\\'3\\' y=\\'3\\' width=\\'18\\' height=\\'18\\' rx=\\'2\\'/><circle cx=\\'8.5\\' cy=\\'8.5\\' r=\\'1.5\\'/><polyline points=\\'21 15 16 10 5 21\\'/></svg>'" />
+          <span class="gallery-badge-format">${escapeHtml(ext.toUpperCase())}</span>
+          <span class="gallery-badge-size">${sizeStr}</span>
+        </div>
+        <div class="gallery-card-body">
+          <div class="gallery-id-row">
+            <span class="gallery-id-pill" onclick="_copyUniqueId('${item.unique_id}')" title="Click to copy Unique ID: ${item.unique_id}">
+              <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+              <span>${item.unique_id}</span>
+            </span>
+          </div>
+          <div class="gallery-card-title" title="${escapeHtml(item.title || item.filename)}">${escapeHtml(item.title || item.filename)}</div>
+          <div class="gallery-card-meta">
+            <span>${dateStr}</span>
+            <div class="gallery-card-actions">
+              <button type="button" class="gallery-icon-btn" onclick="_copyMediaDirectUrl('${escapeHtml(item.url)}')" title="Copy Public CDN URL">
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+              </button>
+              <button type="button" class="gallery-icon-btn" onclick="openMediaInspector('${item.unique_id}')" title="Inspect &amp; Edit Metadata">
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+              </button>
+              <button type="button" class="gallery-icon-btn danger" onclick="deleteMediaConfirm('${item.unique_id}', '${escapeHtml(item.filename || item.unique_id)}')" title="Delete Asset from R2">
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+// ── 4. File Upload & Drag-and-Drop Pipeline ───────────────────────
+function initGalleryUploadDropzone() {
+  const dropzone = document.getElementById('gallery-dropzone');
+  const fileInput = document.getElementById('gallery-file-input');
+  if (!dropzone || !fileInput) return;
+
+  if (!dropzone._hasInit) {
+    dropzone._hasInit = true;
+
+    ['dragenter', 'dragover'].forEach(eventName => {
+      dropzone.addEventListener(eventName, e => {
+        e.preventDefault();
+        e.stopPropagation();
+        dropzone.classList.add('dragover');
+      }, false);
+    });
+
+    ['dragleave', 'drop'].forEach(eventName => {
+      dropzone.addEventListener(eventName, e => {
+        e.preventDefault();
+        e.stopPropagation();
+        dropzone.classList.remove('dragover');
+      }, false);
+    });
+
+    dropzone.addEventListener('drop', e => {
+      const dt = e.dataTransfer;
+      const files = dt.files;
+      if (files && files.length) {
+        handleGalleryFilesUpload(files);
+      }
+    }, false);
+
+    fileInput.addEventListener('change', e => {
+      if (fileInput.files && fileInput.files.length) {
+        handleGalleryFilesUpload(fileInput.files);
+        fileInput.value = '';
+      }
+    });
+  }
+}
+
+async function handleGalleryFilesUpload(files) {
+  if (!files || !files.length) return;
+  const progressList = document.getElementById('gallery-upload-progress-list');
+  if (progressList) {
+    progressList.style.display = 'flex';
+    progressList.innerHTML = '';
+  }
+
+  let successCount = 0;
+  let errorCount = 0;
+
+  for (let i = 0; i < files.length; i++) {
+    const file = files[i];
+    const itemId = `upl-${Date.now()}-${i}`;
+
+    // Add progress item UI
+    if (progressList) {
+      const itemEl = document.createElement('div');
+      itemEl.id = itemId;
+      itemEl.className = 'gallery-progress-item';
+      itemEl.innerHTML = `
+        <span style="font-weight:600;min-width:140px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(file.name)}</span>
+        <div class="gallery-progress-bar-wrap">
+          <div class="gallery-progress-bar-fill" id="${itemId}-bar" style="width: 30%;"></div>
+        </div>
+        <span id="${itemId}-status" style="color:var(--brand-navy,#0a528e);font-weight:700;font-size:11px;">Uploading...</span>
+      `;
+      progressList.appendChild(itemEl);
+    }
+
+    try {
+      // Read file to base64
+      const base64Data = await _readFileAsBase64(file);
+      const bar = document.getElementById(`${itemId}-bar`);
+      if (bar) bar.style.width = '70%';
+
+      const res = await _apiPost('/api/media?action=upload', {
+        fileData: base64Data,
+        filename: file.name,
+        mimeType: file.type || 'image/jpeg',
+        fileSize: file.size
+      });
+
+      if (res && res.ok && res.media) {
+        successCount++;
+        const statusEl = document.getElementById(`${itemId}-status`);
+        const bar = document.getElementById(`${itemId}-bar`);
+        if (statusEl) { statusEl.textContent = `Uploaded (${res.media.unique_id})`; statusEl.style.color = '#059669'; }
+        if (bar) { bar.style.width = '100%'; bar.style.background = '#10b981'; }
+        _rawGalleryList.unshift(res.media);
+      } else {
+        throw new Error((res && res.error) || 'Upload failed');
+      }
+    } catch(err) {
+      errorCount++;
+      const statusEl = document.getElementById(`${itemId}-status`);
+      const bar = document.getElementById(`${itemId}-bar`);
+      if (statusEl) { statusEl.textContent = 'Failed: ' + (err.message || 'Error'); statusEl.style.color = '#dc2626'; }
+      if (bar) { bar.style.width = '100%'; bar.style.background = '#ef4444'; }
+    }
+  }
+
+  _updateGalleryCounts();
+  renderGalleryGrid();
+
+  if (successCount > 0) {
+    showToast('success', `Successfully uploaded ${successCount} ${successCount === 1 ? 'image' : 'images'} to Cloudflare R2.`);
+  }
+  if (errorCount > 0) {
+    showToast('error', `Failed to upload ${errorCount} ${errorCount === 1 ? 'image' : 'images'}.`);
+  }
+
+  setTimeout(() => {
+    if (progressList) progressList.style.display = 'none';
+  }, 4000);
+}
+
+function _readFileAsBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = error => reject(error);
+    reader.readAsDataURL(file);
+  });
+}
+
+// ── 5. Toolbar Handlers ──────────────────────────────────────────
+function _setGalleryFilter(filter) {
+  _galleryFilter = filter;
+  document.querySelectorAll('.gallery-tab-pill').forEach(btn => {
+    btn.classList.toggle('active', btn.id === `gallery-filter-${filter}`);
+  });
+  renderGalleryGrid();
+}
+
+function _handleGallerySearch() {
+  const input = document.getElementById('gallery-search-input');
+  const clearBtn = document.getElementById('gallery-search-clear');
+  _gallerySearchQuery = (input ? input.value : '').trim();
+  if (clearBtn) clearBtn.style.display = _gallerySearchQuery ? 'block' : 'none';
+  renderGalleryGrid();
+}
+
+function _clearGallerySearch() {
+  const input = document.getElementById('gallery-search-input');
+  const clearBtn = document.getElementById('gallery-search-clear');
+  if (input) input.value = '';
+  _gallerySearchQuery = '';
+  if (clearBtn) clearBtn.style.display = 'none';
+  renderGalleryGrid();
+}
+
+function _handleGallerySort() {
+  const select = document.getElementById('gallery-sort-select');
+  if (select) _gallerySort = select.value;
+  renderGalleryGrid();
+}
+
+// ── 6. Copy Helpers ──────────────────────────────────────────────
+function _copyUniqueId(uniqueId) {
+  if (!uniqueId) return;
+  navigator.clipboard.writeText(uniqueId).then(() => {
+    showToast('success', `Copied ID: ${uniqueId}`);
+  }).catch(() => {
+    showToast('info', `ID: ${uniqueId}`);
+  });
+}
+
+function _copyMediaDirectUrl(url) {
+  if (!url) return;
+  navigator.clipboard.writeText(url).then(() => {
+    showToast('success', 'Public CDN URL copied to clipboard.');
+  }).catch(() => {
+    showToast('info', 'URL: ' + url);
+  });
+}
+
+// ── 7. Media Inspector Modal ─────────────────────────────────────
+function openMediaInspector(uniqueId) {
+  const item = _rawGalleryList.find(x => x.unique_id === uniqueId || x.id === uniqueId);
+  if (!item) return;
+  _galleryCurrentInspectorItem = item;
+
+  const modal = document.getElementById('modal-media-inspector');
+  if (!modal) return;
+
+  const imgEl = document.getElementById('media-insp-img');
+  const filenameEl = document.getElementById('media-insp-filename');
+  const fmtBadge = document.getElementById('media-insp-fmt-badge');
+  const uniqueIdEl = document.getElementById('media-insp-unique-id');
+  const sizeEl = document.getElementById('media-insp-size');
+  const dateEl = document.getElementById('media-insp-date');
+  const urlInp = document.getElementById('media-insp-direct-url-input');
+  const titleInp = document.getElementById('media-insp-title-input');
+  const altInp = document.getElementById('media-insp-alt-input');
+  const altBnInp = document.getElementById('media-insp-alt-bn-input');
+  const currIdInp = document.getElementById('media-insp-current-id');
+
+  if (imgEl) imgEl.src = item.url;
+  if (filenameEl) filenameEl.textContent = item.filename || item.unique_id;
+  const ext = (item.filename && item.filename.split('.').pop()) || 'IMG';
+  if (fmtBadge) fmtBadge.textContent = ext.toUpperCase();
+  if (uniqueIdEl) uniqueIdEl.textContent = item.unique_id;
+  if (sizeEl) sizeEl.textContent = _formatFileSize(item.file_size);
+  if (dateEl) dateEl.textContent = _formatLongDate(item.created_at);
+  if (urlInp) urlInp.value = item.url;
+  if (titleInp) titleInp.value = item.title || '';
+  if (altInp) altInp.value = item.alt_text || '';
+  if (altBnInp) altBnInp.value = item.alt_text_bn || '';
+  if (currIdInp) currIdInp.value = item.unique_id;
+
+  modal.hidden = false;
+}
+
+function closeMediaInspector() {
+  const modal = document.getElementById('modal-media-inspector');
+  if (modal) modal.hidden = true;
+  _galleryCurrentInspectorItem = null;
+}
+
+function _copyInspectorUniqueId() {
+  if (_galleryCurrentInspectorItem) _copyUniqueId(_galleryCurrentInspectorItem.unique_id);
+}
+
+function _copyInspectorDirectUrl() {
+  if (_galleryCurrentInspectorItem) _copyMediaDirectUrl(_galleryCurrentInspectorItem.url);
+}
+
+function _copyInspectorMarkdown() {
+  if (!_galleryCurrentInspectorItem) return;
+  const alt = _galleryCurrentInspectorItem.alt_text || _galleryCurrentInspectorItem.title || 'Image';
+  const md = `![${alt}](${_galleryCurrentInspectorItem.url})`;
+  navigator.clipboard.writeText(md).then(() => {
+    showToast('success', 'Markdown snippet copied to clipboard.');
+  });
+}
+
+async function _saveInspectorMetadata() {
+  if (!_galleryCurrentInspectorItem) return;
+  const btn = document.getElementById('media-insp-save-btn');
+  const title = (document.getElementById('media-insp-title-input').value || '').trim();
+  const altText = (document.getElementById('media-insp-alt-input').value || '').trim();
+  const altTextBn = (document.getElementById('media-insp-alt-bn-input').value || '').trim();
+
+  if (btn) { btn.disabled = true; btn.textContent = 'Saving...'; }
+
+  try {
+    const res = await _apiPut(`/api/media?action=update&id=${encodeURIComponent(_galleryCurrentInspectorItem.unique_id)}`, {
+      title,
+      alt_text: altText,
+      alt_text_bn: altTextBn
+    });
+
+    if (res && res.ok && res.media) {
+      _galleryCurrentInspectorItem.title = title;
+      _galleryCurrentInspectorItem.alt_text = altText;
+      _galleryCurrentInspectorItem.alt_text_bn = altTextBn;
+      const idx = _rawGalleryList.findIndex(x => x.unique_id === _galleryCurrentInspectorItem.unique_id);
+      if (idx !== -1) _rawGalleryList[idx] = { ..._rawGalleryList[idx], ...res.media };
+      renderGalleryGrid();
+      showToast('success', 'Metadata saved successfully.');
+    }
+  } catch(e) {
+    showToast('error', 'Failed to update metadata: ' + e.message);
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'Save Metadata'; }
+  }
+}
+
+function _deleteInspectorMedia() {
+  if (!_galleryCurrentInspectorItem) return;
+  const item = _galleryCurrentInspectorItem;
+  closeMediaInspector();
+  deleteMediaConfirm(item.unique_id, item.filename || item.unique_id);
+}
+
+function deleteMediaConfirm(uniqueId, filename) {
+  _confirmModal({
+    title: 'Delete Asset from R2',
+    body: `Permanently delete <strong>${escapeHtml(filename)}</strong> (<code style="color:#4f46e5;">${uniqueId}</code>) from Cloudflare R2 storage?<br><div style="margin-top:8px;font-size:12px;color:#991b1b;background:#fef2f2;border:1px solid #fecaca;padding:8px 12px;border-radius:8px;">This will remove the file from the CDN. Any articles referencing this direct URL will need an updated image.</div>`,
+    confirmText: 'Delete Asset',
+    variant: 'danger',
+    onConfirm: async () => {
+      try {
+        const res = await _apiDelete(`/api/media?action=delete&id=${encodeURIComponent(uniqueId)}`);
+        if (res && res.ok) {
+          _rawGalleryList = _rawGalleryList.filter(x => x.unique_id !== uniqueId && x.id !== uniqueId);
+          _updateGalleryCounts();
+          renderGalleryGrid();
+          showToast('success', `Asset ${filename} deleted from Cloudflare R2.`);
+        }
+      } catch(e) {
+        showToast('error', 'Failed to delete asset: ' + e.message);
+      }
+    }
+  });
+}
+
+// ── 8. Universal Gallery Picker Modal (for Articles / Sections) ───
+function openGalleryPicker(callback) {
+  _galleryPickerCallback = callback;
+  _galleryPickerSelectedItem = null;
+  const modal = document.getElementById('modal-gallery-picker');
+  const confirmBtn = document.getElementById('picker-confirm-btn');
+  const summaryEl = document.getElementById('picker-selected-summary');
+  if (confirmBtn) confirmBtn.disabled = true;
+  if (summaryEl) summaryEl.textContent = 'No image selected';
+
+  if (modal) modal.hidden = false;
+
+  if (!_rawGalleryList || !_rawGalleryList.length) {
+    loadGalleryAssets().then(() => _renderPickerGrid());
+  } else {
+    _renderPickerGrid();
+  }
+}
+
+function closeGalleryPicker() {
+  const modal = document.getElementById('modal-gallery-picker');
+  if (modal) modal.hidden = true;
+  _galleryPickerCallback = null;
+  _galleryPickerSelectedItem = null;
+}
+
+function _renderPickerGrid(searchQuery = '') {
+  const grid = document.getElementById('picker-gallery-grid');
+  if (!grid) return;
+
+  let items = [..._rawGalleryList];
+  if (searchQuery) {
+    const q = searchQuery.toLowerCase();
+    items = items.filter(x => 
+      (x.filename && x.filename.toLowerCase().includes(q)) ||
+      (x.title && x.title.toLowerCase().includes(q)) ||
+      (x.unique_id && x.unique_id.toLowerCase().includes(q))
+    );
+  }
+
+  if (items.length === 0) {
+    grid.innerHTML = `
+      <div style="grid-column:1/-1;text-align:center;padding:32px 14px;color:var(--text-muted);">
+        <p style="margin:0;font-size:13px;">No images found in gallery.</p>
+      </div>
+    `;
+    return;
+  }
+
+  grid.innerHTML = items.map(item => {
+    const isSel = _galleryPickerSelectedItem && (_galleryPickerSelectedItem.unique_id === item.unique_id);
+    return `
+      <div class="picker-item-card ${isSel ? 'selected' : ''}" onclick="_selectGalleryPickerItem('${item.unique_id}')" title="${escapeHtml(item.title || item.filename)}">
+        <img src="${escapeHtml(item.url)}" alt="" class="picker-item-thumb" />
+        <div class="picker-item-name">${escapeHtml(item.title || item.filename)}</div>
+        <div class="picker-item-check">
+          <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function _handlePickerSearch() {
+  const input = document.getElementById('picker-search-input');
+  _renderPickerGrid(input ? input.value.trim() : '');
+}
+
+function _selectGalleryPickerItem(uniqueId) {
+  const item = _rawGalleryList.find(x => x.unique_id === uniqueId || x.id === uniqueId);
+  if (!item) return;
+  _galleryPickerSelectedItem = item;
+
+  const confirmBtn = document.getElementById('picker-confirm-btn');
+  const summaryEl = document.getElementById('picker-selected-summary');
+  if (confirmBtn) confirmBtn.disabled = false;
+  if (summaryEl) {
+    summaryEl.innerHTML = `Selected: <strong>${escapeHtml(item.title || item.filename)}</strong> (<code style="color:#4f46e5;">${item.unique_id}</code>)`;
+  }
+
+  // Highlight selected card
+  document.querySelectorAll('.picker-item-card').forEach(el => {
+    el.classList.toggle('selected', el.getAttribute('title') === (item.title || item.filename));
+  });
+}
+
+function _confirmGalleryPickerSelection() {
+  if (!_galleryPickerSelectedItem || !_galleryPickerCallback) return;
+  try {
+    _galleryPickerCallback({
+      url: _galleryPickerSelectedItem.url,
+      uniqueId: _galleryPickerSelectedItem.unique_id,
+      title: _galleryPickerSelectedItem.title || '',
+      altText: _galleryPickerSelectedItem.alt_text || '',
+      altTextBn: _galleryPickerSelectedItem.alt_text_bn || ''
+    });
+  } catch(e) {}
+  closeGalleryPicker();
+}
+
+async function _handlePickerQuickUpload(e) {
+  const file = e.target.files && e.target.files[0];
+  if (!file) return;
+
+  try {
+    showToast('info', 'Uploading to Cloudflare R2...');
+    const base64 = await _readFileAsBase64(file);
+    const res = await _apiPost('/api/media?action=upload', {
+      fileData: base64,
+      filename: file.name,
+      mimeType: file.type || 'image/jpeg',
+      fileSize: file.size
+    });
+
+    if (res && res.ok && res.media) {
+      _rawGalleryList.unshift(res.media);
+      _updateGalleryCounts();
+      _renderPickerGrid();
+      _selectGalleryPickerItem(res.media.unique_id);
+      showToast('success', 'Image uploaded to R2 and selected.');
+    }
+  } catch(err) {
+    showToast('error', 'Upload failed: ' + err.message);
+  }
+}
+
+// ── 9. Formatting Helpers ─────────────────────────────────────────
+function _formatFileSize(bytes) {
+  if (!bytes || bytes === 0) return '0 B';
+  const k = 1024;
+  const sizes = ['B', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+}
+
+function _formatShortDate(isoString) {
+  if (!isoString) return '—';
+  try {
+    const d = new Date(isoString);
+    return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+  } catch(e) { return '—'; }
+}
+
+function _formatLongDate(isoString) {
+  if (!isoString) return '—';
+  try {
+    const d = new Date(isoString);
+    return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+  } catch(e) { return '—'; }
+}
+
+// Window global exports for Gallery
+window.loadGalleryAssets = loadGalleryAssets;
+window.initGalleryUploadDropzone = initGalleryUploadDropzone;
+window._setGalleryFilter = _setGalleryFilter;
+window._handleGallerySearch = _handleGallerySearch;
+window._clearGallerySearch = _clearGallerySearch;
+window._handleGallerySort = _handleGallerySort;
+window._copyUniqueId = _copyUniqueId;
+window._copyMediaDirectUrl = _copyMediaDirectUrl;
+window.openMediaInspector = openMediaInspector;
+window.closeMediaInspector = closeMediaInspector;
+window._copyInspectorUniqueId = _copyInspectorUniqueId;
+window._copyInspectorDirectUrl = _copyInspectorDirectUrl;
+window._copyInspectorMarkdown = _copyInspectorMarkdown;
+window._saveInspectorMetadata = _saveInspectorMetadata;
+window._deleteInspectorMedia = _deleteInspectorMedia;
+window.deleteMediaConfirm = deleteMediaConfirm;
+window.openGalleryPicker = openGalleryPicker;
+window.closeGalleryPicker = closeGalleryPicker;
+window._handlePickerSearch = _handlePickerSearch;
+window._selectGalleryPickerItem = _selectGalleryPickerItem;
+window._confirmGalleryPickerSelection = _confirmGalleryPickerSelection;
+window._handlePickerQuickUpload = _handlePickerQuickUpload;

@@ -102,6 +102,17 @@
           </a>
         </li>
         <li>
+          <a href="#" class="sidebar-nav-item" data-page="gallery" id="nav-gallery">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+              <circle cx="8.5" cy="8.5" r="1.5"/>
+              <polyline points="21 15 16 10 5 21"/>
+            </svg>
+            <span>Gallery</span>
+            <span class="nav-badge nav-badge--accent" id="gallery-count-badge" style="display:none;font-size:10px;padding:1px 6px;border-radius:10px;background:#e0e7ff;color:#4338ca;font-weight:700;">0</span>
+          </a>
+        </li>
+        <li>
           <a href="#" class="sidebar-nav-item" data-page="settings" id="nav-settings">
             <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
               <circle cx="12" cy="12" r="3"/>
@@ -1456,6 +1467,100 @@
       </div>
     </section>
 
+    <!-- ═══ PAGE: GALLERY (CLOUDFLARE R2 MEDIA MANAGEMENT & UNIQUE IDS) ═══ -->
+    <section class="page" id="page-gallery">
+      <!-- Gallery Hero / Header -->
+      <div class="gallery-header-card">
+        <div class="gallery-header-info">
+          <div class="gallery-header-badge">
+            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+            <span>Cloudflare R2 Storage</span>
+            <span class="gallery-header-pill">Zero Egress CDN</span>
+          </div>
+          <h2 class="gallery-header-title">Media Gallery &amp; Asset Library</h2>
+          <p class="gallery-header-desc">Upload, store, and manage high-resolution media with automated unique IDs (<code style="color:#4f46e5;font-weight:700;">img_xxxxxxxx</code>) for instant insertion across all articles, sections, and site layouts.</p>
+        </div>
+        <div class="gallery-header-actions">
+          <button class="btn btn--primary" id="gallery-btn-upload-trigger" onclick="document.getElementById('gallery-file-input').click()">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            <span>Upload New Images</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Upload Dropzone Card -->
+      <div class="card gallery-upload-card" id="gallery-upload-zone-wrap">
+        <div class="gallery-dropzone" id="gallery-dropzone" onclick="document.getElementById('gallery-file-input').click()">
+          <input type="file" id="gallery-file-input" multiple accept="image/jpeg,image/png,image/webp,image/avif,image/svg+xml,image/gif" style="display:none;" />
+          <div class="gallery-dropzone-icon-wrap">
+            <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="1.8">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="17 8 12 3 7 8"/>
+              <line x1="12" y1="3" x2="12" y2="15"/>
+            </svg>
+          </div>
+          <div class="gallery-dropzone-content">
+            <h3 class="gallery-dropzone-title">Drop your images here, or <span class="gallery-browse-link">browse files</span></h3>
+            <p class="gallery-dropzone-subtitle">Supports JPG, PNG, WebP, AVIF, SVG, GIF up to 25 MB per file. Direct high-speed upload to Cloudflare R2.</p>
+          </div>
+        </div>
+
+        <!-- Upload Progress & Status Bar -->
+        <div class="gallery-upload-progress-list" id="gallery-upload-progress-list" style="display:none;"></div>
+      </div>
+
+      <!-- Main Gallery Toolbar & Grid -->
+      <div class="card gallery-main-card">
+        <!-- Toolbar -->
+        <div class="gallery-toolbar">
+          <div class="gallery-filter-tabs">
+            <button id="gallery-filter-all" class="gallery-tab-pill active" onclick="_setGalleryFilter('all')">
+              <span>All Assets</span>
+              <span class="gallery-tab-count" id="gallery-filter-count-all">0</span>
+            </button>
+            <button id="gallery-filter-photos" class="gallery-tab-pill" onclick="_setGalleryFilter('photos')">
+              <span>Photos</span>
+              <span class="gallery-tab-count" id="gallery-filter-count-photos">0</span>
+            </button>
+            <button id="gallery-filter-svg" class="gallery-tab-pill" onclick="_setGalleryFilter('svg')">
+              <span>Vectors &amp; SVGs</span>
+              <span class="gallery-tab-count" id="gallery-filter-count-svg">0</span>
+            </button>
+          </div>
+
+          <div class="gallery-toolbar-actions">
+            <div class="gallery-search-wrap">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <input type="text" id="gallery-search-input" placeholder="Search by name, ID or tags..." oninput="_handleGallerySearch()" />
+              <button id="gallery-search-clear" class="gallery-search-clear" onclick="_clearGallerySearch()" style="display:none;" aria-label="Clear search">&times;</button>
+            </div>
+
+            <select id="gallery-sort-select" class="gallery-sort-select" onchange="_handleGallerySort()">
+              <option value="newest">Newest First</option>
+              <option value="oldest">Oldest First</option>
+              <option value="largest">Largest Size</option>
+              <option value="smallest">Smallest Size</option>
+              <option value="name">Name (A-Z)</option>
+            </select>
+
+            <button class="gallery-refresh-btn" onclick="loadGalleryAssets()" title="Refresh media library">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Media Grid Container -->
+        <div class="gallery-grid" id="gallery-grid">
+          <!-- dynamically rendered items or loading state -->
+        </div>
+
+        <!-- Gallery Pagination / Footer Summary -->
+        <div class="gallery-footer-bar" id="gallery-footer-bar">
+          <span id="gallery-total-count-text">0 items stored in Cloudflare R2</span>
+        </div>
+      </div>
+    </section>
+
   </main>
 
   <!-- ══ ADD / EDIT MODAL ═══════════════════════════════════════════════════ -->
@@ -1848,7 +1953,12 @@
           <input type="text" id="latest-href-input" class="form-input" placeholder="e.g. section.html?slug=community-heritage or article url" />
         </div>
         <div class="form-group" style="margin-top:14px;">
-          <label class="form-label" for="latest-image-input">Thumbnail Image (URL or path)</label>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+            <label class="form-label" for="latest-image-input" style="margin:0;">Thumbnail Image (URL or R2 Asset)</label>
+            <button type="button" class="btn btn--ghost btn--sm" onclick="openGalleryPicker(item => { document.getElementById('latest-image-input').value = item.url; updateLatestImagePreview(); })" style="font-size:11.5px;padding:2px 8px;border:1px solid #cbd5e1;color:#4f46e5;">
+              <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-1px;margin-right:3px;"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg> Choose from Gallery
+            </button>
+          </div>
           <input type="text" id="latest-image-input" class="form-input" placeholder="e.g. img1.png or https://..." oninput="updateLatestImagePreview()" />
           <div id="latest-image-preview-box" style="margin-top:8px;display:flex;align-items:center;gap:10px;">
             <img id="latest-image-preview-img" src="img1.png" alt="Preview" style="width:56px;height:40px;object-fit:cover;border-radius:4px;border:1px solid var(--border);" onerror="this.style.display='none'" onload="this.style.display='block'" />
@@ -1973,8 +2083,18 @@
         </div>
 
         <div class="form-group" id="hp-slot-image-group" style="margin-top:12px;">
-          <label class="form-label" for="hp-slot-image-input">Image (URL or image filename)</label>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+            <label class="form-label" for="hp-slot-image-input" style="margin:0;">Image (URL or R2 Asset)</label>
+            <button type="button" class="btn btn--ghost btn--sm" onclick="openGalleryPicker(item => { document.getElementById('hp-slot-image-input').value = item.url; updateHpSlotImagePreview(); })" style="font-size:11.5px;padding:2px 8px;border:1px solid #cbd5e1;color:#4f46e5;">
+              <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-1.5px;margin-right:3px;"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg> Choose from Gallery
+            </button>
+          </div>
           <input type="text" id="hp-slot-image-input" class="form-input" placeholder="e.g. img1.png or https://..." oninput="updateHpSlotImagePreview()" />
+          <div style="margin-top:8px;display:flex;align-items:center;gap:10px;">
+            <img id="hp-slot-image-preview" src="img1.png" alt="Preview" style="width:68px;height:46px;object-fit:cover;border-radius:4px;border:1px solid var(--border);" onerror="this.style.display='none'" onload="this.style.display='block'" />
+            <span style="font-size:11px;color:var(--text-muted);">Slot image preview</span>
+          </div>
+        </div>
           <div style="margin-top:8px;display:flex;align-items:center;gap:10px;">
             <img id="hp-slot-image-preview" src="img1.png" alt="Preview" style="width:68px;height:46px;object-fit:cover;border-radius:4px;border:1px solid var(--border);" onerror="this.style.display='none'" onload="this.style.display='block'" />
             <span style="font-size:11px;color:var(--text-muted);">Slot image preview</span>
@@ -2220,6 +2340,147 @@
 
       <div class="modal-footer" style="display:flex;justify-content:flex-end;padding:14px 24px;border-top:1px solid #e2e8f0;background:#fafbfc;">
         <button class="btn btn--ghost" type="button" onclick="closeActivityDetails()">Close Details</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ MODAL: MEDIA INSPECTOR & METADATA EDITOR ═════════════════════════ -->
+  <div class="modal-overlay" id="modal-media-inspector" hidden>
+    <div class="modal modal--lg" role="dialog" aria-modal="true" style="max-width: 820px; width: 95%;">
+      <div class="modal-header" style="display:flex;justify-content:space-between;align-items:center;padding:16px 24px;border-bottom:1px solid #e2e8f0;background:#fafbfc;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div style="width:32px;height:32px;border-radius:8px;background:#e0e7ff;color:#4338ca;display:flex;align-items:center;justify-content:center;">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+          </div>
+          <div>
+            <h2 class="modal-title" id="media-insp-filename" style="font-size:16px;margin:0;font-weight:700;color:var(--text-primary);">Image Details</h2>
+            <div id="media-insp-meta-sub" style="font-size:11.5px;color:var(--text-muted);margin-top:2px;">Cloudflare R2 Asset</div>
+          </div>
+        </div>
+        <button type="button" class="btn-close" onclick="closeMediaInspector()" style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--text-muted);line-height:1;padding:4px 8px;">✕</button>
+      </div>
+
+      <div class="modal-body" style="max-height: calc(85vh - 140px); overflow-y: auto; padding: 20px 24px;">
+        <div class="media-insp-grid" style="display:grid;grid-template-columns:300px 1fr;gap:20px;">
+          <!-- Left Column: Image Preview & Shortcuts -->
+          <div>
+            <div class="media-insp-preview-box" style="position:relative;background:#0f172a;border-radius:10px;overflow:hidden;min-height:200px;display:flex;align-items:center;justify-content:center;border:1px solid #e2e8f0;">
+              <img id="media-insp-img" src="" alt="Preview" style="max-width:100%;max-height:260px;object-fit:contain;display:block;" />
+              <span id="media-insp-fmt-badge" class="badge" style="position:absolute;top:8px;left:8px;background:rgba(15,23,42,0.85);color:#fff;font-size:10.5px;font-weight:700;text-transform:uppercase;border:1px solid rgba(255,255,255,0.2);">PNG</span>
+            </div>
+
+            <!-- Quick Copy Shortcuts -->
+            <div style="margin-top:14px;display:flex;flex-direction:column;gap:8px;">
+              <button type="button" class="btn btn--secondary" onclick="_copyInspectorUniqueId()" style="width:100%;justify-content:center;font-size:12px;height:34px;">
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                <span>Copy Unique ID</span>
+              </button>
+              <button type="button" class="btn btn--secondary" onclick="_copyInspectorDirectUrl()" style="width:100%;justify-content:center;font-size:12px;height:34px;">
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+                <span>Copy Public CDN URL</span>
+              </button>
+              <button type="button" class="btn btn--ghost" onclick="_copyInspectorMarkdown()" style="width:100%;justify-content:center;font-size:12px;height:34px;border:1px solid #e2e8f0;">
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+                <span>Copy Markdown Tag</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Right Column: Metadata & Edit Form -->
+          <div>
+            <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:12px 16px;margin-bottom:16px;">
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:12px;">
+                <div>
+                  <span style="color:var(--text-muted);display:block;font-size:10.5px;text-transform:uppercase;font-weight:700;">Unique ID</span>
+                  <code id="media-insp-unique-id" style="font-weight:700;color:#4f46e5;font-size:12.5px;">—</code>
+                </div>
+                <div>
+                  <span style="color:var(--text-muted);display:block;font-size:10.5px;text-transform:uppercase;font-weight:700;">File Size</span>
+                  <span id="media-insp-size" style="font-weight:600;color:var(--text-primary);">—</span>
+                </div>
+                <div>
+                  <span style="color:var(--text-muted);display:block;font-size:10.5px;text-transform:uppercase;font-weight:700;">Uploaded On</span>
+                  <span id="media-insp-date" style="color:var(--text-primary);">—</span>
+                </div>
+                <div>
+                  <span style="color:var(--text-muted);display:block;font-size:10.5px;text-transform:uppercase;font-weight:700;">Dimensions</span>
+                  <span id="media-insp-dims" style="color:var(--text-primary);">Auto-scaled</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Editable Fields -->
+            <input type="hidden" id="media-insp-current-id" value="" />
+            <div class="form-group">
+              <label class="form-label" for="media-insp-title-input">Title / Caption</label>
+              <input type="text" id="media-insp-title-input" class="form-input" placeholder="Display caption for this image" maxlength="120" />
+            </div>
+            <div class="form-group" style="margin-top:12px;">
+              <label class="form-label" for="media-insp-alt-input">Alt Text (English)</label>
+              <input type="text" id="media-insp-alt-input" class="form-input" placeholder="Accessible description for screen readers" maxlength="200" />
+            </div>
+            <div class="form-group" style="margin-top:12px;">
+              <label class="form-label" for="media-insp-alt-bn-input">Alt Text (বাংলা)</label>
+              <input type="text" id="media-insp-alt-bn-input" class="form-input" placeholder="বাংলায় ছবির সংক্ষিপ্ত বিবরণ" maxlength="200" />
+            </div>
+            <div class="form-group" style="margin-top:12px;">
+              <label class="form-label" for="media-insp-direct-url-input">Direct Cloudflare R2 URL</label>
+              <input type="text" id="media-insp-direct-url-input" class="form-input" readonly style="background:#f1f5f9;cursor:pointer;font-family:monospace;font-size:11.5px;" onclick="this.select(); document.execCommand('copy'); showToast('success', 'URL copied to clipboard');" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer" style="display:flex;justify-content:space-between;align-items:center;padding:14px 24px;border-top:1px solid #e2e8f0;background:#fafbfc;">
+        <button type="button" class="btn btn--ghost" style="color:#dc2626;" onclick="_deleteInspectorMedia()">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+          <span>Delete Asset</span>
+        </button>
+        <div style="display:flex;gap:10px;">
+          <button class="btn btn--ghost" type="button" onclick="closeMediaInspector()">Close</button>
+          <button class="btn btn--primary" type="button" id="media-insp-save-btn" onclick="_saveInspectorMetadata()">Save Metadata</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ MODAL: GALLERY ASSET PICKER (FOR ARTICLES, SECTION STUDIO & LAYOUTS) ══ -->
+  <div class="modal-overlay" id="modal-gallery-picker" hidden>
+    <div class="modal modal--lg" role="dialog" aria-modal="true" style="max-width: 900px; width: 95%;">
+      <div class="modal-header" style="display:flex;justify-content:space-between;align-items:center;padding:16px 24px;border-bottom:1px solid #e2e8f0;background:#fafbfc;">
+        <div>
+          <div style="font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--brand-navy,#0a528e);margin-bottom:2px;">Asset Selector</div>
+          <h2 class="modal-title" style="font-size:18px;margin:0;font-weight:700;color:var(--text-primary);">Choose Image from Gallery</h2>
+        </div>
+        <button type="button" class="btn-close" onclick="closeGalleryPicker()" style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--text-muted);line-height:1;padding:4px 8px;">✕</button>
+      </div>
+
+      <div class="modal-body" style="padding:16px 24px;max-height:calc(80vh - 130px);overflow-y:auto;">
+        <!-- Picker Top Action Bar -->
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap;">
+          <div class="gallery-search-wrap" style="flex:1;min-width:220px;">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" id="picker-search-input" placeholder="Search gallery images..." oninput="_handlePickerSearch()" />
+          </div>
+          <button type="button" class="btn btn--secondary btn--sm" onclick="document.getElementById('picker-file-upload').click()">
+            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            <span>Upload New to R2</span>
+          </button>
+          <input type="file" id="picker-file-upload" accept="image/*,.svg" style="display:none;" onchange="_handlePickerQuickUpload(event)" />
+        </div>
+
+        <!-- Picker Grid -->
+        <div id="picker-gallery-grid" class="picker-gallery-grid">
+          <!-- dynamically rendered selectable cards -->
+        </div>
+      </div>
+
+      <div class="modal-footer" style="display:flex;justify-content:space-between;align-items:center;padding:14px 24px;border-top:1px solid #e2e8f0;background:#fafbfc;">
+        <div id="picker-selected-summary" style="font-size:12.5px;color:var(--text-muted);">No image selected</div>
+        <div style="display:flex;gap:10px;">
+          <button class="btn btn--ghost" type="button" onclick="closeGalleryPicker()">Cancel</button>
+          <button class="btn btn--primary" type="button" id="picker-confirm-btn" disabled onclick="_confirmGalleryPickerSelection()">Insert Selected Image</button>
+        </div>
       </div>
     </div>
   </div>
