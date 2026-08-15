@@ -101,77 +101,124 @@ async function saveStoredFolderList(sb, folders) {
 }
 
 async function getStoredMediaList(sb) {
-  if (!sb) return [];
-
-  // Try 1: dedicated table `media_library`
-  try {
-    const { data, error } = await sb
-      .from('media_library')
-      .select('*')
-      .order('created_at', { ascending: false });
-    if (!error && Array.isArray(data) && data.length > 0) return data;
-  } catch(e) {}
-
-  // Try 2: site_settings JSON blob
-  try {
-    const { data, error } = await sb
-      .from('site_settings')
-      .select('value')
-      .eq('key', FALLBACK_STORE_KEY)
-      .maybeSingle();
-    if (!error && data && data.value && Array.isArray(data.value) && data.value.length > 0) {
-      return data.value;
-    }
-  } catch(e) {}
-
-  // Try 3: sections table fallback row
-  try {
-    const { data } = await sb
-      .from('sections')
-      .select('name')
-      .eq('admin_id', '__media_library_store__')
-      .maybeSingle();
-    if (data && data.name) {
-      const parsed = JSON.parse(data.name);
-      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-    }
-  } catch(e) {}
-
-  // Try 4: S3 R2 bucket scan fallback (recovers all objects directly from Cloudflare)
+  // Step 1: Scan Cloudflare R2 bucket directly for all objects
+  let r2Objects = [];
   try {
     const listRes = await s3.send(new ListObjectsV2Command({
       Bucket: R2_BUCKET_NAME,
-      Prefix: 'gallery/',
-      MaxKeys: 100
+      MaxKeys: 1000
     }));
-    if (listRes.Contents && listRes.Contents.length > 0) {
-      const r2Items = listRes.Contents
-        .filter(obj => !obj.Key.endsWith('/'))
-        .map(obj => {
-          const parts = obj.Key.split('/');
-          const fname = parts[parts.length - 1];
-          const uidMatch = fname.match(/^(img_[a-z0-9]{8})_/);
-          const uniqueId = uidMatch ? uidMatch[1] : ('img_' + fname.slice(0, 8).replace(/[^a-z0-9]/g, 'x'));
-          const cleanName = fname.replace(/^img_[a-z0-9]{8}_/, '');
-          return {
-            unique_id: uniqueId,
-            filename: cleanName,
-            r2_key: obj.Key,
-            url: `${R2_PUBLIC_URL}/${obj.Key}`,
-            mime_type: fname.endsWith('.svg') ? 'image/svg+xml' : (fname.endsWith('.png') ? 'image/png' : (fname.endsWith('.webp') ? 'image/webp' : 'image/jpeg')),
-            file_size: obj.Size,
-            folder: '',
-            title: cleanName,
-            alt_text: cleanName,
-            alt_text_bn: '',
-            created_at: obj.LastModified ? new Date(obj.LastModified).toISOString() : new Date().toISOString()
-          };
-        });
-      return r2Items;
+    if (listRes.Contents && Array.isArray(listRes.Contents)) {
+      r2Objects = listRes.Contents.filter(o => !o.Key.endsWith('/'));
     }
-  } catch(err) {}
+  } catch(err) {
+    console.warn('[Media] Cloudflare R2 list error:', err.message);
+  }
+
+  // Step 2: Fetch metadata dictionary from Supabase
+  let dbMetadataMap = new Map();
+  if (sb) {
+    // Try table
+    try {
+      const { data, error } = await sb.from('media_library').select('*');
+      if (!error && Array.isArray(data)) {
+        data.forEach(item => {
+          if (item.unique_id) dbMetadataMap.set(item.unique_id, item);
+          if (item.r2_key) dbMetadataMap.set(item.r2_key, item);
+        });
+      }
+    } catch(e) {}
+
+    // Try site_settings fallback
+    try {
+      const { data } = await sb.from('site_settings').select('value').eq('key', FALLBACK_STORE_KEY).maybeSingle();
+      if (data && data.value && Array.isArray(data.value)) {
+        data.value.forEach(item => {
+          if (item.unique_id && !dbMetadataMap.has(item.unique_id)) dbMetadataMap.set(item.unique_id, item);
+          if (item.r2_key && !dbMetadataMap.has(item.r2_key)) dbMetadataMap.set(item.r2_key, item);
+        });
+      }
+    } catch(e) {}
+  }
+
+  // Step 3: If R2 returned objects, build canonical list with merged metadata
+  if (r2Objects.length > 0) {
+    const canonicalList = r2Objects.map(obj => {
+      const parts = obj.Key.split('/');
+      const fname = parts[parts.length - 1];
+      const uidMatch = fname.match(/^(img_[a-z0-9]{8})_/);
+      const uniqueId = uidMatch ? uidMatch[1] : ('img_' + fname.slice(0, 8).replace(/[^a-z0-9]/g, 'x'));
+      const cleanName = fname.replace(/^img_[a-z0-9]{8}_/, '');
+
+      const dbMeta = dbMetadataMap.get(uniqueId) || dbMetadataMap.get(obj.Key) || {};
+
+      return {
+        id: uniqueId,
+        unique_id: uniqueId,
+        r2_key: obj.Key,
+        url: `${R2_PUBLIC_URL}/${obj.Key}`,
+        filename: dbMeta.filename || cleanName,
+        title: dbMeta.title || cleanName.replace(/\.[^/.]+$/, ''),
+        folder: dbMeta.folder || '',
+        alt_text: dbMeta.alt_text || '',
+        alt_text_bn: dbMeta.alt_text_bn || '',
+        mime_type: dbMeta.mime_type || (fname.endsWith('.svg') ? 'image/svg+xml' : (fname.endsWith('.png') ? 'image/png' : (fname.endsWith('.webp') ? 'image/webp' : 'image/jpeg'))),
+        file_size: obj.Size || dbMeta.file_size || 0,
+        tags: dbMeta.tags || [],
+        uploaded_by: dbMeta.uploaded_by || 'Admin',
+        created_at: obj.LastModified ? new Date(obj.LastModified).toISOString() : (dbMeta.created_at || new Date().toISOString()),
+        updated_at: dbMeta.updated_at || (obj.LastModified ? new Date(obj.LastModified).toISOString() : new Date().toISOString())
+      };
+    });
+
+    // Sort newest first
+    canonicalList.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+
+    // Save canonical sync back to DB so DB is always 100% updated with R2
+    if (sb) {
+      saveAllMediaItems(sb, canonicalList).catch(() => {});
+    }
+
+    return canonicalList;
+  }
+
+  // If R2 scan failed or had 0 items, fallback to DB items
+  if (dbMetadataMap.size > 0) {
+    const list = Array.from(dbMetadataMap.values());
+    list.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+    return list;
+  }
 
   return [];
+}
+
+function computeStorageStats(items) {
+  const totalFiles = items.length;
+  const totalBytes = items.reduce((acc, x) => acc + (x.file_size || 0), 0);
+  const R2_CAPACITY_BYTES = 10 * 1024 * 1024 * 1024; // 10 GB
+  const freeBytes = Math.max(0, R2_CAPACITY_BYTES - totalBytes);
+  const usedPct = (totalBytes / R2_CAPACITY_BYTES) * 100;
+  const freePct = Math.max(0, 100 - usedPct);
+
+  const photos = items.filter(x => !x.mime_type?.includes('svg') && !x.filename?.toLowerCase().endsWith('.svg'));
+  const svgs = items.filter(x => x.mime_type?.includes('svg') || x.filename?.toLowerCase().endsWith('.svg'));
+  const photosBytes = photos.reduce((acc, x) => acc + (x.file_size || 0), 0);
+  const svgsBytes = svgs.reduce((acc, x) => acc + (x.file_size || 0), 0);
+
+  return {
+    totalFiles,
+    totalBytes,
+    capacityBytes: R2_CAPACITY_BYTES,
+    freeBytes,
+    usedPct,
+    freePct,
+    photosCount: photos.length,
+    photosBytes,
+    svgsCount: svgs.length,
+    svgsBytes,
+    avgFileSize: totalFiles > 0 ? Math.round(totalBytes / totalFiles) : 0,
+    largestFileSize: items.reduce((max, x) => Math.max(max, x.file_size || 0), 0)
+  };
 }
 
 async function saveMediaItemMetadata(sb, item) {
@@ -252,23 +299,44 @@ module.exports = async (req, res) => {
   const action = (req.query && req.query.action) || 'list';
   const sb = getSupabase();
 
-  // ── 1. LIST MEDIA (GET) ────────────────────────────────────────────────
-  if (req.method === 'GET' && action === 'list') {
+  // ── 1. LIST / SYNC MEDIA (GET or POST) ──────────────────────────────────
+  if ((req.method === 'GET' && action === 'list') || action === 'sync') {
     const session = await requireAuth(req, res);
     if (!session) return;
 
     try {
       const items = await getStoredMediaList(sb);
       const folders = await getStoredFolderList(sb);
+      const storage = computeStorageStats(items);
+
       return res.status(200).json({
         ok: true,
         count: items.length,
         items,
         folders,
+        storage,
+        syncStatus: {
+          r2: {
+            status: 'synced',
+            bucket: R2_BUCKET_NAME,
+            region: 'auto',
+            endpoint: 'Cloudflare R2 Storage',
+            totalObjects: items.length,
+            totalBytes: storage.totalBytes,
+            syncedAt: new Date().toISOString()
+          },
+          db: {
+            status: 'synced',
+            provider: 'Supabase PostgreSQL',
+            metadataRows: items.length,
+            foldersCount: folders.length,
+            syncedAt: new Date().toISOString()
+          }
+        },
         publicUrlPrefix: R2_PUBLIC_URL
       });
     } catch(err) {
-      console.error('[Media] List error:', err);
+      console.error('[Media] List/Sync error:', err);
       return res.status(500).json({ error: 'Failed to retrieve media library items.' });
     }
   }

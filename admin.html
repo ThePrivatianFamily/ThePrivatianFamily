@@ -1472,15 +1472,25 @@
       <!-- Gallery Hero / Header -->
       <div class="gallery-header-card">
         <div class="gallery-header-info">
-          <div class="gallery-header-badge">
-            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
-            <span>Cloudflare R2 Storage</span>
+          <div class="gallery-sync-badges-row">
+            <div class="gallery-sync-chip r2 synced" id="gallery-sync-r2-badge" title="Live status with Cloudflare R2 Storage Bucket: theprivatianfamily">
+              <span class="gallery-pulse-dot r2"></span>
+              <span id="gallery-sync-r2-text">Synced with Cloudflare R2</span>
+            </div>
+            <div class="gallery-sync-chip db synced" id="gallery-sync-db-badge" title="Live metadata synchronized with Supabase PostgreSQL Database">
+              <span class="gallery-pulse-dot db"></span>
+              <span id="gallery-sync-db-text">Synced with Database</span>
+            </div>
             <span class="gallery-header-pill">Zero Egress CDN</span>
           </div>
           <h2 class="gallery-header-title">Media Gallery &amp; Asset Library</h2>
           <p class="gallery-header-desc">Upload, store, and manage high-resolution media with automated unique IDs (<code style="color:#4f46e5;font-weight:700;">img_xxxxxxxx</code>) for instant insertion across all articles, sections, and site layouts.</p>
         </div>
         <div class="gallery-header-actions">
+          <button class="btn btn--secondary" id="gallery-btn-sync-trigger" onclick="syncGalleryAssets()" title="Force real-time scan and sync between Cloudflare R2 &amp; Database">
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+            <span id="gallery-btn-sync-text">Sync with R2 &amp; DB</span>
+          </button>
           <button class="btn btn--primary" id="gallery-btn-upload-trigger" onclick="document.getElementById('gallery-file-input').click()">
             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             <span>Upload New Images</span>

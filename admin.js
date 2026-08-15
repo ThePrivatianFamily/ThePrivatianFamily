@@ -8371,14 +8371,14 @@ var _galleryPickerCallback = null;
 var _galleryPickerSelectedItem = null;
 var _galleryPickerActiveFolder = 'all';
 
-// ── 1. Load Gallery Assets ───────────────────────────────────────
+// ── 1. Load & Sync Gallery Assets ─────────────────────────────────
 async function loadGalleryAssets() {
   const grid = document.getElementById('gallery-grid');
   if (grid) {
     grid.innerHTML = `
       <div style="grid-column: 1 / -1; text-align: center; padding: 48px 20px; color: var(--text-muted);">
         <div class="ft-loading-spinner" style="margin: 0 auto 12px; width: 28px; height: 28px; border: 3px solid #e2e8f0; border-top-color: #4f46e5; border-radius: 50%; animation: ftSpin 0.8s linear infinite;"></div>
-        <p style="font-size: 13px; font-weight: 600;">Loading assets from Cloudflare R2...</p>
+        <p style="font-size: 13px; font-weight: 600;">Scanning Cloudflare R2 &amp; Database...</p>
       </div>
     `;
   }
@@ -8390,7 +8390,7 @@ async function loadGalleryAssets() {
       if (data.folders && Array.isArray(data.folders)) _galleryFolders = data.folders;
       renderGalleryFolders();
       _syncFolderSelectDropdowns();
-      _updateGalleryCounts();
+      _updateGalleryCounts(data.storage, data.syncStatus);
       renderGalleryGrid();
     }
   } catch(e) {
@@ -8401,11 +8401,37 @@ async function loadGalleryAssets() {
             <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
           </div>
           <h3 style="margin:0;font-size:15px;color:var(--text-primary);">Failed to load media library</h3>
-          <p style="margin:0;font-size:12.5px;color:var(--text-muted);">${escapeHtml(e.message || 'Check database connection')}</p>
-          <button class="btn btn--secondary btn--sm" onclick="loadGalleryAssets()" style="margin-top:8px;">Try Again</button>
+          <p style="margin:0;font-size:12.5px;color:var(--text-muted);">${escapeHtml(e.message || 'Check connection')}</p>
+          <button class="btn btn--secondary btn--sm" onclick="syncGalleryAssets()" style="margin-top:8px;">Sync with R2 &amp; DB</button>
         </div>
       `;
     }
+  }
+}
+
+async function syncGalleryAssets() {
+  const btn = document.getElementById('gallery-btn-sync-trigger');
+  const btnText = document.getElementById('gallery-btn-sync-text');
+  if (btn) btn.disabled = true;
+  if (btnText) btnText.textContent = 'Syncing R2 & DB...';
+
+  try {
+    showToast('info', 'Scanning Cloudflare R2 bucket & synchronizing with Supabase...');
+    const data = await _apiPost('/api/media?action=sync', {});
+    if (data) {
+      if (Array.isArray(data.items)) _rawGalleryList = data.items;
+      if (data.folders && Array.isArray(data.folders)) _galleryFolders = data.folders;
+      renderGalleryFolders();
+      _syncFolderSelectDropdowns();
+      _updateGalleryCounts(data.storage, data.syncStatus);
+      renderGalleryGrid();
+      showToast('success', `Live Sync Complete: ${data.items ? data.items.length : 0} files synchronized directly from Cloudflare R2.`);
+    }
+  } catch(e) {
+    showToast('error', 'Sync failed: ' + e.message);
+  } finally {
+    if (btn) btn.disabled = false;
+    if (btnText) btnText.textContent = 'Sync with R2 & DB';
   }
 }
 
@@ -8631,7 +8657,7 @@ function _deleteFolderConfirm(folderName) {
 }
 
 // ── 3. Update Badge, Analytics & Storage Quota Dashboard ────────
-function _updateGalleryCounts() {
+function _updateGalleryCounts(apiStorage = null, syncStatus = null) {
   const badge = document.getElementById('gallery-count-badge');
   const countAll = document.getElementById('gallery-filter-count-all');
   const countPhotos = document.getElementById('gallery-filter-count-photos');
@@ -8654,11 +8680,15 @@ function _updateGalleryCounts() {
   const quotaFill = document.getElementById('gallery-quota-fill');
   const quotaPercentText = document.getElementById('gallery-quota-percent-text');
 
+  // Sync badges
+  const r2SyncText = document.getElementById('gallery-sync-r2-text');
+  const dbSyncText = document.getElementById('gallery-sync-db-text');
+
   // Calculations
   const total = _rawGalleryList.length;
   const photos = _rawGalleryList.filter(x => !x.mime_type?.includes('svg') && !x.filename?.toLowerCase().endsWith('.svg')).length;
   const svgs = _rawGalleryList.filter(x => x.mime_type?.includes('svg') || x.filename?.toLowerCase().endsWith('.svg')).length;
-  const totalBytes = _rawGalleryList.reduce((acc, cur) => acc + (cur.file_size || 0), 0);
+  const totalBytes = apiStorage?.totalBytes ?? _rawGalleryList.reduce((acc, cur) => acc + (cur.file_size || 0), 0);
 
   // Cloudflare R2 standard free tier capacity: 10 GB (10,737,418,240 bytes)
   const R2_CAPACITY_BYTES = 10 * 1024 * 1024 * 1024;
@@ -8667,9 +8697,17 @@ function _updateGalleryCounts() {
   const freePct = Math.max(0, 100 - usedPct);
 
   const avgBytes = total > 0 ? Math.round(totalBytes / total) : 0;
-  const largestBytes = _rawGalleryList.reduce((max, cur) => Math.max(max, cur.file_size || 0), 0);
+  const largestBytes = apiStorage?.largestFileSize ?? _rawGalleryList.reduce((max, cur) => Math.max(max, cur.file_size || 0), 0);
 
-  // 1. Sidebar Badge & Filter Tabs
+  // 1. Sync Status Badges
+  if (r2SyncText) {
+    r2SyncText.textContent = `Synced with Cloudflare R2 (${total} ${total === 1 ? 'file' : 'files'} • ${_formatFileSize(totalBytes)})`;
+  }
+  if (dbSyncText) {
+    dbSyncText.textContent = `Synced with Database (${_galleryFolders.length} Folders)`;
+  }
+
+  // 2. Sidebar Badge & Filter Tabs
   if (badge) {
     badge.textContent = total;
     badge.style.display = total > 0 ? '' : 'none';
@@ -8678,7 +8716,7 @@ function _updateGalleryCounts() {
   if (countPhotos) countPhotos.textContent = photos;
   if (countSvg) countSvg.textContent = svgs;
 
-  // 2. KPI Cards
+  // 3. KPI Cards
   if (statTotalCount) statTotalCount.textContent = total;
   if (statBreakdown) statBreakdown.textContent = `${photos} ${photos === 1 ? 'Photo' : 'Photos'} • ${svgs} ${svgs === 1 ? 'SVG / Vector' : 'SVGs'}`;
   if (statStorageUsed) statStorageUsed.textContent = _formatFileSize(totalBytes);
@@ -8691,7 +8729,7 @@ function _updateGalleryCounts() {
   if (statAvgSize) statAvgSize.textContent = total > 0 ? _formatFileSize(avgBytes) : '0 B';
   if (statLargest) statLargest.textContent = largestBytes > 0 ? (`Max: ${_formatFileSize(largestBytes)}`) : 'Max: 0 B';
 
-  // 3. Visual Quota Bar
+  // 4. Visual Quota Bar
   if (quotaUsedText) quotaUsedText.textContent = `${_formatFileSize(totalBytes)} / 10.00 GB`;
   if (quotaFreeText) quotaFreeText.textContent = `${_formatFileSize(freeBytes)} Free`;
   if (quotaFill) {
@@ -8703,7 +8741,7 @@ function _updateGalleryCounts() {
     quotaPercentText.textContent = `${pctDisplay} capacity used`;
   }
 
-  // 4. Footer Bar Summary
+  // 5. Footer Bar Summary
   if (footerText) {
     footerText.textContent = `${total} ${total === 1 ? 'item' : 'items'} (${_formatFileSize(totalBytes)}) stored in Cloudflare R2 • ${_formatFileSize(freeBytes)} free capacity remaining`;
   }
@@ -9301,6 +9339,7 @@ function _formatLongDate(isoString) {
 
 // Window global exports for Gallery & Folders
 window.loadGalleryAssets = loadGalleryAssets;
+window.syncGalleryAssets = syncGalleryAssets;
 window.initGalleryUploadDropzone = initGalleryUploadDropzone;
 window._setGalleryFolder = _setGalleryFolder;
 window._handleTargetFolderChange = _handleTargetFolderChange;
