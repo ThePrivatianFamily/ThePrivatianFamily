@@ -189,6 +189,25 @@ function syncMenuStructures(source, target, sourceIsBn) {
     });
   }
 
+  // Synchronize Search Bar & Quick Filter Tags
+  if (source.search) {
+    if (!res.search) res.search = {};
+    res.search.enabled = source.search.enabled !== false;
+    if (Array.isArray(source.search.quickTags)) {
+      const tgtTags = Array.isArray(res.search.quickTags) ? res.search.quickTags : [];
+      res.search.quickTags = source.search.quickTags.map((srcTag, idx) => {
+        const match = tgtTags.find(t => t.id === srcTag.id) || tgtTags[idx] || {};
+        return {
+          id: srcTag.id || match.id || `tag-${idx + 1}`,
+          label: match.label || srcTag.label || '',
+          label_bn: match.label_bn || srcTag.label_bn || '',
+          query: sourceIsBn ? (match.query || srcTag.query || match.label) : (srcTag.query || srcTag.label || match.query),
+          enabled: srcTag.enabled !== false
+        };
+      });
+    }
+  }
+
   return res;
 }
 
@@ -304,7 +323,24 @@ module.exports = async function handler(req, res) {
           imageUrl: 'img3.png',
           enabled: true
         }
-      ]
+      ],
+      search: {
+        enabled: true,
+        placeholder: isBn ? 'নিবন্ধ, গল্প, বিষয় খুঁজুন...' : 'Search articles, stories, topics...',
+        exploreLabel: isBn ? 'দ্রুত খুঁজুন:' : 'Explore:',
+        closeText: isBn ? 'বন্ধ করুন' : 'Close',
+        hintText: isBn ? 'অনুসন্ধান করতে লিখুন অথবা ওপরের বিষয় বেছে নিন…' : 'Start typing to search or select a topic above…',
+        noResultsText: isBn ? 'কোনো ফলাফল পাওয়া যায়নি' : 'No matching stories found',
+        quickTags: [
+          { id: 'tag-1', label: 'Findings', label_bn: 'অনুসন্ধিৎসু', query: 'Findings', enabled: true },
+          { id: 'tag-2', label: 'Community & Heritage', label_bn: 'সমাজ ও ঐতিহ্য', query: 'Community & Heritage', enabled: true },
+          { id: 'tag-3', label: 'Culture', label_bn: 'সংস্কৃতি', query: 'Culture', enabled: true },
+          { id: 'tag-4', label: 'Privacy & Values', label_bn: 'মূল্যবোধ', query: 'Privacy & Values', enabled: true },
+          { id: 'tag-5', label: 'Nation & World', label_bn: 'দেশ ও বিশ্ব', query: 'Nation & World', enabled: true },
+          { id: 'tag-6', label: 'Arts & Legacy', label_bn: 'শিল্প ও উত্তরাধিকার', query: 'Arts & Legacy', enabled: true },
+          { id: 'tag-7', label: 'Events', label_bn: 'অনুষ্ঠান', query: 'Events', enabled: true }
+        ]
+      }
     };
 
     if (req.method === 'GET') {

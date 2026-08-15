@@ -3275,6 +3275,23 @@ const DEFAULT_MENU_CONFIG = {
       enabled: true
     }
   ],
+  search: {
+    enabled: true,
+    placeholder: 'Search articles, stories, topics...',
+    exploreLabel: 'Explore:',
+    closeText: 'Close',
+    hintText: 'Start typing to search or select a topic above…',
+    noResultsText: 'No matching stories found',
+    quickTags: [
+      { id: 'tag-1', label: 'Findings', label_bn: 'অনুসন্ধিৎসু', query: 'Findings', enabled: true },
+      { id: 'tag-2', label: 'Community & Heritage', label_bn: 'সমাজ ও ঐতিহ্য', query: 'Community & Heritage', enabled: true },
+      { id: 'tag-3', label: 'Culture', label_bn: 'সংস্কৃতি', query: 'Culture', enabled: true },
+      { id: 'tag-4', label: 'Privacy & Values', label_bn: 'মূল্যবোধ', query: 'Privacy & Values', enabled: true },
+      { id: 'tag-5', label: 'Nation & World', label_bn: 'দেশ ও বিশ্ব', query: 'Nation & World', enabled: true },
+      { id: 'tag-6', label: 'Arts & Legacy', label_bn: 'শিল্প ও উত্তরাধিকার', query: 'Arts & Legacy', enabled: true },
+      { id: 'tag-7', label: 'Events', label_bn: 'অনুষ্ঠান', query: 'Events', enabled: true }
+    ]
+  },
   enabledMenuSections: []
 };
 
@@ -3391,21 +3408,321 @@ function syncMenuDraftToUI() {
   renderSeriesList();
   renderExploreList();
   renderLatestList();
+  renderMenuSearch();
   renderMenuSectionsList();
   renderMenuPreview();
 }
 
 function switchMenuTab(tabKey) {
-  const tabs = ['series', 'explore', 'latest', 'sections', 'preview'];
+  const tabs = ['series', 'explore', 'latest', 'search', 'sections', 'preview'];
   tabs.forEach(t => {
     const btn = document.getElementById(`tab-menu-${t}`);
     const panel = document.getElementById(`panel-menu-${t}`);
     if (btn) btn.classList.toggle('active', t === tabKey);
     if (panel) panel.style.display = (t === tabKey ? 'block' : 'none');
   });
+  if (tabKey === 'search') {
+    renderMenuSearch();
+  }
   if (tabKey === 'preview') {
     renderMenuPreview();
   }
+}
+
+// ── SEARCH BAR & QUICK FILTER TAGS IN NAVIGATION MENU ───────────
+
+function renderMenuSearch() {
+  if (!menuDraftConfig) return;
+  if (!menuDraftConfig.search) {
+    menuDraftConfig.search = {
+      enabled: true,
+      placeholder: _adminContentLang === 'bn' ? 'নিবন্ধ, গল্প, বিষয় খুঁজুন...' : 'Search articles, stories, topics...',
+      exploreLabel: _adminContentLang === 'bn' ? 'দ্রুত খুঁজুন:' : 'Explore:',
+      closeText: _adminContentLang === 'bn' ? 'বন্ধ করুন' : 'Close',
+      hintText: _adminContentLang === 'bn' ? 'অনুসন্ধান করতে লিখুন অথবা ওপরের বিষয় বেছে নিন…' : 'Start typing to search or select a topic above…',
+      noResultsText: _adminContentLang === 'bn' ? 'কোনো ফলাফল পাওয়া যায়নি' : 'No matching stories found',
+      quickTags: [
+        { id: 'tag-1', label: 'Findings', label_bn: 'অনুসন্ধিৎসু', query: 'Findings', enabled: true },
+        { id: 'tag-2', label: 'Community & Heritage', label_bn: 'সমাজ ও ঐতিহ্য', query: 'Community & Heritage', enabled: true },
+        { id: 'tag-3', label: 'Culture', label_bn: 'সংস্কৃতি', query: 'Culture', enabled: true },
+        { id: 'tag-4', label: 'Privacy & Values', label_bn: 'মূল্যবোধ', query: 'Privacy & Values', enabled: true },
+        { id: 'tag-5', label: 'Nation & World', label_bn: 'দেশ ও বিশ্ব', query: 'Nation & World', enabled: true },
+        { id: 'tag-6', label: 'Arts & Legacy', label_bn: 'শিল্প ও উত্তরাধিকার', query: 'Arts & Legacy', enabled: true },
+        { id: 'tag-7', label: 'Events', label_bn: 'অনুষ্ঠান', query: 'Events', enabled: true }
+      ]
+    };
+  }
+
+  const s = menuDraftConfig.search;
+  const toggleEl = document.getElementById('menu-search-enabled-toggle');
+  if (toggleEl) toggleEl.checked = (s.enabled !== false);
+
+  const phInput = document.getElementById('menu-search-placeholder-input');
+  if (phInput) phInput.value = s.placeholder || '';
+
+  const expInput = document.getElementById('menu-search-explore-label-input');
+  if (expInput) expInput.value = s.exploreLabel || '';
+
+  const closeInput = document.getElementById('menu-search-close-text-input');
+  if (closeInput) closeInput.value = s.closeText || '';
+
+  const hintInput = document.getElementById('menu-search-hint-text-input');
+  if (hintInput) hintInput.value = s.hintText || '';
+
+  // Update Live Preview inside Search panel
+  const previewInput = document.getElementById('menu-search-preview-input');
+  if (previewInput) previewInput.placeholder = s.placeholder || 'Search articles, stories, topics...';
+
+  const previewClose = document.getElementById('menu-search-preview-close');
+  if (previewClose) previewClose.textContent = s.closeText || 'Close';
+
+  const previewExplore = document.getElementById('menu-search-preview-explore');
+  if (previewExplore) previewExplore.textContent = s.exploreLabel || 'Explore:';
+
+  const previewTagsContainer = document.getElementById('menu-search-preview-tags');
+  if (previewTagsContainer) {
+    const isBn = (_adminContentLang === 'bn');
+    const activeTags = (s.quickTags || []).filter(t => t.enabled !== false);
+    let tagsHtml = `<span class="search-quick-label" id="menu-search-preview-explore" style="color:#7dd3fc;font-size:11.5px;font-weight:700;">${escapeHtml(s.exploreLabel || (isBn ? 'দ্রুত খুঁজুন:' : 'Explore:'))}</span>`;
+    activeTags.forEach(t => {
+      const displayLabel = isBn ? (t.label_bn || t.label) : (t.label || t.label_bn);
+      tagsHtml += `<button type="button" class="search-quick-tag" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.18);color:#e2e8f0;border-radius:20px;padding:4px 11px;font-size:11px;cursor:default;">${escapeHtml(displayLabel)}</button>`;
+    });
+    previewTagsContainer.innerHTML = tagsHtml;
+  }
+
+  // Render Tags Grid
+  renderSearchTagsList();
+}
+
+function renderSearchTagsList() {
+  const container = document.getElementById('menu-search-tags-container');
+  const countEl = document.getElementById('count-menu-search');
+  if (!container || !menuDraftConfig || !menuDraftConfig.search) return;
+
+  const tags = menuDraftConfig.search.quickTags || [];
+  if (countEl) countEl.textContent = tags.length;
+
+  if (tags.length === 0) {
+    container.innerHTML = `<div style="text-align:center;padding:32px;color:var(--text-muted);font-size:13px;grid-column:1/-1;">No search filter tags added. Click "Add Search Tag" above to create one.</div>`;
+    return;
+  }
+
+  const isBn = (_adminContentLang === 'bn');
+  container.innerHTML = tags.map((t, idx) => {
+    const mainLabel = isBn ? (t.label_bn || t.label) : (t.label || t.label_bn);
+    const subLabel = isBn ? (t.label ? `EN: ${t.label}` : '') : (t.label_bn ? `BN: ${t.label_bn}` : '');
+    return `
+      <div class="menu-item-card ${t.enabled === false ? 'menu-item-card--disabled' : ''}">
+        <div class="menu-item-left">
+          <div class="menu-item-reorder-btns">
+            <button type="button" class="menu-reorder-btn" title="Move Up" ${idx === 0 ? 'disabled style="opacity:0.3;"' : ''} onclick="moveSearchTag('${t.id}', -1)">${MENU_ICONS.up}</button>
+            <button type="button" class="menu-reorder-btn" title="Move Down" ${idx === tags.length - 1 ? 'disabled style="opacity:0.3;"' : ''} onclick="moveSearchTag('${t.id}', 1)">${MENU_ICONS.down}</button>
+          </div>
+          <div class="menu-item-details">
+            <div class="menu-item-title" style="display:flex;align-items:center;gap:6px;">
+              <span>${escapeHtml(mainLabel || 'Untitled Tag')}</span>
+              ${subLabel ? `<span style="font-size:11px;color:var(--text-muted);font-weight:400;">(${escapeHtml(subLabel)})</span>` : ''}
+            </div>
+            <div class="menu-item-meta">
+              <span class="hs-slug-chip" style="background:rgba(56,189,248,0.1);color:#0284c7;border-color:rgba(56,189,248,0.25);">Query: "${escapeHtml(t.query || t.label || '')}"</span>
+            </div>
+          </div>
+        </div>
+        <div class="menu-item-right">
+          <label class="hs-toggle" title="Toggle visibility">
+            <input type="checkbox" ${t.enabled !== false ? 'checked' : ''} onchange="toggleSearchTag('${t.id}')" />
+            <span class="hs-toggle-track"><span class="hs-toggle-thumb"></span></span>
+          </label>
+          <button type="button" class="art-action-btn art-action-btn--edit" title="Edit Search Tag" onclick="openSearchTagModal('${t.id}')">
+            ${ICONS.pencil}
+          </button>
+          <button type="button" class="art-action-btn art-action-btn--trash" title="Delete Search Tag" onclick="deleteSearchTag('${t.id}')">
+            ${ICONS.trash}
+          </button>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function onMenuSearchInput(field, val) {
+  pushMenuHistory();
+  if (!menuDraftConfig.search) menuDraftConfig.search = {};
+  menuDraftConfig.search[field] = val;
+  renderMenuSearch();
+  renderMenuPreview();
+  updateGlobalSyncStatus();
+}
+
+function toggleMenuSearchEnabled(checked) {
+  pushMenuHistory();
+  if (!menuDraftConfig.search) menuDraftConfig.search = {};
+  menuDraftConfig.search.enabled = checked;
+  renderMenuSearch();
+  renderMenuPreview();
+  updateGlobalSyncStatus();
+  recordActivityLog({
+    action: 'layout.menu_toggle_search',
+    category: 'layout',
+    summary: `${checked ? 'Enabled' : 'Disabled'} Menubar Search Bar in Navigation Menu`,
+    target_id: 'menu_search',
+    target_name: 'Menubar Search',
+    details: { enabled: checked }
+  });
+}
+
+function openSearchTagModal(id) {
+  const modal = document.getElementById('modal-menu-search-tag');
+  const titleEl = document.getElementById('modal-search-tag-title');
+  const idInput = document.getElementById('search-tag-edit-id');
+  const labelInput = document.getElementById('search-tag-label-input');
+  const labelBnInput = document.getElementById('search-tag-label-bn-input');
+  const queryInput = document.getElementById('search-tag-query-input');
+  const enabledInput = document.getElementById('search-tag-enabled-input');
+
+  if (!modal) return;
+
+  if (id) {
+    const item = ((menuDraftConfig && menuDraftConfig.search && menuDraftConfig.search.quickTags) || []).find(t => t.id === id);
+    if (!item) return;
+    if (titleEl) titleEl.textContent = 'Edit Search Tag';
+    if (idInput) idInput.value = item.id;
+    if (labelInput) labelInput.value = item.label || '';
+    if (labelBnInput) labelBnInput.value = item.label_bn || '';
+    if (queryInput) queryInput.value = item.query || item.label || '';
+    if (enabledInput) enabledInput.checked = (item.enabled !== false);
+  } else {
+    if (titleEl) titleEl.textContent = 'Add Search Tag';
+    if (idInput) idInput.value = '';
+    if (labelInput) labelInput.value = '';
+    if (labelBnInput) labelBnInput.value = '';
+    if (queryInput) queryInput.value = '';
+    if (enabledInput) enabledInput.checked = true;
+  }
+
+  modal.removeAttribute('hidden');
+  if (labelInput) labelInput.focus();
+}
+
+function closeSearchTagModal() {
+  const modal = document.getElementById('modal-menu-search-tag');
+  if (modal) modal.setAttribute('hidden', '');
+}
+
+function saveSearchTagModal() {
+  const idInput = document.getElementById('search-tag-edit-id');
+  const labelInput = document.getElementById('search-tag-label-input');
+  const labelBnInput = document.getElementById('search-tag-label-bn-input');
+  const queryInput = document.getElementById('search-tag-query-input');
+  const enabledInput = document.getElementById('search-tag-enabled-input');
+
+  const editId = idInput ? idInput.value : '';
+  const label = labelInput ? labelInput.value.trim() : '';
+  const labelBn = labelBnInput ? labelBnInput.value.trim() : '';
+  const query = queryInput ? queryInput.value.trim() : (label || labelBn);
+  const enabled = enabledInput ? enabledInput.checked : true;
+
+  if (!label && !labelBn) {
+    showToast('error', 'Please enter a Tag Label');
+    return;
+  }
+
+  pushMenuHistory();
+
+  if (!menuDraftConfig.search) menuDraftConfig.search = {};
+  if (!menuDraftConfig.search.quickTags) menuDraftConfig.search.quickTags = [];
+
+  if (editId) {
+    const item = menuDraftConfig.search.quickTags.find(t => t.id === editId);
+    if (item) {
+      item.label = label || item.label;
+      item.label_bn = labelBn || item.label_bn;
+      item.query = query || item.query;
+      item.enabled = enabled;
+    }
+  } else {
+    const newId = 'tag-' + Date.now();
+    menuDraftConfig.search.quickTags.push({
+      id: newId,
+      label: label || labelBn,
+      label_bn: labelBn || label,
+      query: query || label || labelBn,
+      enabled
+    });
+  }
+
+  closeSearchTagModal();
+  renderMenuSearch();
+  renderMenuPreview();
+  updateGlobalSyncStatus();
+  showToast('success', editId ? 'Search tag updated!' : 'Search tag added!');
+
+  recordActivityLog({
+    action: editId ? 'layout.menu_edit_search_tag' : 'layout.menu_add_search_tag',
+    category: 'layout',
+    summary: `${editId ? 'Updated' : 'Added'} search tag "${label || labelBn}" in Navigation Menu`,
+    target_id: editId || 'tag-new',
+    target_name: label || labelBn,
+    details: { label, label_bn: labelBn, query, enabled }
+  });
+}
+
+function deleteSearchTag(id) {
+  if (!menuDraftConfig || !menuDraftConfig.search) return;
+  const item = (menuDraftConfig.search.quickTags || []).find(t => t.id === id);
+  pushMenuHistory();
+  menuDraftConfig.search.quickTags = (menuDraftConfig.search.quickTags || []).filter(t => t.id !== id);
+  renderMenuSearch();
+  renderMenuPreview();
+  updateGlobalSyncStatus();
+  showToast('info', 'Search tag deleted');
+  if (item) {
+    recordActivityLog({
+      action: 'layout.menu_delete_search_tag',
+      category: 'layout',
+      summary: `Deleted search tag "${item.label || id}" from Navigation Menu`,
+      target_id: id,
+      target_name: item.label || id,
+      details: { id }
+    });
+  }
+}
+
+function toggleSearchTag(id) {
+  if (!menuDraftConfig || !menuDraftConfig.search) return;
+  const item = (menuDraftConfig.search.quickTags || []).find(t => t.id === id);
+  if (item) {
+    pushMenuHistory();
+    item.enabled = (item.enabled === false ? true : false);
+    renderMenuSearch();
+    renderMenuPreview();
+    updateGlobalSyncStatus();
+    recordActivityLog({
+      action: 'layout.menu_toggle_search_tag',
+      category: 'layout',
+      summary: `${item.enabled ? 'Enabled' : 'Disabled'} search tag "${item.label || id}" in Navigation Menu`,
+      target_id: item.id,
+      target_name: item.label,
+      details: { id: item.id, enabled: item.enabled }
+    });
+  }
+}
+
+function moveSearchTag(id, dir) {
+  if (!menuDraftConfig || !menuDraftConfig.search) return;
+  const items = menuDraftConfig.search.quickTags || [];
+  const idx = items.findIndex(t => t.id === id);
+  if (idx === -1) return;
+  const newIdx = idx + dir;
+  if (newIdx < 0 || newIdx >= items.length) return;
+  pushMenuHistory();
+  const temp = items[idx];
+  items[idx] = items[newIdx];
+  items[newIdx] = temp;
+  renderMenuSearch();
+  renderMenuPreview();
+  updateGlobalSyncStatus();
 }
 
 // ── FEATURED SERIES CRUD ─────────────────────────────────────────
@@ -4083,6 +4400,31 @@ function renderMenuPreview() {
   const expTitle = (document.getElementById('menu-explore-title-input') || {}).value || menuDraftConfig.exploreTitle || 'Explore the Privatian';
   const latTitle = (document.getElementById('menu-latest-title-input') || {}).value || menuDraftConfig.latestTitle || 'Read the latest';
 
+  // Search preview
+  const searchCfg = menuDraftConfig.search || {};
+  const isBn = (_adminContentLang === 'bn');
+  const searchHtml = (searchCfg.enabled !== false) ? `
+    <div style="background:#090e17;border:1px solid #334155;border-radius:10px;padding:14px;margin-bottom:18px;">
+      <div class="search-header-bar" style="max-width:540px;margin:0 auto 8px;">
+        <div class="search-input-wrap" style="height:38px;">
+          <svg class="search-icon-inline" xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+          <input type="text" class="search-input" readonly placeholder="${escapeHtml(searchCfg.placeholder || (isBn ? 'নিবন্ধ, গল্প, বিষয় খুঁজুন...' : 'Search articles, stories, topics...'))}" style="cursor:default;font-size:13.5px;" />
+          <span class="search-clear-btn" style="pointer-events:none;font-size:9px;width:18px;height:18px;">✕</span>
+        </div>
+        <button type="button" class="search-close-btn" style="pointer-events:none;padding:4px 10px;font-size:11px;">
+          <span>${escapeHtml(searchCfg.closeText || (isBn ? 'বন্ধ করুন' : 'Close'))}</span>
+        </button>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:6px;">
+        <span class="search-quick-label" style="color:#7dd3fc;font-size:11px;font-weight:700;">${escapeHtml(searchCfg.exploreLabel || (isBn ? 'দ্রুত খুঁজুন:' : 'Explore:'))}</span>
+        ${(searchCfg.quickTags || []).filter(t => t.enabled !== false).map(t => {
+          const l = isBn ? (t.label_bn || t.label) : (t.label || t.label_bn);
+          return `<span style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.18);color:#e2e8f0;border-radius:14px;padding:3px 9px;font-size:10.5px;">${escapeHtml(l)}</span>`;
+        }).join('')}
+      </div>
+    </div>
+  ` : '';
+
   // Sections
   const validSecs = (sections || []).filter(s => !s.deleted);
   const enabledSlugs = menuDraftConfig.enabledMenuSections || [];
@@ -4098,6 +4440,7 @@ function renderMenuPreview() {
   const latestArr = (menuDraftConfig.latest || []).filter(l => l.enabled !== false);
 
   box.innerHTML = `
+    ${searchHtml}
     <div class="menu-preview-cols">
       <!-- Col 1: Sections -->
       <div class="menu-preview-col">
@@ -4153,6 +4496,17 @@ async function saveMenuSettings() {
   menuDraftConfig.seriesTitle   = (document.getElementById('menu-series-title-input') || {}).value || 'Featured series';
   menuDraftConfig.exploreTitle  = (document.getElementById('menu-explore-title-input') || {}).value || 'Explore the Privatian';
   menuDraftConfig.latestTitle   = (document.getElementById('menu-latest-title-input') || {}).value || 'Read the latest';
+
+  if (menuDraftConfig.search) {
+    const phInput = document.getElementById('menu-search-placeholder-input');
+    if (phInput && phInput.value.trim()) menuDraftConfig.search.placeholder = phInput.value.trim();
+    const expInput = document.getElementById('menu-search-explore-label-input');
+    if (expInput && expInput.value.trim()) menuDraftConfig.search.exploreLabel = expInput.value.trim();
+    const closeInput = document.getElementById('menu-search-close-text-input');
+    if (closeInput && closeInput.value.trim()) menuDraftConfig.search.closeText = closeInput.value.trim();
+    const hintInput = document.getElementById('menu-search-hint-text-input');
+    if (hintInput && hintInput.value.trim()) menuDraftConfig.search.hintText = hintInput.value.trim();
+  }
 
   if (saveBtn) saveBtn.disabled = true;
   updateGlobalSyncStatus('syncing', 'Saving to database...');

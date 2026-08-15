@@ -99,7 +99,29 @@
         imageUrl: 'img3.png',
         enabled: true
       }
-    ]
+    ],
+    search: {
+      enabled: true,
+      placeholder: 'Search articles, stories, topics...',
+      placeholder_bn: 'নিবন্ধ, গল্প, বিষয় খুঁজুন...',
+      exploreLabel: 'Explore:',
+      exploreLabel_bn: 'দ্রুত খুঁজুন:',
+      closeText: 'Close',
+      closeText_bn: 'বন্ধ করুন',
+      hintText: 'Start typing to search or select a topic above…',
+      hintText_bn: 'অনুসন্ধান করতে লিখুন অথবা ওপরের বিষয় বেছে নিন…',
+      noResultsText: 'No matching stories found',
+      noResultsText_bn: 'কোনো ফলাফল পাওয়া যায়নি',
+      quickTags: [
+        { id: 'tag-1', label: 'Findings', label_bn: 'অনুসন্ধিৎসু', query: 'Findings', enabled: true },
+        { id: 'tag-2', label: 'Community & Heritage', label_bn: 'সমাজ ও ঐতিহ্য', query: 'Community & Heritage', enabled: true },
+        { id: 'tag-3', label: 'Culture', label_bn: 'সংস্কৃতি', query: 'Culture', enabled: true },
+        { id: 'tag-4', label: 'Privacy & Values', label_bn: 'মূল্যবোধ', query: 'Privacy & Values', enabled: true },
+        { id: 'tag-5', label: 'Nation & World', label_bn: 'দেশ ও বিশ্ব', query: 'Nation & World', enabled: true },
+        { id: 'tag-6', label: 'Arts & Legacy', label_bn: 'শিল্প ও উত্তরাধিকার', query: 'Arts & Legacy', enabled: true },
+        { id: 'tag-7', label: 'Events', label_bn: 'অনুষ্ঠান', query: 'Events', enabled: true }
+      ]
+    }
   };
 
   var DEFAULT_SUBSECTIONS = [
@@ -876,6 +898,34 @@
     var searchCloseBtn     = document.getElementById('search-close-btn');
     var searchQuickTagsEl  = document.getElementById('search-quick-tags');
 
+    function getSearchConfig() {
+      var menuCfg = getMenuSettings();
+      if (menuCfg && menuCfg.search) return menuCfg.search;
+      return (DEFAULT_MENU_CONFIG && DEFAULT_MENU_CONFIG.search) || {
+        enabled: true,
+        placeholder: 'Search articles, stories, topics...',
+        exploreLabel: 'Explore:',
+        closeText: 'Close',
+        hintText: 'Start typing to search or select a topic above…',
+        noResultsText: 'No matching stories found',
+        quickTags: [
+          { id: 'tag-1', label: 'Findings', label_bn: 'অনুসন্ধিৎসু', query: 'Findings', enabled: true },
+          { id: 'tag-2', label: 'Community & Heritage', label_bn: 'সমাজ ও ঐতিহ্য', query: 'Community & Heritage', enabled: true },
+          { id: 'tag-3', label: 'Culture', label_bn: 'সংস্কৃতি', query: 'Culture', enabled: true },
+          { id: 'tag-4', label: 'Privacy & Values', label_bn: 'মূল্যবোধ', query: 'Privacy & Values', enabled: true },
+          { id: 'tag-5', label: 'Nation & World', label_bn: 'দেশ ও বিশ্ব', query: 'Nation & World', enabled: true },
+          { id: 'tag-6', label: 'Arts & Legacy', label_bn: 'শিল্প ও উত্তরাধিকার', query: 'Arts & Legacy', enabled: true },
+          { id: 'tag-7', label: 'Events', label_bn: 'অনুষ্ঠান', query: 'Events', enabled: true }
+        ]
+      };
+    }
+
+    var sCfg = getSearchConfig();
+    if (searchBtn) {
+      if (sCfg.enabled === false) searchBtn.style.display = 'none';
+      else searchBtn.style.display = '';
+    }
+
     function buildArticleIndex() {
       var articles = [];
       var selectors = [
@@ -916,14 +966,20 @@
     function renderQuickTags() {
       if (!searchQuickTagsEl) return;
       var isBn = window.PrivatianLang && window.PrivatianLang.getLang() === 'bn';
-      var tags = isBn ? 
-        ['অনুসন্ধিৎসু', 'সমাজ ও ঐতিহ্য', 'সংস্কৃতি', 'মূল্যবোধ', 'দেশ ও বিশ্ব', 'শিল্প ও উত্তরাধিকার', 'অনুষ্ঠান'] :
-        ['Findings', 'Community & Heritage', 'Culture', 'Privacy & Values', 'Nation & World', 'Arts & Legacy', 'Events'];
-      
-      var prefix = isBn ? 'দ্রুত খুঁজুন:' : 'Explore:';
-      var html = '<span class="search-quick-label">' + prefix + '</span>';
-      tags.forEach(function(t) {
-        html += '<button type="button" class="search-quick-tag" data-tag="' + escapeHTML(t) + '">' + escapeHTML(t) + '</button>';
+      var cfg = getSearchConfig();
+      var rawTags = Array.isArray(cfg.quickTags) ? cfg.quickTags.filter(function(t) { return t.enabled !== false; }) : [];
+
+      if (rawTags.length === 0) {
+        searchQuickTagsEl.innerHTML = '';
+        return;
+      }
+
+      var prefix = isBn ? (cfg.exploreLabel_bn || cfg.exploreLabel || 'দ্রুত খুঁজুন:') : (cfg.exploreLabel || 'Explore:');
+      var html = '<span class="search-quick-label">' + escapeHTML(prefix) + '</span>';
+      rawTags.forEach(function(t) {
+        var label = isBn ? (t.label_bn || t.label) : (t.label || t.label_bn);
+        var query = t.query || t.label || t.label_bn;
+        html += '<button type="button" class="search-quick-tag" data-tag="' + escapeHTML(query) + '">' + escapeHTML(label) + '</button>';
       });
       searchQuickTagsEl.innerHTML = html;
 
@@ -942,19 +998,34 @@
 
     function openSearch() {
       if (!searchOverlay) return;
+      var isBn = window.PrivatianLang && window.PrivatianLang.getLang() === 'bn';
+      var cfg = getSearchConfig();
+
       articleIndex = buildArticleIndex();
       renderQuickTags();
+
+      // Dynamic placeholder & close button
+      if (searchInput) {
+        var ph = isBn ? (cfg.placeholder_bn || cfg.placeholder || 'নিবন্ধ, গল্প, বিষয় খুঁজুন...') : (cfg.placeholder || 'Search articles, stories, topics...');
+        searchInput.placeholder = ph;
+      }
+
+      if (searchCloseBtn) {
+        var closeSpan = searchCloseBtn.querySelector('.search-close-text');
+        var closeTxt = isBn ? (cfg.closeText_bn || cfg.closeText || 'বন্ধ করুন') : (cfg.closeText || 'Close');
+        if (closeSpan) closeSpan.textContent = closeTxt;
+      }
+
       searchOverlay.removeAttribute('hidden');
       requestAnimationFrame(function() {
         searchOverlay.classList.add('is-open');
       });
       setTimeout(function() { if (searchInput) searchInput.focus(); }, 80);
       document.body.style.overflow = 'hidden';
-      var isBn = window.PrivatianLang && window.PrivatianLang.getLang() === 'bn';
+
       if (searchResults) {
-        searchResults.innerHTML = '<p class="search-hint">' + 
-          (isBn ? 'অনুসন্ধান করতে লিখুন অথবা ওপরের বিভাগ বেছে নিন…' : 'Start typing to search or select a topic above…') + 
-          '</p>';
+        var hint = isBn ? (cfg.hintText_bn || cfg.hintText || 'অনুসন্ধান করতে লিখুন অথবা ওপরের বিষয় বেছে নিন…') : (cfg.hintText || 'Start typing to search or select a topic above…');
+        searchResults.innerHTML = '<p class="search-hint">' + escapeHTML(hint) + '</p>';
       }
     }
 
@@ -977,11 +1048,11 @@
     function performSearch(query) {
       if (!searchResults) return;
       var isBn = window.PrivatianLang && window.PrivatianLang.getLang() === 'bn';
+      var cfg = getSearchConfig();
       var q = (query || '').trim();
       if (!q) {
-        searchResults.innerHTML = '<p class="search-hint">' + 
-          (isBn ? 'অনুসন্ধান করতে লিখুন অথবা ওপরের বিভাগ বেছে নিন…' : 'Start typing to search or select a topic above…') + 
-          '</p>';
+        var hint = isBn ? (cfg.hintText_bn || cfg.hintText || 'অনুসন্ধান করতে লিখুন অথবা ওপরের বিষয় বেছে নিন…') : (cfg.hintText || 'Start typing to search or select a topic above…');
+        searchResults.innerHTML = '<p class="search-hint">' + escapeHTML(hint) + '</p>';
         return;
       }
       var lower = q.toLowerCase();

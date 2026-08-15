@@ -502,9 +502,14 @@
           <span class="tab-count" id="count-menu-explore">0</span>
         </button>
         <button class="tab-btn" id="tab-menu-latest" onclick="switchMenuTab('latest')">
-          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M19 20H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v1m2 13a2 2 0 0 1-2-2V7m2 13a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"/></svg>
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M19 20H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v1m2 13a2 2 0 0 1-2-2V7m2 13a2 2 0 0 1 2 2v1m2 13a2 2 0 0 1-2-2V7m2 13a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"/></svg>
           <span>Read the Latest</span>
           <span class="tab-count" id="count-menu-latest">0</span>
+        </button>
+        <button class="tab-btn" id="tab-menu-search" onclick="switchMenuTab('search')">
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <span>Search Bar Settings</span>
+          <span class="tab-count" id="count-menu-search">7</span>
         </button>
         <button class="tab-btn" id="tab-menu-sections" onclick="switchMenuTab('sections')">
           <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
@@ -567,6 +572,78 @@
             </button>
           </div>
           <div id="menu-latest-list-container" class="menu-items-grid"></div>
+        </div>
+      </div>
+
+      <!-- Tab Panel: Search Bar Settings -->
+      <div class="menu-tab-panel" id="panel-menu-search" style="display:none;">
+        <div class="card" style="padding:22px;margin-bottom:20px;border-radius:12px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;background:#f8fafc;padding:14px 18px;border-radius:10px;border:1px solid #e2e8f0;">
+            <div>
+              <h4 style="font-size:14px;font-weight:700;color:#0f172a;margin:0 0 3px;">Enable Menubar Search Bar</h4>
+              <p style="font-size:12px;color:var(--text-muted);margin:0;">Toggle visibility of the search button and interactive search modal overlay</p>
+            </div>
+            <label class="hs-toggle">
+              <input type="checkbox" id="menu-search-enabled-toggle" checked onchange="toggleMenuSearchEnabled(this.checked)" />
+              <span class="hs-toggle-track"><span class="hs-toggle-thumb"></span></span>
+            </label>
+          </div>
+
+          <!-- Live Interactive Search Preview on Dark Luxury Overlay -->
+          <div style="background:#090e17;border:1px solid #1e293b;border-radius:12px;padding:22px;margin-bottom:22px;color:#fff;">
+            <div style="font-size:11.5px;font-weight:700;letter-spacing:0.06em;color:#38bdf8;text-transform:uppercase;margin-bottom:12px;display:flex;align-items:center;gap:6px;">
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              Live Search Bar &amp; Quick Filter Preview
+            </div>
+            <div style="background:#05080e;border:1px dashed rgba(255,255,255,0.15);border-radius:10px;padding:18px;">
+              <div class="search-header-bar" style="max-width:600px;margin:0 auto 12px;">
+                <div class="search-input-wrap">
+                  <svg class="search-icon-inline" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                  <input type="text" id="menu-search-preview-input" class="search-input" readonly placeholder="Search articles, stories, topics..." style="cursor:default;" />
+                  <span class="search-clear-btn" style="pointer-events:none;font-size:10px;">✕</span>
+                </div>
+                <button type="button" class="search-close-btn" style="pointer-events:none;padding:6px 12px;font-size:12px;">
+                  <span id="menu-search-preview-close">Close</span>
+                </button>
+              </div>
+              <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:8px;" id="menu-search-preview-tags">
+                <span class="search-quick-label" id="menu-search-preview-explore" style="color:#7dd3fc;font-size:11.5px;font-weight:700;">Explore:</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Search General Configuration Fields -->
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;">
+            <div class="form-group" style="margin-bottom:0;">
+              <label class="form-label" for="menu-search-placeholder-input">Search Input Placeholder</label>
+              <input type="text" id="menu-search-placeholder-input" class="form-input" placeholder="Search articles, stories, topics..." oninput="onMenuSearchInput('placeholder', this.value)" />
+            </div>
+            <div class="form-group" style="margin-bottom:0;">
+              <label class="form-label" for="menu-search-explore-label-input">Quick Filter Label / Prefix</label>
+              <input type="text" id="menu-search-explore-label-input" class="form-input" placeholder="Explore:" oninput="onMenuSearchInput('exploreLabel', this.value)" />
+            </div>
+            <div class="form-group" style="margin-bottom:0;">
+              <label class="form-label" for="menu-search-close-text-input">Close Button Text</label>
+              <input type="text" id="menu-search-close-text-input" class="form-input" placeholder="Close" oninput="onMenuSearchInput('closeText', this.value)" />
+            </div>
+            <div class="form-group" style="margin-bottom:0;">
+              <label class="form-label" for="menu-search-hint-text-input">Search Initial Hint Text</label>
+              <input type="text" id="menu-search-hint-text-input" class="form-input" placeholder="Start typing to search or select a topic above…" oninput="onMenuSearchInput('hintText', this.value)" />
+            </div>
+          </div>
+
+          <!-- Quick Filter Tags / Chips Manager -->
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;border-top:1px solid #e2e8f0;padding-top:18px;">
+            <div>
+              <h3 style="font-size:14px;font-weight:700;color:var(--text-primary);margin:0 0 2px;">Quick Filter Tags &amp; Search Chips</h3>
+              <p style="font-size:12px;color:var(--text-muted);margin:0;">These pill chips appear directly under the search bar for instant 1-click searching</p>
+            </div>
+            <button class="btn btn--primary btn--sm" onclick="openSearchTagModal()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Add Search Tag
+            </button>
+          </div>
+          <div id="menu-search-tags-container" class="menu-items-grid"></div>
         </div>
       </div>
 
@@ -1637,6 +1714,42 @@
       <div class="modal-footer">
         <button class="btn btn--ghost" onclick="closeLatestModal()">Cancel</button>
         <button class="btn btn--primary" onclick="saveLatestItem()">Save Story</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- == MODAL: SEARCH QUICK TAG / TOPIC CHIP == -->
+  <div class="modal-overlay" id="modal-menu-search-tag" hidden>
+    <div class="modal" role="dialog" aria-modal="true" style="max-width:480px;">
+      <div class="modal-header">
+        <h2 class="modal-title" id="modal-search-tag-title">Add Search Tag</h2>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="search-tag-edit-id" value="" />
+        <div class="form-group">
+          <label class="form-label" for="search-tag-label-input">Tag Label (English) <span style="color:var(--danger)">*</span></label>
+          <input type="text" id="search-tag-label-input" class="form-input" placeholder="e.g. Privacy & Values" maxlength="50" />
+        </div>
+        <div class="form-group" style="margin-top:14px;">
+          <label class="form-label" for="search-tag-label-bn-input">Tag Label (Bengali - বাংলা)</label>
+          <input type="text" id="search-tag-label-bn-input" class="form-input" placeholder="যেমন: মূল্যবোধ" maxlength="50" />
+        </div>
+        <div class="form-group" style="margin-top:14px;">
+          <label class="form-label" for="search-tag-query-input">Search Query / Keyword <span style="color:var(--danger)">*</span></label>
+          <input type="text" id="search-tag-query-input" class="form-input" placeholder="e.g. Privacy & Values" maxlength="60" />
+          <p style="font-size:11.5px;color:var(--text-muted);margin:4px 0 0;">When user clicks this tag chip, it immediately filters articles by this keyword.</p>
+        </div>
+        <div class="form-group" style="margin-top:14px;display:flex;align-items:center;gap:10px;">
+          <label class="hs-toggle">
+            <input type="checkbox" id="search-tag-enabled-input" checked />
+            <span class="hs-toggle-track"><span class="hs-toggle-thumb"></span></span>
+          </label>
+          <span style="font-size:13px;font-weight:600;color:var(--text-primary);">Enable Search Tag Chip</span>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn--ghost" onclick="closeSearchTagModal()">Cancel</button>
+        <button class="btn btn--primary" onclick="saveSearchTagModal()">Save Tag</button>
       </div>
     </div>
   </div>
