@@ -626,6 +626,68 @@ module.exports = async function handler(req, res) {
     }
   }
 
+  // ── INDIVIDUAL SECTION CUSTOM CONFIGURATION (GET / POST) ────────────────
+  if (action === 'section-config') {
+    const slug = (req.query && req.query.slug) || (req.body && req.body.slug) || 'all';
+
+    if (req.method === 'GET') {
+      try {
+        const { data } = await sb.from('site_settings').select('value').eq('key', 'sections_custom_configs').maybeSingle();
+        const allConfigs = (data && data.value) || {};
+        if (req.query.all === '1' || !req.query.slug) {
+          return res.status(200).json(allConfigs);
+        }
+        return res.status(200).json(allConfigs[slug] || {
+          featuredArticleId: null,
+          selectedArticleIds: [],
+          customTitle: '',
+          description: ''
+        });
+      } catch(e) {
+        return res.status(200).json({
+          featuredArticleId: null,
+          selectedArticleIds: [],
+          customTitle: '',
+          description: ''
+        });
+      }
+    }
+
+    if (req.method === 'POST') {
+      const session = await requireAuth(req, res);
+      if (!session) return;
+
+      const payload = req.body || {};
+      let allConfigs = {};
+      try {
+        const { data } = await sb.from('site_settings').select('value').eq('key', 'sections_custom_configs').maybeSingle();
+        if (data && data.value && typeof data.value === 'object') {
+          allConfigs = data.value;
+        }
+      } catch(e) {}
+
+      allConfigs[slug] = {
+        featuredArticleId: payload.featuredArticleId || null,
+        selectedArticleIds: Array.isArray(payload.selectedArticleIds) ? payload.selectedArticleIds.slice(0, 4) : [],
+        customTitle: payload.customTitle || '',
+        description: payload.description || '',
+        updatedAt: new Date().toISOString()
+      };
+
+      try {
+        await sb.from('site_settings').upsert({
+          key: 'sections_custom_configs',
+          value: allConfigs,
+          updated_at: new Date().toISOString()
+        }, { onConflict: 'key' });
+      } catch(err) {
+        console.warn('[Sections config save error]:', err.message);
+      }
+
+      return res.status(200).json({ ok: true, data: allConfigs[slug] });
+    }
+  }
+
   // ── GET ─────────────────────────────────────────────────────────────────
   if (req.method === 'GET') {
     const statusParam = (req.query && req.query.status) || 'active';

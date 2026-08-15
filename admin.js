@@ -296,6 +296,9 @@ function renderActive(active) {
       </td>
       <td>
         <div class="action-group">
+          <button class="action-btn action-btn--customize" data-id="${s.id}" title="Customize Section Theme (Hero & Selected Stories)" aria-label="Customize ${escapeHtml(s.name)}" style="color:var(--brand-navy,#0a528e);">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+          </button>
           <button class="action-btn action-btn--edit" data-id="${s.id}" title="Edit section" aria-label="Edit ${escapeHtml(s.name)}">${ICONS.pencil}</button>
           ${!isPermanent ? `
             <button class="action-btn action-btn--delete" data-id="${s.id}" title="Move to trash" aria-label="Delete ${escapeHtml(s.name)}">${ICONS.trash}</button>
@@ -309,6 +312,9 @@ function renderActive(active) {
   });
 
   // Bind row actions
+  sectionsTable.querySelectorAll('.action-btn--customize').forEach(btn => {
+    btn.addEventListener('click', () => openSectionCustomizer(btn.dataset.id));
+  });
   sectionsTable.querySelectorAll('.action-btn--edit').forEach(btn => {
     btn.addEventListener('click', () => openEditModal(btn.dataset.id));
   });
@@ -548,6 +554,175 @@ function closeModal() {
   editingId = null;
   slugManuallyEdited = false;
   hideModalError();
+}
+
+// ── SECTION CUSTOMIZER (HERO FEATURED & 4 SELECTED ARTICLES) ─────────────
+var _sectionCustomizerArticles = [];
+var _currentCustomizingSection = null;
+
+async function openSectionCustomizer(id) {
+  const s = sections.find(sec => sec.id === id);
+  if (!s) return;
+  _currentCustomizingSection = s;
+
+  const modal = document.getElementById('modal-section-customizer');
+  if (!modal) return;
+
+  const titleEl = document.getElementById('sc-modal-title');
+  const subEl = document.getElementById('sc-modal-subtitle');
+  const idEl = document.getElementById('sc-section-id');
+  const slugEl = document.getElementById('sc-section-slug');
+  const descEl = document.getElementById('sc-desc-input');
+
+  if (titleEl) titleEl.textContent = `Customize Section Theme: ${s.name}`;
+  if (subEl) subEl.textContent = `Configure Hero Featured Article and Curated Stories for ${s.name} (${s.slug ? '/section/' + s.slug : '/section/all'})`;
+  if (idEl) idEl.value = s.id;
+  if (slugEl) slugEl.value = s.slug || 'all';
+
+  // Load published articles
+  await loadArticlesForSectionCustomizer();
+
+  // Filter articles relevant for this section (or all if slug is 'all')
+  const secSlug = s.slug || 'all';
+  const secNameLower = s.name.toLowerCase();
+  const relevantArticles = (secSlug === 'all' || s.id === 'all')
+    ? _sectionCustomizerArticles
+    : _sectionCustomizerArticles.filter(a => {
+        const aSec = (a.section || '').toLowerCase();
+        return aSec.includes(secNameLower) || aSec.includes(secSlug.replace(/-/g, ' '));
+      });
+
+  // If none matched strictly, offer all published articles
+  const availableArticles = (relevantArticles.length > 0) ? relevantArticles : _sectionCustomizerArticles;
+
+  // Load existing configuration for this section
+  let existingConfig = { featuredArticleId: null, selectedArticleIds: [], customTitle: '', description: '' };
+  try {
+    const res = await _apiGet(`/api/sections?action=section-config&slug=${encodeURIComponent(secSlug)}`);
+    if (res && typeof res === 'object') existingConfig = res;
+  } catch(e) {}
+
+  if (descEl) descEl.value = existingConfig.description || '';
+
+  // Populate Hero Featured Select
+  const heroSelect = document.getElementById('sc-hero-article-select');
+  if (heroSelect) {
+    heroSelect.innerHTML = `<option value="">(Auto-Latest Article with Image)</option>` +
+      availableArticles.map(a => `<option value="${a.id}" ${existingConfig.featuredArticleId === a.id ? 'selected' : ''}>${escapeHtml(a.title || 'Untitled')} (${a.author || 'Author'} • ${formatDate(a.published_at || a.created_at)})</option>`).join('');
+    updateHeroArticlePreview(heroSelect.value);
+  }
+
+  // Populate 4 Selected Article Selects
+  const selIds = Array.isArray(existingConfig.selectedArticleIds) ? existingConfig.selectedArticleIds : [];
+  for (let slot = 1; slot <= 4; slot++) {
+    const slotSelect = document.getElementById(`sc-slot-${slot}-select`);
+    const currentVal = selIds[slot - 1] || '';
+    if (slotSelect) {
+      slotSelect.innerHTML = `<option value="">(Auto: Top Story ${slot})</option>` +
+        availableArticles.map(a => `<option value="${a.id}" ${currentVal === a.id ? 'selected' : ''}>${escapeHtml(a.title || 'Untitled')} (${a.author || 'Author'})</option>`).join('');
+      updateSlotPreview(slot, slotSelect.value);
+    }
+  }
+
+  modal.hidden = false;
+}
+
+function closeSectionCustomizer() {
+  const modal = document.getElementById('modal-section-customizer');
+  if (modal) modal.hidden = true;
+  _currentCustomizingSection = null;
+}
+
+async function loadArticlesForSectionCustomizer() {
+  if (_sectionCustomizerArticles.length > 0) return;
+  try {
+    const list = await _apiGet('/api/articles?action=list');
+    if (Array.isArray(list)) _sectionCustomizerArticles = list.filter(a => a.status === 'published' || !a.status);
+  } catch(e) {}
+  if (_sectionCustomizerArticles.length === 0) {
+    try {
+      const pubList = await _apiGet('/api/articles?action=public');
+      if (Array.isArray(pubList)) _sectionCustomizerArticles = pubList;
+    } catch(err) {}
+  }
+}
+
+function updateHeroArticlePreview(articleId) {
+  const prevBox = document.getElementById('sc-hero-preview');
+  const prevImg = document.getElementById('sc-hero-prev-img');
+  const prevTitle = document.getElementById('sc-hero-prev-title');
+  const prevMeta = document.getElementById('sc-hero-prev-meta');
+  if (!prevBox) return;
+
+  if (!articleId) {
+    prevBox.style.display = 'none';
+    return;
+  }
+  const art = _sectionCustomizerArticles.find(a => a.id === articleId);
+  if (!art) {
+    prevBox.style.display = 'none';
+    return;
+  }
+  prevBox.style.display = 'flex';
+  if (prevImg) prevImg.src = art.hero_img_url || '/img1.png';
+  if (prevTitle) prevTitle.textContent = art.title || 'Untitled';
+  if (prevMeta) prevMeta.textContent = `${art.section || 'General'} • ${art.author || 'Author'} • ${formatDate(art.published_at || art.created_at)}`;
+}
+
+function updateSlotPreview(slotIndex, articleId) {
+  const prevEl = document.getElementById(`sc-slot-${slotIndex}-prev`);
+  if (!prevEl) return;
+  if (!articleId) {
+    prevEl.style.display = 'none';
+    prevEl.textContent = '';
+    return;
+  }
+  const art = _sectionCustomizerArticles.find(a => a.id === articleId);
+  if (art) {
+    prevEl.style.display = 'block';
+    prevEl.textContent = `Selected: "${art.title}" (${art.author || 'Author'})`;
+  } else {
+    prevEl.style.display = 'none';
+  }
+}
+
+async function saveSectionCustomizer() {
+  if (!_currentCustomizingSection) return;
+  const saveBtn = document.getElementById('sc-save-btn');
+  if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = 'Saving…'; }
+
+  const slug = _currentCustomizingSection.slug || 'all';
+  const desc = (document.getElementById('sc-desc-input')?.value || '').trim();
+  const heroArtId = document.getElementById('sc-hero-article-select')?.value || null;
+
+  const selIds = [];
+  for (let slot = 1; slot <= 4; slot++) {
+    const val = document.getElementById(`sc-slot-${slot}-select`)?.value;
+    if (val) selIds.push(val);
+  }
+
+  const payload = {
+    slug: slug,
+    featuredArticleId: heroArtId,
+    selectedArticleIds: selIds,
+    description: desc
+  };
+
+  updateGlobalSyncStatus('syncing', 'Saving section theme settings...');
+  try {
+    await _apiPost(`/api/sections?action=section-config&slug=${encodeURIComponent(slug)}`, payload);
+    updateGlobalSyncStatus('synced', 'Synced with database');
+    showToast('success', `Theme customized for "${_currentCustomizingSection.name}".`);
+    closeSectionCustomizer();
+  } catch(e) {
+    updateGlobalSyncStatus('error', 'Sync error');
+    showToast('error', 'Failed to save section theme: ' + e.message);
+  } finally {
+    if (saveBtn) {
+      saveBtn.disabled = false;
+      saveBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" width="14" height="14"><polyline points="20 6 9 17 4 12"/></svg> Save Section Theme`;
+    }
+  }
 }
 
 function showModalError(msg) {

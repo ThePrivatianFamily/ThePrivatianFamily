@@ -27,36 +27,40 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="/supabase-config.js"></script>
   <script src="/components.js"></script>
+
   <style>
-    /* â”€â”€ CRITICAL OVERRIDES for section page â”€â”€ */
-    /* style.css sets img{width:100%} which breaks positioned images */
-    .hero-art img,
-    .hero-art .hero-img {
-      position: absolute !important;
-      width: 100% !important;
-      height: 100% !important;
-      object-fit: cover !important;
-      display: block !important;
-    }
-
-    /* â”€â”€ SECTION PAGE VARIABLES â”€â”€ */
+    /* ── SECTION PAGE VARIABLES & THEME ───────────────────────────── */
     :root {
-      --sec-navy: #0d3a63;
-      --sec-gold: #c9a96e;
-      --sec-div:  #dde5ef;
-      --tp: #1a2a3a;
-      --ts: #4a6278;
-      --tm: #7a96ab;
+      --sec-navy:      #0a528e;
+      --sec-navy-dark: #083d6b;
+      --sec-navy-deep: #051d38;
+      --sec-gold:      #c9a96e;
+      --sec-div:       #e2e8f0;
+      --tp:            #0f172a;
+      --ts:            #334155;
+      --tm:            #64748b;
+      --font-serif:    'Libre Baskerville', Georgia, serif;
+      --font-sans:     'Source Sans 3', 'Helvetica Neue', Arial, sans-serif;
     }
 
-    body { background: #f7f9fc; }
+    body {
+      background: #f8fafc;
+      color: var(--tp);
+      font-family: var(--font-sans);
+      margin: 0;
+      padding: 0;
+    }
 
-    /* â”€â”€ IDENTITY BAR â”€â”€ */
-    .id-bar { background: var(--sec-navy); border-bottom: 3px solid var(--sec-gold); }
+    /* ── SECTION IDENTITY BAR ─────────────────────────────────────── */
+    .id-bar {
+      background: var(--sec-navy-deep);
+      border-bottom: 3px solid var(--sec-gold);
+      position: relative;
+    }
     .id-inner {
-      max-width: var(--max-width);
+      max-width: 1240px;
       margin: 0 auto;
-      padding: 36px 24px 32px;
+      padding: 40px 24px 34px;
       display: flex;
       align-items: flex-end;
       justify-content: space-between;
@@ -64,256 +68,533 @@
     }
     .id-crumb {
       font-family: var(--font-sans);
-      font-size: 11px;
+      font-size: 11.5px;
       font-weight: 700;
       letter-spacing: .1em;
       text-transform: uppercase;
       color: var(--sec-gold);
-      margin-bottom: 10px;
+      margin-bottom: 12px;
       display: flex;
       align-items: center;
       gap: 8px;
     }
-    .id-crumb a { color: inherit; text-decoration: none; }
+    .id-crumb a { color: inherit; text-decoration: none; transition: color .15s; }
     .id-crumb a:hover { color: #fff; }
-    .id-crumb span { opacity: .5; }
+    .id-crumb span { opacity: .6; }
     .id-title {
       font-family: var(--font-serif);
-      font-size: clamp(28px, 4vw, 50px);
+      font-size: clamp(28px, 4.2vw, 52px);
       font-weight: 700;
       color: #fff;
       line-height: 1.12;
       margin: 0;
       letter-spacing: -.01em;
     }
-    .id-meta { font-size: 13px; color: rgba(255,255,255,.45); margin-top: 8px; }
+    .id-meta {
+      font-size: 14px;
+      color: rgba(255,255,255,.6);
+      margin-top: 10px;
+      line-height: 1.5;
+      max-width: 680px;
+    }
     .id-back {
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      color: rgba(255,255,255,.4);
+      color: rgba(255,255,255,.55);
       text-decoration: none;
-      font-size: 12px;
+      font-size: 12.5px;
+      font-weight: 600;
       font-family: var(--font-sans);
       transition: color .15s;
       flex-shrink: 0;
+      padding: 6px 12px;
+      border: 1px solid rgba(255,255,255,.15);
+      border-radius: 4px;
+      background: rgba(255,255,255,.05);
     }
-    .id-back:hover { color: var(--sec-gold); }
+    .id-back:hover {
+      color: #fff;
+      border-color: var(--sec-gold);
+      background: rgba(201,169,110,.12);
+    }
 
-    /* â”€â”€ PAGE WRAPPER â”€â”€ */
-    .pw { max-width: var(--max-width); margin: 0 auto; padding: 0 24px 80px; }
+    /* ── PAGE CONTAINER ───────────────────────────────────────────── */
+    .pw {
+      max-width: 1240px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
 
-    /* â”€â”€ HERO AREA â”€â”€ */
-    .hero-wrap { padding-top: 0; }
+    /* ── HERO AREA (WELL-SPACED 2-COLUMN LAYOUT) ──────────────────── */
+    .hero-wrap {
+      margin-top: 36px;
+      margin-bottom: 48px;
+    }
     .hero-area {
       display: grid;
-      grid-template-columns: 1fr 320px;
-      gap: 0;
-      border-bottom: 2px solid var(--sec-div);
-      margin-bottom: 40px;
+      grid-template-columns: 1fr 380px;
+      gap: 32px;
+      align-items: start;
     }
-    .hero-art {
-      position: relative;
+
+    /* Hero Featured Article Card */
+    .hero-art-card {
+      background: #ffffff;
+      border: 1px solid var(--sec-div);
+      border-radius: 10px;
       overflow: hidden;
-      background: #111;
-      min-height: 400px;
+      box-shadow: 0 4px 20px rgba(0,0,0,.04);
+      transition: box-shadow .2s ease, transform .2s ease;
       display: flex;
       flex-direction: column;
-      justify-content: flex-end;
     }
-    .hero-img {
-      position: absolute !important;
-      inset: 0;
-      width: 100% !important;
-      height: 100% !important;
-      object-fit: cover !important;
-      opacity: .7;
-      transition: opacity .3s, transform .4s;
+    .hero-art-card:hover {
+      box-shadow: 0 10px 32px rgba(10,82,142,.1);
+      transform: translateY(-2px);
     }
-    .hero-art:hover .hero-img { opacity: .6; transform: scale(1.02); }
-    .hero-ov {
+    .hero-img-wrap {
       position: relative;
-      z-index: 1;
-      padding: 28px 32px;
-      background: linear-gradient(to top, rgba(0,0,0,.88) 0%, rgba(0,0,0,.25) 70%, transparent 100%);
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      background: #e2e8f0;
+      overflow: hidden;
+    }
+    .hero-img-wrap img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      transition: transform .45s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .hero-art-card:hover .hero-img-wrap img {
+      transform: scale(1.03);
+    }
+    .hero-art-body {
+      padding: 28px 32px 32px;
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+    }
+    .hero-badge-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 12px;
     }
     .hero-badge {
       font-family: var(--font-sans);
       font-size: 10px;
       font-weight: 700;
-      letter-spacing: .12em;
+      letter-spacing: .1em;
       text-transform: uppercase;
-      color: var(--sec-gold);
-      margin-bottom: 10px;
+      color: #fff;
+      background: var(--sec-navy);
+      padding: 4px 10px;
+      border-radius: 3px;
       display: inline-block;
     }
-    .hero-h {
-      font-family: var(--font-serif);
-      font-size: clamp(18px, 2.2vw, 28px);
-      font-weight: 600;
-      color: #fff;
-      line-height: 1.3;
-      margin: 0 0 10px;
-    }
-    .hero-h a { color: inherit; text-decoration: none; }
-    .hero-h a:hover { text-decoration: underline; text-decoration-color: var(--sec-gold); }
-    .hero-meta-txt { font-family: var(--font-sans); font-size: 12px; color: rgba(255,255,255,.5); }
-
-    /* Hero sidebar */
-    .hero-sb {
-      background: #fff;
-      border-left: 1px solid var(--sec-div);
-      display: flex;
-      flex-direction: column;
-    }
-    .hero-sb-hd {
+    .hero-featured-tag {
       font-family: var(--font-sans);
       font-size: 10px;
       font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: #92400e;
+      background: #fef3c7;
+      padding: 4px 8px;
+      border-radius: 3px;
+    }
+    .hero-title {
+      font-family: var(--font-serif);
+      font-size: clamp(22px, 2.4vw, 32px);
+      font-weight: 700;
+      line-height: 1.25;
+      color: var(--tp);
+      margin: 0 0 12px;
+    }
+    .hero-title a {
+      color: inherit;
+      text-decoration: none;
+      transition: color .15s ease;
+    }
+    .hero-title a:hover {
+      color: var(--sec-navy);
+    }
+    .hero-deck {
+      font-family: var(--font-serif);
+      font-size: 15.5px;
+      font-weight: 400;
+      font-style: italic;
+      color: var(--ts);
+      line-height: 1.6;
+      margin: 0 0 20px;
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .hero-meta-row {
+      margin-top: auto;
+      padding-top: 16px;
+      border-top: 1px solid #f1f5f9;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12.5px;
+      color: var(--tm);
+    }
+    .hero-author {
+      font-weight: 600;
+      color: var(--ts);
+    }
+
+    /* ── LATEST IN THIS SECTION (5 ARTICLES) ──────────────────────── */
+    .hero-sb {
+      background: #ffffff;
+      border: 1px solid var(--sec-div);
+      border-radius: 10px;
+      box-shadow: 0 4px 20px rgba(0,0,0,.04);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .hero-sb-hd {
+      font-family: var(--font-sans);
+      font-size: 11px;
+      font-weight: 700;
       letter-spacing: .12em;
       text-transform: uppercase;
-      color: var(--tm);
-      padding: 18px 20px 12px;
-      border-bottom: 1px solid var(--sec-div);
+      color: var(--sec-navy);
+      padding: 16px 20px;
       margin: 0;
-    }
-    .hero-sb-list { list-style: none; margin: 0; padding: 0; flex: 1; }
-    .hero-sb-item { border-bottom: 1px solid var(--sec-div); transition: background .15s; }
-    .hero-sb-item:last-child { border-bottom: none; }
-    .hero-sb-item:hover { background: #f5f8fb; }
-    .hero-sb-item a { display: block; padding: 14px 20px; text-decoration: none; color: inherit; }
-    .hsil { font-family: var(--font-sans); font-size: 9px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--sec-gold); margin-bottom: 4px; }
-    .hsit { font-family: var(--font-serif); font-size: 14px; font-weight: 600; color: var(--tp); line-height: 1.35; }
-    .hsid { font-family: var(--font-sans); font-size: 11px; color: var(--tm); margin-top: 5px; }
-
-    /* â”€â”€ CONTENT LAYOUT â”€â”€ */
-    .cl { display: grid; grid-template-columns: 1fr 280px; gap: 40px; align-items: start; }
-
-    /* â”€â”€ GRID HEADER â”€â”€ */
-    .gh {
+      border-bottom: 2px solid #edf2f7;
+      background: #fafbfc;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      border-bottom: 2px solid var(--sec-navy);
-      padding-bottom: 10px;
-      margin-bottom: 24px;
     }
-    .ghl { font-family: var(--font-sans); font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--sec-navy); }
-    .ghc { font-family: var(--font-sans); font-size: 11px; color: var(--tm); }
-
-    /* â”€â”€ ARTICLE GRID â”€â”€ */
-    .ag { display: grid; grid-template-columns: repeat(3, 1fr); gap: 28px 20px; }
-    .ac {
+    .hero-sb-hd-tag {
+      font-size: 9.5px;
+      font-weight: 700;
+      color: var(--sec-gold);
+      letter-spacing: .08em;
+    }
+    .hero-sb-list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
       display: flex;
       flex-direction: column;
-      background: #fff;
-      border: 1px solid var(--sec-div);
-      border-radius: 2px;
+    }
+    .hero-sb-item {
+      border-bottom: 1px solid #f1f5f9;
+      transition: background .15s ease;
+    }
+    .hero-sb-item:last-child {
+      border-bottom: none;
+    }
+    .hero-sb-item:hover {
+      background: #f8fafc;
+    }
+    .hero-sb-item a {
+      display: flex;
+      gap: 14px;
+      padding: 14px 20px;
+      text-decoration: none;
+      color: inherit;
+      align-items: flex-start;
+    }
+    .hs-num {
+      font-family: var(--font-sans);
+      font-size: 11px;
+      font-weight: 700;
+      color: #94a3b8;
+      background: #f1f5f9;
+      border-radius: 4px;
+      padding: 3px 6px;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+    .hero-sb-item:hover .hs-num {
+      color: #fff;
+      background: var(--sec-navy);
+    }
+    .hs-content {
+      flex: 1;
+    }
+    .hs-sec {
+      font-family: var(--font-sans);
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--sec-navy);
+      margin-bottom: 3px;
+    }
+    .hs-title {
+      font-family: var(--font-serif);
+      font-size: 13.5px;
+      font-weight: 600;
+      color: var(--tp);
+      line-height: 1.35;
+      margin: 0 0 4px;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
       overflow: hidden;
-      transition: box-shadow .2s, transform .2s;
+    }
+    .hero-sb-item:hover .hs-title {
+      color: var(--sec-navy);
+    }
+    .hs-date {
+      font-family: var(--font-sans);
+      font-size: 11px;
+      color: var(--tm);
+    }
+
+    /* ── SECTION DIVIDERS & HEADINGS ──────────────────────────────── */
+    .sec-block-hd {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-bottom: 12px;
+      border-bottom: 2px solid var(--sec-navy);
+      margin-bottom: 26px;
+      margin-top: 56px;
+    }
+    .sec-block-title {
+      font-family: var(--font-sans);
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--sec-navy-dark);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .sec-block-cnt {
+      font-family: var(--font-sans);
+      font-size: 12px;
+      color: var(--tm);
+      font-weight: 600;
+    }
+
+    /* ── SELECTED ARTICLES (4-COLUMN GRID) ────────────────────────── */
+    .selected-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 22px;
+      margin-bottom: 20px;
+    }
+    .sel-card {
+      background: #ffffff;
+      border: 1px solid var(--sec-div);
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 2px 10px rgba(0,0,0,.03);
+      transition: all .2s ease;
+      display: flex;
+      flex-direction: column;
       text-decoration: none;
       color: inherit;
     }
-    .ac:hover { box-shadow: 0 4px 20px rgba(13,58,99,.1); transform: translateY(-2px); }
-    .ac-iw {
+    .sel-card:hover {
+      box-shadow: 0 8px 24px rgba(10,82,142,.1);
+      transform: translateY(-2px);
+    }
+    .sel-card-img-wrap {
       position: relative;
+      width: 100%;
+      aspect-ratio: 16 / 10;
+      background: #e2e8f0;
       overflow: hidden;
-      aspect-ratio: 16/10;
-      background: #e8edf3;
     }
-    .ac-iw img {
-      width: 100% !important;
-      height: 100% !important;
-      object-fit: cover !important;
-      display: block !important;
-      transition: transform .35s;
+    .sel-card-img-wrap img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      transition: transform .35s ease;
     }
-    .ac:hover .ac-iw img { transform: scale(1.04); }
-    .ac-b { padding: 16px 16px 18px; flex: 1; display: flex; flex-direction: column; gap: 7px; }
-    .ac-badge { font-family: var(--font-sans); font-size: 9px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--sec-gold); }
-    .ac-title { font-family: var(--font-serif); font-size: 15px; font-weight: 600; line-height: 1.4; color: var(--tp); margin: 0; flex: 1; }
-    .ac-meta { font-family: var(--font-sans); font-size: 11px; color: var(--tm); margin-top: auto; padding-top: 10px; border-top: 1px solid var(--sec-div); }
+    .sel-card:hover .sel-card-img-wrap img {
+      transform: scale(1.04);
+    }
+    .sel-card-body {
+      padding: 16px 18px 18px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+    .sel-badge {
+      font-family: var(--font-sans);
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--sec-navy);
+      margin-bottom: 6px;
+    }
+    .sel-title {
+      font-family: var(--font-serif);
+      font-size: 15px;
+      font-weight: 600;
+      line-height: 1.38;
+      color: var(--tp);
+      margin: 0 0 8px;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .sel-card:hover .sel-title {
+      color: var(--sec-navy);
+    }
+    .sel-meta {
+      margin-top: auto;
+      padding-top: 10px;
+      border-top: 1px solid #f1f5f9;
+      font-size: 11.5px;
+      color: var(--tm);
+    }
 
-    /* â”€â”€ EMPTY STATE â”€â”€ */
+    /* ── ALL ARTICLES (FULL-WIDTH 3-COLUMN GRID) ──────────────────── */
+    .ag {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 28px 24px;
+      margin-bottom: 80px;
+    }
+    .ac {
+      display: flex;
+      flex-direction: column;
+      background: #ffffff;
+      border: 1px solid var(--sec-div);
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 2px 10px rgba(0,0,0,.03);
+      transition: all .2s ease;
+      text-decoration: none;
+      color: inherit;
+    }
+    .ac:hover {
+      box-shadow: 0 8px 26px rgba(10,82,142,.1);
+      transform: translateY(-2px);
+    }
+    .ac-img-wrap {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 16 / 10;
+      background: #e2e8f0;
+      overflow: hidden;
+    }
+    .ac-img-wrap img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      transition: transform .35s ease;
+    }
+    .ac:hover .ac-img-wrap img {
+      transform: scale(1.04);
+    }
+    .ac-body {
+      padding: 20px 20px 22px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+    .ac-sec {
+      font-family: var(--font-sans);
+      font-size: 9.5px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--sec-navy);
+      margin-bottom: 6px;
+      text-decoration: none;
+    }
+    .ac-title {
+      font-family: var(--font-serif);
+      font-size: 16.5px;
+      font-weight: 600;
+      line-height: 1.38;
+      color: var(--tp);
+      margin: 0 0 10px;
+    }
+    .ac-title a {
+      color: inherit;
+      text-decoration: none;
+    }
+    .ac:hover .ac-title {
+      color: var(--sec-navy);
+    }
+    .ac-deck {
+      font-size: 13.5px;
+      color: var(--ts);
+      line-height: 1.55;
+      margin: 0 0 14px;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .ac-meta {
+      margin-top: auto;
+      padding-top: 12px;
+      border-top: 1px solid #f1f5f9;
+      font-size: 12px;
+      color: var(--tm);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* Empty state */
     .ag-empty {
       grid-column: 1 / -1;
-      padding: 56px 24px;
+      padding: 64px 24px;
       text-align: center;
       background: #fff;
       border: 1px solid var(--sec-div);
-      border-radius: 2px;
+      border-radius: 8px;
     }
-    .ag-empty svg { color: #c0d0e0; margin-bottom: 14px; }
-    .ag-empty h3 { font-family: var(--font-serif); font-size: 19px; font-weight: 400; color: var(--ts); margin: 0 0 8px; }
-    .ag-empty p { font-family: var(--font-sans); font-size: 13.5px; color: var(--tm); max-width: 320px; margin: 0 auto; line-height: 1.6; }
+    .ag-empty svg { color: #94a3b8; margin-bottom: 14px; }
+    .ag-empty h3 { font-family: var(--font-serif); font-size: 20px; font-weight: 600; color: var(--tp); margin: 0 0 8px; }
+    .ag-empty p { font-size: 14px; color: var(--tm); max-width: 360px; margin: 0 auto; line-height: 1.6; }
 
-    /* â”€â”€ SIDEBAR â”€â”€ */
-    .sb { display: flex; flex-direction: column; gap: 28px; }
-    .sw { background: #fff; border: 1px solid var(--sec-div); }
-    .sw-hd { font-family: var(--font-sans); font-size: 10px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--tm); padding: 13px 18px; border-bottom: 1px solid var(--sec-div); margin: 0; }
-    .sw-b { padding: 18px; }
-    .sl { list-style: none; margin: 0; padding: 0; }
-    .sl li a { display: flex; align-items: center; justify-content: space-between; padding: 8px 0; font-family: var(--font-sans); font-size: 13.5px; color: var(--ts); text-decoration: none; border-bottom: 1px solid var(--sec-div); transition: color .15s; }
-    .sl li:last-child a { border-bottom: none; }
-    .sl li.cur a { color: var(--sec-navy); font-weight: 600; }
-    .sl li a:hover { color: var(--sec-navy); }
-    .sl li a svg { color: #c0ccd8; flex-shrink: 0; }
-    .sl li.cur a svg { color: var(--sec-gold); }
-    .sa-txt { font-family: var(--font-sans); font-size: 13px; color: var(--ts); line-height: 1.65; margin: 0 0 14px; }
-    .sa-btn { display: inline-flex; align-items: center; gap: 6px; font-family: var(--font-sans); font-size: 12.5px; font-weight: 600; color: var(--sec-navy); text-decoration: none; border: 1.5px solid var(--sec-navy); padding: 7px 14px; border-radius: 2px; transition: background .15s, color .15s; }
-    .sa-btn:hover { background: var(--sec-navy); color: #fff; }
-
-    /* â”€â”€ PAGINATION â”€â”€ */
-    .pag { display: flex; align-items: center; justify-content: center; gap: 6px; padding: 40px 0 0; margin-top: 40px; border-top: 1px solid var(--sec-div); }
-    .pag-btn { display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; border: 1px solid var(--sec-div); background: #fff; color: var(--ts); font-family: var(--font-sans); font-size: 13px; text-decoration: none; transition: background .15s, color .15s, border-color .15s; border-radius: 2px; }
-    .pag-btn:hover, .pag-btn.on { background: var(--sec-navy); border-color: var(--sec-navy); color: #fff; }
-    .pag-el { color: var(--tm); font-size: 13px; padding: 0 4px; }
-
-    
-    /* ── RESPONSIVE ── */
+    /* ── RESPONSIVE ───────────────────────────────────────────────── */
     @media (max-width: 1024px) {
-      .hero-area { grid-template-columns: 1fr 260px; }
+      .hero-area { grid-template-columns: 1fr; gap: 28px; }
+      .selected-grid { grid-template-columns: repeat(2, 1fr); }
       .ag { grid-template-columns: repeat(2, 1fr); }
-      .cl { gap: 28px; }
     }
     @media (max-width: 768px) {
-      .id-inner { padding: 24px 16px 20px; flex-wrap: wrap; }
+      .id-inner { padding: 28px 16px 24px; flex-wrap: wrap; }
       .id-back { margin-top: 8px; }
-      .pw { padding: 0 16px 48px; }
-      .hero-area { grid-template-columns: 1fr; }
-      .hero-art { min-height: clamp(220px, 55vw, 380px); }
-      .hero-ov { padding: 20px; }
-      .hero-h { font-size: clamp(16px, 4vw, 24px); }
-      .hero-sb { border-left: none; border-top: 2px solid var(--sec-div); flex-direction: row; flex-wrap: wrap; }
-      .hero-sb-hd { width: 100%; }
-      .hero-sb-item { flex: 1; min-width: 50%; border-bottom: none; border-right: 1px solid var(--sec-div); }
-      .hero-sb-item:last-child { border-right: none; }
-      .cl { grid-template-columns: 1fr; gap: 0; }
-      .ag { grid-template-columns: repeat(2, 1fr); gap: 20px 16px; }
-    }
-    @media (max-width: 480px) {
-      .ag { grid-template-columns: 1fr; gap: 16px; }
-      .hero-art { min-height: 200px; }
-      .hero-sb-item { min-width: 100%; border-right: none; border-bottom: 1px solid var(--sec-div); }
-      .hero-sb-item:last-child { border-bottom: none; }
-      .id-title { font-size: clamp(22px, 7vw, 36px); }
+      .pw { padding: 0 16px; }
+      .hero-wrap { margin-top: 24px; }
+      .hero-art-body { padding: 20px; }
+      .hero-title { font-size: 22px; }
+      .selected-grid { grid-template-columns: 1fr; gap: 16px; }
+      .ag { grid-template-columns: 1fr; gap: 20px; }
     }
   </style>
-  <script src="components.js"></script>
 </head>
 <body>
 
-<!-- â”€â”€ SITE HEADER (identical to index.html) â”€â”€ -->
+<!-- ── SITE HEADER ─────────────────────────────────────────────── -->
 <div id="site-header-mount"></div>
 <script>if(window.initPrivatianHeader) window.initPrivatianHeader();</script>
 
-<!-- â”€â”€ SECTION IDENTITY BAR â”€â”€ -->
+<!-- ── SECTION IDENTITY BAR ────────────────────────────────────── -->
 <div class="id-bar">
   <div class="id-inner">
     <div>
       <div class="id-crumb">
         <a href="index.html">Home</a>
-        <span>&#8250;</span>
+        <span>›</span>
         <span id="bc">Section</span>
       </div>
       <h1 class="id-title" id="sec-title">Loading...</h1>
@@ -328,104 +609,88 @@
   </div>
 </div>
 
-<!-- â”€â”€ HERO AREA â”€â”€ -->
+<!-- ── HERO SECTION (FEATURED ARTICLE + LATEST 5 ARTICLES) ──────── -->
 <div class="pw hero-wrap">
   <div class="hero-area">
-    <div class="hero-art">
-      <img class="hero-img" id="hero-img" src="" alt="" />
-      <div class="hero-ov">
-        <span class="hero-badge" id="hero-badge"></span>
-        <h2 class="hero-h">
-          <a href="#" id="hero-link">Featured article will appear here once published</a>
+    <!-- Featured Hero Article Card -->
+    <div class="hero-art-card" id="hero-art-card">
+      <div class="hero-img-wrap">
+        <img id="hero-img" src="" alt="Featured Article Image" />
+      </div>
+      <div class="hero-art-body">
+        <div class="hero-badge-row">
+          <span class="hero-badge" id="hero-badge">Section</span>
+          <span class="hero-featured-tag">★ Featured Story</span>
+        </div>
+        <h2 class="hero-title">
+          <a href="#" id="hero-link">Featured article will appear here</a>
         </h2>
-        <div class="hero-meta-txt">Coming soon</div>
+        <p class="hero-deck" id="hero-deck">Article subtitle and summary text will be displayed here.</p>
+        <div class="hero-meta-row">
+          <span class="hero-author" id="hero-author">Author Name</span>
+          <span>•</span>
+          <span id="hero-date">Date</span>
+        </div>
       </div>
     </div>
+
+    <!-- Latest in This Section (5 items) -->
     <div class="hero-sb">
-      <h3 class="hero-sb-hd">Latest in This Section</h3>
-      <ul class="hero-sb-list">
-        <li class="hero-sb-item"><a href="#">
-          <div class="hsil">Coming Soon</div>
-          <div class="hsit">Articles will appear here once published</div>
-          <div class="hsid">&mdash;</div>
-        </a></li>
-        <li class="hero-sb-item"><a href="#">
-          <div class="hsil">Coming Soon</div>
-          <div class="hsit">Stay tuned for upcoming stories</div>
-          <div class="hsid">&mdash;</div>
-        </a></li>
-        <li class="hero-sb-item"><a href="#">
-          <div class="hsil">Coming Soon</div>
-          <div class="hsit">New content is on the way</div>
-          <div class="hsid">&mdash;</div>
-        </a></li>
+      <h3 class="hero-sb-hd">
+        <span>Latest in This Section</span>
+        <span class="hero-sb-hd-tag">TOP 5</span>
+      </h3>
+      <ul class="hero-sb-list" id="latest-sb-list">
+        <li class="hero-sb-item" style="padding:24px;text-align:center;color:#94a3b8;font-size:13px;">Loading stories…</li>
       </ul>
     </div>
   </div>
 </div>
 
-<!-- â”€â”€ MAIN CONTENT + SIDEBAR â”€â”€ -->
-<div class="pw">
-  <div class="cl">
-    <main>
-      <div class="gh">
-        <span class="ghl" id="grid-lbl">All Articles</span>
-        <span class="ghc" id="grid-cnt"></span>
-      </div>
-      <div class="ag" id="art-grid">
-        <div class="ag-empty">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="52" height="52">
-            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-            <polyline points="14 2 14 8 20 8"/>
-            <line x1="16" y1="13" x2="8" y2="13"/>
-            <line x1="16" y1="17" x2="8" y2="17"/>
-          </svg>
-          <h3>Articles coming soon</h3>
-          <p>Published articles for this section will appear here. Check back soon.</p>
-        </div>
-      </div>
-      <div class="pag" id="pag" style="display:none">
-        <a href="#" class="pag-btn">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><polyline points="15 18 9 12 15 6"/></svg>
-        </a>
-        <a href="#" class="pag-btn on">1</a>
-        <a href="#" class="pag-btn">2</a>
-        <a href="#" class="pag-btn">3</a>
-        <span class="pag-el">...</span>
-        <a href="#" class="pag-btn">8</a>
-        <a href="#" class="pag-btn">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><polyline points="9 18 15 12 9 6"/></svg>
-        </a>
-      </div>
-    </main>
-    <aside class="sb">
-      <div class="sw">
-        <h3 class="sw-hd">Browse Sections</h3>
-        <div class="sw-b" style="padding:6px 18px 14px">
-          <ul class="sl" id="sb-secs"></ul>
-        </div>
-      </div>
-      <div class="sw">
-        <h3 class="sw-hd">About The Privatian Family</h3>
-        <div class="sw-b">
-          <p class="sa-txt">The Privatian Family publishes original stories, findings, and commentary across culture, heritage, privacy, and the world we share.</p>
-          <a href="index.html" class="sa-btn">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><polyline points="15 18 9 12 15 6"/></svg>
-            Return to Home
-          </a>
-        </div>
-      </div>
-    </aside>
+<!-- ── SELECTED ARTICLES (4-COLUMN GRID) ────────────────────────── -->
+<div class="pw" id="selected-wrap" style="display:none;">
+  <div class="sec-block-hd">
+    <div class="sec-block-title">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+      <span id="selected-lbl">Selected Stories</span>
+    </div>
+    <span class="sec-block-cnt">Editor's Picks</span>
+  </div>
+  <div class="selected-grid" id="selected-grid">
+    <!-- Injected by JS -->
   </div>
 </div>
 
+<!-- ── ALL ARTICLES IN THIS SECTION ────────────────────────────── -->
+<div class="pw">
+  <div class="sec-block-hd">
+    <div class="sec-block-title">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+      <span id="all-grid-lbl">All Articles in This Section</span>
+    </div>
+    <span class="sec-block-cnt" id="all-grid-cnt"></span>
+  </div>
+  <div class="ag" id="all-grid">
+    <div class="ag-empty">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="48" height="48">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+        <polyline points="14 2 14 8 20 8"/>
+      </svg>
+      <h3>Articles coming soon</h3>
+      <p>Published articles for this section will appear here.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ── JAVASCRIPT LOGIC ─────────────────────────────────────────── -->
 <script>
 (function(){
   function qp(n){return new URLSearchParams(window.location.search).get(n)||'';}
   function g(i){return document.getElementById(i);}
   function fmt(iso){if(!iso)return '';return new Date(iso).toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'});}
   function slugify(n){return (n||'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'');}
-  
+  function escH(s){return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
   var slug = qp('slug');
   if (!slug) {
     var match = location.pathname.match(/\/section\/([^\/\?#]+)/);
@@ -434,32 +699,186 @@
     }
   }
   var isAll = !slug || slug === 'all';
-  var name=isAll?'All Articles':(slug.charAt(0).toUpperCase()+slug.slice(1).replace(/-/g,' '));
-  document.querySelector('title').textContent=name+' \u2014 The Privatian Family';
-  document.querySelector('meta[name="description"]').setAttribute('content','Browse all articles in the '+name+' section of The Privatian Family.');
-  ['sec-title','bc'].forEach(function(id){var e=g(id);if(e)e.textContent=name;});
-  var hb=g('hero-badge');if(hb)hb.textContent=name;
-  var gl=g('grid-lbl');if(gl)gl.textContent='All Articles in '+name;
-  fetch('/api/sections').then(function(r){return r.json();}).then(function(sections){
-    var cur=sections.find(function(s){return s.slug===slug;});
-    if(cur){name=cur.name;['sec-title','bc'].forEach(function(id){var e=g(id);if(e)e.textContent=name;});if(hb)hb.textContent=name;document.querySelector('title').textContent=name+' \u2014 The Privatian Family';if(gl)gl.textContent='All Articles in '+name;}
-    var nav=g('sec-nav');
-    if(nav){nav.innerHTML='';sections.forEach(function(s,i){var li=document.createElement('li');var a=document.createElement('a');a.href=s.slug?'/section/'+s.slug:'#';a.className='nav-link'+(s.slug===slug?' nav-link--active':'');if(s.slug===slug){a.style.color='var(--brand-navy)';a.style.fontWeight='700';}a.textContent=s.name;li.appendChild(a);nav.appendChild(li);if(i<sections.length-1){var d=document.createElement('li');d.className='nav-divider';d.setAttribute('aria-hidden','true');nav.appendChild(d);}});}
-    var sbl=g('sb-secs');if(sbl){sbl.innerHTML='';sections.forEach(function(s){var li=document.createElement('li');li.className=s.slug===slug?'cur':'';var a=document.createElement('a');a.href=s.slug?'/section/'+s.slug:'#';a.innerHTML='<span>'+s.name+'</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="11" height="11"><polyline points="9 18 15 12 9 6"/></svg>';li.appendChild(a);sbl.appendChild(li);});}
-  }).catch(function(){});
-  var apiUrl='/api/articles?action=public';if(!isAll)apiUrl+='&section='+encodeURIComponent(slug);
-  var grid=g('art-grid');if(grid)grid.innerHTML='<div style="padding:48px;text-align:center;color:#9ab;font-size:13px;font-family:sans-serif">Loading\u2026</div>';
-  fetch(apiUrl).then(function(r){return r.json();}).then(function(arts){
-    var hsList=document.querySelector('.hero-sb-list');
-    if(hsList){hsList.innerHTML=arts.length?arts.slice(0,3).map(function(a){var artHref=a.slug?'/article/'+a.slug:'/article/'+a.id;return '<li class="hero-sb-item"><a href="'+artHref+'"><div class="hsil">'+(a.section||'')+'</div><div class="hsit">'+a.title+'</div><div class="hsid">'+fmt(a.published_at)+'</div></a></li>';}).join(''):'<li class="hero-sb-item" style="padding:16px;color:rgba(255,255,255,.45);font-size:13px">No articles yet.</li>';}
-    var hi=g('hero-img');if(hi){var first=arts.find(function(a){return a.hero_img_url;});if(first){hi.src=first.hero_img_url;hi.alt=first.title||'';}}
-    var gc=g('grid-cnt');if(gc)gc.textContent=arts.length?arts.length+' stories':'';
-    if(!grid)return;
-    if(!arts.length){grid.innerHTML='<div class="ag-empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="52" height="52"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><h3>No articles yet</h3><p>Published articles will appear here.</p></div>';return;}
-    grid.innerHTML=arts.map(function(a){var secSl=slugify(a.section||'');var artHref=a.slug?'/article/'+a.slug:'/article/'+a.id;var thumb=a.hero_img_url?'<img src="'+a.hero_img_url+'" alt="'+a.title+'" class="ac-img" loading="lazy"/>'+'':'<div class="ac-img ac-img-ph"></div>';return '<article class="ac"><a href="'+artHref+'" class="ac-img-wrap">'+thumb+'</a><div class="ac-body"><a href="/section/'+secSl+'" class="ac-sec">'+(a.section||'')+'</a><h3 class="ac-title"><a href="'+artHref+'">'+a.title+'</a></h3>'+(a.deck?'<p class="ac-deck">'+a.deck+'</p>':'')+'<div class="ac-meta">'+(a.author?'<span class="ac-author">'+a.author+'</span><span class="ac-dot">&middot;</span>':'')+'<span>'+fmt(a.published_at)+'</span></div></div></article>';}).join('');
-  }).catch(function(){if(grid)grid.innerHTML='<div class="ag-empty"><h3>Could not load articles</h3><p>Please try again later.</p></div>';});
+  var sectionName = isAll ? 'All Articles' : (slug.charAt(0).toUpperCase() + slug.slice(1).replace(/-/g, ' '));
+
+  document.querySelector('title').textContent = sectionName + ' — The Privatian Family';
+  var metaDesc = document.querySelector('meta[name="description"]');
+  if (metaDesc) metaDesc.setAttribute('content', 'Browse articles and stories in ' + sectionName + ' of The Privatian Family.');
+
+  ['sec-title', 'bc'].forEach(function(id){ var e = g(id); if (e) e.textContent = sectionName; });
+  var hb = g('hero-badge'); if (hb) hb.textContent = sectionName;
+  var allLbl = g('all-grid-lbl'); if (allLbl) allLbl.textContent = 'All Articles in ' + sectionName;
+  var selLbl = g('selected-lbl'); if (selLbl) selLbl.textContent = 'Selected Stories in ' + sectionName;
+
+  // 1. Fetch section info & custom settings
+  Promise.all([
+    fetch('/api/sections').then(function(r){return r.json();}).catch(function(){return [];}),
+    fetch('/api/sections?action=section-config&slug=' + encodeURIComponent(slug || 'all')).then(function(r){return r.json();}).catch(function(){return {};}),
+    fetch('/api/articles?action=public' + (isAll ? '' : '&section=' + encodeURIComponent(slug))).then(function(r){return r.json();}).catch(function(){return [];})
+  ]).then(function(results){
+    var sections = results[0] || [];
+    var customConfig = results[1] || {};
+    var articles = results[2] || [];
+
+    // Match exact section
+    var cur = sections.find(function(s){ return s.slug === slug; });
+    if (cur) {
+      sectionName = cur.name;
+      ['sec-title', 'bc'].forEach(function(id){ var e = g(id); if (e) e.textContent = sectionName; });
+      if (hb) hb.textContent = sectionName;
+      if (allLbl) allLbl.textContent = 'All Articles in ' + sectionName;
+      if (selLbl) selLbl.textContent = 'Selected Stories in ' + sectionName;
+      document.querySelector('title').textContent = sectionName + ' — The Privatian Family';
+    }
+
+    if (customConfig.description && g('sec-meta')) {
+      g('sec-meta').textContent = customConfig.description;
+    } else if (g('sec-meta')) {
+      g('sec-meta').textContent = 'Explore insightful reporting, research, and perspectives in ' + sectionName + '.';
+    }
+
+    // ── RENDER HERO FEATURED ARTICLE ──
+    var heroArt = null;
+    if (customConfig.featuredArticleId) {
+      heroArt = articles.find(function(a){ return a.id === customConfig.featuredArticleId; });
+    }
+    if (!heroArt && articles.length > 0) {
+      // Fallback: newest article with image or first article
+      heroArt = articles.find(function(a){ return a.hero_img_url; }) || articles[0];
+    }
+
+    if (heroArt) {
+      var heroLink = g('hero-link');
+      var artHref = heroArt.slug ? '/article/' + heroArt.slug : '/article/' + heroArt.id;
+      if (heroLink) { heroLink.href = artHref; heroLink.textContent = heroArt.title; }
+      var heroImg = g('hero-img');
+      if (heroImg) {
+        heroImg.src = heroArt.hero_img_url || '/img1.png';
+        heroImg.alt = heroArt.title || '';
+      }
+      var heroDeck = g('hero-deck');
+      if (heroDeck) {
+        heroDeck.textContent = heroArt.deck || 'Read the full story from The Privatian Family.';
+      }
+      var heroAuthor = g('hero-author');
+      if (heroAuthor) heroAuthor.textContent = heroArt.author || 'The Privatian Family';
+      var heroDate = g('hero-date');
+      if (heroDate) heroDate.textContent = fmt(heroArt.published_at);
+      if (hb) hb.textContent = heroArt.section || sectionName;
+    } else {
+      if (g('hero-link')) g('hero-link').textContent = 'No published articles in this section yet.';
+      if (g('hero-img')) g('hero-img').src = '/img1.png';
+      if (g('hero-deck')) g('hero-deck').textContent = 'Check back soon for new publications and stories.';
+    }
+
+    // ── RENDER LATEST 5 ARTICLES IN THIS SECTION ──
+    var latestList = g('latest-sb-list');
+    if (latestList) {
+      var latest5 = articles.slice(0, 5);
+      if (latest5.length === 0) {
+        latestList.innerHTML = '<li class="hero-sb-item" style="padding:24px;text-align:center;color:#94a3b8;font-size:13px;">No recent articles yet.</li>';
+      } else {
+        latestList.innerHTML = latest5.map(function(a, idx){
+          var artHref = a.slug ? '/article/' + a.slug : '/article/' + a.id;
+          var numPad = String(idx + 1).padStart(2, '0');
+          return '<li class="hero-sb-item">' +
+            '<a href="' + artHref + '">' +
+              '<span class="hs-num">' + numPad + '</span>' +
+              '<div class="hs-content">' +
+                '<div class="hs-sec">' + escH(a.section || sectionName) + '</div>' +
+                '<h4 class="hs-title">' + escH(a.title) + '</h4>' +
+                '<div class="hs-date">' + fmt(a.published_at) + '</div>' +
+              '</div>' +
+            '</a>' +
+          '</li>';
+        }).join('');
+      }
+    }
+
+    // ── RENDER SELECTED ARTICLES (4 SLOTS) ──
+    var selWrap = g('selected-wrap');
+    var selGrid = g('selected-grid');
+    var selectedArticles = [];
+
+    if (customConfig.selectedArticleIds && customConfig.selectedArticleIds.length > 0) {
+      customConfig.selectedArticleIds.forEach(function(sid){
+        var found = articles.find(function(a){ return a.id === sid; });
+        if (found) selectedArticles.push(found);
+      });
+    }
+
+    // If none specifically curated in admin, fallback to top articles
+    if (selectedArticles.length === 0 && articles.length > 1) {
+      selectedArticles = articles.filter(function(a){ return !heroArt || a.id !== heroArt.id; }).slice(0, 4);
+    }
+
+    if (selectedArticles.length > 0 && selWrap && selGrid) {
+      selWrap.style.display = 'block';
+      selGrid.innerHTML = selectedArticles.map(function(a){
+        var artHref = a.slug ? '/article/' + a.slug : '/article/' + a.id;
+        var thumb = a.hero_img_url
+          ? '<img src="' + a.hero_img_url + '" alt="' + escH(a.title) + '" loading="lazy" />'
+          : '<div style="width:100%;height:100%;background:#e2e8f0;"></div>';
+        return '<a href="' + artHref + '" class="sel-card">' +
+          '<div class="sel-card-img-wrap">' + thumb + '</div>' +
+          '<div class="sel-card-body">' +
+            '<span class="sel-badge">' + escH(a.section || sectionName) + '</span>' +
+            '<h3 class="sel-title">' + escH(a.title) + '</h3>' +
+            '<div class="sel-meta">' +
+              (a.author ? '<span>' + escH(a.author) + '</span> • ' : '') +
+              '<span>' + fmt(a.published_at) + '</span>' +
+            '</div>' +
+          '</div>' +
+        '</a>';
+      }).join('');
+    } else if (selWrap) {
+      selWrap.style.display = 'none';
+    }
+
+    // ── RENDER ALL ARTICLES IN THIS SECTION (FULL-WIDTH GRID) ──
+    var allGrid = g('all-grid');
+    var allCnt = g('all-grid-cnt');
+    if (allCnt) allCnt.textContent = articles.length ? articles.length + ' stories' : '';
+
+    if (allGrid) {
+      if (articles.length === 0) {
+        allGrid.innerHTML = '<div class="ag-empty">' +
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="48" height="48">' +
+            '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>' +
+            '<polyline points="14 2 14 8 20 8"/>' +
+          '</svg>' +
+          '<h3>No articles published yet</h3>' +
+          '<p>Articles published in this section will appear here.</p>' +
+        '</div>';
+      } else {
+        allGrid.innerHTML = articles.map(function(a){
+          var secSl = slugify(a.section || '');
+          var artHref = a.slug ? '/article/' + a.slug : '/article/' + a.id;
+          var thumb = a.hero_img_url
+            ? '<img src="' + a.hero_img_url + '" alt="' + escH(a.title) + '" loading="lazy" />'
+            : '<div style="width:100%;height:100%;background:#e2e8f0;"></div>';
+          return '<article class="ac">' +
+            '<a href="' + artHref + '" class="ac-img-wrap">' + thumb + '</a>' +
+            '<div class="ac-body">' +
+              '<a href="/section/' + secSl + '" class="ac-sec">' + escH(a.section || sectionName) + '</a>' +
+              '<h3 class="ac-title"><a href="' + artHref + '">' + escH(a.title) + '</a></h3>' +
+              (a.deck ? '<p class="ac-deck">' + escH(a.deck) + '</p>' : '') +
+              '<div class="ac-meta">' +
+                (a.author ? '<span>' + escH(a.author) + '</span> <span>•</span> ' : '') +
+                '<span>' + fmt(a.published_at) + '</span>' +
+              '</div>' +
+            '</div>' +
+          '</article>';
+        }).join('');
+      }
+    }
+  }).catch(function(err){
+    console.error('[Section load error]:', err);
+  });
 })();
 </script>
+
+<!-- ── SITE FOOTER ─────────────────────────────────────────────── -->
 <div id="site-footer-mount"></div>
 </body>
 </html>
