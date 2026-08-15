@@ -747,11 +747,11 @@ function updateGlobalSyncStatus(forcedState, forcedText) {
 // ── Live Database Connection & Verification Engine ───────────────
 var _isVerifyingDb = false;
 
-async function verifyDatabaseSync(showToast = false) {
+async function verifyDatabaseSync(shouldToast = false) {
   if (_isVerifyingDb) return;
   _isVerifyingDb = true;
 
-  if (showToast) {
+  if (shouldToast) {
     updateGlobalSyncStatus('syncing', 'Testing database...');
   }
 
@@ -782,12 +782,12 @@ async function verifyDatabaseSync(showToast = false) {
 
   if (dbOk) {
     updateGlobalSyncStatus();
-    if (showToast) {
+    if (shouldToast) {
       showToast('success', 'Database connection verified & synchronized ✓');
     }
   } else {
     updateGlobalSyncStatus('error', 'Sync error (offline/cache)');
-    if (showToast) {
+    if (shouldToast) {
       showToast('error', 'Database connection error. Working with local cache.');
     }
   }
