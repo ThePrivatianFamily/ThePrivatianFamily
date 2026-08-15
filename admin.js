@@ -1673,33 +1673,74 @@ function initAccessPage() {
 function _confirmModal({ title, body, message, confirmText, confirmLabel, confirmColor, variant, danger, onConfirm }) {
   var _body    = body || message || '';
   var _btnText = confirmText || confirmLabel || 'Confirm';
-  var _variant = variant || (danger === false ? 'success' : 'danger');
-  if (typeof danger === 'undefined' && confirmColor && confirmColor !== '#dc2626') _variant = 'warning';
+  var _variant = variant || (danger === false ? 'success' : (danger === true ? 'danger' : 'navy'));
+  if (confirmColor && confirmColor === '#dc2626') _variant = 'danger';
+  else if (confirmColor && (confirmColor === '#d97706' || confirmColor === '#f59e0b')) _variant = 'warning';
+  else if (confirmColor && confirmColor === '#059669') _variant = 'success';
+  else if (confirmColor && confirmColor === '#7c3aed') _variant = 'purple';
+
   var themes = {
-    danger:  { iconBg:'#fff1f2', iconColor:'#dc2626', btnBg:'#dc2626', icon:'<circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>' },
-    success: { iconBg:'#f0fdf4', iconColor:'#16a34a', btnBg:'#16a34a', icon:'<circle cx="12" cy="12" r="10"/><polyline points="9 12 11.5 14.5 15 10"/>' },
-    warning: { iconBg:'#fffbeb', iconColor:'#d97706', btnBg:'#d97706', icon:'<path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>' },
+    danger:  {
+      iconBg: '#fee2e2',
+      iconBorder: '#fecaca',
+      iconColor: '#dc2626',
+      btnBg: 'linear-gradient(135deg, #ef4444, #dc2626)',
+      btnShadow: '0 4px 14px rgba(220, 38, 38, 0.35)',
+      icon: '<circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>'
+    },
+    warning: {
+      iconBg: '#fef3c7',
+      iconBorder: '#fde68a',
+      iconColor: '#d97706',
+      btnBg: 'linear-gradient(135deg, #f59e0b, #d97706)',
+      btnShadow: '0 4px 14px rgba(217, 119, 6, 0.35)',
+      icon: '<path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>'
+    },
+    success: {
+      iconBg: '#d1fae5',
+      iconBorder: '#a7f3d0',
+      iconColor: '#059669',
+      btnBg: 'linear-gradient(135deg, #10b981, #059669)',
+      btnShadow: '0 4px 14px rgba(5, 150, 105, 0.35)',
+      icon: '<circle cx="12" cy="12" r="10"/><polyline points="9 12 11.5 14.5 15 10"/>'
+    },
+    purple:  {
+      iconBg: '#ede9fe',
+      iconBorder: '#ddd6fe',
+      iconColor: '#7c3aed',
+      btnBg: 'linear-gradient(135deg, #8b5cf6, #7c3aed)',
+      btnShadow: '0 4px 14px rgba(124, 58, 237, 0.35)',
+      icon: '<path d="M2 4l3 12h14l3-12-6 7-4-7-4 7-6-7z"/><path d="M4 20h16"/>'
+    },
+    navy:    {
+      iconBg: '#e0f2fe',
+      iconBorder: '#bae6fd',
+      iconColor: '#0284c7',
+      btnBg: 'linear-gradient(135deg, #0284c7, #0369a1)',
+      btnShadow: '0 4px 14px rgba(2, 132, 199, 0.35)',
+      icon: '<rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>'
+    }
   };
-  var t = themes[_variant] || themes.danger;
+  var t = themes[_variant] || themes.navy;
   var ex = document.getElementById('_confirm-modal-overlay');
   if (ex) ex.remove();
   if (!document.getElementById('_cm-style')) {
     var s = document.createElement('style'); s.id = '_cm-style';
-    s.textContent = '@keyframes _cmFIn{from{opacity:0}to{opacity:1}}@keyframes _cmSlUp{from{opacity:0;transform:translateY(16px) scale(.96)}to{opacity:1;transform:none}}._cm-card{animation:_cmSlUp .2s cubic-bezier(.34,1.3,.64,1) both}._cm-btn{transition:filter .15s,transform .1s;font-family:inherit;cursor:pointer;border:none;outline:none;}._cm-btn:hover{filter:brightness(.9)}._cm-btn:active{transform:scale(.97)}';
+    s.textContent = '@keyframes _cmFIn{from{opacity:0}to{opacity:1}}@keyframes _cmSlUp{from{opacity:0;transform:translateY(20px) scale(.94)}to{opacity:1;transform:none}}._cm-card{animation:_cmSlUp .22s cubic-bezier(0.16, 1, 0.3, 1) both}._cm-btn{transition:all .15s ease;font-family:inherit;cursor:pointer;border:none;outline:none;}._cm-btn:hover{filter:brightness(1.06);transform:translateY(-1px);}._cm-btn:active{transform:scale(.97)}';
     document.head.appendChild(s);
   }
   var overlay = document.createElement('div');
   overlay.id = '_confirm-modal-overlay';
-  overlay.style.cssText = 'position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;background:rgba(8,18,36,.52);backdrop-filter:blur(4px);animation:_cmFIn .15s ease;';
-  overlay.innerHTML = '<div class="_cm-card" style="background:#fff;border-radius:18px;padding:38px 32px 30px;max-width:420px;width:93%;box-shadow:0 32px 80px rgba(0,0,0,.22),0 0 0 1px rgba(0,0,0,.04);text-align:center;position:relative;">'
-    + '<button id="_cm-x" style="position:absolute;top:14px;right:16px;background:none;border:none;cursor:pointer;color:#bbb;padding:4px;border-radius:6px;font-size:20px;line-height:1;">&times;</button>'
-    + '<div style="width:58px;height:58px;border-radius:50%;background:' + t.iconBg + ';display:flex;align-items:center;justify-content:center;margin:0 auto 20px;">'
-    + '<svg viewBox="0 0 24 24" fill="none" stroke="' + t.iconColor + '" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="26" height="26">' + t.icon + '</svg></div>'
-    + '<h3 style="font-size:17px;font-weight:700;color:#0d1f35;margin:0 0 9px;letter-spacing:-.015em;">' + escapeHtml(title) + '</h3>'
-    + '<p style="font-size:13.5px;color:#64748b;line-height:1.65;margin:0 0 28px;">' + _body + '</p>'
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;background:rgba(15,23,42,.6);backdrop-filter:blur(8px);animation:_cmFIn .15s ease;padding:20px;';
+  overlay.innerHTML = '<div class="_cm-card" style="background:#fff;border-radius:20px;padding:32px 28px 26px;max-width:440px;width:100%;box-shadow:0 25px 50px -12px rgba(0,0,0,.25),0 0 0 1px rgba(0,0,0,.06);text-align:center;position:relative;">'
+    + '<button id="_cm-x" style="position:absolute;top:16px;right:16px;background:none;border:none;cursor:pointer;color:#94a3b8;padding:6px;border-radius:8px;font-size:18px;line-height:1;transition:all .15s;" onmouseover="this.style.color=\'#334155\';this.style.background=\'#f1f5f9\';" onmouseout="this.style.color=\'#94a3b8\';this.style.background=\'none\';">&times;</button>'
+    + '<div style="width:54px;height:54px;border-radius:14px;background:' + t.iconBg + ';border:1.5px solid ' + t.iconBorder + ';display:flex;align-items:center;justify-content:center;margin:0 auto 18px;">'
+    + '<svg viewBox="0 0 24 24" fill="none" stroke="' + t.iconColor + '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="26" height="26">' + t.icon + '</svg></div>'
+    + '<h3 style="font-size:18px;font-weight:700;color:#0f172a;margin:0 0 10px;letter-spacing:-.015em;">' + escapeHtml(title) + '</h3>'
+    + '<div style="font-size:13.5px;color:#475569;line-height:1.6;margin:0 0 24px;">' + _body + '</div>'
     + '<div style="display:flex;gap:10px;justify-content:center;">'
-    + '<button id="_cm-cancel" class="_cm-btn" style="background:#f1f5f9;color:#374151;padding:10px 24px;border-radius:10px;font-size:13.5px;font-weight:600;border:1px solid #e2e8f0;">Cancel</button>'
-    + '<button id="_cm-ok" class="_cm-btn" style="background:' + t.btnBg + ';color:#fff;padding:10px 26px;border-radius:10px;font-size:13.5px;font-weight:700;min-width:120px;">' + escapeHtml(_btnText) + '</button>'
+    + '<button id="_cm-cancel" class="_cm-btn" style="background:#f8fafc;color:#475569;padding:10px 22px;border-radius:10px;font-size:13.5px;font-weight:600;border:1px solid #cbd5e1;">Cancel</button>'
+    + '<button id="_cm-ok" class="_cm-btn" style="background:' + t.btnBg + ';color:#fff;padding:10px 24px;border-radius:10px;font-size:13.5px;font-weight:700;box-shadow:' + t.btnShadow + ';min-width:120px;">' + escapeHtml(_btnText) + '</button>'
     + '</div></div>';
   document.body.appendChild(overlay);
   var close = function(){ overlay.remove(); };
@@ -1712,14 +1753,26 @@ function _confirmModal({ title, body, message, confirmText, confirmLabel, confir
 
 // ── Min-admins info popup ────────────────────────────────────────
 function _minAdminPopup(extra) {
-  const body = 'At least <strong>2 Gmail Admin</strong> accounts must remain active at all times.' +
-    (extra ? '<br><br>' + extra : '') +
-    '<br><br>Add another <code style="background:#f3f4f6;padding:2px 6px;border-radius:4px;">@gmail.com</code> Admin first.';
+  const body = `
+    <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:12px;padding:14px 16px;text-align:left;margin:6px 0 16px;">
+      <div style="display:flex;align-items:center;gap:8px;font-weight:700;color:#92400e;font-size:13.5px;margin-bottom:6px;">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        At least 2 Gmail Admins Required
+      </div>
+      <div style="font-size:12.5px;color:#78350f;line-height:1.5;">
+        The system security policy mandates at least <strong>2 active @gmail.com Administrator</strong> accounts at all times to prevent account lockout.
+      </div>
+    </div>
+    <div style="font-size:13px;color:#475569;line-height:1.5;">
+      ${extra ? `<p style="margin:0 0 8px;color:#dc2626;font-weight:600;">${extra}</p>` : ''}
+      Please add or promote another <code style="background:#f1f5f9;color:#0f172a;padding:2px 6px;border-radius:5px;font-weight:600;border:1px solid #e2e8f0;">@gmail.com</code> Admin account before modifying or removing this user.
+    </div>
+  `;
   _confirmModal({
-    title: 'Cannot Complete Action',
+    title: 'Security Policy Requirement',
     body,
-    confirmText: 'Got it',
-    confirmColor: '#1e3a5f',
+    confirmText: 'Understood',
+    variant: 'navy',
     onConfirm: () => {}
   });
 }
@@ -1894,11 +1947,11 @@ function renderAccessLists() {
       actionsHtml = `<span class="access-user-you-tag" title="Protected: Your active session cannot be modified by yourself"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" style="vertical-align:-1px;margin-right:3px;"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> Active (You)</span>`;
     } else if (panel === 'recycle') {
       actionsHtml = `
-        <button class="access-action-btn success" onclick="restoreAdmin('${a.id}','${escapeHtml(a.email)}')">
+        <button class="access-action-btn success" onclick="restoreAdmin('${a.id}','${escapeHtml(a.email)}','${a.role || ''}')">
           <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4.95"/></svg>
           Restore
         </button>
-        <button class="access-action-btn danger" onclick="purgeAdmin('${a.id}','${escapeHtml(a.email)}')">
+        <button class="access-action-btn danger" onclick="purgeAdmin('${a.id}','${escapeHtml(a.email)}','${a.role || ''}')">
           <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
           Delete Forever
         </button>
@@ -1915,14 +1968,14 @@ function renderAccessLists() {
       const suspendLabel = a.status === 'active' ? 'Suspend' : 'Unsuspend';
       const suspendNew   = a.status === 'active' ? 'suspended' : 'active';
       const suspendBtn = `
-        <button class="access-action-btn warning" onclick="toggleAdminStatus('${a.id}','${suspendNew}','${escapeHtml(a.email)}')">
+        <button class="access-action-btn warning" onclick="toggleAdminStatus('${a.id}','${suspendNew}','${escapeHtml(a.email)}','${a.role || ''}')">
           <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
           ${suspendLabel}
         </button>
       `;
 
       const removeBtn = `
-        <button class="access-action-btn danger" onclick="removeAdmin('${a.id}','${escapeHtml(a.email)}')">
+        <button class="access-action-btn danger" onclick="removeAdmin('${a.id}','${escapeHtml(a.email)}','${a.role || ''}')">
           <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
           Move to Recycle
         </button>
@@ -2058,11 +2111,17 @@ async function addAdminEmail() {
 
 // ── Change role ──────────────────────────────────────────────────
 function changeAdminRole(id, email, newRole) {
+  const isPromote = (newRole === 'Admin');
+  const targetTitle = isPromote ? 'Promote to Administrator' : 'Change to Moderator';
+  const targetBody = isPromote
+    ? `Promote <strong>${escapeHtml(email)}</strong> to <strong>Administrator</strong>?<br><div style="margin-top:10px;font-size:12.5px;color:#5b21b6;background:#f5f3ff;border:1px solid #ddd6fe;border-radius:10px;padding:10px 14px;text-align:left;line-height:1.5;"><strong style="display:block;margin-bottom:2px;">Full Administrative Access:</strong> This user will receive unrestricted access including system settings, menus, header/footer, user access management, and activity logs.</div>`
+    : `Change <strong>${escapeHtml(email)}</strong> to <strong>Moderator</strong>?<br><div style="margin-top:10px;font-size:12.5px;color:#92400e;background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:10px 14px;text-align:left;line-height:1.5;"><strong style="display:block;margin-bottom:2px;">Editorial Privileges Only:</strong> Their administrative privileges will be limited to writing/publishing articles, managing media, and curating Section Studio.</div>`;
+
   _confirmModal({
-    title:        'Change Role',
-    body:         `Change <strong>${escapeHtml(email)}</strong> from ${newRole === 'Admin' ? 'Moderator' : 'Admin'} to <strong>${escapeHtml(newRole)}</strong>?`,
-    confirmText:  'Yes, Change Role',
-    confirmColor: '#1e3a5f',
+    title:        targetTitle,
+    body:         targetBody,
+    confirmText:  isPromote ? 'Yes, Promote to Admin' : 'Yes, Change to Moderator',
+    variant:      isPromote ? 'purple' : 'warning',
     onConfirm: async () => {
       try {
         const res  = await fetch('/api/admins?action=update&id=' + id, {
@@ -2071,7 +2130,7 @@ function changeAdminRole(id, email, newRole) {
         });
         const data = await res.json();
         if (!res.ok) {
-          if (data.error === 'min_admins') { _minAdminPopup('Cannot downgrade: would leave fewer than 2 Gmail Admins.'); return; }
+          if (data.error === 'min_admins') { _minAdminPopup('Cannot downgrade: Demoting this administrator would leave fewer than 2 active Gmail Admins.'); return; }
           throw new Error(data.error || 'Failed');
         }
         showToast('success', email + ' is now ' + newRole + '.');
@@ -2090,17 +2149,25 @@ function changeAdminRole(id, email, newRole) {
 }
 
 // ── Toggle status (suspend / unsuspend) ─────────────────────────
-function toggleAdminStatus(id, newStatus, email) {
+function toggleAdminStatus(id, newStatus, email, role) {
   const me = ((window.PRIVATIAN_USER && window.PRIVATIAN_USER.email) || '').toLowerCase();
   if (email && email.toLowerCase() === me) { showToast('error', 'You cannot change your own status.'); return; }
 
-  const label = newStatus === 'suspended' ? 'Suspend' : 'Unsuspend';
+  const u = _rawAdminList.find(x => x.id === id || (email && x.email.toLowerCase() === email.toLowerCase()));
+  const userRole = (role || (u && u.role) || 'User');
+  const roleLabel = (userRole === 'Moderator' ? 'Moderator' : 'Admin');
+  const isSuspending = (newStatus === 'suspended');
+  const actionLabel = isSuspending ? 'Suspend' : 'Unsuspend';
+
+  const bodyHtml = isSuspending
+    ? `Suspend access for ${roleLabel} <strong>${escapeHtml(email)}</strong>?<br><div style="margin-top:10px;font-size:12.5px;color:#92400e;background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:10px 14px;text-align:left;line-height:1.5;"><strong style="display:block;margin-bottom:2px;">Temporary Suspension:</strong> This account will be immediately blocked on their next session check. You can unsuspend and restore their access at any time.</div>`
+    : `Restore active access for ${roleLabel} <strong>${escapeHtml(email)}</strong>?<br><div style="margin-top:10px;font-size:12.5px;color:#065f46;background:#ecfdf5;border:1px solid #a7f3d0;border-radius:10px;padding:10px 14px;text-align:left;line-height:1.5;"><strong style="display:block;margin-bottom:2px;">Immediate Access:</strong> This user will immediately regain full ${roleLabel} privileges upon next login.</div>`;
+
   _confirmModal({
-    title:       label + ' Admin',
-    body:        `${label} <strong>${escapeHtml(email)}</strong>?` +
-                 (newStatus === 'suspended' ? ' They will lose admin access on their next check.' : ' They will regain access immediately.'),
-    confirmText: label,
-    confirmColor: newStatus === 'suspended' ? '#d97706' : '#059669',
+    title:       `${actionLabel} ${roleLabel}`,
+    body:        bodyHtml,
+    confirmText: `${actionLabel} ${roleLabel}`,
+    variant:     isSuspending ? 'warning' : 'success',
     onConfirm: async () => {
       try {
         const res  = await fetch('/api/admins?action=update&id=' + id, {
@@ -2109,18 +2176,18 @@ function toggleAdminStatus(id, newStatus, email) {
         });
         const data = await res.json();
         if (!res.ok) {
-          if (data.error === 'min_admins') { _minAdminPopup(); return; }
+          if (data.error === 'min_admins') { _minAdminPopup('Cannot suspend: Suspending this administrator would leave fewer than 2 active Gmail Admins.'); return; }
           throw new Error(data.error || 'Failed');
         }
-        showToast('success', 'Status updated to ' + newStatus + '.');
+        showToast('success', `${roleLabel} status updated to ${newStatus}.`);
         loadAccessList();
         recordActivityLog({
-          action: newStatus === 'suspended' ? 'access.suspend' : 'access.unsuspend',
+          action: isSuspending ? 'access.suspend' : 'access.unsuspend',
           category: 'access',
-          summary: `${label}ed admin access for "${email}"`,
+          summary: `${actionLabel}ed ${roleLabel} access for "${email}"`,
           target_id: id,
           target_name: email,
-          details: { id, email, status: newStatus }
+          details: { id, email, status: newStatus, role: userRole }
         });
       } catch(e) { showToast('error', e.message || 'Failed.'); }
     }
@@ -2128,21 +2195,25 @@ function toggleAdminStatus(id, newStatus, email) {
 }
 
 // ── Remove (soft-delete → Recycle) ──────────────────────────────
-function removeAdmin(id, email) {
+function removeAdmin(id, email, role) {
   const me = ((window.PRIVATIAN_USER && window.PRIVATIAN_USER.email) || '').toLowerCase();
   if (email && email.toLowerCase() === me) { showToast('error', 'You cannot remove your own account.'); return; }
 
+  const u = _rawAdminList.find(x => x.id === id || (email && x.email.toLowerCase() === email.toLowerCase()));
+  const userRole = (role || (u && u.role) || 'User');
+  const roleLabel = (userRole === 'Moderator' ? 'Moderator' : 'Admin');
+
   _confirmModal({
-    title:       'Remove Admin',
-    body:        `Move <strong>${escapeHtml(email)}</strong> to Recycle?<br>They will lose access on their next check.`,
+    title:       `Remove ${roleLabel}`,
+    body:        `Move ${roleLabel} <strong>${escapeHtml(email)}</strong> to the Recycle Bin?<br><div style="margin-top:10px;font-size:12.5px;color:#991b1b;background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:10px 14px;text-align:left;line-height:1.5;"><strong style="display:block;margin-bottom:2px;">Safe Archival:</strong> This user will lose panel access immediately. The account is safely retained in the Recycle Bin and can be restored whenever needed.</div>`,
     confirmText: 'Move to Recycle',
-    confirmColor: '#dc2626',
+    variant:     'danger',
     onConfirm: async () => {
       try {
         const res  = await fetch('/api/admins?action=remove&id=' + id, { method: 'DELETE', headers: _authHeaders() });
         const data = await res.json();
         if (!res.ok) {
-          if (data.error === 'min_admins') { _minAdminPopup(); return; }
+          if (data.error === 'min_admins') { _minAdminPopup('Cannot remove: Removing this administrator would leave fewer than 2 active Gmail Admins.'); return; }
           throw new Error(data.message || data.error || 'Failed');
         }
         showToast('success', email + ' moved to Recycle.');
@@ -2161,12 +2232,16 @@ function removeAdmin(id, email) {
 }
 
 // ── Restore from Recycle ─────────────────────────────────────────
-function restoreAdmin(id, email) {
+function restoreAdmin(id, email, role) {
+  const u = _rawAdminList.find(x => x.id === id || (email && x.email.toLowerCase() === email.toLowerCase()));
+  const userRole = (role || (u && u.role) || 'Account');
+  const roleLabel = (userRole === 'Moderator' ? 'Moderator' : (userRole === 'Admin' ? 'Admin' : 'Account'));
+
   _confirmModal({
-    title:       'Restore Account',
-    body:        `Restore <strong>${escapeHtml(email)}</strong> to Active?`,
-    confirmText: 'Yes, Restore',
-    confirmColor: '#059669',
+    title:       `Restore ${roleLabel}`,
+    body:        `Restore ${roleLabel} <strong>${escapeHtml(email)}</strong> back to <strong>Active</strong> status?<br><div style="margin-top:10px;font-size:12.5px;color:#065f46;background:#ecfdf5;border:1px solid #a7f3d0;border-radius:10px;padding:10px 14px;text-align:left;line-height:1.5;">They will immediately regain their previous administrative privileges.</div>`,
+    confirmText: `Yes, Restore ${roleLabel}`,
+    variant:     'success',
     onConfirm: async () => {
       try {
         const res  = await fetch('/api/admins?action=update&id=' + id, {
@@ -2175,16 +2250,16 @@ function restoreAdmin(id, email) {
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Failed');
-        showToast('success', email + ' restored to Active.');
+        showToast('success', `${roleLabel} ${email} restored to Active.`);
         _setAccessTab('active');
         loadAccessList();
         recordActivityLog({
           action: 'access.restore',
           category: 'access',
-          summary: `Restored admin "${email}" to Active status`,
+          summary: `Restored ${roleLabel} "${email}" to Active status`,
           target_id: id,
           target_name: email,
-          details: { id, email }
+          details: { id, email, role: userRole }
         });
       } catch(e) { showToast('error', e.message || 'Failed.'); }
     }
@@ -2192,26 +2267,30 @@ function restoreAdmin(id, email) {
 }
 
 // ── Permanent delete from Recycle ────────────────────────────────
-function purgeAdmin(id, email) {
+function purgeAdmin(id, email, role) {
+  const u = _rawAdminList.find(x => x.id === id || (email && x.email.toLowerCase() === email.toLowerCase()));
+  const userRole = (role || (u && u.role) || 'Account');
+  const roleLabel = (userRole === 'Moderator' ? 'Moderator' : (userRole === 'Admin' ? 'Admin' : 'Account'));
+
   _confirmModal({
-    title:       'Permanently Delete',
-    body:        `<strong style="color:#dc2626">This cannot be undone.</strong><br><br>Permanently delete <strong>${escapeHtml(email)}</strong> from the system?`,
-    confirmText: 'Delete Forever',
-    confirmColor: '#dc2626',
+    title:       `Permanently Delete ${roleLabel}`,
+    body:        `<div style="margin-bottom:12px;font-size:12.5px;color:#991b1b;background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:10px 14px;text-align:left;line-height:1.5;"><strong style="display:block;margin-bottom:2px;">Irreversible Action:</strong> This will completely erase this record from the database. This action cannot be rolled back.</div>Are you sure you want to permanently delete <strong>${escapeHtml(email)}</strong>?`,
+    confirmText: 'Delete Permanently',
+    variant:     'danger',
     onConfirm: async () => {
       try {
         const res  = await fetch('/api/admins?action=purge&id=' + id, { method: 'DELETE', headers: _authHeaders() });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Failed');
-        showToast('success', email + ' permanently deleted.');
+        showToast('success', `${roleLabel} ${email} permanently deleted.`);
         loadAccessList();
         recordActivityLog({
           action: 'access.purge',
           category: 'access',
-          summary: `Permanently purged admin account "${email}" from the database`,
+          summary: `Permanently purged ${roleLabel} account "${email}" from the database`,
           target_id: id,
           target_name: email,
-          details: { id, email }
+          details: { id, email, role: userRole }
         });
       } catch(e) { showToast('error', e.message || 'Failed.'); }
     }
