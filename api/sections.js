@@ -222,13 +222,36 @@ function syncHeaderStructures(source, target, sourceIsBn) {
   if (source.logoSvg !== undefined) res.logoSvg = source.logoSvg;
   if (source.faviconUrl !== undefined) res.faviconUrl = source.faviconUrl;
 
+  const DEFAULT_EN_LABELS = {
+    'sub-1': 'FAMILY LEGACY',
+    'sub-2': 'EXPERIENCE',
+    'sub-3': 'THE PRIVATIAN READS',
+    'sub-4': 'EVENTS'
+  };
+  const DEFAULT_BN_LABELS = {
+    'sub-1': 'পারিবারিক ঐতিহ্য',
+    'sub-2': 'অভিজ্ঞতা ও সংস্কৃতি',
+    'sub-3': 'প্রাইভেসিয়ান পঠন',
+    'sub-4': 'অনুষ্ঠানসমূহ'
+  };
+
   if (Array.isArray(source.subsections)) {
     const tgtSubs = Array.isArray(res.subsections) ? res.subsections : [];
     res.subsections = source.subsections.map((srcItem, idx) => {
       const match = tgtSubs.find(t => t.id === srcItem.id) || tgtSubs[idx] || {};
+      const subId = srcItem.id || match.id || `sub-${idx + 1}`;
+      
+      let labelEn = match.label || (!sourceIsBn ? srcItem.label : '') || DEFAULT_EN_LABELS[subId] || '';
+      let labelBn = match.label_bn || (sourceIsBn ? srcItem.label : '') || DEFAULT_BN_LABELS[subId] || '';
+
+      if (sourceIsBn && /[\u0980-\u09FF]/.test(labelEn)) {
+        labelEn = DEFAULT_EN_LABELS[subId] || 'SECTION';
+      }
+
       return {
-        id: srcItem.id || match.id || `sub-${idx + 1}`,
-        label: match.label || srcItem.label || '',
+        id: subId,
+        label: sourceIsBn ? labelEn : (srcItem.label || labelEn),
+        label_bn: sourceIsBn ? (srcItem.label_bn || srcItem.label || labelBn) : (match.label_bn || labelBn),
         href: sourceIsBn ? (match.href || srcItem.href) : (srcItem.href || match.href),
         icon: srcItem.icon !== undefined ? srcItem.icon : match.icon,
         enabled: srcItem.enabled !== false
@@ -510,7 +533,19 @@ module.exports = async function handler(req, res) {
     if (req.method === 'GET') {
       try {
         const { data } = await sb.from('site_settings').select('value').eq('key', settingsKey).maybeSingle();
-        if (data && data.value) return res.status(200).json(data.value);
+        if (data && data.value) {
+          let val = data.value;
+          if (!isBn && Array.isArray(val.subsections)) {
+            val.subsections = val.subsections.map(s => {
+              if (s.label && /[\u0980-\u09FF]/.test(s.label)) {
+                const def = DEFAULT_HEADER_CONFIG.subsections.find(d => d.id === s.id);
+                return { ...s, label: (def && def.label) ? def.label : s.label };
+              }
+              return s;
+            });
+          }
+          return res.status(200).json(val);
+        }
       } catch(e) {}
 
       // Fallback read from sections table
@@ -518,7 +553,18 @@ module.exports = async function handler(req, res) {
         const { data: sData } = await sb.from('sections').select('name').eq('admin_id', fallbackId).maybeSingle();
         if (sData && sData.name) {
           const parsed = JSON.parse(sData.name);
-          if (parsed && typeof parsed === 'object') return res.status(200).json(parsed);
+          if (parsed && typeof parsed === 'object') {
+            if (!isBn && Array.isArray(parsed.subsections)) {
+              parsed.subsections = parsed.subsections.map(s => {
+                if (s.label && /[\u0980-\u09FF]/.test(s.label)) {
+                  const def = DEFAULT_HEADER_CONFIG.subsections.find(d => d.id === s.id);
+                  return { ...s, label: (def && def.label) ? def.label : s.label };
+                }
+                return s;
+              });
+            }
+            return res.status(200).json(parsed);
+          }
         }
       } catch(e) {}
 

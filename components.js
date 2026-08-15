@@ -132,10 +132,11 @@
   ];
 
   var DEFAULT_SECTIONS = [
-    { id: 'findings',  name: 'Findings',             name_bn: 'অনুসন্ধান',         slug: 'findings' },
+    { id: 'all',       name: 'All',                  name_bn: 'সব খবর',            slug: '' },
+    { id: 'findings',  name: 'Findings',             name_bn: 'অনুসন্ধিৎসু',         slug: 'findings' },
     { id: 'community', name: 'Community & Heritage', name_bn: 'সমাজ ও ঐতিহ্য',     slug: 'community-heritage' },
     { id: 'culture',   name: 'Culture',              name_bn: 'সংস্কৃতি',          slug: 'culture' },
-    { id: 'privacy',   name: 'Privacy & Values',     name_bn: 'গোপনীয়তা ও মূল্যবোধ', slug: 'privacy-values' },
+    { id: 'privacy',   name: 'Privacy & Values',     name_bn: 'মূল্যবোধ',         slug: 'privacy-values' },
     { id: 'world',     name: 'Nation & World',       name_bn: 'দেশ ও বিশ্ব',        slug: 'nation-world' },
     { id: 'arts',      name: 'Arts & Legacy',        name_bn: 'শিল্প ও উত্তরাধিকার', slug: 'arts-legacy' },
     { id: 'economy',   name: 'Work & Economy',       name_bn: 'কর্ম ও অর্থনীতি',    slug: 'work-economy' },
@@ -152,7 +153,16 @@
   function getSectionDisplayName(s) {
     if (!s) return '';
     var isBn = window.PrivatianLang && window.PrivatianLang.getLang() === 'bn';
-    if (!isBn) return s.name || s.name_bn || '';
+    var isAll = (s.id === 'all' || s.slug === '' || s.slug === 'all');
+    if (isAll) {
+      return isBn ? (s.name_bn || 'সব খবর') : (s.name && !/[\u0980-\u09FF]/.test(s.name) ? s.name : 'All');
+    }
+
+    if (!isBn) {
+      if (s.name && !/[\u0980-\u09FF]/.test(s.name)) return s.name;
+      var def = DEFAULT_SECTIONS.find(function(d) { return d.slug === s.slug || d.id === s.id; });
+      return (def && def.name) ? def.name : (s.name || '');
+    }
 
     if (s.name_bn && String(s.name_bn).trim() !== '') return s.name_bn;
 
@@ -179,7 +189,8 @@
   function getMenuSettings() {
     try {
       var isBn = window.PrivatianLang && window.PrivatianLang.getLang() === 'bn';
-      var raw = localStorage.getItem(isBn ? MENU_SETTINGS_KEY + '_bn' : MENU_SETTINGS_KEY) || localStorage.getItem(MENU_SETTINGS_KEY);
+      var raw = localStorage.getItem(isBn ? MENU_SETTINGS_KEY + '_bn' : MENU_SETTINGS_KEY + '_en') 
+             || localStorage.getItem(isBn ? MENU_SETTINGS_KEY + '_bn' : MENU_SETTINGS_KEY);
       if (raw) {
         var parsed = JSON.parse(raw);
         if (parsed && typeof parsed === 'object') return parsed;
@@ -189,6 +200,7 @@
   }
 
   function getSections() {
+    var allSec = { id: 'all', name: 'All', name_bn: 'সব খবর', slug: '' };
     try {
       var raw = localStorage.getItem(APPLIED_KEY);
       if (!raw) raw = localStorage.getItem(SECTIONS_KEY);
@@ -196,7 +208,9 @@
       var data = JSON.parse(raw);
       var list = Array.isArray(data) ? data : (data.sections || []);
       if (!list.length) return DEFAULT_SECTIONS;
-      return list.filter(function(s) { return !s.deleted && !s.locked; });
+      var filtered = list.filter(function(s) { return !s.deleted && !s.locked; });
+      var hasAll = filtered.some(function(s) { return s.id === 'all' || s.slug === ''; });
+      return hasAll ? filtered : [allSec].concat(filtered);
     } catch(e) {
       return DEFAULT_SECTIONS;
     }
@@ -205,7 +219,8 @@
   function getFooterSettings() {
     try {
       var isBn = window.PrivatianLang && window.PrivatianLang.getLang() === 'bn';
-      var raw = localStorage.getItem(isBn ? FOOTER_SETTINGS_KEY + '_bn' : FOOTER_SETTINGS_KEY) || localStorage.getItem(FOOTER_SETTINGS_KEY);
+      var raw = localStorage.getItem(isBn ? FOOTER_SETTINGS_KEY + '_bn' : FOOTER_SETTINGS_KEY + '_en') 
+             || localStorage.getItem(isBn ? FOOTER_SETTINGS_KEY + '_bn' : FOOTER_SETTINGS_KEY);
       if (raw) {
         var parsed = JSON.parse(raw);
         if (parsed && typeof parsed === 'object') return parsed;
@@ -217,7 +232,8 @@
   function getHeaderSettings() {
     try {
       var isBn = window.PrivatianLang && window.PrivatianLang.getLang() === 'bn';
-      var raw = localStorage.getItem(isBn ? HEADER_SETTINGS_KEY + '_bn' : HEADER_SETTINGS_KEY) || localStorage.getItem(HEADER_SETTINGS_KEY);
+      var raw = localStorage.getItem(isBn ? HEADER_SETTINGS_KEY + '_bn' : HEADER_SETTINGS_KEY + '_en') 
+             || localStorage.getItem(isBn ? HEADER_SETTINGS_KEY + '_bn' : HEADER_SETTINGS_KEY);
       if (raw) {
         var parsed = JSON.parse(raw);
         if (!parsed.subsections) {
@@ -500,7 +516,7 @@
     var inner = document.getElementById('sub-header-inner');
     if (!inner) return;
     var settings = getHeaderSettings();
-    var subs = (settings && settings.subsections) ? settings.subsections : DEFAULT_SUBSECTIONS;
+    var subs = (settings && Array.isArray(settings.subsections) && settings.subsections.length) ? settings.subsections : DEFAULT_SUBSECTIONS;
     var isBn = window.PrivatianLang && window.PrivatianLang.getLang() === 'bn';
     var calSVG = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>';
     inner.innerHTML = '';
@@ -510,14 +526,35 @@
       a.href = s.href || '#';
       a.className = 'sub-link' + (s.icon === 'calendar' ? ' sub-link-icon' : '');
       a.id = 'sub-link-' + (i + 1);
-      var label = isBn ? (s.label_bn || (function() {
-        for (var k = 0; k < DEFAULT_SUBSECTIONS.length; k++) {
-          if (DEFAULT_SUBSECTIONS[k].id === s.id || (s.label && DEFAULT_SUBSECTIONS[k].label.toLowerCase() === s.label.toLowerCase()) || (s.href && DEFAULT_SUBSECTIONS[k].href === s.href)) {
-            return DEFAULT_SUBSECTIONS[k].label_bn;
-          }
+
+      var defMatch = DEFAULT_SUBSECTIONS.find(function(d) {
+        return d.id === s.id || (s.href && d.href === s.href) || (s.label && d.label.toLowerCase() === s.label.toLowerCase());
+      });
+
+      var label = '';
+      if (isBn) {
+        if (s.label_bn && String(s.label_bn).trim() !== '') {
+          label = s.label_bn;
+        } else if (s.label && /[\u0980-\u09FF]/.test(s.label)) {
+          label = s.label;
+        } else if (defMatch && defMatch.label_bn) {
+          label = defMatch.label_bn;
+        } else {
+          label = s.label || '';
         }
-        return s.label || '';
-      })()) : (s.label || '');
+      } else {
+        // English mode: MUST NEVER show Bengali
+        if (s.label && !/[\u0980-\u09FF]/.test(s.label)) {
+          label = s.label;
+        } else if (s.label_en && String(s.label_en).trim() !== '') {
+          label = s.label_en;
+        } else if (defMatch && defMatch.label) {
+          label = defMatch.label;
+        } else {
+          label = s.label || '';
+        }
+      }
+
       if (s.icon === 'calendar') {
         a.innerHTML = calSVG + ' ' + escapeHTML(label);
       } else {
@@ -595,7 +632,7 @@
       leftBtn._bound = true;
       leftBtn.onclick = function(e) {
         e.preventDefault();
-        nav.scrollBy({ left: -160, behavior: 'smooth' });
+        nav.scrollBy({ left: -140, behavior: 'smooth' });
         setTimeout(updateNavScrollControls, 200);
       };
     }
@@ -603,7 +640,7 @@
       rightBtn._bound = true;
       rightBtn.onclick = function(e) {
         e.preventDefault();
-        nav.scrollBy({ left: 160, behavior: 'smooth' });
+        nav.scrollBy({ left: 140, behavior: 'smooth' });
         setTimeout(updateNavScrollControls, 200);
       };
     }
@@ -746,8 +783,20 @@
     var enabledIds = (hsettings && hsettings.enabledNavSections !== undefined) ? hsettings.enabledNavSections : null;
     var navSecs = secs;
     if (enabledIds !== null) {
-      navSecs = secs.filter(function(s) { return enabledIds.indexOf(s.slug || s.id) !== -1; });
-      navSecs.sort(function(a, b) { return enabledIds.indexOf(a.slug || a.id) - enabledIds.indexOf(b.slug || b.id); });
+      var isSecMatch = function(s, id) {
+        return id === (s.slug || s.id) || id === s.slug || id === s.id || (id === 'all' && (s.slug === '' || s.id === 'all')) || (id === '' && (s.slug === '' || s.id === 'all'));
+      };
+      navSecs = secs.filter(function(s) {
+        return enabledIds.some(function(id) { return isSecMatch(s, id); });
+      });
+      navSecs.sort(function(a, b) {
+        var idxA = enabledIds.findIndex(function(id) { return isSecMatch(a, id); });
+        var idxB = enabledIds.findIndex(function(id) { return isSecMatch(b, id); });
+        if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+        if (idxA !== -1) return -1;
+        if (idxB !== -1) return 1;
+        return 0;
+      });
     }
 
     // A. Main Header Nav (filtered by header settings)
@@ -1293,18 +1342,21 @@
     }
 
     if (Array.isArray(data) && data.length) {
+      var allSec = { id: 'all', name: 'All', name_bn: 'সব খবর', slug: '' };
       var mapped = data.map(function(r) {
-        return { id: r.slug || r.admin_id, name: r.name, name_bn: r.name_bn || '', slug: r.slug };
+        return { id: r.slug || r.admin_id, name: r.name, name_bn: r.name_bn || '', slug: r.slug || '' };
       });
-      if (mapped.length) {
-        try { localStorage.setItem(APPLIED_KEY, JSON.stringify(mapped)); } catch(e) {}
+      var hasAll = mapped.some(function(s) { return s.id === 'all' || s.slug === ''; });
+      var finalMapped = hasAll ? mapped : [allSec].concat(mapped);
+      if (finalMapped.length) {
+        try { localStorage.setItem(APPLIED_KEY, JSON.stringify(finalMapped)); } catch(e) {}
         populateSections();
         populateFooterSections();
       }
       updateAllNewsLabels(data);
       try {
         document.dispatchEvent(new CustomEvent('privatian:sections-loaded', {
-          detail: { sections: mapped }
+          detail: { sections: finalMapped }
         }));
       } catch(e) {}
     }
