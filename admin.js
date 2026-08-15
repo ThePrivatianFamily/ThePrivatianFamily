@@ -782,7 +782,7 @@ async function openSectionStudio(id) {
       slugInput.style.opacity = '0.55';
       slugInput.style.cursor = 'not-allowed';
       slugInput.style.backgroundColor = '#f8fafc';
-      slugInput.title = '🔒 Section URL Slug is unified in backend and defined strictly in English';
+      slugInput.title = '[Locked] Section URL Slug is unified in backend and defined strictly in English';
     } else {
       slugInput.readOnly = s.id === 'all' || s.isPermanent;
       slugInput.style.opacity = (s.id === 'all' || s.isPermanent) ? '0.55' : '1';
@@ -1657,6 +1657,16 @@ function initAccessPage() {
     addBtn._hasClick = true;
     addBtn.addEventListener('click', addAdminEmail);
   }
+  const emailInput = document.getElementById('access-email-input');
+  if (emailInput && !emailInput._hasEnter) {
+    emailInput._hasEnter = true;
+    emailInput.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        addAdminEmail();
+      }
+    });
+  }
 }
 
 // ── Reusable confirmation modal ─────────────────────────────────
@@ -1867,8 +1877,8 @@ function renderAccessLists() {
     const isAdmin = (a.role === 'Admin');
 
     const roleBadge = isAdmin
-      ? `<span class="access-role-pill admin"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/></svg> Admin</span>`
-      : `<span class="access-role-pill moderator"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> Moderator</span>`;
+      ? `<span class="access-role-pill admin"><svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 4l3 12h14l3-12-6 7-4-7-4 7-6-7z"/><path d="M4 20h16"/></svg> Admin</span>`
+      : `<span class="access-role-pill moderator"><svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> Moderator</span>`;
 
     let statusBadge = '';
     if (a.status === 'active') {
@@ -4121,7 +4131,7 @@ function openSeriesModal(id) {
       hrefInput.style.opacity = isBn ? '0.55' : '1';
       hrefInput.style.backgroundColor = isBn ? '#f8fafc' : '';
       hrefInput.style.cursor = isBn ? 'not-allowed' : '';
-      hrefInput.title = isBn ? '🔒 URL is unified in backend and defined strictly in English' : '';
+      hrefInput.title = isBn ? '[Locked] URL is unified in backend and defined strictly in English' : '';
     }
     descInput.value = item.description || '';
     enabledInput.checked = item.enabled !== false;
@@ -4135,7 +4145,7 @@ function openSeriesModal(id) {
       hrefInput.style.opacity = isBn ? '0.55' : '1';
       hrefInput.style.backgroundColor = isBn ? '#f8fafc' : '';
       hrefInput.style.cursor = isBn ? 'not-allowed' : '';
-      hrefInput.title = isBn ? '🔒 URL is unified in backend and defined strictly in English' : '';
+      hrefInput.title = isBn ? '[Locked] URL is unified in backend and defined strictly in English' : '';
     }
     descInput.value = '';
     enabledInput.checked = true;
@@ -4325,7 +4335,7 @@ function openExploreModal(id) {
       hrefInput.style.opacity = isBn ? '0.55' : '1';
       hrefInput.style.backgroundColor = isBn ? '#f8fafc' : '';
       hrefInput.style.cursor = isBn ? 'not-allowed' : '';
-      hrefInput.title = isBn ? '🔒 URL is unified in backend and defined strictly in English' : '';
+      hrefInput.title = isBn ? '[Locked] URL is unified in backend and defined strictly in English' : '';
     }
     if (targetInput) {
       targetInput.value = item.target || '_self';
@@ -4342,7 +4352,7 @@ function openExploreModal(id) {
       hrefInput.style.opacity = isBn ? '0.55' : '1';
       hrefInput.style.backgroundColor = isBn ? '#f8fafc' : '';
       hrefInput.style.cursor = isBn ? 'not-allowed' : '';
-      hrefInput.title = isBn ? '🔒 URL is unified in backend and defined strictly in English' : '';
+      hrefInput.title = isBn ? '[Locked] URL is unified in backend and defined strictly in English' : '';
     }
     if (targetInput) {
       targetInput.value = '_self';
@@ -5765,8 +5775,8 @@ function renderNewsEditor() {
             <input type="text" class="form-input" value="${escapeHtml(col.label || '')}" oninput="onHpColumnLabelInput(${cIdx}, this.value)" style="font-weight:700;color:#0a528e;" />
           </div>
           <div class="form-group" style="margin-bottom:14px;">
-            <label class="form-label" style="font-size:11px;">Section Slug Link ${_adminContentLang === 'bn' ? '<span style="color:#d97706;font-size:10px;font-weight:600;">(🔒 Set in English)</span>' : ''}</label>
-            <input type="text" class="form-input" value="${escapeHtml(col.sectionSlug || '')}" ${_adminContentLang === 'bn' ? 'readonly style="opacity:0.55;cursor:not-allowed;background:#f8fafc;" title="🔒 Section Slug is unified in backend and defined strictly in English"' : `oninput="onHpColumnSlugInput(${cIdx}, this.value)"`} placeholder="e.g. culture" />
+            <label class="form-label" style="font-size:11px;">Section Slug Link ${_adminContentLang === 'bn' ? '<span style="color:#d97706;font-size:10px;font-weight:600;">([Locked] Set in English)</span>' : ''}</label>
+            <input type="text" class="form-input" value="${escapeHtml(col.sectionSlug || '')}" ${_adminContentLang === 'bn' ? 'readonly style="opacity:0.55;cursor:not-allowed;background:#f8fafc;" title="[Locked] Section Slug is unified in backend and defined strictly in English"' : `oninput="onHpColumnSlugInput(${cIdx}, this.value)"`} placeholder="e.g. culture" />
           </div>
 
           <!-- Lead Story Preview -->
@@ -5871,7 +5881,7 @@ function openHpSlotModal(path, roleName) {
     linkInput.style.opacity = isBn ? '0.55' : '1';
     linkInput.style.backgroundColor = isBn ? '#f8fafc' : '';
     linkInput.style.cursor = isBn ? 'not-allowed' : '';
-    linkInput.title = isBn ? '🔒 URL is unified in backend and defined strictly in English' : '';
+    linkInput.title = isBn ? '[Locked] URL is unified in backend and defined strictly in English' : '';
   }
   const linkLockNote = document.getElementById('hp-slot-link-lock-note');
   if (linkLockNote) linkLockNote.style.display = isBn ? 'block' : 'none';
@@ -6123,7 +6133,7 @@ function openHpEventModal(id) {
       linkInput.style.opacity = isBn ? '0.55' : '1';
       linkInput.style.backgroundColor = isBn ? '#f8fafc' : '';
       linkInput.style.cursor = isBn ? 'not-allowed' : '';
-      linkInput.title = isBn ? '🔒 Event URL is unified in backend and defined strictly in English' : '';
+      linkInput.title = isBn ? '[Locked] Event URL is unified in backend and defined strictly in English' : '';
     }
     enabledInput.checked = ev.enabled !== false;
   } else {
@@ -6138,7 +6148,7 @@ function openHpEventModal(id) {
       linkInput.style.opacity = isBn ? '0.55' : '1';
       linkInput.style.backgroundColor = isBn ? '#f8fafc' : '';
       linkInput.style.cursor = isBn ? 'not-allowed' : '';
-      linkInput.title = isBn ? '🔒 Event URL is unified in backend and defined strictly in English' : '';
+      linkInput.title = isBn ? '[Locked] Event URL is unified in backend and defined strictly in English' : '';
     }
     enabledInput.checked = true;
   }
