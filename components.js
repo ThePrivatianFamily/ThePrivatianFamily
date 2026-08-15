@@ -480,10 +480,13 @@
     var cfg = getFooterSettings();
     var enabledSet = (cfg && Array.isArray(cfg.enabledSections)) ? cfg.enabledSections : null;
 
-    var filtered = sections.filter(function(s) {
-      if (enabledSet) return enabledSet.indexOf(s.slug) !== -1;
-      return true;
-    });
+    var filtered = sections;
+    if (enabledSet && enabledSet.length > 0) {
+      filtered = sections.filter(function(s) { return enabledSet.indexOf(s.slug || s.id) !== -1; });
+      filtered.sort(function(a, b) {
+        return enabledSet.indexOf(a.slug || a.id) - enabledSet.indexOf(b.slug || b.id);
+      });
+    }
 
     ul.innerHTML = filtered.map(function(s) {
       return `<li><a href="/section/${s.slug}">${escapeHTML(getSectionDisplayName(s))}</a></li>`;
@@ -779,7 +782,14 @@
     var menuList = document.getElementById('menu-section-list');
     if (menuList) {
       menuList.innerHTML = '';
-      secs.forEach(function(s) {
+      var mCfg = getMenuSettings();
+      var mEnabled = (mCfg && Array.isArray(mCfg.enabledMenuSections)) ? mCfg.enabledMenuSections : null;
+      var mSecs = secs;
+      if (mEnabled && mEnabled.length > 0) {
+        mSecs = secs.filter(function(s) { return mEnabled.indexOf(s.slug || s.id) !== -1; });
+        mSecs.sort(function(a, b) { return mEnabled.indexOf(a.slug || a.id) - mEnabled.indexOf(b.slug || b.id); });
+      }
+      mSecs.forEach(function(s) {
         var li = document.createElement('li');
         var a  = document.createElement('a');
         a.href = s.slug ? ('/section/' + s.slug) : '#';
@@ -791,18 +801,7 @@
     }
 
     // C. Footer Section List
-    var footerList = document.getElementById('footer-section-list');
-    if (footerList) {
-      footerList.innerHTML = '';
-      secs.forEach(function(s) {
-        var li = document.createElement('li');
-        var a  = document.createElement('a');
-        a.href = s.slug ? ('/section/' + s.slug) : '#';
-        a.textContent = getSectionDisplayName(s);
-        li.appendChild(a);
-        footerList.appendChild(li);
-      });
-    }
+    populateFooterSections();
 
     // D. Menu Overlay Dynamic Elements
     populateMenuOverlay();

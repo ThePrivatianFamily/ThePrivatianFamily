@@ -147,6 +147,8 @@ function syncMenuStructures(source, target, sourceIsBn) {
   if (!source || typeof source !== 'object' || !target || typeof target !== 'object') return target;
   const res = JSON.parse(JSON.stringify(target));
 
+  if (source.enabledMenuSections !== undefined) res.enabledMenuSections = source.enabledMenuSections;
+
   if (Array.isArray(source.series)) {
     const tgtSeries = Array.isArray(res.series) ? res.series : [];
     res.series = source.series.map((srcItem, idx) => {
@@ -241,28 +243,63 @@ function syncFooterStructures(source, target, sourceIsBn) {
   if (!source || typeof source !== 'object' || !target || typeof target !== 'object') return target;
   const res = JSON.parse(JSON.stringify(target));
 
-  if (Array.isArray(source.columns)) {
-    const tgtCols = Array.isArray(res.columns) ? res.columns : [];
-    res.columns = source.columns.map((srcCol, cIdx) => {
-      const matchCol = tgtCols.find(t => t.id === srcCol.id) || tgtCols[cIdx] || {};
-      const colRes = {
-        id: srcCol.id || matchCol.id || `col-${cIdx + 1}`,
-        title: matchCol.title || srcCol.title || '',
-        links: []
+  if (source.enabledSections !== undefined) res.enabledSections = source.enabledSections;
+  if (source.logoHeight !== undefined) res.logoHeight = source.logoHeight;
+  if (source.logoSvg !== undefined) res.logoSvg = source.logoSvg;
+
+  if (Array.isArray(source.explore)) {
+    const tgtExp = Array.isArray(res.explore) ? res.explore : [];
+    res.explore = source.explore.map((srcItem, idx) => {
+      const match = tgtExp.find(t => t.id === srcItem.id) || tgtExp[idx] || {};
+      return {
+        id: srcItem.id || match.id || `f-exp-${idx + 1}`,
+        label: match.label || srcItem.label || '',
+        href: sourceIsBn ? (match.href || srcItem.href) : (srcItem.href || match.href),
+        target: sourceIsBn ? (match.target || srcItem.target) : (srcItem.target || match.target),
+        enabled: srcItem.enabled !== false
       };
-      if (Array.isArray(srcCol.links)) {
-        const tgtLinks = Array.isArray(matchCol.links) ? matchCol.links : [];
-        colRes.links = srcCol.links.map((srcLink, lIdx) => {
-          const matchLink = tgtLinks.find(t => t.id === srcLink.id) || tgtLinks[lIdx] || {};
-          return {
-            id: srcLink.id || matchLink.id || `link-${cIdx + 1}-${lIdx + 1}`,
-            label: matchLink.label || srcLink.label || '',
-            href: sourceIsBn ? (matchLink.href || srcLink.href) : (srcLink.href || matchLink.href),
-            enabled: srcLink.enabled !== false
-          };
-        });
-      }
-      return colRes;
+    });
+  }
+
+  if (Array.isArray(source.series)) {
+    const tgtSeries = Array.isArray(res.series) ? res.series : [];
+    res.series = source.series.map((srcItem, idx) => {
+      const match = tgtSeries.find(t => t.id === srcItem.id) || tgtSeries[idx] || {};
+      return {
+        id: srcItem.id || match.id || `f-ser-${idx + 1}`,
+        title: match.title || srcItem.title || '',
+        href: sourceIsBn ? (match.href || srcItem.href) : (srcItem.href || match.href),
+        description: match.description || srcItem.description || '',
+        enabled: srcItem.enabled !== false
+      };
+    });
+  }
+
+  if (Array.isArray(source.social)) {
+    const tgtSocial = Array.isArray(res.social) ? res.social : [];
+    res.social = source.social.map((srcItem, idx) => {
+      const match = tgtSocial.find(t => t.id === srcItem.id) || tgtSocial[idx] || {};
+      return {
+        id: srcItem.id || match.id || `f-soc-${idx + 1}`,
+        platform: srcItem.platform || match.platform || 'instagram',
+        label: match.label || srcItem.label || '',
+        href: srcItem.href || match.href || '',
+        enabled: srcItem.enabled !== false
+      };
+    });
+  }
+
+  if (Array.isArray(source.bottomLinks)) {
+    const tgtBot = Array.isArray(res.bottomLinks) ? res.bottomLinks : [];
+    res.bottomLinks = source.bottomLinks.map((srcItem, idx) => {
+      const match = tgtBot.find(t => t.id === srcItem.id) || tgtBot[idx] || {};
+      return {
+        id: srcItem.id || match.id || `f-bot-${idx + 1}`,
+        label: match.label || srcItem.label || '',
+        href: sourceIsBn ? (match.href || srcItem.href) : (srcItem.href || match.href),
+        target: sourceIsBn ? (match.target || srcItem.target) : (srcItem.target || match.target),
+        enabled: srcItem.enabled !== false
+      };
     });
   }
 
@@ -1217,7 +1254,7 @@ module.exports = async function handler(req, res) {
 
       // Bidirectional sync: columns link structure, order, IDs, enabled (on/off), URLs
       const updatedOtherConfig = syncFooterStructures(footerConfig, otherLangConfig, isBn);
-      const finalSourceConfig = isBn ? syncFooterStructures(otherLangConfig, footerConfig, false) : footerConfig;
+      const finalSourceConfig = footerConfig;
 
       let saved = false;
       try {
@@ -1254,6 +1291,28 @@ module.exports = async function handler(req, res) {
               admin_id: fallbackId,
               name: JSON.stringify(finalSourceConfig),
               slug: fallbackId,
+              display_order: 9996,
+              is_active: false,
+              locked: true,
+              is_deleted: true
+            });
+          }
+
+          const { data: targetExisting } = await sb.from('sections').select('id').eq('admin_id', targetFallbackId).maybeSingle();
+          if (targetExisting) {
+            await sb.from('sections').update({
+              name: JSON.stringify(updatedOtherConfig),
+              slug: targetFallbackId,
+              display_order: 9996,
+              is_active: false,
+              locked: true,
+              is_deleted: true
+            }).eq('admin_id', targetFallbackId);
+          } else {
+            await sb.from('sections').insert({
+              admin_id: targetFallbackId,
+              name: JSON.stringify(updatedOtherConfig),
+              slug: targetFallbackId,
               display_order: 9996,
               is_active: false,
               locked: true,

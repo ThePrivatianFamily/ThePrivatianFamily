@@ -2407,30 +2407,61 @@ function renderHsNavSections(hs) {
   const container = document.getElementById('hs-nav-sections-list');
   if (!container) return;
 
-  const allSecs = sections.filter(s => !s.deleted);
-  const enabledIds = hs.enabledNavSections; // null = all enabled
-
+  const allSecs = (sections || []).filter(s => !s.deleted);
   if (!allSecs.length) {
     container.innerHTML = '<p style="color:var(--text-muted);padding:8px 0">No sections found. Add sections in the Sections page first.</p>';
     return;
   }
 
+  // Initialize or align ordered list
+  let orderedSecs = [...allSecs];
+  const enabledIds = Array.isArray(hs.enabledNavSections) ? hs.enabledNavSections : null;
+  if (enabledIds) {
+    orderedSecs.sort((a, b) => {
+      const idA = a.slug || a.id;
+      const idB = b.slug || b.id;
+      const idxA = enabledIds.indexOf(idA);
+      const idxB = enabledIds.indexOf(idB);
+      if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+      if (idxA !== -1) return -1;
+      if (idxB !== -1) return 1;
+      return 0;
+    });
+  }
+
+  const isBn = (_adminContentLang === 'bn');
   container.innerHTML = '';
-  allSecs.forEach(s => {
+  orderedSecs.forEach((s, idx) => {
     const sectionId = s.slug || s.id;
-    const isEnabled = enabledIds === null || enabledIds.indexOf(sectionId) !== -1;
+    const isEnabled = (enabledIds === null) ? true : enabledIds.includes(sectionId);
     const row = document.createElement('div');
     row.className = 'hs-section-row';
+    row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;margin-bottom:8px;';
+    
+    const displayName = (isBn && s.name_bn) ? `${s.name_bn} (${s.name})` : s.name;
+
     row.innerHTML = `
-      <div class="hs-section-info">
-        <span class="hs-section-name">${escapeHtml(s.name)}</span>
-        <span class="hs-slug-chip">${escapeHtml(sectionId)}</span>
+      <div style="display:flex;align-items:center;gap:10px;flex:1;min-width:0;">
+        <span style="font-size:11px;font-weight:700;background:#e0f2fe;color:#0369a1;padding:2px 7px;border-radius:6px;flex-shrink:0;">#${idx + 1}</span>
+        <div style="display:flex;gap:3px;flex-shrink:0;">
+          <button type="button" class="action-btn hs-move-btn" onclick="moveHsNavSection(${idx}, -1)" ${idx === 0 ? 'disabled' : ''} title="Move Up (Earlier in Navbar)" style="padding:4px 6px;border:1px solid #cbd5e1;background:#fff;border-radius:4px;cursor:${idx === 0 ? 'not-allowed' : 'pointer'};opacity:${idx === 0 ? '0.4' : '1'};font-size:11px;display:inline-flex;align-items:center;justify-content:center;">
+            ▲
+          </button>
+          <button type="button" class="action-btn hs-move-btn" onclick="moveHsNavSection(${idx}, 1)" ${idx === orderedSecs.length - 1 ? 'disabled' : ''} title="Move Down (Later in Navbar)" style="padding:4px 6px;border:1px solid #cbd5e1;background:#fff;border-radius:4px;cursor:${idx === orderedSecs.length - 1 ? 'not-allowed' : 'pointer'};opacity:${idx === orderedSecs.length - 1 ? '0.4' : '1'};font-size:11px;display:inline-flex;align-items:center;justify-content:center;">
+            ▼
+          </button>
+        </div>
+        <div class="hs-section-info" style="min-width:0;flex:1;">
+          <span class="hs-section-name" style="font-weight:600;font-size:13.5px;color:#0f172a;">${escapeHtml(displayName)}</span>
+          <span class="hs-slug-chip" style="margin-left:6px;font-size:11px;color:#64748b;">${escapeHtml(sectionId)}</span>
+        </div>
       </div>
-      <label class="hs-toggle" title="${isEnabled ? 'Visible in header nav' : 'Hidden from header nav'}">
+      <label class="hs-toggle" title="${isEnabled ? 'Visible in header nav' : 'Hidden from header nav'}" style="flex-shrink:0;margin-left:12px;">
         <input type="checkbox" data-sec-id="${escapeHtml(sectionId)}" ${isEnabled ? 'checked' : ''}>
         <span class="hs-toggle-track"><span class="hs-toggle-thumb"></span></span>
       </label>
     `;
+
     row.querySelector('input[type="checkbox"]').addEventListener('change', (e) => {
       hs.enabledNavSections = getEnabledNavSections();
       updateGlobalSyncStatus();
@@ -2447,11 +2478,43 @@ function renderHsNavSections(hs) {
   });
 }
 
+function moveHsNavSection(index, dir) {
+  if (!_hsInstance) return;
+  const allSecs = (sections || []).filter(s => !s.deleted);
+  let orderedSecs = [...allSecs];
+  const enabledIds = Array.isArray(_hsInstance.enabledNavSections) ? _hsInstance.enabledNavSections : allSecs.map(s => s.slug || s.id);
+  
+  orderedSecs.sort((a, b) => {
+    const idA = a.slug || a.id;
+    const idB = b.slug || b.id;
+    const idxA = enabledIds.indexOf(idA);
+    const idxB = enabledIds.indexOf(idB);
+    if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+    if (idxA !== -1) return -1;
+    if (idxB !== -1) return 1;
+    return 0;
+  });
+
+  const targetIndex = index + dir;
+  if (targetIndex < 0 || targetIndex >= orderedSecs.length) return;
+
+  const item = orderedSecs.splice(index, 1)[0];
+  orderedSecs.splice(targetIndex, 0, item);
+
+  // Preserve enabled/checked state while ordering
+  const currentChecked = Array.from(document.querySelectorAll('#hs-nav-sections-list input[type="checkbox"]')).filter(c => c.checked).map(c => c.getAttribute('data-sec-id'));
+  
+  _hsInstance.enabledNavSections = orderedSecs
+    .filter(s => currentChecked.includes(s.slug || s.id))
+    .map(s => s.slug || s.id);
+
+  renderHsNavSections(_hsInstance);
+  updateGlobalSyncStatus();
+}
+
 function getEnabledNavSections() {
   const cbs = document.querySelectorAll('#hs-nav-sections-list input[type="checkbox"]');
   if (!cbs.length) return null;
-  const allChecked = Array.from(cbs).every(c => c.checked);
-  if (allChecked) return null;
   return Array.from(cbs).filter(c => c.checked).map(c => c.getAttribute('data-sec-id'));
 }
 
@@ -4458,32 +4521,92 @@ function moveLatestItem(id, dir) {
 
 function renderMenuSectionsList() {
   const container = document.getElementById('menu-sections-list-container');
-  if (!container) return;
+  if (!container || !menuDraftConfig) return;
 
   const validSecs = (sections || []).filter(s => !s.deleted);
-  const enabledSlugs = (menuDraftConfig && menuDraftConfig.enabledMenuSections) || [];
-
   if (validSecs.length === 0) {
     container.innerHTML = `<div style="padding:16px;color:var(--text-muted);font-size:13px;">No active sections available.</div>`;
     return;
   }
 
-  container.innerHTML = validSecs.map(s => {
+  const enabledSlugs = Array.isArray(menuDraftConfig.enabledMenuSections) ? menuDraftConfig.enabledMenuSections : null;
+  let orderedSecs = [...validSecs];
+  if (enabledSlugs) {
+    orderedSecs.sort((a, b) => {
+      const idA = a.slug || a.id;
+      const idB = b.slug || b.id;
+      const idxA = enabledSlugs.indexOf(idA);
+      const idxB = enabledSlugs.indexOf(idB);
+      if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+      if (idxA !== -1) return -1;
+      if (idxB !== -1) return 1;
+      return 0;
+    });
+  }
+
+  const isBn = (_adminContentLang === 'bn');
+  container.innerHTML = orderedSecs.map((s, idx) => {
     const slug = s.slug || s.id;
-    const isChecked = (enabledSlugs.length === 0) || enabledSlugs.includes(slug);
+    const isChecked = (enabledSlugs === null) ? true : enabledSlugs.includes(slug);
+    const displayName = (isBn && s.name_bn) ? `${s.name_bn} (${s.name})` : s.name;
     return `
-      <div class="hs-section-row">
-        <div class="hs-section-info">
-          <span class="hs-section-name">${escapeHtml(s.name)}</span>
-          <span class="hs-slug-chip">${s.slug ? '/section/' + escapeHtml(s.slug) : '/ (all)'}</span>
+      <div class="hs-section-row" style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;margin-bottom:8px;">
+        <div style="display:flex;align-items:center;gap:10px;flex:1;min-width:0;">
+          <span style="font-size:11px;font-weight:700;background:#e0f2fe;color:#0369a1;padding:2px 7px;border-radius:6px;flex-shrink:0;">#${idx + 1}</span>
+          <div style="display:flex;gap:3px;flex-shrink:0;">
+            <button type="button" class="action-btn" onclick="moveMenuSection(${idx}, -1)" ${idx === 0 ? 'disabled' : ''} title="Move Up" style="padding:4px 6px;border:1px solid #cbd5e1;background:#fff;border-radius:4px;cursor:${idx === 0 ? 'not-allowed' : 'pointer'};opacity:${idx === 0 ? '0.4' : '1'};font-size:11px;">
+              ▲
+            </button>
+            <button type="button" class="action-btn" onclick="moveMenuSection(${idx}, 1)" ${idx === orderedSecs.length - 1 ? 'disabled' : ''} title="Move Down" style="padding:4px 6px;border:1px solid #cbd5e1;background:#fff;border-radius:4px;cursor:${idx === orderedSecs.length - 1 ? 'not-allowed' : 'pointer'};opacity:${idx === orderedSecs.length - 1 ? '0.4' : '1'};font-size:11px;">
+              ▼
+            </button>
+          </div>
+          <div class="hs-section-info" style="min-width:0;flex:1;">
+            <span class="hs-section-name" style="font-weight:600;font-size:13.5px;color:#0f172a;">${escapeHtml(displayName)}</span>
+            <span class="hs-slug-chip" style="margin-left:6px;font-size:11px;color:#64748b;">${s.slug ? '/section/' + escapeHtml(s.slug) : '/ (all)'}</span>
+          </div>
         </div>
-        <label class="hs-toggle">
+        <label class="hs-toggle" style="flex-shrink:0;margin-left:12px;">
           <input type="checkbox" data-menu-section-slug="${escapeHtml(slug)}" ${isChecked ? 'checked' : ''} onchange="onMenuSectionToggle()" />
           <span class="hs-toggle-track"><span class="hs-toggle-thumb"></span></span>
         </label>
       </div>
     `;
   }).join('');
+}
+
+function moveMenuSection(index, dir) {
+  if (!menuDraftConfig) return;
+  pushMenuHistory();
+  const validSecs = (sections || []).filter(s => !s.deleted);
+  let orderedSecs = [...validSecs];
+  const enabledSlugs = Array.isArray(menuDraftConfig.enabledMenuSections) ? menuDraftConfig.enabledMenuSections : validSecs.map(s => s.slug || s.id);
+
+  orderedSecs.sort((a, b) => {
+    const idA = a.slug || a.id;
+    const idB = b.slug || b.id;
+    const idxA = enabledSlugs.indexOf(idA);
+    const idxB = enabledSlugs.indexOf(idB);
+    if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+    if (idxA !== -1) return -1;
+    if (idxB !== -1) return 1;
+    return 0;
+  });
+
+  const targetIndex = index + dir;
+  if (targetIndex < 0 || targetIndex >= orderedSecs.length) return;
+
+  const item = orderedSecs.splice(index, 1)[0];
+  orderedSecs.splice(targetIndex, 0, item);
+
+  const currentChecked = Array.from(document.querySelectorAll('input[data-menu-section-slug]')).filter(c => c.checked).map(c => c.dataset.menuSectionSlug);
+  menuDraftConfig.enabledMenuSections = orderedSecs
+    .filter(s => currentChecked.includes(s.slug || s.id))
+    .map(s => s.slug || s.id);
+
+  renderMenuSectionsList();
+  renderMenuPreview();
+  updateGlobalSyncStatus();
 }
 
 function onMenuSectionToggle() {
@@ -4494,6 +4617,7 @@ function onMenuSectionToggle() {
   });
   pushMenuHistory();
   menuDraftConfig.enabledMenuSections = selected;
+  renderMenuSectionsList();
   renderMenuPreview();
 
   recordActivityLog({
@@ -6693,29 +6817,56 @@ function renderFooterSections() {
   if (titleInput && footerDraftConfig) titleInput.value = footerDraftConfig.sectionsTitle || 'Sections';
   if (!container || !footerDraftConfig) return;
 
-  const activeSecs = sections.filter(s => !s.deleted);
-  const enabledSet = Array.isArray(footerDraftConfig.enabledSections) ? footerDraftConfig.enabledSections : null;
-
+  const activeSecs = (sections || []).filter(s => !s.deleted);
   if (activeSecs.length === 0) {
     container.innerHTML = `<div style="text-align:center;padding:24px;color:var(--text-muted);">No active sections found in the database.</div>`;
     return;
   }
 
+  // Align ordered list
+  let orderedSecs = [...activeSecs];
+  const enabledSet = Array.isArray(footerDraftConfig.enabledSections) ? footerDraftConfig.enabledSections : null;
+  if (enabledSet) {
+    orderedSecs.sort((a, b) => {
+      const idA = a.slug || a.id;
+      const idB = b.slug || b.id;
+      const idxA = enabledSet.indexOf(idA);
+      const idxB = enabledSet.indexOf(idB);
+      if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+      if (idxA !== -1) return -1;
+      if (idxB !== -1) return 1;
+      return 0;
+    });
+  }
+
+  const isBn = (_adminContentLang === 'bn');
   container.innerHTML = `
-    <div class="ft-section-pill-grid">
-      ${activeSecs.map(s => {
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      ${orderedSecs.map((s, idx) => {
         const secSlug = s.slug || s.id;
         const isChecked = enabledSet === null ? true : enabledSet.includes(secSlug);
+        const displayName = (isBn && s.name_bn) ? `${s.name_bn} (${s.name})` : s.name;
         return `
-          <div class="ft-section-pill-card ${isChecked ? 'selected' : ''}" onclick="toggleFooterSectionCard('${secSlug}')">
-            <input type="checkbox" value="${secSlug}" ${isChecked ? 'checked' : ''} style="width:16px;height:16px;accent-color:#0a528e;cursor:pointer;" onclick="event.stopPropagation(); onFooterSectionToggle('${secSlug}', this.checked);" />
-            <div style="flex:1;min-width:0;">
-              <div style="font-weight:700;font-size:13.5px;color:#0f172a;">${escapeHtml(s.name)}</div>
-              <div style="font-size:11px;color:#64748b;">${s.slug ? '/section/' + escapeHtml(s.slug) : '/ (all)'}</div>
+          <div class="ft-section-pill-card ${isChecked ? 'selected' : ''}" style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:#ffffff;border:1px solid #e2e8f0;border-radius:8px;">
+            <div style="display:flex;align-items:center;gap:10px;flex:1;min-width:0;">
+              <span style="font-size:11px;font-weight:700;background:#f1f5f9;color:#475569;padding:2px 7px;border-radius:6px;flex-shrink:0;">#${idx + 1}</span>
+              <div style="display:flex;gap:3px;flex-shrink:0;">
+                <button type="button" class="action-btn" onclick="moveFooterSection(${idx}, -1)" ${idx === 0 ? 'disabled' : ''} title="Move Up" style="padding:4px 6px;border:1px solid #cbd5e1;background:#fff;border-radius:4px;cursor:${idx === 0 ? 'not-allowed' : 'pointer'};opacity:${idx === 0 ? '0.4' : '1'};font-size:11px;">
+                  ▲
+                </button>
+                <button type="button" class="action-btn" onclick="moveFooterSection(${idx}, 1)" ${idx === orderedSecs.length - 1 ? 'disabled' : ''} title="Move Down" style="padding:4px 6px;border:1px solid #cbd5e1;background:#fff;border-radius:4px;cursor:${idx === orderedSecs.length - 1 ? 'not-allowed' : 'pointer'};opacity:${idx === orderedSecs.length - 1 ? '0.4' : '1'};font-size:11px;">
+                  ▼
+                </button>
+              </div>
+              <div style="flex:1;min-width:0;">
+                <div style="font-weight:700;font-size:13.5px;color:#0f172a;">${escapeHtml(displayName)}</div>
+                <div style="font-size:11px;color:#64748b;">${s.slug ? '/section/' + escapeHtml(s.slug) : '/ (all)'}</div>
+              </div>
             </div>
-            <span style="font-size:11px;font-weight:700;color:${isChecked ? '#0a528e' : '#94a3b8'};display:flex;align-items:center;gap:3px;">
-              ${isChecked ? '<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Active' : 'Hidden'}
-            </span>
+            <label class="hs-toggle" title="${isChecked ? 'Active in footer' : 'Hidden in footer'}" style="flex-shrink:0;margin-left:12px;">
+              <input type="checkbox" value="${secSlug}" ${isChecked ? 'checked' : ''} onchange="onFooterSectionToggle('${secSlug}', this.checked)" />
+              <span class="hs-toggle-track"><span class="hs-toggle-thumb"></span></span>
+            </label>
           </div>
         `;
       }).join('')}
@@ -6723,10 +6874,43 @@ function renderFooterSections() {
   `;
 }
 
+function moveFooterSection(index, dir) {
+  if (!footerDraftConfig) return;
+  recordFooterState('Move Footer Section');
+  const activeSecs = (sections || []).filter(s => !s.deleted);
+  let orderedSecs = [...activeSecs];
+  const enabledSet = Array.isArray(footerDraftConfig.enabledSections) ? footerDraftConfig.enabledSections : activeSecs.map(s => s.slug || s.id);
+  
+  orderedSecs.sort((a, b) => {
+    const idA = a.slug || a.id;
+    const idB = b.slug || b.id;
+    const idxA = enabledSet.indexOf(idA);
+    const idxB = enabledSet.indexOf(idB);
+    if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+    if (idxA !== -1) return -1;
+    if (idxB !== -1) return 1;
+    return 0;
+  });
+
+  const targetIndex = index + dir;
+  if (targetIndex < 0 || targetIndex >= orderedSecs.length) return;
+
+  const item = orderedSecs.splice(index, 1)[0];
+  orderedSecs.splice(targetIndex, 0, item);
+
+  const currentChecked = Array.from(document.querySelectorAll('#ft-sections-list-container input[type="checkbox"]')).filter(c => c.checked).map(c => c.value);
+  footerDraftConfig.enabledSections = orderedSecs
+    .filter(s => currentChecked.includes(s.slug || s.id))
+    .map(s => s.slug || s.id);
+
+  renderFooterSections();
+  updateGlobalSyncStatus();
+}
+
 function onFooterSectionToggle(slug, checked) {
   if (!footerDraftConfig) return;
   recordFooterState('Toggle Footer Section');
-  const activeSecs = sections.filter(s => !s.deleted);
+  const activeSecs = (sections || []).filter(s => !s.deleted);
   if (!Array.isArray(footerDraftConfig.enabledSections)) {
     footerDraftConfig.enabledSections = activeSecs.map(s => s.slug || s.id);
   }
@@ -6735,6 +6919,7 @@ function onFooterSectionToggle(slug, checked) {
   } else {
     footerDraftConfig.enabledSections = footerDraftConfig.enabledSections.filter(x => x !== slug);
   }
+  renderFooterSections();
   updateGlobalSyncStatus();
   recordActivityLog({
     action: 'layout.footer_toggle_section',
@@ -6744,17 +6929,6 @@ function onFooterSectionToggle(slug, checked) {
     target_name: slug,
     details: { slug, enabled: checked }
   });
-}
-
-function toggleFooterSectionCard(slug) {
-  if (!footerDraftConfig) return;
-  const activeSecs = sections.filter(s => !s.deleted);
-  if (!Array.isArray(footerDraftConfig.enabledSections)) {
-    footerDraftConfig.enabledSections = activeSecs.map(s => s.slug || s.id);
-  }
-  const isSelected = footerDraftConfig.enabledSections.includes(slug);
-  onFooterSectionToggle(slug, !isSelected);
-  renderFooterSections();
 }
 
 function selectAllFooterSections(enableAll) {
