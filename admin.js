@@ -3493,29 +3493,124 @@ function renderMenuSearch() {
   if (hintInput) hintInput.value = s.hintText || '';
 
   // Update Live Preview inside Search panel
+  const isBn = (_adminContentLang === 'bn');
   const previewInput = document.getElementById('menu-search-preview-input');
-  if (previewInput) previewInput.placeholder = s.placeholder || 'Search articles, stories, topics...';
+  if (previewInput) previewInput.placeholder = s.placeholder || (isBn ? 'নিবন্ধ, গল্প, বিষয় খুঁজুন...' : 'Search articles, stories, topics...');
 
   const previewClose = document.getElementById('menu-search-preview-close');
-  if (previewClose) previewClose.textContent = s.closeText || 'Close';
+  if (previewClose) previewClose.textContent = s.closeText || (isBn ? 'বন্ধ করুন' : 'Close');
 
   const previewExplore = document.getElementById('menu-search-preview-explore');
-  if (previewExplore) previewExplore.textContent = s.exploreLabel || 'Explore:';
+  if (previewExplore) previewExplore.textContent = s.exploreLabel || (isBn ? 'দ্রুত খুঁজুন:' : 'Explore:');
 
   const previewTagsContainer = document.getElementById('menu-search-preview-tags');
   if (previewTagsContainer) {
-    const isBn = (_adminContentLang === 'bn');
     const activeTags = (s.quickTags || []).filter(t => t.enabled !== false);
-    let tagsHtml = `<span class="search-quick-label" id="menu-search-preview-explore" style="color:#7dd3fc;font-size:11.5px;font-weight:700;">${escapeHtml(s.exploreLabel || (isBn ? 'দ্রুত খুঁজুন:' : 'Explore:'))}</span>`;
+    let tagsHtml = `<span class="admin-sp-explore-label" id="menu-search-preview-explore">${escapeHtml(s.exploreLabel || (isBn ? 'দ্রুত খুঁজুন:' : 'Explore:'))}</span>`;
     activeTags.forEach(t => {
       const displayLabel = isBn ? (t.label_bn || t.label) : (t.label || t.label_bn);
-      tagsHtml += `<button type="button" class="search-quick-tag" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.18);color:#e2e8f0;border-radius:20px;padding:4px 11px;font-size:11px;cursor:default;">${escapeHtml(displayLabel)}</button>`;
+      const query = t.query || t.label || t.label_bn;
+      tagsHtml += `<button type="button" class="admin-sp-tag-chip" data-tag-id="${t.id}" onclick="selectAdminSpTag('${escapeHtml(query)}', '${t.id}')">${escapeHtml(displayLabel)}</button>`;
     });
     previewTagsContainer.innerHTML = tagsHtml;
   }
 
+  // Refresh live sample search simulation in preview
+  const currentVal = previewInput ? previewInput.value : '';
+  onAdminSpPreviewSearch(currentVal);
+
   // Render Tags Grid
   renderSearchTagsList();
+}
+
+const SAMPLE_ADMIN_SEARCH_STORIES = [
+  { title: "For families in transition, 'not all traditions are equal'", tag: "Community & Heritage", tag_bn: "সমাজ ও ঐতিহ্য" },
+  { title: "The art of the pen: How writing shapes cultural identity", tag: "Culture", tag_bn: "সংস্কৃতি" },
+  { title: "Wondering: A series of profound questions by Cambridge scholars", tag: "Findings", tag_bn: "অনুসন্ধিৎসু" },
+  { title: "The Privatian Society Annual Gala & Legacy Heritage Ceremony", tag: "Events", tag_bn: "অনুষ্ঠান" },
+  { title: "Preserving generational wisdom through privacy, values and ethics", tag: "Privacy & Values", tag_bn: "মূল্যবোধ" },
+  { title: "Global perspectives on family archives, ancestry and cultural legacy", tag: "Nation & World", tag_bn: "দেশ ও বিশ্ব" }
+];
+
+function onAdminSpPreviewSearch(query) {
+  const resultsContainer = document.getElementById('menu-search-preview-results');
+  const clearBtn = document.getElementById('menu-search-preview-clear-btn');
+  if (!resultsContainer || !menuDraftConfig) return;
+
+  const isBn = (_adminContentLang === 'bn');
+  const s = menuDraftConfig.search || {};
+  const q = (query || '').trim();
+
+  if (clearBtn) {
+    clearBtn.style.display = q ? 'flex' : 'none';
+  }
+
+  if (!q) {
+    const hint = s.hintText || (isBn ? 'অনুসন্ধান করতে লিখুন অথবা ওপরের বিষয় বেছে নিন…' : 'Start typing to search or select a topic above…');
+    resultsContainer.innerHTML = `
+      <div class="admin-sp-hint" id="menu-search-preview-hint">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+        <span id="menu-search-preview-hint-text">${escapeHtml(hint)}</span>
+      </div>
+    `;
+    return;
+  }
+
+  const lower = q.toLowerCase();
+  const matches = SAMPLE_ADMIN_SEARCH_STORIES.filter(item => {
+    const tag = isBn ? (item.tag_bn || item.tag) : item.tag;
+    return item.title.toLowerCase().includes(lower) || tag.toLowerCase().includes(lower);
+  });
+
+  if (!matches.length) {
+    resultsContainer.innerHTML = `
+      <div style="text-align:center;padding:12px;color:rgba(254,202,202,0.9);font-size:12.5px;">
+        ${isBn ? `<strong>"${escapeHtml(q)}"</strong> এর জন্য কোনো ফলাফল পাওয়া যায়নি` : `No results found for <strong>"${escapeHtml(q)}"</strong>`}
+      </div>
+    `;
+    return;
+  }
+
+  function highlight(text, matchQuery) {
+    if (!matchQuery) return escapeHtml(text);
+    const re = new RegExp('(' + matchQuery.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi');
+    return escapeHtml(text).replace(re, '<mark class="admin-sp-match">$1</mark>');
+  }
+
+  resultsContainer.innerHTML = `
+    <div class="admin-sp-card-grid">
+      ${matches.map(m => {
+        const tag = isBn ? (m.tag_bn || m.tag) : m.tag;
+        return `
+          <div class="admin-sp-result-card">
+            <div class="admin-sp-card-tag">${escapeHtml(tag)}</div>
+            <div class="admin-sp-card-title">${highlight(m.title, q)}</div>
+          </div>
+        `;
+      }).join('')}
+    </div>
+  `;
+}
+
+function selectAdminSpTag(query, tagId) {
+  const input = document.getElementById('menu-search-preview-input');
+  if (input) {
+    input.value = query;
+    onAdminSpPreviewSearch(query);
+  }
+  document.querySelectorAll('.admin-sp-tag-chip').forEach(btn => {
+    btn.classList.toggle('is-active', btn.getAttribute('data-tag-id') === tagId);
+  });
+}
+
+function clearAdminSpPreviewSearch() {
+  const input = document.getElementById('menu-search-preview-input');
+  if (input) {
+    input.value = '';
+    input.focus();
+  }
+  document.querySelectorAll('.admin-sp-tag-chip').forEach(btn => btn.classList.remove('is-active'));
+  onAdminSpPreviewSearch('');
 }
 
 function renderSearchTagsList() {
@@ -4427,22 +4522,22 @@ function renderMenuPreview() {
   const searchCfg = menuDraftConfig.search || {};
   const isBn = (_adminContentLang === 'bn');
   const searchHtml = (searchCfg.enabled !== false) ? `
-    <div style="background:#090e17;border:1px solid #334155;border-radius:10px;padding:14px;margin-bottom:18px;">
-      <div class="search-header-bar" style="max-width:540px;margin:0 auto 8px;">
-        <div class="search-input-wrap" style="height:38px;">
-          <svg class="search-icon-inline" xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-          <input type="text" class="search-input" readonly placeholder="${escapeHtml(searchCfg.placeholder || (isBn ? 'নিবন্ধ, গল্প, বিষয় খুঁজুন...' : 'Search articles, stories, topics...'))}" style="cursor:default;font-size:13.5px;" />
-          <span class="search-clear-btn" style="pointer-events:none;font-size:9px;width:18px;height:18px;">✕</span>
+    <div style="background:radial-gradient(circle at 50% 0%, #081a38 0%, #030a16 80%);border:1.5px solid rgba(56,189,248,0.2);border-radius:14px;padding:16px 18px;margin-bottom:20px;box-shadow:0 10px 30px -10px rgba(0,0,0,0.6);">
+      <div class="admin-sp-header-bar" style="max-width:560px;margin:0 auto 10px;">
+        <div class="admin-sp-input-wrap" style="height:40px;">
+          <svg class="admin-sp-search-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+          <input type="text" class="admin-sp-input" readonly placeholder="${escapeHtml(searchCfg.placeholder || (isBn ? 'নিবন্ধ, গল্প, বিষয় খুঁজুন...' : 'Search articles, stories, topics...'))}" style="cursor:default;font-size:13.5px;" />
         </div>
-        <button type="button" class="search-close-btn" style="pointer-events:none;padding:4px 10px;font-size:11px;">
+        <button type="button" class="admin-sp-close-btn" style="pointer-events:none;height:40px;padding:0 12px;font-size:12px;">
+          <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
           <span>${escapeHtml(searchCfg.closeText || (isBn ? 'বন্ধ করুন' : 'Close'))}</span>
         </button>
       </div>
-      <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:6px;">
-        <span class="search-quick-label" style="color:#7dd3fc;font-size:11px;font-weight:700;">${escapeHtml(searchCfg.exploreLabel || (isBn ? 'দ্রুত খুঁজুন:' : 'Explore:'))}</span>
+      <div class="admin-sp-tags-bar" style="margin-top:8px;">
+        <span class="admin-sp-explore-label">${escapeHtml(searchCfg.exploreLabel || (isBn ? 'দ্রুত খুঁজুন:' : 'Explore:'))}</span>
         ${(searchCfg.quickTags || []).filter(t => t.enabled !== false).map(t => {
           const l = isBn ? (t.label_bn || t.label) : (t.label || t.label_bn);
-          return `<span style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.18);color:#e2e8f0;border-radius:14px;padding:3px 9px;font-size:10.5px;">${escapeHtml(l)}</span>`;
+          return `<span class="admin-sp-tag-chip" style="font-size:11px;padding:3px 10px;cursor:default;">${escapeHtml(l)}</span>`;
         }).join('')}
       </div>
     </div>
