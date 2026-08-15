@@ -537,16 +537,18 @@ module.exports = async function handler(req, res) {
         }
       }
 
-      logActivity({
-        actor: session,
-        action: 'layout.homepage_save',
-        category: 'layout',
-        summary: `${session.name || session.email} updated Homepage builder configuration (Hero, Events, Series)`,
-        target_id: 'site_homepage_config',
-        target_name: 'Homepage Builder',
-        details: {},
-        req
-      }).catch(() => {});
+      try {
+        await logActivity({
+          actor: session,
+          action: 'layout.homepage_save',
+          category: 'layout',
+          summary: `${session.name || session.email} updated Homepage builder configuration (Hero, Events, Series)`,
+          target_id: 'site_homepage_config',
+          target_name: 'Homepage Builder',
+          details: {},
+          req
+        });
+      } catch(e) {}
 
       return res.status(200).json({ ok: true, data: homepageConfig });
     }
@@ -666,16 +668,18 @@ module.exports = async function handler(req, res) {
         }
       }
 
-      logActivity({
-        actor: session,
-        action: 'layout.footer_save',
-        category: 'layout',
-        summary: `${session.name || session.email} updated Footer layout configuration`,
-        target_id: 'site_footer_config',
-        target_name: 'Footer Layout',
-        details: {},
-        req
-      }).catch(() => {});
+      try {
+        await logActivity({
+          actor: session,
+          action: 'layout.footer_save',
+          category: 'layout',
+          summary: `${session.name || session.email} updated Footer layout configuration`,
+          target_id: 'site_footer_config',
+          target_name: 'Footer Layout',
+          details: {},
+          req
+        });
+      } catch(e) {}
 
       return res.status(200).json({ ok: true, data: footerConfig });
     }
@@ -783,16 +787,18 @@ module.exports = async function handler(req, res) {
         }
       } catch(err) {}
 
-      logActivity({
-        actor: session,
-        action: 'section.customize',
-        category: 'sections',
-        summary: `${session.name || session.email} updated Section Studio configuration for section "${slug}"`,
-        target_id: slug,
-        target_name: payload.customTitle || slug,
-        details: { slug, featuredArticleId: payload.featuredArticleId, selectedArticleIds: payload.selectedArticleIds },
-        req
-      }).catch(() => {});
+      try {
+        await logActivity({
+          actor: session,
+          action: 'section.customize',
+          category: 'sections',
+          summary: `${session.name || session.email} updated Section Studio configuration for section "${slug}"`,
+          target_id: slug,
+          target_name: payload.customTitle || slug,
+          details: { slug, featuredArticleId: payload.featuredArticleId, selectedArticleIds: payload.selectedArticleIds },
+          req
+        });
+      } catch(e) {}
 
       return res.status(200).json({ ok: true, data: allConfigs[slug] });
     }
@@ -867,16 +873,18 @@ module.exports = async function handler(req, res) {
 
     if (error) return res.status(500).json({ error: error.message });
 
-    logActivity({
-      actor: session,
-      action: 'section.create',
-      category: 'sections',
-      summary: `${session.name || session.email} created new section "${name}" (/section/${slug})`,
-      target_id: adminId,
-      target_name: name,
-      details: { slug, name, admin_id: adminId },
-      req
-    }).catch(() => {});
+    try {
+      await logActivity({
+        actor: session,
+        action: 'section.create',
+        category: 'sections',
+        summary: `${session.name || session.email} created new section "${name}" (/section/${slug})`,
+        target_id: adminId,
+        target_name: name,
+        details: { slug, name, admin_id: adminId },
+        req
+      });
+    } catch(e) {}
 
     return res.status(201).json(rowToAdminSection(data));
   }
@@ -901,16 +909,18 @@ module.exports = async function handler(req, res) {
 
     if (error) return res.status(500).json({ error: error.message });
 
-    logActivity({
-      actor: session,
-      action: 'section.edit',
-      category: 'sections',
-      summary: `${session.name || session.email} renamed section ID "${id}" to "${name}" (/section/${slug})`,
-      target_id: id,
-      target_name: name,
-      details: { slug, name },
-      req
-    }).catch(() => {});
+    try {
+      await logActivity({
+        actor: session,
+        action: 'section.edit',
+        category: 'sections',
+        summary: `${session.name || session.email} renamed section ID "${id}" to "${name}" (/section/${slug})`,
+        target_id: id,
+        target_name: name,
+        details: { slug, name },
+        req
+      });
+    } catch(e) {}
 
     return res.status(200).json(rowToAdminSection(data));
   }
@@ -930,16 +940,18 @@ module.exports = async function handler(req, res) {
 
     if (error) return res.status(500).json({ error: error.message });
 
-    logActivity({
-      actor: session,
-      action: 'section.restore',
-      category: 'sections',
-      summary: `${session.name || session.email} restored section "${data.name || id}" from trash`,
-      target_id: id,
-      target_name: data.name || id,
-      details: {},
-      req
-    }).catch(() => {});
+    try {
+      await logActivity({
+        actor: session,
+        action: 'section.restore',
+        category: 'sections',
+        summary: `${session.name || session.email} restored section "${data.name || id}" from trash`,
+        target_id: id,
+        target_name: data.name || id,
+        details: {},
+        req
+      });
+    } catch(e) {}
 
     return res.status(200).json(rowToAdminSection(data));
   }
@@ -962,16 +974,18 @@ module.exports = async function handler(req, res) {
       const { error } = await sb.from('sections').delete().eq('admin_id', id);
       if (error) return res.status(500).json({ error: error.message });
 
-      logActivity({
-        actor: session,
-        action: 'section.delete_permanent',
-        category: 'sections',
-        summary: `${session.name || session.email} permanently deleted section ID "${id}"`,
-        target_id: id,
-        target_name: id,
-        details: { permanent: true },
-        req
-      }).catch(() => {});
+      try {
+        await logActivity({
+          actor: session,
+          action: 'section.delete_permanent',
+          category: 'sections',
+          summary: `${session.name || session.email} permanently deleted section ID "${id}"`,
+          target_id: id,
+          target_name: id,
+          details: { permanent: true },
+          req
+        });
+      } catch(e) {}
 
       return res.status(200).json({ ok: true });
     }
@@ -987,16 +1001,18 @@ module.exports = async function handler(req, res) {
 
     if (error) return res.status(500).json({ error: error.message });
 
-    logActivity({
-      actor: session,
-      action: 'section.delete',
-      category: 'sections',
-      summary: `${session.name || session.email} moved section "${data.name || id}" to trash`,
-      target_id: id,
-      target_name: data.name || id,
-      details: { is_deleted: true },
-      req
-    }).catch(() => {});
+    try {
+      await logActivity({
+        actor: session,
+        action: 'section.delete',
+        category: 'sections',
+        summary: `${session.name || session.email} moved section "${data.name || id}" to trash`,
+        target_id: id,
+        target_name: data.name || id,
+        details: { is_deleted: true },
+        req
+      });
+    } catch(e) {}
 
     return res.status(200).json(rowToAdminSection(data));
   }

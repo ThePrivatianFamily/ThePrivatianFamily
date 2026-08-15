@@ -73,8 +73,21 @@
       const signoutBtn = document.getElementById('sidebar-signout-btn');
       if (signoutBtn) {
         signoutBtn.onclick = async function () {
+          signoutBtn.disabled = true;
+          signoutBtn.textContent = 'Signing out…';
+          const tok = getToken();
+          if (tok) {
+            try {
+              await fetch('/api/auth?action=logout', {
+                method: 'POST',
+                headers: {
+                  'Authorization': 'Bearer ' + tok,
+                  'Content-Type': 'application/json'
+                }
+              });
+            } catch(e) {}
+          }
           clearSession();
-          await fetch('/api/auth?action=logout', { method: 'POST' }).catch(function(){});
           window.location.replace(LOGIN_URL);
         };
       }

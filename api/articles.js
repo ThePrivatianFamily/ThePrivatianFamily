@@ -191,16 +191,18 @@ module.exports = async function handler(req, res) {
           .single();
         if (error) return res.status(500).json({ error: error.message });
 
-        logActivity({
-          actor: session,
-          action: 'article.save_draft',
-          category: 'articles',
-          summary: `${session.name || session.email} saved working draft for article "${title || existing.title || bodyId}"`,
-          target_id: bodyId,
-          target_name: title || existing.title || bodyId,
-          details: { is_draft: true },
-          req
-        }).catch(() => {});
+        try {
+          await logActivity({
+            actor: session,
+            action: 'article.save_draft',
+            category: 'articles',
+            summary: `${session.name || session.email} saved working draft for article "${title || existing.title || bodyId}"`,
+            target_id: bodyId,
+            target_name: title || existing.title || bodyId,
+            details: { is_draft: true },
+            req
+          });
+        } catch(e) {}
 
         return res.status(200).json({ ...data, ...draftPayload, _is_working_draft: true });
       }
@@ -225,18 +227,20 @@ module.exports = async function handler(req, res) {
       const { data, error } = await client.from('articles').update(updates).eq('id', bodyId).select().single();
       if (error) return res.status(500).json({ error: error.message });
 
-      logActivity({
-        actor: session,
-        action: bodyStatus === 'published' ? 'article.publish' : 'article.edit',
-        category: 'articles',
-        summary: bodyStatus === 'published'
-          ? `${session.name || session.email} published article "${title || data.title || bodyId}"`
-          : `${session.name || session.email} edited article "${title || data.title || bodyId}"`,
-        target_id: bodyId,
-        target_name: title || data.title || bodyId,
-        details: { status: data.status, section: data.section },
-        req
-      }).catch(() => {});
+      try {
+        await logActivity({
+          actor: session,
+          action: bodyStatus === 'published' ? 'article.publish' : 'article.edit',
+          category: 'articles',
+          summary: bodyStatus === 'published'
+            ? `${session.name || session.email} published article "${title || data.title || bodyId}"`
+            : `${session.name || session.email} edited article "${title || data.title || bodyId}"`,
+          target_id: bodyId,
+          target_name: title || data.title || bodyId,
+          details: { status: data.status, section: data.section },
+          req
+        });
+      } catch(e) {}
 
       return res.status(200).json(data);
     } else {
@@ -263,16 +267,18 @@ module.exports = async function handler(req, res) {
       const { data, error } = await client.from('articles').insert(newArticle).select().single();
       if (error) return res.status(500).json({ error: error.message });
 
-      logActivity({
-        actor: session,
-        action: bodyStatus === 'published' ? 'article.publish' : 'article.create',
-        category: 'articles',
-        summary: `${session.name || session.email} created new article "${data.title || 'Untitled'}" (${data.status})`,
-        target_id: data.id,
-        target_name: data.title || 'Untitled',
-        details: { status: data.status, section: data.section },
-        req
-      }).catch(() => {});
+      try {
+        await logActivity({
+          actor: session,
+          action: bodyStatus === 'published' ? 'article.publish' : 'article.create',
+          category: 'articles',
+          summary: `${session.name || session.email} created new article "${data.title || 'Untitled'}" (${data.status})`,
+          target_id: data.id,
+          target_name: data.title || 'Untitled',
+          details: { status: data.status, section: data.section },
+          req
+        });
+      } catch(e) {}
 
       return res.status(201).json(data);
     }
@@ -307,16 +313,18 @@ module.exports = async function handler(req, res) {
     const { data, error } = await client.from('articles').update(liveUpdates).eq('id', id).select().single();
     if (error) return res.status(500).json({ error: error.message });
 
-    logActivity({
-      actor: session,
-      action: 'article.publish',
-      category: 'articles',
-      summary: `${session.name || session.email} published article "${data.title || existing.title || id}"`,
-      target_id: id,
-      target_name: data.title || existing.title || id,
-      details: { status: 'published' },
-      req
-    }).catch(() => {});
+    try {
+      await logActivity({
+        actor: session,
+        action: 'article.publish',
+        category: 'articles',
+        summary: `${session.name || session.email} published article "${data.title || existing.title || id}"`,
+        target_id: id,
+        target_name: data.title || existing.title || id,
+        details: { status: 'published' },
+        req
+      });
+    } catch(e) {}
 
     return res.status(200).json(data);
   }
@@ -334,16 +342,18 @@ module.exports = async function handler(req, res) {
     }).eq('id', id).select().single();
     if (error) return res.status(500).json({ error: error.message });
 
-    logActivity({
-      actor: session,
-      action: 'article.unpublish',
-      category: 'articles',
-      summary: `${session.name || session.email} unpublished article "${data.title || id}" to draft`,
-      target_id: id,
-      target_name: data.title || id,
-      details: { status: 'draft' },
-      req
-    }).catch(() => {});
+    try {
+      await logActivity({
+        actor: session,
+        action: 'article.unpublish',
+        category: 'articles',
+        summary: `${session.name || session.email} unpublished article "${data.title || id}" to draft`,
+        target_id: id,
+        target_name: data.title || id,
+        details: { status: 'draft' },
+        req
+      });
+    } catch(e) {}
 
     return res.status(200).json(data);
   }
@@ -359,16 +369,18 @@ module.exports = async function handler(req, res) {
       const { error } = await sb().from('articles').delete().eq('id', id);
       if (error) return res.status(500).json({ error: error.message });
 
-      logActivity({
-        actor: session,
-        action: 'article.delete_permanent',
-        category: 'articles',
-        summary: `${session.name || session.email} permanently deleted article ID "${id}"`,
-        target_id: id,
-        target_name: id,
-        details: { permanent: true },
-        req
-      }).catch(() => {});
+      try {
+        await logActivity({
+          actor: session,
+          action: 'article.delete_permanent',
+          category: 'articles',
+          summary: `${session.name || session.email} permanently deleted article ID "${id}"`,
+          target_id: id,
+          target_name: id,
+          details: { permanent: true },
+          req
+        });
+      } catch(e) {}
 
       return res.status(200).json({ success: true, permanent: true });
     }
@@ -380,16 +392,18 @@ module.exports = async function handler(req, res) {
       .eq('id', id);
     if (error) return res.status(500).json({ error: error.message });
 
-    logActivity({
-      actor: session,
-      action: 'article.move_to_trash',
-      category: 'articles',
-      summary: `${session.name || session.email} moved article ID "${id}" to trash`,
-      target_id: id,
-      target_name: id,
-      details: { is_deleted: true },
-      req
-    }).catch(() => {});
+    try {
+      await logActivity({
+        actor: session,
+        action: 'article.move_to_trash',
+        category: 'articles',
+        summary: `${session.name || session.email} moved article ID "${id}" to trash`,
+        target_id: id,
+        target_name: id,
+        details: { is_deleted: true },
+        req
+      });
+    } catch(e) {}
 
     return res.status(200).json({ success: true, soft: true });
   }

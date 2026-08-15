@@ -90,16 +90,18 @@ module.exports = async function handler(req, res) {
       .select().single();
     if (error) return res.status(500).json({ error: error.message });
 
-    logActivity({
-      actor: session,
-      action: 'admin.add',
-      category: 'admins',
-      summary: `${session.name || session.email} added "${emailNorm}" to whitelist as ${role}`,
-      target_id: data.id,
-      target_name: emailNorm,
-      details: { role, target_email: emailNorm },
-      req
-    }).catch(() => {});
+    try {
+      await logActivity({
+        actor: session,
+        action: 'admin.add',
+        category: 'admins',
+        summary: `${session.name || session.email} added "${emailNorm}" to whitelist as ${role}`,
+        target_id: data.id,
+        target_name: emailNorm,
+        details: { role, target_email: emailNorm },
+        req
+      });
+    } catch(e) {}
 
     return res.status(201).json(data);
   }
@@ -124,38 +126,21 @@ module.exports = async function handler(req, res) {
         return res.status(400).json({ error: 'You cannot suspend or remove your own account.' });
     }
 
-    const isGmailAdmin = target.email.toLowerCase().endsWith('@gmail.com') && target.role === 'Admin';
-    const willDeactivate = (updates.status === 'suspended' || updates.status === 'deleted') && target.status === 'active';
-    if (willDeactivate && isGmailAdmin) {
-      const remaining = await countGmailAdmins(client, id);
-      if (remaining < 2) return res.status(400).json({ error: 'min_admins', message: 'At least 2 Gmail Admin accounts must remain active. Add another Gmail Admin first.' });
-    }
-
-    const willDowngrade = updates.role === 'Moderator' && target.role === 'Admin';
-    if (willDowngrade && isGmailAdmin && target.status === 'active') {
-      const remaining = await countGmailAdmins(client, id);
-      if (remaining < 2) return res.status(400).json({ error: 'min_admins', message: 'At least 2 Gmail Admin accounts must remain active. Add another Gmail Admin before downgrading this one.' });
+    // Guard: Prevent downgrading or suspending self if it leaves <2 active Gmail Admins
+    if (updates.status === 'suspended' || updates.status === 'deleted' || updates.role === 'Moderator') {
+      const isTargetGmailAdmin = target.status === 'active' && target.role === 'Admin' && target.email.toLowerCase().endsWith('@gmail.com');
+      if (isTargetGmailAdmin) {
+        const count = await countGmailAdmins(client, id);
+        if (count < 2) return res.status(400).json({ error: 'min_admins', message: 'At least 2 Gmail Admin accounts must remain active. Add another Gmail Admin first.' });
+      }
     }
 
     let auditAction = null;
     let actionSummary = '';
-    if (updates.status === 'suspended') {
-      auditAction = 'suspended';
-      actionSummary = `${session.name || session.email} suspended account "${target.email}"`;
-    }
-    if (updates.status === 'active' && target.status === 'suspended') {
-      auditAction = 'unsuspended';
-      actionSummary = `${session.name || session.email} unsuspended/restored account "${target.email}"`;
-    }
-    if (updates.status === 'active' && target.status === 'deleted') {
-      auditAction = 'restored';
-      actionSummary = `${session.name || session.email} restored account "${target.email}" from recycle bin`;
-    }
-    if (updates.status === 'deleted') {
-      auditAction = 'deleted';
-      actionSummary = `${session.name || session.email} moved account "${target.email}" to recycle bin`;
-    }
-    if (updates.role && updates.role !== target.role) {
+    if (updates.status && updates.status !== target.status) {
+      auditAction = updates.status === 'active' ? 'unsuspended' : updates.status;
+      actionSummary = `${session.name || session.email} changed status of "${target.email}" to ${updates.status}`;
+    } else if (updates.role && updates.role !== target.role) {
       auditAction = 'role_changed_to_' + updates.role;
       actionSummary = `${session.name || session.email} changed role of "${target.email}" from ${target.role} to ${updates.role}`;
     }
@@ -170,16 +155,18 @@ module.exports = async function handler(req, res) {
     if (error) return res.status(500).json({ error: error.message });
 
     if (auditAction) {
-      logActivity({
-        actor: session,
-        action: 'admin.' + auditAction,
-        category: 'admins',
-        summary: actionSummary,
-        target_id: target.id,
-        target_name: target.email,
-        details: { old: target, updates },
-        req
-      }).catch(() => {});
+      try {
+        await logActivity({
+          actor: session,
+          action: 'admin.' + auditAction,
+          category: 'admins',
+          summary: actionSummary,
+          target_id: target.id,
+          target_name: target.email,
+          details: { old: target, updates },
+          req
+        });
+      } catch(e) {}
     }
 
     return res.status(200).json(data);
@@ -209,16 +196,18 @@ module.exports = async function handler(req, res) {
     }).eq('id', id);
     if (error) return res.status(500).json({ error: error.message });
 
-    logActivity({
-      actor: session,
-      action: 'admin.remove_to_recycle',
-      category: 'admins',
-      summary: `${session.name || session.email} moved account "${target.email}" to Recycle bin`,
-      target_id: target.id,
-      target_name: target.email,
-      details: { previousStatus: target.status },
-      req
-    }).catch(() => {});
+    try {
+      await logActivity({
+        actor: session,
+        action: 'admin.remove_to_recycle',
+        category: 'admins',
+        summary: `${session.name || session.email} moved account "${target.email}" to Recycle bin`,
+        target_id: target.id,
+        target_name: target.email,
+        details: { previousStatus: target.status },
+        req
+      });
+    } catch(e) {}
 
     return res.status(200).json({ success: true });
   }
@@ -236,16 +225,18 @@ module.exports = async function handler(req, res) {
     const { error } = await client.from('allowed_admins').delete().eq('id', id);
     if (error) return res.status(500).json({ error: error.message });
 
-    logActivity({
-      actor: session,
-      action: 'admin.purge_permanent',
-      category: 'admins',
-      summary: `${session.name || session.email} permanently deleted account "${target.email}" from whitelist`,
-      target_id: id,
-      target_name: target.email,
-      details: {},
-      req
-    }).catch(() => {});
+    try {
+      await logActivity({
+        actor: session,
+        action: 'admin.purge_permanent',
+        category: 'admins',
+        summary: `${session.name || session.email} permanently deleted account "${target.email}" from whitelist`,
+        target_id: id,
+        target_name: target.email,
+        details: {},
+        req
+      });
+    } catch(e) {}
 
     return res.status(200).json({ success: true, email: target.email });
   }

@@ -33,16 +33,20 @@ module.exports = async function handler(req, res) {
   if (action === 'logout') {
     const s = verifySession(req);
     if (s) {
-      logActivity({
-        actor: s,
-        action: 'auth.logout',
-        category: 'auth',
-        summary: `${s.name || s.email} logged out of Admin Panel`,
-        target_id: s.email,
-        target_name: s.email,
-        details: {},
-        req
-      }).catch(() => {});
+      try {
+        await logActivity({
+          actor: s,
+          action: 'auth.logout',
+          category: 'auth',
+          summary: `${s.name || s.email} logged out of Admin Panel`,
+          target_id: s.email,
+          target_name: s.email,
+          details: {},
+          req
+        });
+      } catch(err) {
+        console.warn('[auth/logout log error]:', err.message);
+      }
     }
     res.setHeader('Set-Cookie', 'privatian_session=; HttpOnly; Secure; SameSite=Strict; Max-Age=0; Path=/');
     return res.status(200).json({ success: true });
@@ -91,17 +95,21 @@ module.exports = async function handler(req, res) {
         `privatian_session=${token}; HttpOnly; Secure; SameSite=Strict; Max-Age=86400; Path=/`
       );
 
-      // Record Activity Log for login
-      logActivity({
-        actor: { email: admin.email, name, role: admin.role },
-        action: 'auth.login',
-        category: 'auth',
-        summary: `${name} (${admin.email}) logged in successfully via Google OAuth`,
-        target_id: admin.id || admin.email,
-        target_name: admin.email,
-        details: { method: 'Google OAuth', role: admin.role },
-        req
-      }).catch(() => {});
+      // Record Activity Log for login — properly awaited before response
+      try {
+        await logActivity({
+          actor: { email: admin.email, name, role: admin.role },
+          action: 'auth.login',
+          category: 'auth',
+          summary: `${name} (${admin.email}) logged in successfully via Google OAuth`,
+          target_id: admin.id || admin.email,
+          target_name: admin.email,
+          details: { method: 'Google OAuth', role: admin.role },
+          req
+        });
+      } catch(logErr) {
+        console.warn('[auth/verify log error]:', logErr.message);
+      }
 
       return res.status(200).json({
         success: true, token,
