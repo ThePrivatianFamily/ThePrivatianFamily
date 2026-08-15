@@ -1568,7 +1568,7 @@
             <div class="gallery-quota-fill" id="gallery-quota-fill" style="width: 0.2%;"></div>
           </div>
           <div class="gallery-quota-footer">
-            <span>🚀 High-speed global edge CDN distribution with <strong>Zero Egress Bandwidth Fees</strong>.</span>
+            <span style="display:inline-flex;align-items:center;gap:6px;"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" style="color:#4f46e5;"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> High-speed global edge CDN distribution with <strong>Zero Egress Bandwidth Fees</strong>.</span>
             <span id="gallery-quota-percent-text">0.00% capacity used</span>
           </div>
         </div>
@@ -1587,6 +1587,10 @@
             </div>
           </div>
           <div class="gallery-folders-actions">
+            <button type="button" class="btn btn--secondary btn--sm" onclick="openAllFoldersModal()" title="View and manage all folders">
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+              <span>See All Folders</span>
+            </button>
             <button type="button" class="btn btn--secondary btn--sm" onclick="_openNewFolderModal()" title="Create a new folder">
               <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
               <span>New Folder</span>
@@ -1594,7 +1598,7 @@
           </div>
         </div>
         <div class="gallery-folders-scroll" id="gallery-folders-list">
-          <!-- Dynamically populated folder chips -->
+          <!-- Dynamically populated max 5 folder chips + See All Folders button -->
         </div>
       </div>
 
@@ -1602,9 +1606,9 @@
       <div class="card gallery-upload-card" id="gallery-upload-zone-wrap">
         <div class="gallery-upload-header-row" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
           <div style="display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--text-secondary);">
-            <span>📁 Uploading directly to:</span>
+            <span style="display:inline-flex;align-items:center;gap:5px;"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--brand);"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg> Upload Destination:</span>
             <select id="gallery-upload-target-select" class="gallery-folder-select" onchange="_handleTargetFolderChange(this.value)">
-              <option value="">📁 Root / All Media</option>
+              <option value="">Root / All Media</option>
             </select>
           </div>
           <div style="font-size:11.5px;color:var(--text-muted);">Max 25 MB/file • Automated WebP &amp; CDN Cache</div>
@@ -2539,9 +2543,12 @@
               <label class="form-label" for="media-insp-folder-select">Folder / Collection</label>
               <div style="display:flex;gap:8px;">
                 <select id="media-insp-folder-select" class="form-input" style="flex:1;">
-                  <option value="">📁 Root / Uncategorized</option>
+                  <option value="">Root / Uncategorized</option>
                 </select>
-                <button type="button" class="btn btn--secondary btn--sm" onclick="_openNewFolderModal()" title="Create New Folder">➕ New</button>
+                <button type="button" class="btn btn--secondary btn--sm" onclick="_openNewFolderModal()" title="Create New Folder">
+                  <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                  <span>New</span>
+                </button>
               </div>
             </div>
             <div class="form-group" style="margin-top:12px;">
@@ -2594,7 +2601,7 @@
 
           <div style="display:flex;align-items:center;gap:8px;">
             <select id="picker-folder-filter" class="form-input" style="width:auto;min-width:140px;font-size:12px;height:36px;" onchange="_handlePickerFolderFilter(this.value)">
-              <option value="all">📁 All Folders</option>
+              <option value="all">All Folders</option>
             </select>
 
             <button type="button" class="btn btn--secondary btn--sm" style="height:36px;" onclick="document.getElementById('picker-file-upload').click()">
@@ -2617,6 +2624,46 @@
           <button class="btn btn--ghost" type="button" onclick="closeGalleryPicker()">Cancel</button>
           <button class="btn btn--primary" type="button" id="picker-confirm-btn" disabled onclick="_confirmGalleryPickerSelection()">Insert Selected Image</button>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ MODAL: SEE ALL FOLDERS & COLLECTIONS ═══════════════════════════════ -->
+  <div class="modal-overlay" id="modal-all-folders" hidden>
+    <div class="modal modal--lg" role="dialog" aria-modal="true" style="max-width: 680px; width: 95%;">
+      <div class="modal-header" style="display:flex;justify-content:space-between;align-items:center;padding:16px 22px;border-bottom:1px solid #e2e8f0;background:#fafbfc;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span style="display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:8px;background:#e0e7ff;color:#4338ca;">
+            <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+          </span>
+          <div>
+            <h2 class="modal-title" style="font-size:16px;margin:0;font-weight:700;color:var(--text-primary);">All Folders &amp; Collections</h2>
+            <div style="font-size:11.5px;color:var(--text-muted);" id="all-folders-modal-subtitle">Browse, organize, or manage folders</div>
+          </div>
+        </div>
+        <button type="button" class="btn-close" onclick="closeAllFoldersModal()" style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--text-muted);line-height:1;padding:4px 8px;">✕</button>
+      </div>
+      <div class="modal-body" style="padding: 18px 22px; max-height: 60vh; overflow-y: auto;">
+        <!-- Search and New Folder Row -->
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap;">
+          <div class="gallery-search-wrap" style="flex:1;min-width:200px;">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" id="all-folders-search-input" placeholder="Search folders..." oninput="_filterAllFoldersModal(this.value)" />
+          </div>
+          <button type="button" class="btn btn--primary btn--sm" onclick="_openNewFolderModal()" style="height:32px;">
+            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            <span>New Folder</span>
+          </button>
+        </div>
+
+        <!-- Folders Grid List -->
+        <div class="all-folders-grid" id="all-folders-grid-list">
+          <!-- dynamically rendered items -->
+        </div>
+      </div>
+      <div class="modal-footer" style="display:flex;justify-content:space-between;align-items:center;padding:12px 22px;border-top:1px solid #e2e8f0;background:#fafbfc;">
+        <span style="font-size:12px;color:var(--text-muted);" id="all-folders-total-footer">Total: 0 Folders</span>
+        <button type="button" class="btn btn--ghost" onclick="closeAllFoldersModal()">Close</button>
       </div>
     </div>
   </div>

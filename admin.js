@@ -2799,7 +2799,8 @@ function buildHsSubRow(container, sub, hs, idx, total) {
   row.className = 'hs-sub-row' + (sub.enabled !== false ? '' : ' hs-sub-row--off');
   row.dataset.subId = sub.id;
 
-  const calBadge = sub.icon === 'calendar' ? '<span class="hs-icon-badge">📅 calendar</span>' : '';
+  const calSvg = '<span class="hs-icon-badge"><svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:3px;"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>calendar</span>';
+  const calBadge = sub.icon === 'calendar' ? calSvg : '';
 
   row.innerHTML = `
     <div class="hs-sub-main">
@@ -2843,7 +2844,7 @@ function buildHsSubRow(container, sub, hs, idx, total) {
           <label class="form-label">Icon</label>
           <select class="form-input hs-edit-icon">
             <option value="">None</option>
-            <option value="calendar" ${sub.icon === 'calendar' ? 'selected' : ''}>Calendar (📅)</option>
+            <option value="calendar" ${sub.icon === 'calendar' ? 'selected' : ''}>Calendar</option>
           </select>
         </div>
         <div class="hs-edit-save-row">
@@ -2890,8 +2891,8 @@ function buildHsSubRow(container, sub, hs, idx, total) {
     row.querySelector('.hs-sub-url').textContent = sub.href;
     const badgeEl = row.querySelector('.hs-icon-badge');
     if (sub.icon === 'calendar') {
-      if (badgeEl) badgeEl.textContent = '📅 calendar';
-      else row.querySelector('.hs-sub-info').insertAdjacentHTML('afterbegin', '<span class="hs-icon-badge">📅 calendar</span>');
+      if (badgeEl) badgeEl.innerHTML = '<svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:3px;"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>calendar';
+      else row.querySelector('.hs-sub-info').insertAdjacentHTML('afterbegin', calSvg);
     } else if (badgeEl) { badgeEl.remove(); }
     editForm.hidden = true;
     updateGlobalSyncStatus();
@@ -8435,7 +8436,7 @@ async function syncGalleryAssets() {
   }
 }
 
-// ── 2. Render Gallery Folders Strip ──────────────────────────────
+// ── 2. Render Gallery Folders Strip (Max 5 items + See All Folders) ──
 function renderGalleryFolders() {
   const container = document.getElementById('gallery-folders-list');
   const badge = document.getElementById('gallery-folders-badge');
@@ -8448,26 +8449,42 @@ function renderGalleryFolders() {
     badge.textContent = `${_galleryFolders.length} ${_galleryFolders.length === 1 ? 'Folder' : 'Folders'}`;
   }
 
+  // 1. All Media Chip
   let html = `
-    <!-- All Media Chip -->
     <div class="gallery-folder-chip ${_galleryActiveFolder === 'all' ? 'active' : ''}" onclick="_setGalleryFolder('all')">
-      <span>📁 All Media</span>
+      <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+      <span>All Media</span>
       <span class="gallery-folder-chip-count">${totalFiles}</span>
     </div>
-
-    <!-- Root / Uncategorized Chip -->
     <div class="gallery-folder-chip ${_galleryActiveFolder === '__root__' ? 'active' : ''}" onclick="_setGalleryFolder('__root__')">
-      <span>📂 Root / Uncategorized</span>
+      <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+      <span>Uncategorized</span>
       <span class="gallery-folder-chip-count">${rootFiles}</span>
     </div>
   `;
 
-  _galleryFolders.forEach(folder => {
+  // Determine top 3 custom folders to display (Total max 5 items in bar)
+  // If active folder is a custom folder and not in first 3, prioritize showing it
+  let displayFolders = [];
+  const maxCustomChips = 3;
+  if (_galleryFolders.length <= maxCustomChips) {
+    displayFolders = [..._galleryFolders];
+  } else {
+    const isCustomActive = _galleryActiveFolder !== 'all' && _galleryActiveFolder !== '__root__' && _galleryFolders.includes(_galleryActiveFolder);
+    if (isCustomActive && !_galleryFolders.slice(0, maxCustomChips).includes(_galleryActiveFolder)) {
+      displayFolders = [_galleryFolders[0], _galleryFolders[1], _galleryActiveFolder];
+    } else {
+      displayFolders = _galleryFolders.slice(0, maxCustomChips);
+    }
+  }
+
+  displayFolders.forEach(folder => {
     const count = _rawGalleryList.filter(x => x.folder === folder).length;
     const isActive = _galleryActiveFolder === folder;
     html += `
       <div class="gallery-folder-chip ${isActive ? 'active' : ''}" onclick="_setGalleryFolder('${escapeHtml(folder)}')">
-        <span>📁 ${escapeHtml(folder)}</span>
+        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+        <span>${escapeHtml(folder)}</span>
         <span class="gallery-folder-chip-count">${count}</span>
         <span class="gallery-folder-chip-actions" onclick="event.stopPropagation();">
           <button type="button" class="gallery-folder-chip-btn" onclick="_openRenameFolderModal('${escapeHtml(folder)}')" title="Rename Folder">
@@ -8481,7 +8498,135 @@ function renderGalleryFolders() {
     `;
   });
 
+  // If there are more folders than displayed, show "+X More Folders"
+  if (_galleryFolders.length > maxCustomChips) {
+    const remainingCount = _galleryFolders.length - displayFolders.length;
+    html += `
+      <button type="button" class="gallery-folder-chip gallery-folder-chip--more" onclick="openAllFoldersModal()" title="View and manage all ${_galleryFolders.length} folders">
+        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
+        <span>+${remainingCount} More Folders</span>
+      </button>
+    `;
+  }
+
   container.innerHTML = html;
+}
+
+// ── All Folders Modal Controller ─────────────────────────────────
+function openAllFoldersModal() {
+  const modal = document.getElementById('modal-all-folders');
+  const searchInput = document.getElementById('all-folders-search-input');
+  if (searchInput) searchInput.value = '';
+  _renderAllFoldersModalList('');
+  if (modal) modal.hidden = false;
+}
+
+function closeAllFoldersModal() {
+  const modal = document.getElementById('modal-all-folders');
+  if (modal) modal.hidden = true;
+}
+
+function _filterAllFoldersModal(val) {
+  _renderAllFoldersModalList(val ? val.trim().toLowerCase() : '');
+}
+
+function _renderAllFoldersModalList(query = '') {
+  const container = document.getElementById('all-folders-grid-list');
+  const footerText = document.getElementById('all-folders-total-footer');
+  if (!container) return;
+
+  const totalFiles = _rawGalleryList.length;
+  const rootFiles = _rawGalleryList.filter(x => !x.folder).length;
+
+  let filtered = _galleryFolders.filter(f => !query || f.toLowerCase().includes(query));
+
+  if (footerText) {
+    footerText.textContent = `Total: ${_galleryFolders.length} Folders (${totalFiles} files)`;
+  }
+
+  let html = '';
+
+  // Show All Media and Root cards when not searching or matching
+  if (!query || 'all media'.includes(query)) {
+    const isAllActive = _galleryActiveFolder === 'all';
+    html += `
+      <div class="all-folder-card ${isAllActive ? 'active' : ''}" onclick="_selectFolderFromModal('all')">
+        <div class="all-folder-card-top">
+          <div class="all-folder-card-icon">
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+          </div>
+          <span class="all-folder-card-count">${totalFiles} files</span>
+        </div>
+        <div class="all-folder-card-name">All Media</div>
+        <div class="all-folder-card-actions">
+          <button type="button" class="all-folder-card-select-btn">${isAllActive ? 'Current Active' : 'Select Folder'}</button>
+        </div>
+      </div>
+    `;
+  }
+
+  if (!query || 'uncategorized'.includes(query) || 'root'.includes(query)) {
+    const isRootActive = _galleryActiveFolder === '__root__';
+    html += `
+      <div class="all-folder-card ${isRootActive ? 'active' : ''}" onclick="_selectFolderFromModal('__root__')">
+        <div class="all-folder-card-top">
+          <div class="all-folder-card-icon" style="background:#f1f5f9;color:#64748b;">
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+          </div>
+          <span class="all-folder-card-count">${rootFiles} files</span>
+        </div>
+        <div class="all-folder-card-name">Uncategorized</div>
+        <div class="all-folder-card-actions">
+          <button type="button" class="all-folder-card-select-btn">${isRootActive ? 'Current Active' : 'Select Folder'}</button>
+        </div>
+      </div>
+    `;
+  }
+
+  if (filtered.length === 0 && query) {
+    html += `
+      <div style="grid-column: 1 / -1; text-align: center; padding: 32px 16px; color: var(--text-muted);">
+        <p style="margin: 0 0 8px 0; font-size: 13px;">No folder matches "${escapeHtml(query)}"</p>
+        <button type="button" class="btn btn--secondary btn--sm" onclick="_openNewFolderModal('${escapeHtml(query)}')">Create folder "${escapeHtml(query)}"</button>
+      </div>
+    `;
+  } else {
+    filtered.forEach(folder => {
+      const count = _rawGalleryList.filter(x => x.folder === folder).length;
+      const isActive = _galleryActiveFolder === folder;
+      html += `
+        <div class="all-folder-card ${isActive ? 'active' : ''}" onclick="_selectFolderFromModal('${escapeHtml(folder)}')">
+          <div class="all-folder-card-top">
+            <div class="all-folder-card-icon">
+              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+            </div>
+            <span class="all-folder-card-count">${count} ${count === 1 ? 'file' : 'files'}</span>
+          </div>
+          <div class="all-folder-card-name" title="${escapeHtml(folder)}">${escapeHtml(folder)}</div>
+          <div class="all-folder-card-actions" onclick="event.stopPropagation();">
+            <button type="button" class="all-folder-card-select-btn" onclick="_selectFolderFromModal('${escapeHtml(folder)}')">
+              ${isActive ? '✓ Active' : 'Select'}
+            </button>
+            <div class="all-folder-action-btns">
+              <button type="button" class="gallery-icon-btn" onclick="_openRenameFolderModal('${escapeHtml(folder)}')" title="Rename Folder">
+                <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+              </button>
+              <button type="button" class="gallery-icon-btn danger" onclick="_deleteFolderConfirm('${escapeHtml(folder)}')" title="Delete Folder">
+                <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
+    });
+  }
+
+  container.innerHTML = html;
+}
+
+function _selectFolderFromModal(folderName) {
+  closeAllFoldersModal();
+  _setGalleryFolder(folderName);
 }
 
 function _setGalleryFolder(folder) {
@@ -8498,7 +8643,7 @@ function _setGalleryFolder(folder) {
   const sub = document.getElementById('gallery-dropzone-sub');
   if (sub) {
     sub.textContent = _galleryTargetUploadFolder ? 
-      `Direct high-speed upload to folder: 📁 ${_galleryTargetUploadFolder}` : 
+      `Direct high-speed upload to folder: ${_galleryTargetUploadFolder}` : 
       'Supports JPG, PNG, WebP, AVIF, SVG, GIF. Direct high-speed upload to Cloudflare R2.';
   }
 
@@ -8511,7 +8656,7 @@ function _handleTargetFolderChange(val) {
   const sub = document.getElementById('gallery-dropzone-sub');
   if (sub) {
     sub.textContent = _galleryTargetUploadFolder ? 
-      `Direct high-speed upload to folder: 📁 ${_galleryTargetUploadFolder}` : 
+      `Direct high-speed upload to folder: ${_galleryTargetUploadFolder}` : 
       'Supports JPG, PNG, WebP, AVIF, SVG, GIF. Direct high-speed upload to Cloudflare R2.';
   }
 }
@@ -8521,9 +8666,9 @@ function _syncFolderSelectDropdowns() {
   const inspSelect = document.getElementById('media-insp-folder-select');
   const pickerSelect = document.getElementById('picker-folder-filter');
 
-  let opts = `<option value="">📁 Root / All Media</option>`;
+  let opts = `<option value="">Root / All Media</option>`;
   _galleryFolders.forEach(f => {
-    opts += `<option value="${escapeHtml(f)}">📁 ${escapeHtml(f)}</option>`;
+    opts += `<option value="${escapeHtml(f)}">${escapeHtml(f)}</option>`;
   });
 
   if (uploadSelect) {
@@ -8531,16 +8676,16 @@ function _syncFolderSelectDropdowns() {
     uploadSelect.value = _galleryTargetUploadFolder || '';
   }
   if (inspSelect) {
-    inspSelect.innerHTML = `<option value="">📁 Root / Uncategorized</option>` + _galleryFolders.map(f => `<option value="${escapeHtml(f)}">📁 ${escapeHtml(f)}</option>`).join('');
+    inspSelect.innerHTML = `<option value="">Root / Uncategorized</option>` + _galleryFolders.map(f => `<option value="${escapeHtml(f)}">${escapeHtml(f)}</option>`).join('');
   }
   if (pickerSelect) {
-    pickerSelect.innerHTML = `<option value="all">📁 All Folders</option><option value="__root__">📂 Root / Uncategorized</option>` + _galleryFolders.map(f => `<option value="${escapeHtml(f)}">📁 ${escapeHtml(f)}</option>`).join('');
+    pickerSelect.innerHTML = `<option value="all">All Folders</option><option value="__root__">Root / Uncategorized</option>` + _galleryFolders.map(f => `<option value="${escapeHtml(f)}">${escapeHtml(f)}</option>`).join('');
     pickerSelect.value = _galleryPickerActiveFolder;
   }
 }
 
 // ── Folder Modal Actions ──────────────────────────────────────────
-function _openNewFolderModal() {
+function _openNewFolderModal(presetName = '') {
   const modal = document.getElementById('modal-gallery-folder');
   const title = document.getElementById('gallery-folder-modal-title');
   const modeInp = document.getElementById('gallery-folder-mode');
@@ -8551,7 +8696,7 @@ function _openNewFolderModal() {
   if (title) title.textContent = 'Create New Folder';
   if (modeInp) modeInp.value = 'create';
   if (oldNameInp) oldNameInp.value = '';
-  if (nameInp) { nameInp.value = ''; nameInp.focus(); }
+  if (nameInp) { nameInp.value = presetName || ''; nameInp.focus(); }
   if (saveBtn) saveBtn.textContent = 'Create Folder';
   if (modal) modal.hidden = false;
 }
@@ -8620,6 +8765,7 @@ async function _saveFolderModal() {
     closeFolderModal();
     renderGalleryFolders();
     _syncFolderSelectDropdowns();
+    _renderAllFoldersModalList();
     renderGalleryGrid();
   } catch(err) {
     showToast('error', 'Failed to save folder: ' + err.message);
@@ -8646,6 +8792,7 @@ function _deleteFolderConfirm(folderName) {
           });
           renderGalleryFolders();
           _syncFolderSelectDropdowns();
+          _renderAllFoldersModalList();
           renderGalleryGrid();
           showToast('success', `Folder "${folderName}" removed.`);
         }
@@ -8819,7 +8966,7 @@ function renderGalleryGrid() {
           <img src="${escapeHtml(item.url)}" alt="${escapeHtml(item.alt_text || item.title || item.filename)}" class="gallery-thumb-img" loading="lazy" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\\'http://www.w3.org/2000/svg\\' width=\\'100\\' height=\\'100\\' viewBox=\\'0 0 24 24\\' fill=\\'none\\' stroke=\\'%2364748b\\' stroke-width=\\'2\\'><rect x=\\'3\\' y=\\'3\\' width=\\'18\\' height=\\'18\\' rx=\\'2\\'/><circle cx=\\'8.5\\' cy=\\'8.5\\' r=\\'1.5\\'/><polyline points=\\'21 15 16 10 5 21\\'/></svg>'" />
           <span class="gallery-badge-format">${escapeHtml(ext.toUpperCase())}</span>
           <span class="gallery-badge-size">${sizeStr}</span>
-          ${item.folder ? `<span class="gallery-card-folder-badge" title="Folder: ${escapeHtml(item.folder)}">📁 ${escapeHtml(item.folder)}</span>` : ''}
+          ${item.folder ? `<span class="gallery-card-folder-badge" title="Folder: ${escapeHtml(item.folder)}"><svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:3px;"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>${escapeHtml(item.folder)}</span>` : ''}
         </div>
         <div class="gallery-card-body">
           <div class="gallery-id-row">
@@ -9236,7 +9383,7 @@ function _renderPickerGrid(searchQuery = '') {
       <div class="picker-item-card ${isSel ? 'selected' : ''}" onclick="_selectGalleryPickerItem('${item.unique_id}')" title="${escapeHtml(item.title || item.filename)}">
         <img src="${escapeHtml(item.url)}" alt="" class="picker-item-thumb" />
         <div class="picker-item-name">${escapeHtml(item.title || item.filename)}</div>
-        ${item.folder ? `<span style="position:absolute;top:6px;left:6px;font-size:9px;background:rgba(15,23,42,0.75);color:#fff;padding:1px 5px;border-radius:4px;">📁 ${escapeHtml(item.folder)}</span>` : ''}
+        ${item.folder ? `<span style="position:absolute;top:6px;left:6px;font-size:9.5px;font-weight:600;background:rgba(15,23,42,0.85);backdrop-filter:blur(4px);color:#fff;padding:2px 6px;border-radius:4px;display:inline-flex;align-items:center;gap:3px;"><svg viewBox="0 0 24 24" width="9" height="9" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>${escapeHtml(item.folder)}</span>` : ''}
         <div class="picker-item-check">
           <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
         </div>
