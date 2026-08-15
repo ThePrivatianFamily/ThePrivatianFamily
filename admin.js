@@ -1380,13 +1380,26 @@ const DEFAULT_HEADER_SUBSECTIONS = [
   { id: 'sub-4', label: 'EVENTS', href: '/events', icon: 'calendar', enabled: true }
 ];
 
+const DEFAULT_HEADER_SETTINGS = {
+  siteTitle: 'The Privatian Family',
+  tabTagline: 'Insights, Stories & Heritage',
+  browserTabTitle: 'The Privatian Family — Insights, Stories & Heritage',
+  metaDescription: 'The Official Publication of The Privatian Society — Cambridge, Massachusetts.',
+  faviconUrl: '',
+  logoSvg: null,
+  logoHeight: 80,
+  enabledNavSections: null,
+  subsections: DEFAULT_HEADER_SUBSECTIONS.map(s => ({...s}))
+};
+
 async function loadHeaderSettings() {
   try {
     const data = await _apiGet('/api/sections?action=header');
     if (data && typeof data === 'object') {
-      if (!data.subsections) data.subsections = DEFAULT_HEADER_SUBSECTIONS.map(s => ({...s}));
-      try { localStorage.setItem(HEADER_SETTINGS_KEY, JSON.stringify(data)); } catch(e) {}
-      return data;
+      const merged = Object.assign({}, DEFAULT_HEADER_SETTINGS, data);
+      if (!merged.subsections) merged.subsections = DEFAULT_HEADER_SUBSECTIONS.map(s => ({...s}));
+      try { localStorage.setItem(HEADER_SETTINGS_KEY, JSON.stringify(merged)); } catch(e) {}
+      return merged;
     }
   } catch(err) {
     console.warn('[Admin] loadHeaderSettings API failed (using cache):', err.message);
@@ -1395,16 +1408,107 @@ async function loadHeaderSettings() {
     const raw = localStorage.getItem(HEADER_SETTINGS_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
-      if (!parsed.subsections) parsed.subsections = DEFAULT_HEADER_SUBSECTIONS.map(s => ({...s}));
-      return parsed;
+      const merged = Object.assign({}, DEFAULT_HEADER_SETTINGS, parsed);
+      if (!merged.subsections) merged.subsections = DEFAULT_HEADER_SUBSECTIONS.map(s => ({...s}));
+      return merged;
     }
   } catch(e) {}
-  return {
-    logoSvg: null,
-    logoHeight: 80,
-    enabledNavSections: null,
-    subsections: DEFAULT_HEADER_SUBSECTIONS.map(s => ({...s}))
-  };
+
+  try {
+    const sb = window._sb || (window.initSupabaseClient && window.initSupabaseClient());
+    if (sb) {
+      const { data: sData } = await sb.from('sections').select('name').eq('admin_id', '__header_config__').maybeSingle();
+      if (sData && sData.name) {
+        const parsed = JSON.parse(sData.name);
+        if (parsed && typeof parsed === 'object') {
+          const merged = Object.assign({}, DEFAULT_HEADER_SETTINGS, parsed);
+          if (!merged.subsections) merged.subsections = DEFAULT_HEADER_SUBSECTIONS.map(s => ({...s}));
+          return merged;
+        }
+      }
+    }
+  } catch(e) {}
+
+  return Object.assign({}, DEFAULT_HEADER_SETTINGS);
+}
+
+// ── Browser Tab & Hover Card (SEO) ──────────────────────────────
+function renderHsTabCard(hs) {
+  const siteTitleInp = document.getElementById('hs-site-title-input');
+  const tabTaglineInp = document.getElementById('hs-tab-tagline-input');
+  const customTitleInp = document.getElementById('hs-tab-title-custom-input');
+  const metaDescInp = document.getElementById('hs-meta-desc-input');
+  const faviconInp = document.getElementById('hs-favicon-input');
+  const tabPreview = document.getElementById('browser-tab-preview-title');
+  const hoverPreview = document.getElementById('hover-card-preview-title');
+
+  if (siteTitleInp) siteTitleInp.value = hs.siteTitle || 'The Privatian Family';
+  if (tabTaglineInp) tabTaglineInp.value = hs.tabTagline !== undefined ? hs.tabTagline : 'Insights, Stories & Heritage';
+  if (customTitleInp) customTitleInp.value = hs.browserTabTitle || '';
+  if (metaDescInp) metaDescInp.value = hs.metaDescription || '';
+  if (faviconInp) faviconInp.value = hs.faviconUrl || '';
+
+  function refreshTabCardPreview() {
+    const brand = (siteTitleInp ? siteTitleInp.value.trim() : '') || 'The Privatian Family';
+    const tag = (tabTaglineInp ? tabTaglineInp.value.trim() : '') || '';
+    const custom = customTitleInp ? customTitleInp.value.trim() : '';
+
+    const finalTitle = custom || (brand + (tag ? ' — ' + tag : ''));
+    if (tabPreview) tabPreview.textContent = finalTitle;
+    if (hoverPreview) hoverPreview.textContent = finalTitle;
+  }
+  refreshTabCardPreview();
+
+  if (siteTitleInp) {
+    siteTitleInp.addEventListener('input', () => {
+      hs.siteTitle = siteTitleInp.value.trim();
+      if (!customTitleInp.value.trim() || customTitleInp.dataset.manual !== 'true') {
+        const brand = hs.siteTitle || 'The Privatian Family';
+        const tag = (tabTaglineInp ? tabTaglineInp.value.trim() : '') || '';
+        hs.browserTabTitle = brand + (tag ? ' — ' + tag : '');
+        if (customTitleInp) customTitleInp.placeholder = hs.browserTabTitle;
+      }
+      refreshTabCardPreview();
+      updateGlobalSyncStatus();
+    });
+  }
+
+  if (tabTaglineInp) {
+    tabTaglineInp.addEventListener('input', () => {
+      hs.tabTagline = tabTaglineInp.value.trim();
+      if (!customTitleInp.value.trim() || customTitleInp.dataset.manual !== 'true') {
+        const brand = (siteTitleInp ? siteTitleInp.value.trim() : '') || 'The Privatian Family';
+        const tag = hs.tabTagline;
+        hs.browserTabTitle = brand + (tag ? ' — ' + tag : '');
+        if (customTitleInp) customTitleInp.placeholder = hs.browserTabTitle;
+      }
+      refreshTabCardPreview();
+      updateGlobalSyncStatus();
+    });
+  }
+
+  if (customTitleInp) {
+    customTitleInp.addEventListener('input', () => {
+      customTitleInp.dataset.manual = customTitleInp.value.trim() ? 'true' : 'false';
+      hs.browserTabTitle = customTitleInp.value.trim();
+      refreshTabCardPreview();
+      updateGlobalSyncStatus();
+    });
+  }
+
+  if (metaDescInp) {
+    metaDescInp.addEventListener('input', () => {
+      hs.metaDescription = metaDescInp.value.trim();
+      updateGlobalSyncStatus();
+    });
+  }
+
+  if (faviconInp) {
+    faviconInp.addEventListener('input', () => {
+      hs.faviconUrl = faviconInp.value.trim();
+      updateGlobalSyncStatus();
+    });
+  }
 }
 
 async function saveHeaderSettings(hs) {
@@ -1691,6 +1795,19 @@ function bindHsSaveBtn(hs) {
   const saveBtn = document.getElementById('hs-save-btn');
   if (!saveBtn) return;
   saveBtn.addEventListener('click', async () => {
+    // Collect Browser Tab & SEO
+    const siteTitleInp = document.getElementById('hs-site-title-input');
+    const tabTaglineInp = document.getElementById('hs-tab-tagline-input');
+    const customTitleInp = document.getElementById('hs-tab-title-custom-input');
+    const metaDescInp = document.getElementById('hs-meta-desc-input');
+    const faviconInp = document.getElementById('hs-favicon-input');
+
+    if (siteTitleInp) hs.siteTitle = siteTitleInp.value.trim() || 'The Privatian Family';
+    if (tabTaglineInp) hs.tabTagline = tabTaglineInp.value.trim() || '';
+    if (customTitleInp) hs.browserTabTitle = customTitleInp.value.trim() || (hs.siteTitle + (hs.tabTagline ? ' — ' + hs.tabTagline : ''));
+    if (metaDescInp) hs.metaDescription = metaDescInp.value.trim() || '';
+    if (faviconInp) hs.faviconUrl = faviconInp.value.trim() || '';
+
     // Collect enabled nav sections
     hs.enabledNavSections = getEnabledNavSections();
     // Collect logo
@@ -1710,7 +1827,7 @@ function bindHsSaveBtn(hs) {
       updateGlobalSyncStatus('synced', 'Synced with database');
       saveBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" width="15" height="15"><polyline points="20 6 9 17 4 12"/></svg> Changes Applied!`;
       saveBtn.style.background = 'var(--success, #1a7a4a)';
-      showToast('success', 'Header settings saved to database & applied!');
+      showToast('success', 'Header & Browser Tab settings saved to database & applied!');
     } catch(err) {
       updateGlobalSyncStatus('error', 'Sync error (offline/cache)');
       showToast('error', 'Failed to save header settings.');
@@ -1726,6 +1843,7 @@ window._appliedHeaderConfig = null;
 async function initHeaderPage() {
   _hsInstance = await loadHeaderSettings();
   window._appliedHeaderConfig = JSON.parse(JSON.stringify(_hsInstance));
+  renderHsTabCard(_hsInstance);
   renderHsLogoCard(_hsInstance);
   renderHsNavSections(_hsInstance);
   renderHsSubsections(_hsInstance);

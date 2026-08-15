@@ -146,6 +146,11 @@ module.exports = async function handler(req, res) {
   // ── HEADER CONFIGURATION (GET / POST) ───────────────────────────────────
   if (action === 'header') {
     const DEFAULT_HEADER_CONFIG = {
+      siteTitle: 'The Privatian Family',
+      tabTagline: 'Insights, Stories & Heritage',
+      browserTabTitle: 'The Privatian Family — Insights, Stories & Heritage',
+      metaDescription: 'The Official Publication of The Privatian Society — Cambridge, Massachusetts.',
+      faviconUrl: '',
       logoSvg: null,
       logoHeight: 80,
       enabledNavSections: null,

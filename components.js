@@ -403,7 +403,7 @@
     if (subHeader) subHeader.style.display = count === 0 ? 'none' : '';
   }
 
-  // -- 2c. APPLY LOGO SETTINGS
+  // -- 2c. APPLY LOGO & BROWSER TAB SETTINGS
   function applyLogoSettings() {
     var settings = getHeaderSettings();
     if (!settings) return;
@@ -422,6 +422,23 @@
     } else {
       var logoEl = document.querySelector('#header-logo-svg, .logo-svg');
       if (logoEl) logoEl.style.height = height + 'px';
+    }
+
+    // Apply Browser Tab Title & Meta settings (Tab Hover Card)
+    var tabTitle = settings.browserTabTitle || (settings.siteTitle ? (settings.siteTitle + (settings.tabTagline ? ' — ' + settings.tabTagline : '')) : '');
+    var path = window.location.pathname || '';
+    if (tabTitle && (path.endsWith('index.html') || path === '/' || path === '' || path.endsWith('/'))) {
+      document.title = tabTitle;
+    }
+    if (settings.metaDescription) {
+      var m = document.querySelector('meta[name="description"]');
+      if (m) m.setAttribute('content', settings.metaDescription);
+      var ogm = document.querySelector('meta[property="og:description"]');
+      if (ogm) ogm.setAttribute('content', settings.metaDescription);
+    }
+    if (tabTitle) {
+      var ogt = document.querySelector('meta[property="og:title"]');
+      if (ogt) ogt.setAttribute('content', tabTitle);
     }
   }
   function populateSections() {
