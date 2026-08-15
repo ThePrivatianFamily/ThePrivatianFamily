@@ -1005,6 +1005,138 @@
       </div>
     </section>
 
+    <!-- PAGE: ACTIVITY LOG & AUDIT TRAIL -->
+    <section class="page" id="page-activity">
+      <!-- Activity Header -->
+      <div class="menu-mgr-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:12px;">
+        <div class="menu-mgr-title-wrap">
+          <h1 class="page-title" style="font-size:22px;font-weight:700;color:var(--text-primary);margin:0 0 4px;display:flex;align-items:center;gap:8px;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="22" height="22" style="color:var(--brand-navy,#0a528e);"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+            <span>Activity Log &amp; Audit Trail</span>
+          </h1>
+          <p class="page-subtitle" style="font-size:13px;color:var(--text-muted);margin:0;">Immutable, tamper-proof history of all logins, access changes, article publications, and system updates.</p>
+        </div>
+        <div class="menu-mgr-actions" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+          <div id="activity-sync-badge" class="ft-header-badge synced" title="Database connection status">
+            <span class="ft-pulse-dot"></span>
+            <span>Immutable Database Connected</span>
+          </div>
+          <button type="button" class="btn btn--ghost btn--sm" onclick="exportActivityLogs('csv')" style="font-size:12.5px;padding:6px 12px;display:inline-flex;align-items:center;gap:5px;border:1px solid #cbd5e1;border-radius:6px;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Export CSV
+          </button>
+          <button type="button" class="btn btn--ghost btn--sm" onclick="exportActivityLogs('json')" style="font-size:12.5px;padding:6px 12px;display:inline-flex;align-items:center;gap:5px;border:1px solid #cbd5e1;border-radius:6px;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+            Export JSON
+          </button>
+          <button type="button" class="btn btn--ghost btn--sm" onclick="loadActivityLogs(true)" style="font-size:12.5px;padding:6px 12px;display:inline-flex;align-items:center;gap:5px;border:1px solid #cbd5e1;border-radius:6px;" title="Refresh Activity Stream">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+            Refresh
+          </button>
+        </div>
+      </div>
+
+      <!-- Stats Metric Cards -->
+      <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(210px, 1fr));gap:16px;margin-bottom:20px;">
+        <div style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:16px 20px;box-shadow:0 1px 3px rgba(0,0,0,0.04);">
+          <div style="font-size:12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;">Total Logged Events</div>
+          <div id="stat-total-logs" style="font-size:24px;font-weight:700;color:var(--brand-navy,#0a528e);">—</div>
+          <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">Permanent audit records</div>
+        </div>
+        <div style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:16px 20px;box-shadow:0 1px 3px rgba(0,0,0,0.04);">
+          <div style="font-size:12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;">Today's Activities</div>
+          <div id="stat-today-logs" style="font-size:24px;font-weight:700;color:#10b981;">—</div>
+          <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">Events logged in last 24h</div>
+        </div>
+        <div style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:16px 20px;box-shadow:0 1px 3px rgba(0,0,0,0.04);">
+          <div style="font-size:12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;">Active Operators</div>
+          <div id="stat-active-actors" style="font-size:24px;font-weight:700;color:#6366f1;">—</div>
+          <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">Admins &amp; moderators</div>
+        </div>
+        <div style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:16px 20px;box-shadow:0 1px 3px rgba(0,0,0,0.04);">
+          <div style="font-size:12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;">Integrity Status</div>
+          <div style="font-size:14.5px;font-weight:700;color:#047857;display:flex;align-items:center;gap:6px;margin-top:4px;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="15" height="15"><polyline points="20 6 9 17 4 12"/></svg>
+            Immutable / Append-Only
+          </div>
+          <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">Zero delete access permitted</div>
+        </div>
+      </div>
+
+      <!-- Filters & Search Toolbar -->
+      <div class="card" style="padding:16px 20px;margin-bottom:20px;">
+        <div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap;">
+          <!-- Search Input -->
+          <div style="flex:1;min-width:240px;position:relative;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:#94a3b8;"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" id="activity-search-input" class="form-input" placeholder="Search by operator email, action, article title, or keyword…" style="padding-left:34px;font-size:13px;" oninput="debounceActivitySearch()" />
+          </div>
+
+          <!-- Category Filter -->
+          <div style="min-width:160px;">
+            <select id="activity-filter-category" class="form-input" style="font-size:13px;" onchange="loadActivityLogs()">
+              <option value="all">All Categories</option>
+              <option value="auth">Authentication &amp; Login</option>
+              <option value="admins">Admins &amp; Access Whitelist</option>
+              <option value="articles">Articles &amp; Editorial</option>
+              <option value="sections">Sections &amp; Studio</option>
+              <option value="layout">Layout &amp; Site Settings</option>
+            </select>
+          </div>
+
+          <!-- Actor Filter -->
+          <div style="min-width:160px;">
+            <select id="activity-filter-actor" class="form-input" style="font-size:13px;" onchange="loadActivityLogs()">
+              <option value="">All Operators</option>
+            </select>
+          </div>
+
+          <!-- Date Filter -->
+          <div style="min-width:140px;">
+            <select id="activity-filter-date" class="form-input" style="font-size:13px;" onchange="loadActivityLogs()">
+              <option value="all">All Time</option>
+              <option value="today">Today</option>
+              <option value="7d">Last 7 Days</option>
+              <option value="30d">Last 30 Days</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Activity Feed Table -->
+      <div class="card" style="padding:0;overflow:hidden;border:1px solid #e2e8f0;border-radius:10px;">
+        <div style="overflow-x:auto;">
+          <table class="data-table" style="margin:0;font-size:13px;width:100%;">
+            <thead>
+              <tr style="background:#f8fafc;border-bottom:1px solid #e2e8f0;">
+                <th style="width:165px;padding:12px 16px;">Timestamp</th>
+                <th style="width:210px;padding:12px 16px;">Operator</th>
+                <th style="width:130px;padding:12px 16px;">Category</th>
+                <th style="padding:12px 16px;">Action Summary &amp; Target</th>
+                <th style="width:130px;padding:12px 16px;">Client IP</th>
+                <th style="width:90px;padding:12px 16px;text-align:right;">Details</th>
+              </tr>
+            </thead>
+            <tbody id="activity-table-tbody">
+              <!-- Dynamically populated -->
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Empty & Loading States -->
+        <div id="activity-table-loading" style="padding:50px 20px;text-align:center;color:var(--text-muted);display:none;">
+          <svg class="spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="28" height="28" style="margin:0 auto 10px;display:block;"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+          <span>Loading activity log records…</span>
+        </div>
+
+        <div id="activity-table-empty" style="padding:60px 20px;text-align:center;display:none;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" stroke-width="1.3" width="48" height="48" style="margin:0 auto 12px;display:block;"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          <h3 style="font-size:15px;font-weight:600;color:#475569;margin-bottom:4px;">No Activity Records Found</h3>
+          <p style="color:#94a3b8;font-size:13px;margin:0;">No actions match your current search or filter criteria.</p>
+        </div>
+      </div>
+    </section>
+
   </main>
 
   <!-- â•â• ADD / EDIT MODAL â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
