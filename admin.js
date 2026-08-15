@@ -31,27 +31,6 @@ var _activeFooterTab = 'preview';
 var _lastAccessCheck = 0;
 var _accessRevoked = false;
 
-// ── Mobile Sidebar Toggle ─────────────────────────────────────────
-window.toggleAdminSidebar = function(evOrForce) {
-  if (evOrForce && evOrForce.stopPropagation) evOrForce.stopPropagation();
-  const sidebar = document.querySelector('.sidebar');
-  const backdrop = document.getElementById('admin-sidebar-backdrop');
-  if (!sidebar) return;
-  const isShow = typeof evOrForce === 'boolean' ? evOrForce : !sidebar.classList.contains('show');
-  sidebar.classList.toggle('show', isShow);
-  if (backdrop) backdrop.classList.toggle('show', isShow);
-};
-
-document.addEventListener('click', (e) => {
-  if (window.innerWidth <= 860) {
-    const sidebar = document.querySelector('.sidebar');
-    const toggleBtn = document.getElementById('sidebar-mobile-toggle');
-    if (sidebar && sidebar.classList.contains('show') && !sidebar.contains(e.target) && (!toggleBtn || !toggleBtn.contains(e.target))) {
-      window.toggleAdminSidebar(false);
-    }
-  }
-});
-
 // -- Authentication & API helpers --
 function _getAuthToken() {
   return window.PRIVATIAN_TOKEN || localStorage.getItem('privatian_token') || '';

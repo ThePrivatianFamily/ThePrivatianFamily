@@ -43,7 +43,10 @@
 }
 
 html, body {
-  height: 100%;
+  min-height: 100%;
+  min-width: 1280px;
+  width: 100%;
+  overflow-x: auto;
   font-family: var(--font-sans);
   background: var(--content-bg);
   color: var(--text-primary);
@@ -56,6 +59,7 @@ html, body {
 body {
   display: flex;
   min-height: 100vh;
+  min-width: 1280px;
 }
 
 /* ── SIDEBAR ──────────────────────────────────────────────── */
@@ -2367,83 +2371,5 @@ body.modal-open {
   font-size: 11.5px;
   line-height: 1.5;
   resize: vertical;
-}
-
-/* ═════════════════════════════════════════════════════════════════
-   MOBILE & RESPONSIVE ENGINE FOR ADMIN DASHBOARD
-═════════════════════════════════════════════════════════════════ */
-.sidebar-mobile-toggle {
-  display: none;
-  background: none;
-  border: 1px solid var(--border);
-  color: var(--brand);
-  cursor: pointer;
-  padding: 6px;
-  border-radius: 6px;
-  align-items: center;
-  justify-content: center;
-  background: #fff;
-  transition: all 0.15s ease;
-}
-.sidebar-mobile-toggle:hover {
-  background: var(--brand-light);
-}
-
-#admin-sidebar-backdrop {
-  display: none;
-  position: fixed;
-  inset: 0;
-  background: rgba(7, 30, 56, 0.55);
-  backdrop-filter: blur(2px);
-  z-index: 999;
-  transition: opacity 0.2s ease;
-}
-#admin-sidebar-backdrop.show {
-  display: block;
-}
-
-@media (max-width: 860px) {
-  .sidebar-mobile-toggle {
-    display: inline-flex;
-  }
-  .sidebar {
-    transform: translateX(-100%);
-    transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 10px 0 35px rgba(0,0,0,0.3);
-    z-index: 1000;
-  }
-  .sidebar.show {
-    transform: translateX(0);
-  }
-  .main-content {
-    margin-left: 0 !important;
-    width: 100% !important;
-    padding: 16px 14px 60px !important;
-  }
-  .topbar {
-    padding: 0 16px;
-    height: 58px;
-  }
-  .topbar-title {
-    font-size: 17px;
-  }
-  .breadcrumb {
-    display: none;
-  }
-  .page-header {
-    flex-direction: column;
-    align-items: flex-start !important;
-    gap: 10px;
-  }
-  .stats-grid {
-    grid-template-columns: 1fr 1fr;
-    gap: 12px;
-  }
-}
-
-@media (max-width: 480px) {
-  .stats-grid {
-    grid-template-columns: 1fr;
-  }
 }
 
