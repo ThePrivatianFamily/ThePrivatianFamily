@@ -774,7 +774,23 @@ async function openSectionStudio(id) {
   if (slugEl) slugEl.value = s.slug || 'all';
   if (nameInput) nameInput.value = s.name;
   if (nameBnInput) nameBnInput.value = s.name_bn || '';
-  if (slugInput) slugInput.value = s.slug || '';
+  if (slugInput) {
+    slugInput.value = s.slug || '';
+    const isBn = _adminContentLang === 'bn';
+    if (isBn) {
+      slugInput.readOnly = true;
+      slugInput.style.opacity = '0.55';
+      slugInput.style.cursor = 'not-allowed';
+      slugInput.style.backgroundColor = '#f8fafc';
+      slugInput.title = '🔒 Section URL Slug is unified in backend and defined strictly in English';
+    } else {
+      slugInput.readOnly = s.id === 'all' || s.isPermanent;
+      slugInput.style.opacity = (s.id === 'all' || s.isPermanent) ? '0.55' : '1';
+      slugInput.style.cursor = (s.id === 'all' || s.isPermanent) ? 'not-allowed' : '';
+      slugInput.style.backgroundColor = '';
+      slugInput.title = '';
+    }
+  }
 
   // Set Section Switcher dropdown options
   if (switcherEl) {
@@ -3430,6 +3446,8 @@ function openSeriesModal(id) {
   const hrefInput = document.getElementById('series-href-input');
   const descInput = document.getElementById('series-desc-input');
   const enabledInput = document.getElementById('series-enabled-input');
+  const hrefLockNote = document.getElementById('series-href-lock-note');
+  const isBn = _adminContentLang === 'bn';
 
   if (id) {
     const item = ((menuDraftConfig && menuDraftConfig.series) || []).find(s => s.id === id);
@@ -3437,17 +3455,32 @@ function openSeriesModal(id) {
     titleEl.textContent = 'Edit Featured Series';
     editIdInput.value = item.id;
     nameInput.value = item.title || '';
-    hrefInput.value = item.href || '';
+    if (hrefInput) {
+      hrefInput.value = item.href || '';
+      hrefInput.readOnly = isBn;
+      hrefInput.style.opacity = isBn ? '0.55' : '1';
+      hrefInput.style.backgroundColor = isBn ? '#f8fafc' : '';
+      hrefInput.style.cursor = isBn ? 'not-allowed' : '';
+      hrefInput.title = isBn ? '🔒 URL is unified in backend and defined strictly in English' : '';
+    }
     descInput.value = item.description || '';
     enabledInput.checked = item.enabled !== false;
   } else {
     titleEl.textContent = 'Add Featured Series';
     editIdInput.value = '';
     nameInput.value = '';
-    hrefInput.value = 'section.html?slug=findings';
+    if (hrefInput) {
+      hrefInput.value = 'section.html?slug=findings';
+      hrefInput.readOnly = isBn;
+      hrefInput.style.opacity = isBn ? '0.55' : '1';
+      hrefInput.style.backgroundColor = isBn ? '#f8fafc' : '';
+      hrefInput.style.cursor = isBn ? 'not-allowed' : '';
+      hrefInput.title = isBn ? '🔒 URL is unified in backend and defined strictly in English' : '';
+    }
     descInput.value = '';
     enabledInput.checked = true;
   }
+  if (hrefLockNote) hrefLockNote.style.display = isBn ? 'block' : 'none';
   modal.removeAttribute('hidden');
   nameInput.focus();
 }
@@ -3463,6 +3496,7 @@ function saveSeriesItem() {
   const href = document.getElementById('series-href-input').value.trim();
   const desc = document.getElementById('series-desc-input').value.trim();
   const enabled = document.getElementById('series-enabled-input').checked;
+  const isBn = _adminContentLang === 'bn';
 
   if (!title) {
     showToast('error', 'Series Title is required');
@@ -3476,7 +3510,7 @@ function saveSeriesItem() {
     const item = menuDraftConfig.series.find(s => s.id === editId);
     if (item) {
       item.title = title;
-      item.href = href;
+      if (!isBn) item.href = href;
       item.description = desc;
       item.enabled = enabled;
     }
@@ -3616,6 +3650,8 @@ function openExploreModal(id) {
   const hrefInput = document.getElementById('explore-href-input');
   const targetInput = document.getElementById('explore-target-input');
   const enabledInput = document.getElementById('explore-enabled-input');
+  const hrefLockNote = document.getElementById('explore-href-lock-note');
+  const isBn = _adminContentLang === 'bn';
 
   if (id) {
     const item = ((menuDraftConfig && menuDraftConfig.explore) || []).find(e => e.id === id);
@@ -3623,17 +3659,38 @@ function openExploreModal(id) {
     titleEl.textContent = 'Edit Explore Link';
     editIdInput.value = item.id;
     labelInput.value = item.label || '';
-    hrefInput.value = item.href || '';
-    targetInput.value = item.target || '_self';
+    if (hrefInput) {
+      hrefInput.value = item.href || '';
+      hrefInput.readOnly = isBn;
+      hrefInput.style.opacity = isBn ? '0.55' : '1';
+      hrefInput.style.backgroundColor = isBn ? '#f8fafc' : '';
+      hrefInput.style.cursor = isBn ? 'not-allowed' : '';
+      hrefInput.title = isBn ? '🔒 URL is unified in backend and defined strictly in English' : '';
+    }
+    if (targetInput) {
+      targetInput.value = item.target || '_self';
+      targetInput.disabled = isBn;
+    }
     enabledInput.checked = item.enabled !== false;
   } else {
     titleEl.textContent = 'Add Explore Link';
     editIdInput.value = '';
     labelInput.value = '';
-    hrefInput.value = 'index.html';
-    targetInput.value = '_self';
+    if (hrefInput) {
+      hrefInput.value = 'index.html';
+      hrefInput.readOnly = isBn;
+      hrefInput.style.opacity = isBn ? '0.55' : '1';
+      hrefInput.style.backgroundColor = isBn ? '#f8fafc' : '';
+      hrefInput.style.cursor = isBn ? 'not-allowed' : '';
+      hrefInput.title = isBn ? '🔒 URL is unified in backend and defined strictly in English' : '';
+    }
+    if (targetInput) {
+      targetInput.value = '_self';
+      targetInput.disabled = isBn;
+    }
     enabledInput.checked = true;
   }
+  if (hrefLockNote) hrefLockNote.style.display = isBn ? 'block' : 'none';
   modal.removeAttribute('hidden');
   labelInput.focus();
 }
@@ -3649,6 +3706,7 @@ function saveExploreItem() {
   const href = document.getElementById('explore-href-input').value.trim();
   const target = document.getElementById('explore-target-input').value;
   const enabled = document.getElementById('explore-enabled-input').checked;
+  const isBn = _adminContentLang === 'bn';
 
   if (!label) {
     showToast('error', 'Link Label is required');
@@ -3662,8 +3720,10 @@ function saveExploreItem() {
     const item = menuDraftConfig.explore.find(e => e.id === editId);
     if (item) {
       item.label = label;
-      item.href = href;
-      item.target = target;
+      if (!isBn) {
+        item.href = href;
+        item.target = target;
+      }
       item.enabled = enabled;
     }
   } else {
@@ -4947,8 +5007,8 @@ function renderNewsEditor() {
             <input type="text" class="form-input" value="${escapeHtml(col.label || '')}" oninput="onHpColumnLabelInput(${cIdx}, this.value)" style="font-weight:700;color:#0a528e;" />
           </div>
           <div class="form-group" style="margin-bottom:14px;">
-            <label class="form-label" style="font-size:11px;">Section Slug Link</label>
-            <input type="text" class="form-input" value="${escapeHtml(col.sectionSlug || '')}" oninput="onHpColumnSlugInput(${cIdx}, this.value)" placeholder="e.g. culture" />
+            <label class="form-label" style="font-size:11px;">Section Slug Link ${_adminContentLang === 'bn' ? '<span style="color:#d97706;font-size:10px;font-weight:600;">(🔒 Set in English)</span>' : ''}</label>
+            <input type="text" class="form-input" value="${escapeHtml(col.sectionSlug || '')}" ${_adminContentLang === 'bn' ? 'readonly style="opacity:0.55;cursor:not-allowed;background:#f8fafc;" title="🔒 Section Slug is unified in backend and defined strictly in English"' : `oninput="onHpColumnSlugInput(${cIdx}, this.value)"`} placeholder="e.g. culture" />
           </div>
 
           <!-- Lead Story Preview -->
@@ -5044,9 +5104,20 @@ function openHpSlotModal(path, roleName) {
 
   const slotData = getHpObjectByPath(path) || {};
 
+  const isBn = _adminContentLang === 'bn';
   headlineInput.value = slotData.title || '';
   if (subtitleInput) subtitleInput.value = slotData.subtitle || slotData.description || '';
-  if (linkInput) linkInput.value = slotData.href || '';
+  if (linkInput) {
+    linkInput.value = slotData.href || '';
+    linkInput.readOnly = isBn;
+    linkInput.style.opacity = isBn ? '0.55' : '1';
+    linkInput.style.backgroundColor = isBn ? '#f8fafc' : '';
+    linkInput.style.cursor = isBn ? 'not-allowed' : '';
+    linkInput.title = isBn ? '🔒 URL is unified in backend and defined strictly in English' : '';
+  }
+  const linkLockNote = document.getElementById('hp-slot-link-lock-note');
+  if (linkLockNote) linkLockNote.style.display = isBn ? 'block' : 'none';
+
   if (imageInput) imageInput.value = slotData.imageUrl || '';
   if (tagInput) tagInput.value = slotData.tag || '';
   if (enabledInput) enabledInput.checked = slotData.enabled !== false;
@@ -5233,11 +5304,14 @@ function saveHpSlotModal() {
     setHpObjectByPath(path, slotData);
   }
 
+  const isBn = _adminContentLang === 'bn';
   slotData.title = headline;
   if (path.includes('hero.main')) slotData.subtitle = subtitle;
   else if (path.includes('sidebar') || path.includes('featured')) slotData.description = subtitle;
 
-  slotData.href = link || '#';
+  if (!isBn) {
+    slotData.href = link || '#';
+  }
   if (!path.includes('subArticles')) slotData.imageUrl = image || 'img1.png';
   if (path.includes('sidebar')) slotData.tag = tag;
   slotData.enabled = enabled;
@@ -5271,6 +5345,8 @@ function openHpEventModal(id) {
   const metaInput = document.getElementById('hp-event-meta-input');
   const linkInput = document.getElementById('hp-event-link-input');
   const enabledInput = document.getElementById('hp-event-enabled-input');
+  const linkLockNote = document.getElementById('hp-event-link-lock-note');
+  const isBn = _adminContentLang === 'bn';
 
   if (!modal) return;
 
@@ -5283,7 +5359,14 @@ function openHpEventModal(id) {
     dateInput.value = ev.date || '';
     titleInput.value = ev.title || '';
     metaInput.value = ev.meta || '';
-    linkInput.value = ev.href || '';
+    if (linkInput) {
+      linkInput.value = ev.href || '';
+      linkInput.readOnly = isBn;
+      linkInput.style.opacity = isBn ? '0.55' : '1';
+      linkInput.style.backgroundColor = isBn ? '#f8fafc' : '';
+      linkInput.style.cursor = isBn ? 'not-allowed' : '';
+      linkInput.title = isBn ? '🔒 Event URL is unified in backend and defined strictly in English' : '';
+    }
     enabledInput.checked = ev.enabled !== false;
   } else {
     titleEl.textContent = 'Add Event';
@@ -5291,9 +5374,17 @@ function openHpEventModal(id) {
     dateInput.value = 'Oct. 24, 2026';
     titleInput.value = '';
     metaInput.value = '4 p.m. Friday ■ Privatian Hall, Cambridge';
-    linkInput.value = 'index.html#events';
+    if (linkInput) {
+      linkInput.value = 'index.html#events';
+      linkInput.readOnly = isBn;
+      linkInput.style.opacity = isBn ? '0.55' : '1';
+      linkInput.style.backgroundColor = isBn ? '#f8fafc' : '';
+      linkInput.style.cursor = isBn ? 'not-allowed' : '';
+      linkInput.title = isBn ? '🔒 Event URL is unified in backend and defined strictly in English' : '';
+    }
     enabledInput.checked = true;
   }
+  if (linkLockNote) linkLockNote.style.display = isBn ? 'block' : 'none';
 
   modal.removeAttribute('hidden');
   titleInput.focus();
@@ -5306,6 +5397,7 @@ function saveHpEventModal() {
   const meta = document.getElementById('hp-event-meta-input').value.trim();
   const link = document.getElementById('hp-event-link-input').value.trim();
   const enabled = document.getElementById('hp-event-enabled-input').checked;
+  const isBn = _adminContentLang === 'bn';
 
   if (!title) {
     showToast('error', 'Event Title is required');
@@ -5324,7 +5416,7 @@ function saveHpEventModal() {
       ev.date = date;
       ev.title = title;
       ev.meta = meta;
-      ev.href = link;
+      if (!isBn) ev.href = link;
       ev.enabled = enabled;
     }
   } else {

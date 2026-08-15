@@ -107,6 +107,41 @@ module.exports = async function handler(req, res) {
       if (!session) return;
       const menuConfig = req.body || {};
 
+      // Enforce unified URL / ID architecture: Bengali menu inherits English URLs
+      if (isBn) {
+        try {
+          const { data: enData } = await sb.from('site_settings').select('value').eq('key', 'navigation_menu_config').maybeSingle();
+          if (enData && enData.value && typeof enData.value === 'object') {
+            const enCfg = enData.value;
+            if (Array.isArray(enCfg.series) && Array.isArray(menuConfig.series)) {
+              enCfg.series.forEach((s, idx) => {
+                if (menuConfig.series[idx]) {
+                  menuConfig.series[idx].href = s.href;
+                  menuConfig.series[idx].id = s.id;
+                }
+              });
+            }
+            if (Array.isArray(enCfg.explore) && Array.isArray(menuConfig.explore)) {
+              enCfg.explore.forEach((e, idx) => {
+                if (menuConfig.explore[idx]) {
+                  menuConfig.explore[idx].href = e.href;
+                  menuConfig.explore[idx].id = e.id;
+                  menuConfig.explore[idx].target = e.target;
+                }
+              });
+            }
+            if (Array.isArray(enCfg.latest) && Array.isArray(menuConfig.latest)) {
+              enCfg.latest.forEach((l, idx) => {
+                if (menuConfig.latest[idx]) {
+                  menuConfig.latest[idx].href = l.href;
+                  menuConfig.latest[idx].id = l.id;
+                }
+              });
+            }
+          }
+        } catch(e) {}
+      }
+
       let saved = false;
       try {
         const { error } = await sb.from('site_settings').upsert({
@@ -725,6 +760,72 @@ module.exports = async function handler(req, res) {
       const session = await requireAuth(req, res);
       if (!session) return;
       const homepageConfig = req.body || {};
+
+      // Enforce unified URL / ID architecture: Bengali homepage inherits all English URLs, slugs, IDs
+      if (isBn) {
+        try {
+          let enCfg = null;
+          const { data: enData } = await sb.from('site_settings').select('value').eq('key', 'site_homepage_config').maybeSingle();
+          if (enData && enData.value && typeof enData.value === 'object') enCfg = enData.value;
+          if (enCfg) {
+            if (enCfg.hero && homepageConfig.hero) {
+              if (enCfg.hero.main && homepageConfig.hero.main) {
+                homepageConfig.hero.main.href = enCfg.hero.main.href;
+                homepageConfig.hero.main.articleId = enCfg.hero.main.articleId;
+              }
+              if (Array.isArray(enCfg.hero.sidebar) && Array.isArray(homepageConfig.hero.sidebar)) {
+                enCfg.hero.sidebar.forEach((s, idx) => {
+                  if (homepageConfig.hero.sidebar[idx]) {
+                    homepageConfig.hero.sidebar[idx].href = s.href;
+                    homepageConfig.hero.sidebar[idx].articleId = s.articleId;
+                  }
+                });
+              }
+            }
+            if (Array.isArray(enCfg.smallArticles) && Array.isArray(homepageConfig.smallArticles)) {
+              enCfg.smallArticles.forEach((c, idx) => {
+                if (homepageConfig.smallArticles[idx]) {
+                  homepageConfig.smallArticles[idx].href = c.href;
+                  homepageConfig.smallArticles[idx].articleId = c.articleId;
+                }
+              });
+            }
+            if (enCfg.eventsSection && homepageConfig.eventsSection) {
+              if (enCfg.eventsSection.featured && homepageConfig.eventsSection.featured) {
+                homepageConfig.eventsSection.featured.href = enCfg.eventsSection.featured.href;
+                homepageConfig.eventsSection.featured.articleId = enCfg.eventsSection.featured.articleId;
+              }
+              if (Array.isArray(enCfg.eventsSection.events) && Array.isArray(homepageConfig.eventsSection.events)) {
+                enCfg.eventsSection.events.forEach((ev, idx) => {
+                  if (homepageConfig.eventsSection.events[idx]) {
+                    homepageConfig.eventsSection.events[idx].href = ev.href;
+                    homepageConfig.eventsSection.events[idx].id = ev.id;
+                  }
+                });
+              }
+            }
+            if (enCfg.allNews && enCfg.allNews.columns && homepageConfig.allNews && homepageConfig.allNews.columns) {
+              enCfg.allNews.columns.forEach((col, idx) => {
+                if (homepageConfig.allNews.columns[idx]) {
+                  homepageConfig.allNews.columns[idx].sectionSlug = col.sectionSlug;
+                  if (col.lead && homepageConfig.allNews.columns[idx].lead) {
+                    homepageConfig.allNews.columns[idx].lead.href = col.lead.href;
+                    homepageConfig.allNews.columns[idx].lead.articleId = col.lead.articleId;
+                  }
+                  if (Array.isArray(col.subArticles) && Array.isArray(homepageConfig.allNews.columns[idx].subArticles)) {
+                    col.subArticles.forEach((sub, sIdx) => {
+                      if (homepageConfig.allNews.columns[idx].subArticles[sIdx]) {
+                        homepageConfig.allNews.columns[idx].subArticles[sIdx].href = sub.href;
+                        homepageConfig.allNews.columns[idx].subArticles[sIdx].id = sub.id;
+                      }
+                    });
+                  }
+                }
+              });
+            }
+          }
+        } catch(e) {}
+      }
 
       let saved = false;
       try {
