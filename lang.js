@@ -174,25 +174,6 @@
 
   // ── 3. TRANSLATION HELPERS & FALLBACK MAP ────────────────────
   var STATIC_TEXT_MAP_BN = {
-    // Section Names & Titles
-    "Findings": "অনুসন্ধান",
-    "Community & Heritage": "সমাজ ও ঐতিহ্য",
-    "Community": "সমাজ ও ঐতিহ্য",
-    "Culture": "সংস্কৃতি",
-    "Privacy & Values": "গোপনীয়তা ও মূল্যবোধ",
-    "Privacy": "গোপনীয়তা",
-    "Nation & World": "দেশ ও বিশ্ব",
-    "Arts & Legacy": "শিল্প ও উত্তরাধিকার",
-    "Arts": "শিল্প ও উত্তরাধিকার",
-    "Work & Economy": "কর্ম ও অর্থনীতি",
-    "Economy": "কর্ম ও অর্থনীতি",
-    "Students": "শিক্ষার্থীবৃন্দ",
-    "Science": "বিজ্ঞান",
-    "Society": "সমাজ",
-    "All": "সকল",
-    "All Articles": "সকল প্রতিবেদন",
-    "All News": "সকল খবর",
-
     // Sub-header tabs
     "FAMILY LEGACY": "পারিবারিক ঐতিহ্য",
     "EXPERIENCE": "অভিজ্ঞতা ও সংস্কৃতি",

@@ -155,34 +155,15 @@
     var isBn = window.PrivatianLang && window.PrivatianLang.getLang() === 'bn';
     var isAll = (s.id === 'all' || s.slug === '' || s.slug === 'all');
     if (isAll) {
-      return isBn ? (s.name_bn || 'সব খবর') : (s.name && !/[\u0980-\u09FF]/.test(s.name) ? s.name : 'All');
+      return isBn ? (s.name_bn || s.name || 'সকল') : (s.name || 'All');
     }
 
-    if (!isBn) {
-      if (s.name && !/[\u0980-\u09FF]/.test(s.name)) return s.name;
-      var def = DEFAULT_SECTIONS.find(function(d) { return d.slug === s.slug || d.id === s.id; });
-      return (def && def.name) ? def.name : (s.name || '');
+    if (isBn) {
+      // Strictly use what is saved in admin (name_bn). If no Bengali was configured in admin, show the configured name as-is.
+      return (s.name_bn && String(s.name_bn).trim() !== '') ? s.name_bn : (s.name || '');
     }
 
-    if (s.name_bn && String(s.name_bn).trim() !== '') return s.name_bn;
-
-    var sSlug = (s.slug || s.id || '').toLowerCase().trim();
-    var sName = (s.name || '').toLowerCase().trim();
-
-    for (var i = 0; i < DEFAULT_SECTIONS.length; i++) {
-      var d = DEFAULT_SECTIONS[i];
-      if ((d.slug && d.slug.toLowerCase() === sSlug) ||
-          (d.id && d.id.toLowerCase() === sSlug) ||
-          (d.name && d.name.toLowerCase() === sName)) {
-        return d.name_bn;
-      }
-    }
-
-    if (window.PrivatianLang && window.PrivatianLang.translateStatic) {
-      var tr = window.PrivatianLang.translateStatic(s.name);
-      if (tr && tr !== s.name) return tr;
-    }
-
+    // English mode: strictly return the name configured in admin
     return s.name || '';
   }
 

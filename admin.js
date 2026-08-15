@@ -228,6 +228,7 @@ async function loadSectionsFromAPI() {
             loaded = data.filter(r => !isSystemConfig(r)).map(r => ({
               id:        r.admin_id || r.slug,
               name:      r.name,
+              name_bn:   r.name_bn || '',
               slug:      r.slug || '',
               locked:    r.locked || false,
               deleted:   r.is_deleted || false,
