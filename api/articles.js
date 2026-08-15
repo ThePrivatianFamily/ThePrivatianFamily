@@ -70,6 +70,17 @@ module.exports = async function handler(req, res) {
 
     const { data, error } = await query.single();
     if (error || !data) return res.status(404).json({ error: 'Article not found or not published' });
+
+    // If accessed via preview mode with id, and there is a working draft stored in content, merge it for preview
+    if (id && req.query.preview === '1' && data.content) {
+      try {
+        const draftObj = JSON.parse(data.content);
+        if (draftObj && typeof draftObj === 'object') {
+          Object.assign(data, draftObj);
+        }
+      } catch(e) {}
+    }
+
     return res.status(200).json(data);
   }
 
@@ -79,7 +90,7 @@ module.exports = async function handler(req, res) {
     if (!session) return;
     const { data, error } = await sb()
       .from('articles')
-      .select('id, slug, title, deck, section, author, status, created_at, updated_at, published_at, hero_img_url')
+      .select('id, slug, title, deck, section, author, status, created_at, updated_at, published_at, hero_img_url, content')
       .or('is_deleted.is.null,is_deleted.eq.false')
       .order('updated_at', { ascending: false });
     if (error) return res.status(500).json({ error: error.message });
@@ -118,10 +129,22 @@ module.exports = async function handler(req, res) {
     if (!id) return res.status(400).json({ error: 'id required' });
     const { data, error } = await sb().from('articles').select('*').eq('id', id).single();
     if (error || !data) return res.status(404).json({ error: 'Article not found' });
+
+    // If there is an active working draft in content, merge it so editor shows working draft
+    if (data.content) {
+      try {
+        const draftObj = JSON.parse(data.content);
+        if (draftObj && typeof draftObj === 'object') {
+          data._has_draft = true;
+          Object.assign(data, draftObj);
+        }
+      } catch(e) {}
+    }
+
     return res.status(200).json(data);
   }
 
-  // ── SAVE (create or update) ───────────────────────────────────────
+  // ── SAVE (create, update draft, or publish live) ──────────────────
   if (action === 'save' && req.method === 'POST') {
     const session = await requireAuth(req, res);
     if (!session) return;
@@ -131,16 +154,39 @@ module.exports = async function handler(req, res) {
       author_bio = '', author_photo_url = '', hero_img_url = '', hero_img_alt = '',
       hero_caption = '', hero_credit = '', content_html = '', slug: bodySlug,
       seo_title = '', meta_description = '', tags = '', status: bodyStatus,
+      is_draft = false,
     } = req.body || {};
 
     const client = sb();
 
     if (bodyId) {
-      // UPDATE
+      // Check existing article status in database
+      const { data: existing } = await client.from('articles').select('id, status, content').eq('id', bodyId).single();
+
+      // IF ARTICLE IS PUBLISHED AND ACTION IS "SAVE DRAFT":
+      // We ONLY update the working draft in the `content` column without touching the live published article!
+      if (existing && existing.status === 'published' && is_draft) {
+        const draftPayload = {
+          title, deck, section, author, author_role, author_bio, author_photo_url,
+          hero_img_url, hero_img_alt, hero_caption, hero_credit, content_html,
+          seo_title, meta_description, tags,
+          draft_saved_at: new Date().toISOString()
+        };
+        const { data, error } = await client.from('articles')
+          .update({ content: JSON.stringify(draftPayload) })
+          .eq('id', bodyId)
+          .select()
+          .single();
+        if (error) return res.status(500).json({ error: error.message });
+        return res.status(200).json({ ...data, ...draftPayload, _is_working_draft: true });
+      }
+
+      // OTHERWISE: DIRECT LIVE PUBLISH OR DRAFT ARTICLE UPDATE
       const updates = {
         title, deck, section, author, author_role, author_bio, author_photo_url,
         hero_img_url, hero_img_alt, hero_caption, hero_credit, content_html,
         seo_title, meta_description, tags,
+        content: null, // Clear working draft because live article is now updated
         updated_at: new Date().toISOString(),
       };
       if (bodyStatus) {
@@ -188,11 +234,27 @@ module.exports = async function handler(req, res) {
     if (!session) return;
     if (!id) return res.status(400).json({ error: 'id required' });
     const client = sb();
-    const { data, error } = await client.from('articles').update({
+    const { data: existing } = await client.from('articles').select('*').eq('id', id).single();
+    if (!existing) return res.status(404).json({ error: 'Not found' });
+
+    // If there is a working draft in content, apply it to the live columns
+    let liveUpdates = {
       status: 'published',
       published_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
-    }).eq('id', id).select().single();
+      content: null, // Clear working draft
+    };
+    if (existing.content) {
+      try {
+        const draftObj = JSON.parse(existing.content);
+        if (draftObj && typeof draftObj === 'object') {
+          Object.assign(liveUpdates, draftObj);
+          delete liveUpdates.draft_saved_at;
+        }
+      } catch(e) {}
+    }
+
+    const { data, error } = await client.from('articles').update(liveUpdates).eq('id', id).select().single();
     if (error) return res.status(500).json({ error: error.message });
     return res.status(200).json(data);
   }

@@ -649,9 +649,9 @@ body{padding-bottom:34px}
     <option value="h2">Heading 2</option>
     <option value="h3">Heading 3</option>
     <option value="h4">Heading 4</option>
-    <option value="blockquote">❝ Pull Quote</option>
-    <option value="blockquote-classic">▎ Classic Quote</option>
-    <option value="blockquote-featured">❝▎ Featured Quote</option>
+    <option value="blockquote">Pull Quote</option>
+    <option value="blockquote-classic">Classic Quote</option>
+    <option value="blockquote-featured">Featured Quote</option>
     <option value="pre">Code Block</option>
   </select>
 
@@ -817,16 +817,31 @@ body{padding-bottom:34px}
     <div id="ed-feat-filled" class="ed-feat-preview-wrap" style="display:none;">
       <div class="ed-feat-img-container">
         <img id="ed-feat-preview-img" src="" alt="Featured image" />
-        <div class="ed-feat-badge">★ Featured Image</div>
+        <div class="ed-feat-badge">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" style="vertical-align:-1px;margin-right:4px;"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+          Featured Image
+        </div>
       </div>
       <div class="ed-feat-meta-controls">
         <div class="ed-feat-row">
           <label class="ed-feat-lbl">Article Position:</label>
           <div class="ed-feat-pos-group" id="inline-feat-pos-group">
-            <button type="button" class="ed-pos-btn active" data-pos="top" onclick="setFeatPosition('top')" title="Top (Header Hero Banner)">🔝 Top (Header)</button>
-            <button type="button" class="ed-pos-btn" data-pos="middle" onclick="setFeatPosition('middle')" title="Inside Body (Between Paragraphs)">📄 Middle (Body)</button>
-            <button type="button" class="ed-pos-btn" data-pos="bottom" onclick="setFeatPosition('bottom')" title="Bottom (End of Article)">🔚 Bottom (End)</button>
-            <button type="button" class="ed-pos-btn" data-pos="hidden" onclick="setFeatPosition('hidden')" title="Cards & Social Only (Hidden in Body)">👁️ Hidden in Body</button>
+            <button type="button" class="ed-pos-btn active" data-pos="top" onclick="setFeatPosition('top')" title="Top (Header Hero Banner)">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px;margin-right:4px;"><polyline points="18 15 12 9 6 15"/></svg>
+              Top (Header)
+            </button>
+            <button type="button" class="ed-pos-btn" data-pos="middle" onclick="setFeatPosition('middle')" title="Inside Body (Between Paragraphs)">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px;margin-right:4px;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+              Middle (Body)
+            </button>
+            <button type="button" class="ed-pos-btn" data-pos="bottom" onclick="setFeatPosition('bottom')" title="Bottom (End of Article)">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px;margin-right:4px;"><polyline points="6 9 12 15 18 9"/></svg>
+              Bottom (End)
+            </button>
+            <button type="button" class="ed-pos-btn" data-pos="hidden" onclick="setFeatPosition('hidden')" title="Cards & Social Only (Hidden in Body)">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px;margin-right:4px;"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+              Hidden in Body
+            </button>
           </div>
         </div>
         <div class="ed-feat-row ed-feat-inputs-row">
@@ -874,9 +889,13 @@ body{padding-bottom:34px}
   <button class="stb" onmousedown="f(event,'italic')"><i>I</i></button>
   <button class="stb" onmousedown="f(event,'underline')"><u>U</u></button>
   <div class="stb-v"></div>
-  <button class="stb" onmousedown="insLink(event)">🔗</button>
+  <button class="stb" onmousedown="insLink(event)" title="Insert Link">
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+  </button>
   <div class="stb-v"></div>
-  <button class="stb" onmousedown="f(event,'removeFormat')">✕</button>
+  <button class="stb" onmousedown="f(event,'removeFormat')" title="Clear Formatting">
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+  </button>
 </div>
 
 <div id="toast"></div>
@@ -1399,7 +1418,7 @@ function slugify(text) {
     .replace(/^-+|-+$/g, '');
 }
 
-// ── LOCALSTORAGE DRAFT ───────────────────────────────────────
+// ── LOCALSTORAGE DRAFT ─────────────────────────────────────────
 function lsKey() { return 'pf_draft_' + (ART_ID || 'new'); }
 
 function lsSave() {
@@ -1453,13 +1472,14 @@ async function saveArt(silent = false) {
   if (SAVING) return;
   SAVING = true;
   const btn = g('tb-save-btn');
-  if (!silent) {
+  if (!silent && btn) {
     btn.disabled = true;
     btn.textContent = 'Saving…';
   }
   setSaveStatus('Saving…');
 
   const payload = buildPayload();
+  payload.is_draft = true; // Protects published articles from being overwritten
   payload.status = STATUS || 'draft';
   let savedData = null;
 
@@ -1474,32 +1494,78 @@ async function saveArt(silent = false) {
     try {
       const sb = window._sb || (window.initSupabaseClient && window.initSupabaseClient());
       if (sb) {
-        const row = {
-          title: payload.title || 'Untitled',
-          deck: payload.deck || '',
-          content_html: payload.content_html || '',
-          section: payload.section || '',
-          author: payload.author || '',
-          author_bio: payload.author_bio || '',
-          author_role: payload.author_role || '',
-          author_photo_url: payload.author_photo_url || '',
-          hero_img_url: payload.hero_img_url || '',
-          hero_img_alt: payload.hero_img_alt || '',
-          hero_caption: payload.hero_caption || '',
-          hero_credit: payload.hero_credit || '',
-          slug: payload.slug || 'untitled',
-          seo_title: payload.seo_title || '',
-          meta_description: payload.meta_description || '',
-          tags: payload.tags || '',
-          status: STATUS || 'draft',
-          updated_at: new Date().toISOString()
-        };
-        if (payload.id) {
-          row.id = payload.id;
+        if (payload.id && STATUS === 'published') {
+          // If published -> only store working draft in content column
+          const draftPayload = {
+            title: payload.title || 'Untitled',
+            deck: payload.deck || '',
+            content_html: payload.content_html || '',
+            section: payload.section || '',
+            author: payload.author || '',
+            author_bio: payload.author_bio || '',
+            author_role: payload.author_role || '',
+            author_photo_url: payload.author_photo_url || '',
+            hero_img_url: payload.hero_img_url || '',
+            hero_img_alt: payload.hero_img_alt || '',
+            hero_caption: payload.hero_caption || '',
+            hero_credit: payload.hero_credit || '',
+            slug: payload.slug || 'untitled',
+            seo_title: payload.seo_title || '',
+            meta_description: payload.meta_description || '',
+            tags: payload.tags || '',
+            draft_saved_at: new Date().toISOString()
+          };
+          const { data, error } = await sb.from('articles')
+            .update({ content: JSON.stringify(draftPayload) })
+            .eq('id', payload.id)
+            .select()
+            .single();
+          if (!error && data) savedData = { ...data, ...draftPayload, _is_working_draft: true };
+        } else if (payload.id) {
+          const row = {
+            title: payload.title || 'Untitled',
+            deck: payload.deck || '',
+            content_html: payload.content_html || '',
+            section: payload.section || '',
+            author: payload.author || '',
+            author_bio: payload.author_bio || '',
+            author_role: payload.author_role || '',
+            author_photo_url: payload.author_photo_url || '',
+            hero_img_url: payload.hero_img_url || '',
+            hero_img_alt: payload.hero_img_alt || '',
+            hero_caption: payload.hero_caption || '',
+            hero_credit: payload.hero_credit || '',
+            slug: payload.slug || 'untitled',
+            seo_title: payload.seo_title || '',
+            meta_description: payload.meta_description || '',
+            tags: payload.tags || '',
+            status: 'draft',
+            updated_at: new Date().toISOString()
+          };
           const { data, error } = await sb.from('articles').update(row).eq('id', payload.id).select().single();
           if (!error && data) savedData = data;
         } else {
-          row.created_at = new Date().toISOString();
+          const row = {
+            title: payload.title || 'Untitled',
+            deck: payload.deck || '',
+            content_html: payload.content_html || '',
+            section: payload.section || '',
+            author: payload.author || '',
+            author_bio: payload.author_bio || '',
+            author_role: payload.author_role || '',
+            author_photo_url: payload.author_photo_url || '',
+            hero_img_url: payload.hero_img_url || '',
+            hero_img_alt: payload.hero_img_alt || '',
+            hero_caption: payload.hero_caption || '',
+            hero_credit: payload.hero_credit || '',
+            slug: payload.slug || 'untitled',
+            seo_title: payload.seo_title || '',
+            meta_description: payload.meta_description || '',
+            tags: payload.tags || '',
+            status: 'draft',
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          };
           const { data, error } = await sb.from('articles').insert(row).select().single();
           if (!error && data) savedData = data;
         }
@@ -1521,14 +1587,14 @@ async function saveArt(silent = false) {
     DIRTY = false;
     lsSave();
     setSaveStatus('Saved');
-    if (!silent) toast(STATUS === 'published' ? 'Changes saved as Draft ✓' : 'Draft saved ✓', 'ok');
+    if (!silent) toast(STATUS === 'published' ? 'Changes saved as draft (Live article unchanged)' : 'Draft saved', 'ok');
   } else {
     setSaveStatus('Save failed');
     if (!silent) toast('Save failed. Please check network.', 'err');
   }
 
   SAVING = false;
-  if (!silent) { btn.disabled = false; btn.textContent = 'Save Draft'; }
+  if (!silent && btn) { btn.disabled = false; btn.textContent = 'Save Draft'; }
 }
 
 // ── PUBLISH / UNPUBLISH ──────────────────────────────────────
@@ -1565,9 +1631,13 @@ function openPubModal() {
 
   const hasBlocker = checks.some(c => c.req && !c.pass);
 
+  const iconPass = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
+  const iconFail = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`;
+  const iconWarn = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`;
+
   g('pm-body').innerHTML = checks.map(c => `
     <div class="pm-item ${c.pass ? 'pass' : c.req ? 'fail' : 'warn'}">
-      <span class="pm-ico">${c.pass ? '✓' : c.req ? '✕' : '⚠'}</span>
+      <span class="pm-ico">${c.pass ? iconPass : c.req ? iconFail : iconWarn}</span>
       <span>${c.label}${!c.pass && !c.req ? ' (recommended)' : ''}</span>
     </div>
   `).join('');
@@ -1592,6 +1662,7 @@ async function doPublish() {
 
   const payload = buildPayload();
   payload.status = 'published';
+  payload.is_draft = false;
 
   let savedData = null;
   try {
@@ -1623,6 +1694,7 @@ async function doPublish() {
           meta_description: payload.meta_description || '',
           tags: payload.tags || '',
           status: 'published',
+          content: null, // Clear working draft
           published_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         };
@@ -1653,7 +1725,7 @@ async function doPublish() {
     DIRTY = false;
     lsSave();
     setSaveStatus('Published');
-    toast('🎉 Article published to live site!', 'ok');
+    toast('Article published to live site', 'ok');
   } else {
     setSaveStatus('Publish failed');
     toast('Publish failed. Please check network.', 'err');
@@ -1673,10 +1745,11 @@ async function unpubArt() {
   STATUS = 'draft';
   const payload = buildPayload();
   payload.status = 'draft';
+  payload.is_draft = true;
 
   let savedData = null;
   try {
-    const r = await api('/api/articles?action=save', { method:'POST', body: JSON.stringify(payload) });
+    const r = await api('/api/articles?action=unpublish&id=' + encodeURIComponent(ART_ID), { method:'POST' });
     if (r.ok) savedData = await r.json();
   } catch(e) {}
 
@@ -1701,7 +1774,7 @@ async function unpubArt() {
     DIRTY = false;
     lsSave();
     setSaveStatus('Moved to Draft');
-    toast('Article unpublished & moved to Draft', 'ok');
+    toast('Article unpublished & moved to draft', 'ok');
   } else {
     setSaveStatus('Unpublish failed');
     toast('Unpublish failed. Please check network.', 'err');
@@ -1758,11 +1831,21 @@ function tagKey(e) {
   }
 }
 function renderTags() {
-  g('tags-list').innerHTML = _TAGS.map((t,i) =>
-    `<span class="tag-pill">${escH(t)}<button class="tag-x" onclick="removeTag(${i})" title="Remove">×</button></span>`
+  const visibleTags = _TAGS.filter(t => !t.startsWith('feat_pos:'));
+  g('tags-list').innerHTML = visibleTags.map((t,i) =>
+    `<span class="tag-pill">${escH(t)}<button type="button" class="tag-x" onclick="removeTag(${i})" title="Remove">×</button></span>`
   ).join('');
 }
-function removeTag(i) { _TAGS.splice(i,1); renderTags(); DIRTY = true; }
+function removeTag(i) {
+  const visibleTags = _TAGS.filter(t => !t.startsWith('feat_pos:'));
+  const targetTag = visibleTags[i];
+  if (targetTag) {
+    const origIdx = _TAGS.indexOf(targetTag);
+    if (origIdx > -1) _TAGS.splice(origIdx, 1);
+  }
+  renderTags();
+  DIRTY = true;
+}
 
 // ── SEO CHAR COUNTER ──────────────────────────────────────
 function seoCC(el, ccId, limit) {
@@ -1818,7 +1901,7 @@ async function handleFeatImgFile(input) {
     _featImgUrl = d.publicUrl;
     showFeatPreview(d.publicUrl);
     DIRTY = true; lsSave();
-    toast('Featured image uploaded ✓', 'ok');
+    toast('Featured image uploaded', 'ok');
   } catch(e) { toast('Featured image upload failed: ' + e.message, 'err'); }
 }
 function showFeatPreview(url) {
@@ -2459,7 +2542,7 @@ async function verifyEditorDbSync(shouldToast = false) {
       updateEditorSyncStatus('synced', 'Synced with database');
     }
     if (shouldToast) {
-      toast('Database connection verified & synchronized ✓', 'ok');
+      toast('Database connection verified & synchronized', 'ok');
     }
   } else {
     updateEditorSyncStatus('error', 'Sync error (offline/cache)');
