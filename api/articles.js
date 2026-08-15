@@ -53,35 +53,46 @@ module.exports = async function handler(req, res) {
     return res.status(200).json(data || []);
   }
 
-  // ── PUBLIC GET: single published article by slug, or any article by Unique ID (preview/draft) ─────
+  // ── GET SINGLE ARTICLE: by slug (public live) OR by Unique ID (admin draft/preview only) ─────
   if (action === 'public-get' && req.method === 'GET') {
     const slug = req.query.slug || '';
-    let query = sb().from('articles').select('*')
-      .or('is_deleted.is.null,is_deleted.eq.false');
     if (id) {
-      // By Unique ID -> accessible for preview & draft lookup
-      query = query.eq('id', id);
+      // By Unique ID (Draft Preview Mode) -> STRICTLY require authenticated admin session
+      const session = await requireAuth(req, res);
+      if (!session) return; // requireAuth sends 401/403
+
+      let query = sb().from('articles').select('*')
+        .eq('id', id)
+        .or('is_deleted.is.null,is_deleted.eq.false');
+
+      const { data, error } = await query.single();
+      if (error || !data) return res.status(404).json({ error: 'Article not found' });
+
+      // If accessed via preview mode with id, and there is a working draft stored in content, merge it for preview
+      if (req.query.preview === '1' && data.content) {
+        try {
+          const draftObj = JSON.parse(data.content);
+          if (draftObj && typeof draftObj === 'object') {
+            Object.assign(data, draftObj);
+          }
+        } catch(e) {}
+      }
+
+      return res.status(200).json(data);
     } else if (slug) {
-      // By slug -> published articles only on public site
-      query = query.eq('slug', slug).eq('status', 'published');
+      // By slug -> public live site, published articles only (no auth required)
+      let query = sb().from('articles').select('*')
+        .eq('slug', slug)
+        .eq('status', 'published')
+        .or('is_deleted.is.null,is_deleted.eq.false');
+
+      const { data, error } = await query.single();
+      if (error || !data) return res.status(404).json({ error: 'Article not found or not published' });
+
+      return res.status(200).json(data);
     } else {
       return res.status(400).json({ error: 'id or slug required' });
     }
-
-    const { data, error } = await query.single();
-    if (error || !data) return res.status(404).json({ error: 'Article not found or not published' });
-
-    // If accessed via preview mode with id, and there is a working draft stored in content, merge it for preview
-    if (id && req.query.preview === '1' && data.content) {
-      try {
-        const draftObj = JSON.parse(data.content);
-        if (draftObj && typeof draftObj === 'object') {
-          Object.assign(data, draftObj);
-        }
-      } catch(e) {}
-    }
-
-    return res.status(200).json(data);
   }
 
   // ── LIST (admin — active only) ────────────────────────────
