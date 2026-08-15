@@ -240,12 +240,12 @@
     <div class="events-hero-inner">
       <div>
         <nav class="events-crumb" aria-label="Breadcrumb">
-          <a href="index.html">Home</a>
+          <a href="index.html" id="ev-crumb-home">Home</a>
           <span>&rsaquo;</span>
-          <span>Events</span>
+          <span id="ev-crumb-current">Events</span>
         </nav>
-        <h1 class="events-page-title">Events &amp; Gatherings</h1>
-        <p class="events-page-subtitle">Debates, intellectual salons, cultural retrospectives, and private forums from The Privatian Family.</p>
+        <h1 class="events-page-title" id="ev-page-title">Events &amp; Gatherings</h1>
+        <p class="events-page-subtitle" id="ev-page-sub">Debates, intellectual salons, cultural retrospectives, and private forums from The Privatian Family.</p>
       </div>
     </div>
   </header>
@@ -253,7 +253,7 @@
   <!-- MAIN CONTENT -->
   <main class="events-container">
     <div class="events-filter-bar">
-      <div class="events-count-badge">Showing <strong id="events-count-display">0</strong> Scheduled Events</div>
+      <div class="events-count-badge" id="ev-count-badge">Showing <strong id="events-count-display">0</strong> Scheduled Events</div>
     </div>
 
     <div class="events-grid" id="events-grid-container">
@@ -268,24 +268,54 @@
     (function () {
       'use strict';
 
+      var _cachedEvents = [];
+
       function renderEvents(events) {
+        if (events) _cachedEvents = events;
         var container = document.getElementById('events-grid-container');
         var countEl = document.getElementById('events-count-display');
+        var countBadgeEl = document.getElementById('ev-count-badge');
+        var isBn = window.PrivatianLang && window.PrivatianLang.getLang() === 'bn';
+
+        var crumbHome = document.getElementById('ev-crumb-home');
+        if (crumbHome) crumbHome.textContent = isBn ? 'মূল পাতা' : 'Home';
+
+        var crumbCur = document.getElementById('ev-crumb-current');
+        if (crumbCur) crumbCur.textContent = isBn ? 'অনুষ্ঠানসমূহ' : 'Events';
+
+        var titleEl = document.getElementById('ev-page-title');
+        if (titleEl) titleEl.textContent = isBn ? 'অনুষ্ঠান ও সম্মিলনীসমূহ' : 'Events & Gatherings';
+
+        var subEl = document.getElementById('ev-page-sub');
+        if (subEl) subEl.textContent = isBn ? 'প্রাইভেসিয়ান পরিবারের বুদ্ধিবৃত্তিক আলোচনা, বিতর্ক, সাংস্কৃতিক সম্মিলন এবং বিশেষ সেমিনার।' : 'Debates, intellectual salons, cultural retrospectives, and private forums from The Privatian Family.';
+
+        var pick = function(en, bn) {
+          if (window.PrivatianLang && window.PrivatianLang.pickLang) {
+            return window.PrivatianLang.pickLang(en, bn);
+          }
+          return isBn ? (bn || en) : en;
+        };
+
         if (!container) return;
 
-        var activeEvents = (events || []).filter(function(e) { return e && e.enabled !== false; });
-        if (countEl) countEl.textContent = activeEvents.length;
+        var activeEvents = (_cachedEvents || []).filter(function(e) { return e && e.enabled !== false; });
+        var countFormatted = isBn ? (window.PrivatianLang ? window.PrivatianLang.toBengaliNumber(activeEvents.length) : activeEvents.length) : activeEvents.length;
+
+        if (countBadgeEl) {
+          countBadgeEl.innerHTML = isBn ? (countFormatted + ' টি নির্ধারিত অনুষ্ঠান প্রদর্শিত হচ্ছে') : ('Showing <strong id="events-count-display">' + countFormatted + '</strong> Scheduled Events');
+        }
 
         if (activeEvents.length === 0) {
-          container.innerHTML = '<div class="events-empty-state"><p style="font-size:16px;font-weight:600;margin:0 0 6px;">No upcoming events currently scheduled.</p><p style="font-size:13px;margin:0;">Please check back soon for our latest forum discussions and intellectual gatherings.</p></div>';
+          container.innerHTML = '<div class="events-empty-state"><p style="font-size:16px;font-weight:600;margin:0 0 6px;">' + (isBn ? 'বর্তমানে কোনো নির্ধারিত অনুষ্ঠান নেই।' : 'No upcoming events currently scheduled.') + '</p><p style="font-size:13px;margin:0;">' + (isBn ? 'আমাদের সাম্প্রতিক সেমিনার ও আলোচনার জন্য শীঘ্রই আবার দেখুন।' : 'Please check back soon for our latest forum discussions and intellectual gatherings.') + '</p></div>';
           return;
         }
 
         container.innerHTML = activeEvents.map(function(ev) {
-          var date = ev.date || 'TBA';
-          var title = ev.title || 'Untitled Event';
-          var meta = ev.meta || '';
+          var date = pick(ev.date, ev.date_bn || (window.PrivatianLang ? window.PrivatianLang.toBengaliNumber(ev.date) : ev.date));
+          var title = pick(ev.title, ev.title_bn);
+          var meta = pick(ev.meta, ev.meta_bn);
           var link = ev.href || 'index.html#events';
+          var btnText = isBn ? 'অনুষ্ঠানের বিবরণী &rarr;' : 'Event Details &rarr;';
 
           return '<article class="event-card">' +
             '<div class="event-date-box">' +
@@ -296,7 +326,7 @@
               (meta ? '<div class="event-meta-info"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> ' + escapeHtml(meta) + '</div>' : '') +
             '</div>' +
             '<div>' +
-              '<a href="' + escapeHtml(link) + '" class="event-btn">Event Details &rarr;</a>' +
+              '<a href="' + escapeHtml(link) + '" class="event-btn">' + btnText + '</a>' +
             '</div>' +
           '</article>';
         }).join('');
@@ -329,6 +359,11 @@
         .catch(function(err) {
           console.warn('[Events Page] Database fetch fallback:', err);
         });
+
+      // 3. Reactive listener for language changes
+      document.addEventListener('privatian:language-changed', function() {
+        renderEvents();
+      });
     })();
   </script>
 </body>

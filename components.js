@@ -130,15 +130,28 @@
   function getSectionDisplayName(s) {
     if (!s) return '';
     var isBn = window.PrivatianLang && window.PrivatianLang.getLang() === 'bn';
-    if (isBn) {
-      if (s.name_bn) return s.name_bn;
-      for (var i = 0; i < DEFAULT_SECTIONS.length; i++) {
-        if (DEFAULT_SECTIONS[i].slug === s.slug || DEFAULT_SECTIONS[i].id === s.id || DEFAULT_SECTIONS[i].name === s.name) {
-          return DEFAULT_SECTIONS[i].name_bn;
-        }
+    if (!isBn) return s.name || s.name_bn || '';
+
+    if (s.name_bn && String(s.name_bn).trim() !== '') return s.name_bn;
+
+    var sSlug = (s.slug || s.id || '').toLowerCase().trim();
+    var sName = (s.name || '').toLowerCase().trim();
+
+    for (var i = 0; i < DEFAULT_SECTIONS.length; i++) {
+      var d = DEFAULT_SECTIONS[i];
+      if ((d.slug && d.slug.toLowerCase() === sSlug) ||
+          (d.id && d.id.toLowerCase() === sSlug) ||
+          (d.name && d.name.toLowerCase() === sName)) {
+        return d.name_bn;
       }
     }
-    return s.name || s.name_bn || '';
+
+    if (window.PrivatianLang && window.PrivatianLang.translateStatic) {
+      var tr = window.PrivatianLang.translateStatic(s.name);
+      if (tr && tr !== s.name) return tr;
+    }
+
+    return s.name || '';
   }
 
   function getMenuSettings() {
@@ -309,22 +322,28 @@
 
     var cfg = getFooterSettings();
     var isBn = window.PrivatianLang && window.PrivatianLang.getLang() === 'bn';
+    var pick = function(en, bn) {
+      if (window.PrivatianLang && window.PrivatianLang.pickLang) {
+        return window.PrivatianLang.pickLang(en, bn);
+      }
+      return isBn ? (bn || en) : en;
+    };
 
-    var sectionsTitle = isBn ? (cfg.sectionsTitle_bn || window.PrivatianLang.t('sections')) : (cfg.sectionsTitle || 'Sections');
-    var exploreTitle  = isBn ? (cfg.exploreTitle_bn || window.PrivatianLang.t('explorePrivatian')) : (cfg.exploreTitle || 'Explore the Privatian');
-    var seriesTitle   = isBn ? (cfg.seriesTitle_bn || window.PrivatianLang.t('recentSeries')) : (cfg.seriesTitle || 'Our recent series');
-    var socialTitle   = isBn ? (cfg.socialTitle_bn || window.PrivatianLang.t('followUs')) : (cfg.socialTitle || 'Follow us on');
-    var tagline       = isBn ? (cfg.tagline_bn || 'দ্য প্রাইভেসিয়ান সোসাইটির আনুষ্ঠানিক প্রকাশনা — কেমব্রিজ, ম্যাসাচুসেটস') : (cfg.tagline || 'The Official Publication of The Privatian Society — Cambridge, Massachusetts');
-    var copyright     = isBn ? (cfg.copyright_bn || '© ২০২৬ দ্য প্রাইভেসিয়ান পরিবার। সর্বস্বত্ব সংরক্ষিত।') : (cfg.copyright || '© 2026 The Privatian Family. All rights reserved.');
+    var sectionsTitle = pick(cfg.sectionsTitle || 'Sections', cfg.sectionsTitle_bn || (window.PrivatianLang ? window.PrivatianLang.t('sections') : 'বিভাগসমূহ'));
+    var exploreTitle  = pick(cfg.exploreTitle || 'Explore the Privatian', cfg.exploreTitle_bn || (window.PrivatianLang ? window.PrivatianLang.t('explorePrivatian') : 'প্রাইভেসিয়ান পরিবার এক্সপ্লোর করুন'));
+    var seriesTitle   = pick(cfg.seriesTitle || 'Our recent series', cfg.seriesTitle_bn || (window.PrivatianLang ? window.PrivatianLang.t('recentSeries') : 'আমাদের সাম্প্রতিক সিরিজ'));
+    var socialTitle   = pick(cfg.socialTitle || 'Follow us on', cfg.socialTitle_bn || (window.PrivatianLang ? window.PrivatianLang.t('followUs') : 'অনুসরণ করুন'));
+    var tagline       = pick(cfg.tagline || 'The Official Publication of The Privatian Society — Cambridge, Massachusetts', cfg.tagline_bn || 'দ্য প্রাইভেসিয়ান সোসাইটির আনুষ্ঠানিক প্রকাশনা — কেমব্রিজ, ম্যাসাচুসেটস');
+    var copyright     = pick(cfg.copyright || '© 2026 The Privatian Family. All rights reserved.', cfg.copyright_bn || '© ২০২৬ দ্য প্রাইভেসিয়ান পরিবার। সর্বস্বত্ব সংরক্ষিত।');
 
     var exploreHtml = (cfg.explore || []).filter(function(e) { return e.enabled !== false; }).map(function(e) {
-      var label = isBn ? (e.label_bn || e.label || '') : (e.label || '');
+      var label = pick(e.label, e.label_bn);
       return `<li><a href="${escapeHTML(e.href || '/')}" target="${escapeHTML(e.target || '_self')}">${escapeHTML(label)}</a></li>`;
     }).join('');
 
     var seriesHtml = (cfg.series || []).filter(function(s) { return s.enabled !== false; }).map(function(s) {
-      var title = isBn ? (s.title_bn || s.title || '') : (s.title || '');
-      var desc  = isBn ? (s.description_bn || s.description || '') : (s.description || '');
+      var title = pick(s.title, s.title_bn);
+      var desc  = pick(s.description, s.description_bn);
       return `
         <div class="footer-series-item">
           <h4 class="footer-series-name"><a href="${escapeHTML(s.href || '/')}">${escapeHTML(title)}</a></h4>
@@ -334,16 +353,17 @@
     }).join('');
 
     var socialHtml = (cfg.social || []).filter(function(sc) { return sc.enabled !== false; }).map(function(sc) {
+      var sLabel = pick(sc.label || sc.platform, sc.label_bn);
       return `
         <a href="${escapeHTML(sc.href || '#')}" class="footer-social-link" target="_blank" rel="noopener noreferrer">
           ${getSocialSvgIcon(sc.platform)}
-          ${escapeHTML(sc.label || sc.platform || '')}
+          ${escapeHTML(sLabel)}
         </a>
       `;
     }).join('');
 
     var bottomLinksHtml = (cfg.bottomLinks || []).filter(function(b) { return b.enabled !== false; }).map(function(b) {
-      var label = isBn ? (b.label_bn || b.label || '') : (b.label || '');
+      var label = pick(b.label, b.label_bn);
       return `<a href="${escapeHTML(b.href || '#')}" target="${escapeHTML(b.target || '_self')}">${escapeHTML(label)}</a>`;
     }).join('');
 
@@ -586,17 +606,23 @@
     var menuConfig = getMenuSettings();
     if (!menuConfig) menuConfig = DEFAULT_MENU_CONFIG;
     var isBn = window.PrivatianLang && window.PrivatianLang.getLang() === 'bn';
+    var pick = function(en, bn) {
+      if (window.PrivatianLang && window.PrivatianLang.pickLang) {
+        return window.PrivatianLang.pickLang(en, bn);
+      }
+      return isBn ? (bn || en) : en;
+    };
 
     // 1. Column 1: Sections Title
     var titleSectionsEl = document.getElementById('mo-title-sections');
     if (titleSectionsEl) {
-      titleSectionsEl.textContent = isBn ? (menuConfig.sectionsTitle_bn || window.PrivatianLang.t('sections')) : (menuConfig.sectionsTitle || 'Sections');
+      titleSectionsEl.textContent = pick(menuConfig.sectionsTitle || 'Sections', menuConfig.sectionsTitle_bn || (window.PrivatianLang ? window.PrivatianLang.t('sections') : 'বিভাগসমূহ'));
     }
 
     // 2. Column 2: Featured Series
     var titleSeriesEl = document.getElementById('mo-title-series');
     if (titleSeriesEl) {
-      var sTitle = isBn ? (menuConfig.seriesTitle_bn || window.PrivatianLang.t('featuredSeries')) : (menuConfig.seriesTitle || 'Featured series');
+      var sTitle = pick(menuConfig.seriesTitle || 'Featured series', menuConfig.seriesTitle_bn || (window.PrivatianLang ? window.PrivatianLang.t('featuredSeries') : 'নির্বাচিত সিরিজ'));
       titleSeriesEl.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:text-bottom;margin-right:4px;"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg> ' + escapeHTML(sTitle);
     }
     var seriesListEl = document.getElementById('mo-series-list');
@@ -606,8 +632,8 @@
       seriesArr.forEach(function(s) {
         var wrap = document.createElement('div');
         wrap.className = 'menu-series';
-        var title = isBn ? (s.title_bn || s.title || '') : (s.title || '');
-        var desc  = isBn ? (s.description_bn || s.description || '') : (s.description || '');
+        var title = pick(s.title, s.title_bn);
+        var desc  = pick(s.description, s.description_bn);
         wrap.innerHTML = '<h3 class="menu-series-name"><a href="' + (s.href || '#') + '">' + escapeHTML(title) + '</a></h3>' +
                          '<p class="menu-series-desc">' + escapeHTML(desc) + '</p>';
         seriesListEl.appendChild(wrap);
@@ -617,7 +643,7 @@
     // 3. Column 2: Explore the Privatian
     var titleExploreEl = document.getElementById('mo-title-explore');
     if (titleExploreEl) {
-      titleExploreEl.textContent = isBn ? (menuConfig.exploreTitle_bn || window.PrivatianLang.t('explorePrivatian')) : (menuConfig.exploreTitle || 'Explore the Privatian');
+      titleExploreEl.textContent = pick(menuConfig.exploreTitle || 'Explore the Privatian', menuConfig.exploreTitle_bn || (window.PrivatianLang ? window.PrivatianLang.t('explorePrivatian') : 'প্রাইভেসিয়ান পরিবার এক্সপ্লোর করুন'));
     }
     var exploreListEl = document.getElementById('mo-explore-list');
     if (exploreListEl) {
@@ -628,7 +654,7 @@
         var a = document.createElement('a');
         a.href = e.href || '#';
         if (e.target) a.target = e.target;
-        a.textContent = isBn ? (e.label_bn || e.label || '') : (e.label || '');
+        a.textContent = pick(e.label, e.label_bn);
         li.appendChild(a);
         exploreListEl.appendChild(li);
       });
@@ -637,7 +663,7 @@
     // 4. Column 3: Read the latest
     var titleLatestEl = document.getElementById('mo-title-latest');
     if (titleLatestEl) {
-      titleLatestEl.textContent = isBn ? (menuConfig.latestTitle_bn || window.PrivatianLang.t('readLatest')) : (menuConfig.latestTitle || 'Read the latest');
+      titleLatestEl.textContent = pick(menuConfig.latestTitle || 'Read the latest', menuConfig.latestTitle_bn || (window.PrivatianLang ? window.PrivatianLang.t('readLatest') : 'সাম্প্রতিক প্রতিবেদনসমূহ'));
     }
     var latestListEl = document.getElementById('mo-latest-list');
     if (latestListEl) {
@@ -646,7 +672,7 @@
       latestArr.forEach(function(item) {
         var itemDiv = document.createElement('div');
         itemDiv.className = 'menu-latest-item';
-        var title = isBn ? (item.title_bn || item.title || '') : (item.title || '');
+        var title = pick(item.title, item.title_bn);
         itemDiv.innerHTML = (item.imageUrl ? '<img src="' + item.imageUrl + '" alt="' + escapeHTML(title) + '" class="menu-latest-img" />' : '') +
                             '<h3 class="menu-latest-title"><a href="' + (item.href || '#') + '">' + escapeHTML(title) + '</a></h3>';
         latestListEl.appendChild(itemDiv);
@@ -936,11 +962,12 @@
 
     if (Array.isArray(data) && data.length) {
       var mapped = data.map(function(r) {
-        return { id: r.slug, name: r.name, slug: r.slug };
+        return { id: r.slug || r.admin_id, name: r.name, name_bn: r.name_bn || '', slug: r.slug };
       });
       if (mapped.length) {
         try { localStorage.setItem(APPLIED_KEY, JSON.stringify(mapped)); } catch(e) {}
         populateSections();
+        populateFooterSections();
       }
       updateAllNewsLabels(data);
       try {
