@@ -1714,48 +1714,273 @@ function _minAdminPopup(extra) {
   });
 }
 
-// ── Tab state ────────────────────────────────────────────────────
+// ── Tab & Filter state ───────────────────────────────────────────
 let _accessTab = 'active';
+let _accessSearchQuery = '';
+let _accessRoleFilter = 'all';
+let _rawAdminList = [];
+
+function _selectGrantRole(role) {
+  const options = document.querySelectorAll('.access-role-card-opt');
+  options.forEach(opt => {
+    opt.classList.toggle('selected', opt.dataset.role === role);
+  });
+  const sel = document.getElementById('access-role-select');
+  if (sel) sel.value = role;
+}
+window._selectGrantRole = _selectGrantRole;
 
 function _setAccessTab(tab) {
   _accessTab = tab;
   ['active', 'suspended', 'recycle'].forEach(t => {
     const btn = document.getElementById('access-tab-' + t);
     const pnl = document.getElementById('access-panel-' + t);
-    if (btn) btn.classList.toggle('access-tab--active', t === tab);
+    if (btn) btn.classList.toggle('active', t === tab);
     if (pnl) pnl.hidden = (t !== tab);
   });
+  renderAccessLists();
+}
+window._setAccessTab = _setAccessTab;
+
+function _handleAccessSearch() {
+  const inp = document.getElementById('access-search-input');
+  const clearBtn = document.getElementById('access-search-clear');
+  _accessSearchQuery = inp ? inp.value.trim().toLowerCase() : '';
+  if (clearBtn) clearBtn.style.display = _accessSearchQuery ? 'block' : 'none';
+  renderAccessLists();
+}
+window._handleAccessSearch = _handleAccessSearch;
+
+function _clearAccessSearch() {
+  const inp = document.getElementById('access-search-input');
+  const clearBtn = document.getElementById('access-search-clear');
+  if (inp) { inp.value = ''; inp.focus(); }
+  if (clearBtn) clearBtn.style.display = 'none';
+  _accessSearchQuery = '';
+  renderAccessLists();
+}
+window._clearAccessSearch = _clearAccessSearch;
+
+function _handleAccessFilterChange() {
+  const sel = document.getElementById('access-role-filter');
+  _accessRoleFilter = sel ? sel.value : 'all';
+  renderAccessLists();
+}
+window._handleAccessFilterChange = _handleAccessFilterChange;
+
+function _getAvatarGradient(email) {
+  const gradients = [
+    'linear-gradient(135deg, #4f46e5, #7c3aed)',
+    'linear-gradient(135deg, #0284c7, #06b6d4)',
+    'linear-gradient(135deg, #059669, #10b981)',
+    'linear-gradient(135deg, #d97706, #f59e0b)',
+    'linear-gradient(135deg, #e11d48, #f43f5e)',
+    'linear-gradient(135deg, #7c2d12, #c2410c)',
+    'linear-gradient(135deg, #1e3a5f, #3b82f6)'
+  ];
+  let hash = 0;
+  const str = email || 'U';
+  for (let i = 0; i < str.length; i++) {
+    hash = (hash << 5) - hash + str.charCodeAt(i);
+    hash |= 0;
+  }
+  const idx = Math.abs(hash) % gradients.length;
+  const namePart = str.split('@')[0].replace(/[^a-zA-Z0-9]/g, '');
+  const initials = namePart.length >= 2 ? (namePart[0] + namePart[1]).toUpperCase() : (namePart[0] || 'U').toUpperCase();
+  return { gradient: gradients[idx], initials };
 }
 
-// ── Load / render list ───────────────────────────────────────────
-async function loadAccessList() {
-  const list = document.getElementById('access-list');
-  if (!list) return;
+function _auditLine(a) {
+  const fmt = iso => iso ? new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '';
+  const LABELS = {
+    suspended:                 'Suspended by',
+    unsuspended:               'Unsuspended by',
+    deleted:                   'Moved to Recycle by',
+    restored:                  'Restored by',
+    role_changed_to_Admin:     'Promoted to Admin by',
+    role_changed_to_Moderator: 'Set to Moderator by',
+  };
+  if (a.modified_by && a.modified_action) {
+    const label = LABELS[a.modified_action] || (a.modified_action + ' by');
+    return `<span>${escapeHtml(label)} <strong>${escapeHtml(a.modified_by)}</strong> &middot; ${fmt(a.modified_at)}</span>`;
+  }
+  return `<span>Added by <strong>${escapeHtml(a.added_by || 'system')}</strong> &middot; ${fmt(a.added_at)}</span>`;
+}
 
-  // Inject shell once
-  if (!document.getElementById('access-tab-active')) {
-    list.innerHTML = `
-      <div class="access-tabs" style="display:flex;border-bottom:1px solid #e5e7eb;margin-bottom:0;flex-shrink:0;">
-        <button id="access-tab-active"    class="access-tab access-tab--active" onclick="_setAccessTab('active')">Active</button>
-        <button id="access-tab-suspended" class="access-tab"                    onclick="_setAccessTab('suspended')">Suspended</button>
-        <button id="access-tab-recycle"   class="access-tab"                    onclick="_setAccessTab('recycle')">Recycle</button>
-      </div>
-      <div id="access-panel-active"></div>
-      <div id="access-panel-suspended" hidden></div>
-      <div id="access-panel-recycle"   hidden></div>`;
+function renderAccessLists() {
+  const all = _rawAdminList || [];
+  const me = ((window.PRIVATIAN_USER && window.PRIVATIAN_USER.email) || '').toLowerCase();
 
-    if (!document.getElementById('access-tab-style')) {
-      const s = document.createElement('style');
-      s.id = 'access-tab-style';
-      s.textContent = `.access-tab{padding:10px 20px;font-size:13px;font-weight:600;color:#6b7280;background:none;border:none;border-bottom:2px solid transparent;cursor:pointer;transition:color .15s,border-color .15s}.access-tab:hover{color:#111827}.access-tab--active{color:#1e3a5f;border-bottom-color:#1e3a5f}`;
-      document.head.appendChild(s);
-    }
+  // 1. Update KPI counters
+  const totalWhitelisted = all.length;
+  const activeAdmins     = all.filter(a => a.status === 'active' && a.role === 'Admin').length;
+  const activeMods       = all.filter(a => a.status === 'active' && a.role === 'Moderator').length;
+  const revokedCount     = all.filter(a => a.status === 'suspended' || a.status === 'deleted').length;
+
+  const elTotal = document.getElementById('access-kpi-total');
+  const elAdmins = document.getElementById('access-kpi-admins');
+  const elMods   = document.getElementById('access-kpi-moderators');
+  const elRevoked = document.getElementById('access-kpi-revoked');
+  if (elTotal) elTotal.textContent = totalWhitelisted;
+  if (elAdmins) elAdmins.textContent = activeAdmins;
+  if (elMods) elMods.textContent = activeMods;
+  if (elRevoked) elRevoked.textContent = revokedCount;
+
+  // 2. Update Tab count badges
+  const cActive    = all.filter(a => a.status === 'active').length;
+  const cSuspended = all.filter(a => a.status === 'suspended').length;
+  const cRecycle   = all.filter(a => a.status === 'deleted').length;
+
+  const tcA = document.getElementById('access-tab-count-active');
+  const tcS = document.getElementById('access-tab-count-suspended');
+  const tcR = document.getElementById('access-tab-count-recycle');
+  if (tcA) tcA.textContent = cActive;
+  if (tcS) tcS.textContent = cSuspended;
+  if (tcR) tcR.textContent = cRecycle;
+
+  // 3. Filter list by Tab, Search query, and Role dropdown
+  function filterItems(statusTarget) {
+    return all.filter(a => {
+      // Tab status match
+      const statusMatch = (statusTarget === 'recycle') ? (a.status === 'deleted') : (a.status === statusTarget);
+      if (!statusMatch) return false;
+
+      // Role dropdown filter
+      if (_accessRoleFilter !== 'all' && a.role !== _accessRoleFilter) return false;
+
+      // Search query
+      if (_accessSearchQuery) {
+        const text = `${a.email} ${a.role} ${a.added_by || ''} ${a.modified_by || ''} ${a.modified_action || ''}`.toLowerCase();
+        if (!text.includes(_accessSearchQuery)) return false;
+      }
+      return true;
+    });
   }
 
-  ['active', 'suspended', 'recycle'].forEach(t => {
-    const p = document.getElementById('access-panel-' + t);
-    if (p) p.innerHTML = '<div style="text-align:center;padding:28px;color:#9ca3af;font-size:13px;">Loading...</div>';
-  });
+  const activeFiltered    = filterItems('active');
+  const suspendedFiltered = filterItems('suspended');
+  const recycleFiltered   = filterItems('recycle');
+
+  function renderRow(a, panel) {
+    const isSelf = a.email.toLowerCase() === me;
+    const { gradient, initials } = _getAvatarGradient(a.email);
+    const isAdmin = (a.role === 'Admin');
+
+    const roleBadge = isAdmin
+      ? `<span class="access-role-pill admin"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/></svg> Admin</span>`
+      : `<span class="access-role-pill moderator"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> Moderator</span>`;
+
+    let statusBadge = '';
+    if (a.status === 'active') {
+      statusBadge = `<span class="access-status-pill active"><span class="access-tab-dot active"></span> Active</span>`;
+    } else if (a.status === 'suspended') {
+      statusBadge = `<span class="access-status-pill suspended"><span class="access-tab-dot suspended"></span> Suspended</span>`;
+    } else {
+      statusBadge = `<span class="access-status-pill recycle"><span class="access-tab-dot recycle"></span> In Recycle</span>`;
+    }
+
+    let actionsHtml = '';
+    if (isSelf) {
+      actionsHtml = `<span class="access-user-you-tag" title="Protected: Your active session cannot be modified by yourself"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" style="vertical-align:-1px;margin-right:3px;"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> Active (You)</span>`;
+    } else if (panel === 'recycle') {
+      actionsHtml = `
+        <button class="access-action-btn success" onclick="restoreAdmin('${a.id}','${escapeHtml(a.email)}')">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4.95"/></svg>
+          Restore
+        </button>
+        <button class="access-action-btn danger" onclick="purgeAdmin('${a.id}','${escapeHtml(a.email)}')">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+          Delete Forever
+        </button>
+      `;
+    } else {
+      const targetRole = isAdmin ? 'Moderator' : 'Admin';
+      const roleToggleBtn = `
+        <button class="access-action-btn secondary" title="Switch role to ${targetRole}" onclick="changeAdminRole('${a.id}','${escapeHtml(a.email)}','${targetRole}')">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+          Set as ${targetRole}
+        </button>
+      `;
+
+      const suspendLabel = a.status === 'active' ? 'Suspend' : 'Unsuspend';
+      const suspendNew   = a.status === 'active' ? 'suspended' : 'active';
+      const suspendBtn = `
+        <button class="access-action-btn warning" onclick="toggleAdminStatus('${a.id}','${suspendNew}','${escapeHtml(a.email)}')">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
+          ${suspendLabel}
+        </button>
+      `;
+
+      const removeBtn = `
+        <button class="access-action-btn danger" onclick="removeAdmin('${a.id}','${escapeHtml(a.email)}')">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+          Move to Recycle
+        </button>
+      `;
+
+      actionsHtml = `${roleToggleBtn} ${suspendBtn} ${removeBtn}`;
+    }
+
+    return `
+      <div class="access-user-card">
+        <div class="access-avatar" style="background:${gradient};" title="${escapeHtml(a.email)}">
+          ${initials}
+        </div>
+        <div class="access-user-details">
+          <div class="access-user-main-row">
+            <span class="access-user-email">${escapeHtml(a.email)}</span>
+            ${isSelf ? '<span class="access-user-you-tag">You</span>' : ''}
+            ${roleBadge}
+            ${statusBadge}
+          </div>
+          <div class="access-user-meta">
+            ${_auditLine(a)}
+          </div>
+        </div>
+        <div class="access-actions-wrap">
+          ${actionsHtml}
+        </div>
+      </div>
+    `;
+  }
+
+  function renderEmpty(msg, submsg) {
+    return `
+      <div style="text-align:center;padding:48px 20px;color:#94a3b8;">
+        <svg viewBox="0 0 24 24" width="38" height="38" fill="none" stroke="#cbd5e1" stroke-width="1.6" style="margin:0 auto 12px;display:block;"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+        <div style="font-size:14.5px;font-weight:700;color:#475569;margin-bottom:4px;">${msg}</div>
+        <div style="font-size:12.5px;color:#94a3b8;">${submsg || 'No users found matching your criteria.'}</div>
+      </div>
+    `;
+  }
+
+  const pA = document.getElementById('access-panel-active');
+  const pS = document.getElementById('access-panel-suspended');
+  const pR = document.getElementById('access-panel-recycle');
+
+  if (pA) {
+    pA.innerHTML = activeFiltered.length
+      ? activeFiltered.map(a => renderRow(a, 'active')).join('')
+      : renderEmpty('No Active Users Found', _accessSearchQuery ? 'Try clearing your search query or role filter.' : 'Add your first whitelisted email above.');
+  }
+  if (pS) {
+    pS.innerHTML = suspendedFiltered.length
+      ? suspendedFiltered.map(a => renderRow(a, 'suspended')).join('')
+      : renderEmpty('No Suspended Accounts', 'Suspended accounts will appear here and can be unsuspended at any time.');
+  }
+  if (pR) {
+    pR.innerHTML = recycleFiltered.length
+      ? recycleFiltered.map(a => renderRow(a, 'recycle')).join('')
+      : renderEmpty('Recycle Bin is Empty', 'Removed accounts are safely archived here before permanent deletion.');
+  }
+}
+
+// ── Load list from API / Supabase ─────────────────────────────────
+async function loadAccessList() {
+  const statusDot = document.getElementById('access-status-dot');
+  const statusTxt = document.getElementById('access-save-status');
+  if (statusDot) statusDot.style.background = '#f59e0b';
+  if (statusTxt) statusTxt.textContent = 'Syncing...';
 
   try {
     let all = null;
@@ -1781,94 +2006,15 @@ async function loadAccessList() {
 
     if (!Array.isArray(all)) throw new Error('Failed to load admin list');
 
-    const me       = ((window.PRIVATIAN_USER && window.PRIVATIAN_USER.email) || '').toLowerCase();
-    const active    = all.filter(a => a.status === 'active');
-    const suspended = all.filter(a => a.status === 'suspended');
-    const deleted   = all.filter(a => a.status === 'deleted');
+    _rawAdminList = all;
+    renderAccessLists();
 
-    // Update tab labels
-    const ta = document.getElementById('access-tab-active');
-    const ts = document.getElementById('access-tab-suspended');
-    const tr = document.getElementById('access-tab-recycle');
-    if (ta) ta.textContent = `Active (${active.length})`;
-    if (ts) ts.textContent = `Suspended (${suspended.length})`;
-    if (tr) tr.textContent = `Recycle (${deleted.length})`;
-
-    function auditLine(a) {
-      const fmt = iso => iso ? new Date(iso).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : '';
-      const LABELS = {
-        suspended:                 'Suspended by',
-        unsuspended:               'Unsuspended by',
-        deleted:                   'Removed by',
-        restored:                  'Restored by',
-        role_changed_to_Admin:     'Promoted to Admin by',
-        role_changed_to_Moderator: 'Downgraded to Moderator by',
-      };
-      if (a.modified_by && a.modified_action) {
-        const label = LABELS[a.modified_action] || (a.modified_action + ' by');
-        return `${escapeHtml(label)} <strong>${escapeHtml(a.modified_by)}</strong> &middot; ${fmt(a.modified_at)}`;
-      }
-      return `Added by <strong>${escapeHtml(a.added_by || 'system')}</strong> &middot; ${fmt(a.added_at)}`;
-    }
-
-    function roleColor(role) {
-      return role === 'Admin'
-        ? 'background:#dbeafe;color:#1e40af'
-        : 'background:#d1fae5;color:#065f46';
-    }
-
-    function row(a, panel) {
-      const isSelf  = a.email.toLowerCase() === me;
-      const roleBtn = isSelf ? '' :
-        `<button title="Change role" onclick="changeAdminRole('${a.id}','${escapeHtml(a.email)}','${a.role === 'Admin' ? 'Moderator' : 'Admin'}')"
-          style="background:none;border:1px solid #e5e7eb;border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer;color:#6b7280;">
-          → ${a.role === 'Admin' ? 'Moderator' : 'Admin'}
-        </button>`;
-
-      let actions = '';
-      if (isSelf) {
-        actions = '<span style="font-size:12px;color:#9ca3af;padding:2px 8px;">(you)</span>';
-      } else if (panel === 'recycle') {
-        actions = `
-          <button onclick="restoreAdmin('${a.id}','${escapeHtml(a.email)}')"
-            style="background:#ecfdf5;border:1px solid #6ee7b7;border-radius:6px;padding:4px 11px;font-size:12px;cursor:pointer;color:#059669;font-weight:600;">Restore</button>
-          <button onclick="purgeAdmin('${a.id}','${escapeHtml(a.email)}')"
-            style="background:#fff0f0;border:1px solid #fca5a5;border-radius:6px;padding:4px 11px;font-size:12px;cursor:pointer;color:#dc2626;font-weight:600;">Delete Permanently</button>`;
-      } else {
-        const suspendLabel = a.status === 'active' ? 'Suspend' : 'Unsuspend';
-        const suspendNew   = a.status === 'active' ? 'suspended' : 'active';
-        actions = `
-          ${roleBtn}
-          <button onclick="toggleAdminStatus('${a.id}','${suspendNew}','${escapeHtml(a.email)}')"
-            style="background:none;border:1px solid #e5e7eb;border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer;color:#6b7280;">${suspendLabel}</button>
-          <button onclick="removeAdmin('${a.id}','${escapeHtml(a.email)}')"
-            style="background:none;border:1px solid #fca5a5;border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer;color:#dc2626;">Remove</button>`;
-      }
-
-      return `<div style="display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid #f3f4f6;flex-wrap:wrap;">
-        <div style="flex:1;min-width:180px;">
-          <div style="font-weight:600;font-size:14px;color:#111827;">${escapeHtml(a.email)}</div>
-          <div style="font-size:11.5px;color:#9ca3af;margin-top:2px;">${auditLine(a)}</div>
-        </div>
-        <span style="${roleColor(a.role)};border-radius:20px;padding:2px 12px;font-size:11px;font-weight:700;">${escapeHtml(a.role)}</span>
-        <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">${actions}</div>
-      </div>`;
-    }
-
-    const empty = msg => `<div style="text-align:center;padding:36px;color:#9ca3af;font-size:13px;">${msg}</div>`;
-    const pA = document.getElementById('access-panel-active');
-    const pS = document.getElementById('access-panel-suspended');
-    const pR = document.getElementById('access-panel-recycle');
-    if (pA) pA.innerHTML = active.length    ? active.map(a=>row(a,'active')).join('')       : empty('No active admins.');
-    if (pS) pS.innerHTML = suspended.length ? suspended.map(a=>row(a,'suspended')).join('') : empty('No suspended accounts.');
-    if (pR) pR.innerHTML = deleted.length   ? deleted.map(a=>row(a,'recycle')).join('')     : empty('Recycle bin is empty.');
-
-    _setAccessTab(_accessTab);
+    if (statusDot) statusDot.style.background = '#10b981';
+    if (statusTxt) statusTxt.textContent = 'Synced with database';
   } catch(e) {
-    const err = '<div style="text-align:center;padding:24px;color:#dc2626;font-size:13px;">Error loading. Please refresh.</div>';
-    ['active','suspended','recycle'].forEach(t => {
-      const p = document.getElementById('access-panel-' + t); if (p) p.innerHTML = err;
-    });
+    if (statusDot) statusDot.style.background = '#ef4444';
+    if (statusTxt) statusTxt.textContent = 'Sync Error';
+    console.warn('[Admin] loadAccessList error:', e.message);
   }
 }
 
