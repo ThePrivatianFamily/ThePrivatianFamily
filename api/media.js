@@ -166,6 +166,8 @@ async function getStoredMediaList(sb) {
         file_size: obj.Size || dbMeta.file_size || 0,
         tags: dbMeta.tags || [],
         uploaded_by: dbMeta.uploaded_by || 'Admin',
+        is_deleted: dbMeta.is_deleted === true,
+        deleted_at: dbMeta.deleted_at || null,
         created_at: obj.LastModified ? new Date(obj.LastModified).toISOString() : (dbMeta.created_at || new Date().toISOString()),
         updated_at: dbMeta.updated_at || (obj.LastModified ? new Date(obj.LastModified).toISOString() : new Date().toISOString())
       };
@@ -193,21 +195,34 @@ async function getStoredMediaList(sb) {
 }
 
 function computeStorageStats(items) {
+  const activeItems = items.filter(x => !x.is_deleted);
+  const trashItems = items.filter(x => x.is_deleted);
+
   const totalFiles = items.length;
+  const activeFiles = activeItems.length;
+  const trashFiles = trashItems.length;
+
   const totalBytes = items.reduce((acc, x) => acc + (x.file_size || 0), 0);
+  const activeBytes = activeItems.reduce((acc, x) => acc + (x.file_size || 0), 0);
+  const trashBytes = trashItems.reduce((acc, x) => acc + (x.file_size || 0), 0);
+
   const R2_CAPACITY_BYTES = 10 * 1024 * 1024 * 1024; // 10 GB
   const freeBytes = Math.max(0, R2_CAPACITY_BYTES - totalBytes);
   const usedPct = (totalBytes / R2_CAPACITY_BYTES) * 100;
   const freePct = Math.max(0, 100 - usedPct);
 
-  const photos = items.filter(x => !x.mime_type?.includes('svg') && !x.filename?.toLowerCase().endsWith('.svg'));
-  const svgs = items.filter(x => x.mime_type?.includes('svg') || x.filename?.toLowerCase().endsWith('.svg'));
+  const photos = activeItems.filter(x => !x.mime_type?.includes('svg') && !x.filename?.toLowerCase().endsWith('.svg'));
+  const svgs = activeItems.filter(x => x.mime_type?.includes('svg') || x.filename?.toLowerCase().endsWith('.svg'));
   const photosBytes = photos.reduce((acc, x) => acc + (x.file_size || 0), 0);
   const svgsBytes = svgs.reduce((acc, x) => acc + (x.file_size || 0), 0);
 
   return {
     totalFiles,
+    activeFiles,
+    trashFiles,
     totalBytes,
+    activeBytes,
+    trashBytes,
     capacityBytes: R2_CAPACITY_BYTES,
     freeBytes,
     usedPct,
@@ -216,8 +231,8 @@ function computeStorageStats(items) {
     photosBytes,
     svgsCount: svgs.length,
     svgsBytes,
-    avgFileSize: totalFiles > 0 ? Math.round(totalBytes / totalFiles) : 0,
-    largestFileSize: items.reduce((max, x) => Math.max(max, x.file_size || 0), 0)
+    avgFileSize: activeFiles > 0 ? Math.round(activeBytes / activeFiles) : 0,
+    largestFileSize: activeItems.reduce((max, x) => Math.max(max, x.file_size || 0), 0)
   };
 }
 
@@ -682,8 +697,87 @@ module.exports = async (req, res) => {
     }
   }
 
-  // ── 5. DELETE MEDIA (DELETE) ───────────────────────────────────────────
-  if (req.method === 'DELETE' && action === 'delete') {
+  // ── 5. TRASH & DELETION ACTIONS ────────────────────────────────────────
+  // 5a. MOVE TO TRASH (DELETE or POST with action=trash)
+  if ((req.method === 'DELETE' || req.method === 'POST') && action === 'trash') {
+    const session = await requireAuth(req, res);
+    if (!session) return;
+
+    const id = req.query.id || (req.body && req.body.id);
+    if (!id) return res.status(400).json({ error: 'id is required.' });
+
+    try {
+      const items = await getStoredMediaList(sb);
+      const item = items.find(x => x.unique_id === id || x.id === id);
+      if (!item) return res.status(404).json({ error: 'Media asset not found.' });
+
+      item.is_deleted = true;
+      item.deleted_at = new Date().toISOString();
+      item.updated_at = new Date().toISOString();
+
+      await saveAllMediaItems(sb, items);
+
+      try {
+        await logActivity({
+          actor: session,
+          action: 'media.trash',
+          category: 'media',
+          summary: `${session.name || session.email} moved image "${item.filename}" to Trash Bin`,
+          target_id: id,
+          target_name: item.filename,
+          details: { id, r2_key: item.r2_key },
+          req
+        });
+      } catch(e) {}
+
+      return res.status(200).json({ ok: true, message: 'Image moved to Trash Bin.', media: item });
+    } catch(err) {
+      console.error('[Media] Trash error:', err);
+      return res.status(500).json({ error: 'Failed to move media asset to Trash.' });
+    }
+  }
+
+  // 5b. RESTORE FROM TRASH (POST with action=restore)
+  if (req.method === 'POST' && action === 'restore') {
+    const session = await requireAuth(req, res);
+    if (!session) return;
+
+    const id = req.query.id || (req.body && req.body.id);
+    if (!id) return res.status(400).json({ error: 'id is required.' });
+
+    try {
+      const items = await getStoredMediaList(sb);
+      const item = items.find(x => x.unique_id === id || x.id === id);
+      if (!item) return res.status(404).json({ error: 'Media asset not found.' });
+
+      item.is_deleted = false;
+      item.deleted_at = null;
+      item.updated_at = new Date().toISOString();
+
+      await saveAllMediaItems(sb, items);
+
+      try {
+        await logActivity({
+          actor: session,
+          action: 'media.restore',
+          category: 'media',
+          summary: `${session.name || session.email} restored image "${item.filename}" from Trash Bin`,
+          target_id: id,
+          target_name: item.filename,
+          details: { id, r2_key: item.r2_key },
+          req
+        });
+      } catch(e) {}
+
+      return res.status(200).json({ ok: true, message: 'Image restored to active gallery.', media: item });
+    } catch(err) {
+      console.error('[Media] Restore error:', err);
+      return res.status(500).json({ error: 'Failed to restore media asset.' });
+    }
+  }
+
+  // 5c. PERMANENTLY DELETE MEDIA (DELETE with action=delete or delete_permanent)
+  if (req.method === 'DELETE' && (action === 'delete' || action === 'delete_permanent')) {
     const session = await requireAuth(req, res);
     if (!session) return;
 
@@ -712,9 +806,9 @@ module.exports = async (req, res) => {
       try {
         await logActivity({
           actor: session,
-          action: 'media.delete',
+          action: 'media.delete_permanent',
           category: 'media',
-          summary: `${session.name || session.email} deleted image "${(item && item.filename) || id}" from Gallery`,
+          summary: `${session.name || session.email} permanently erased image "${(item && item.filename) || id}" from Cloudflare R2`,
           target_id: id,
           target_name: (item && item.filename) || id,
           details: { id, r2_key: item && item.r2_key },
@@ -722,10 +816,49 @@ module.exports = async (req, res) => {
         });
       } catch(e) {}
 
-      return res.status(200).json({ ok: true, message: 'Image deleted successfully.' });
+      return res.status(200).json({ ok: true, message: 'Image permanently deleted from Cloudflare R2.' });
     } catch(err) {
-      console.error('[Media] Delete error:', err);
+      console.error('[Media] Permanent delete error:', err);
       return res.status(500).json({ error: 'Failed to delete media asset.' });
+    }
+  }
+
+  // 5d. EMPTY TRASH BIN (POST or DELETE with action=empty_trash)
+  if ((req.method === 'POST' || req.method === 'DELETE') && action === 'empty_trash') {
+    const session = await requireAuth(req, res);
+    if (!session) return;
+
+    try {
+      const items = await getStoredMediaList(sb);
+      const trashedItems = items.filter(x => x.is_deleted);
+
+      for (const item of trashedItems) {
+        if (item.r2_key) {
+          try {
+            await s3.send(new DeleteObjectCommand({
+              Bucket: R2_BUCKET_NAME,
+              Key: item.r2_key
+            }));
+          } catch(e) {}
+        }
+        await removeMediaItemMetadata(sb, item.unique_id || item.id);
+      }
+
+      try {
+        await logActivity({
+          actor: session,
+          action: 'media.empty_trash',
+          category: 'media',
+          summary: `${session.name || session.email} emptied Trash Bin (${trashedItems.length} assets permanently erased from Cloudflare R2)`,
+          details: { deletedCount: trashedItems.length },
+          req
+        });
+      } catch(e) {}
+
+      return res.status(200).json({ ok: true, deletedCount: trashedItems.length, message: `Trash emptied (${trashedItems.length} assets permanently erased).` });
+    } catch(err) {
+      console.error('[Media] Empty trash error:', err);
+      return res.status(500).json({ error: 'Failed to empty Trash Bin.' });
     }
   }
 

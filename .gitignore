@@ -4,3 +4,6 @@ desktop.ini
 .vscode/
 *.log
 node_modules/
+
+.vercel
+.env*

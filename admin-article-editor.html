@@ -330,9 +330,9 @@ body{font-family:var(--sans);background:var(--bg);padding-top:calc(var(--tb) + v
 /* Author photo */
 #author-photo-zone{width:64px;height:64px;border-radius:50%;overflow:hidden;
   cursor:pointer;position:relative;flex-shrink:0}
-#author-photo-zone:hover::after{content:'📷';position:absolute;inset:0;
-  background:rgba(13,31,53,.55);display:flex;align-items:center;justify-content:center;
-  font-size:22px;border-radius:50%}
+#author-photo-zone:hover::after{content:'';position:absolute;inset:0;
+  background:rgba(13,31,53,.65) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='22' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2'%3E%3Cpath d='M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z'/%3E%3Ccircle cx='12' cy='13' r='4'/%3E%3C/svg%3E") no-repeat center center;
+  border-radius:50%}
 #author-photo-zone img{width:100%;height:100%;object-fit:cover;display:block}
 #author-photo-zone svg{display:block}
 .bio-fields{display:flex;flex-direction:column;gap:6px}
@@ -1947,8 +1947,9 @@ button, input, select, textarea, [contenteditable] {
             <input type="text" class="sd-inp" id="sd-slug-input" placeholder="article-slug" style="border:none;background:transparent;padding-left:4px;font-family:monospace;font-size:12px;"
               oninput="syncSlug(this.value, 'sd'); DIRTY=true;" />
           </div>
-          <div id="sd-slug-lock-note" style="display:none;font:600 11px/1.3 var(--sans);color:#d97706;background:#fffbeb;border:1px solid #fde68a;border-radius:4px;padding:4px 8px;margin-top:6px;">
-            🔒 URL &amp; Slug are unified in the backend and defined strictly in English.
+          <div id="sd-slug-lock-note" style="display:none;font:600 11px/1.3 var(--sans);color:#d97706;background:#fffbeb;border:1px solid #fde68a;border-radius:4px;padding:4px 8px;margin-top:6px;display:flex;align-items:center;gap:4px;">
+            <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0;"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            <span>URL &amp; Slug are unified in the backend and defined strictly in English.</span>
           </div>
           <div id="sd-slug-preview" style="font:400 11px/1.4 var(--sans);color:#64748b;margin-top:7px;word-break:break-all;">
             Live Link: <span style="color:#0a528e;font-weight:600;">theprivatianfamily.vercel.app/article/<span id="sd-slug-val">untitled</span></span>
@@ -2182,13 +2183,13 @@ function loadBufferToInputs(lang) {
       tbSlug.readOnly = true;
       tbSlug.style.opacity = '0.5';
       tbSlug.style.cursor = 'not-allowed';
-      tbSlug.title = '🔒 URL Slug is unified in backend and defined strictly in English';
+      tbSlug.title = 'URL Slug is unified in backend and defined strictly in English';
     }
     if (sdSlug) {
       sdSlug.readOnly = true;
       sdSlug.style.opacity = '0.5';
       sdSlug.style.cursor = 'not-allowed';
-      sdSlug.title = '🔒 URL Slug is unified in backend and defined strictly in English';
+      sdSlug.title = 'URL Slug is unified in backend and defined strictly in English';
     }
     if (slugLockNote) slugLockNote.style.display = 'block';
   } else {
@@ -2831,7 +2832,10 @@ function openPubModal() {
   if (!bnTitlePass || !bnDeckPass || !bnBodyPass || !bnAuthorPass) {
     html += `
       <div class="pm-lang-block fail">
-        <strong>⚠️ Bilingual Requirement:</strong>
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          <strong>Bilingual Requirement:</strong>
+        </div>
         <span>Both English and Bengali content must be filled before publishing. Please switch to the <b>[BN] বাংলা</b> tab in the topbar to complete the Bengali translation.</span>
       </div>
     `;
@@ -3331,7 +3335,8 @@ function insChecklist(ev) {
 function insCallout(ev) {
   if (ev) ev.preventDefault();
   g('ed-rt').focus();
-  const html = `<div class="ed-callout" contenteditable="false"><span class="ed-callout-icon">💡</span><div class="ed-callout-content" contenteditable="true"><strong>Key Takeaway:</strong> Add your important insight, context, or summary note here…</div></div><p><br></p>`;
+  const bulbSvg = `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;color:#d97706;display:inline-block;"><line x1="9" y1="18" x2="15" y2="18"/><line x1="10" y1="22" x2="14" y2="22"/><path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0 0 18 8 6 6 0 0 0 6 8c0 1 .23 2.23 1.5 3.5A4.61 4.61 0 0 1 8.91 14"/></svg>`;
+  const html = `<div class="ed-callout" contenteditable="false"><span class="ed-callout-icon">${bulbSvg}</span><div class="ed-callout-content" contenteditable="true"><strong>Key Takeaway:</strong> Add your important insight, context, or summary note here…</div></div><p><br></p>`;
   document.execCommand('insertHTML', false, html);
   DIRTY = true;
   setSaveStatus('Unsaved changes');

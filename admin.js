@@ -8809,6 +8809,7 @@ function _updateGalleryCounts(apiStorage = null, syncStatus = null) {
   const countAll = document.getElementById('gallery-filter-count-all');
   const countPhotos = document.getElementById('gallery-filter-count-photos');
   const countSvg = document.getElementById('gallery-filter-count-svg');
+  const countTrash = document.getElementById('gallery-filter-count-trash');
   const footerText = document.getElementById('gallery-total-count-text');
 
   // KPI elements
@@ -8831,11 +8832,18 @@ function _updateGalleryCounts(apiStorage = null, syncStatus = null) {
   const r2SyncText = document.getElementById('gallery-sync-r2-text');
   const dbSyncText = document.getElementById('gallery-sync-db-text');
 
-  // Calculations
+  // Separate active and trash
+  const activeItems = _rawGalleryList.filter(x => !x.is_deleted);
+  const trashItems = _rawGalleryList.filter(x => x.is_deleted);
+
   const total = _rawGalleryList.length;
-  const photos = _rawGalleryList.filter(x => !x.mime_type?.includes('svg') && !x.filename?.toLowerCase().endsWith('.svg')).length;
-  const svgs = _rawGalleryList.filter(x => x.mime_type?.includes('svg') || x.filename?.toLowerCase().endsWith('.svg')).length;
+  const activeCount = activeItems.length;
+  const trashCount = trashItems.length;
+
+  const photos = activeItems.filter(x => !x.mime_type?.includes('svg') && !x.filename?.toLowerCase().endsWith('.svg')).length;
+  const svgs = activeItems.filter(x => x.mime_type?.includes('svg') || x.filename?.toLowerCase().endsWith('.svg')).length;
   const totalBytes = apiStorage?.totalBytes ?? _rawGalleryList.reduce((acc, cur) => acc + (cur.file_size || 0), 0);
+  const activeBytes = apiStorage?.activeBytes ?? activeItems.reduce((acc, cur) => acc + (cur.file_size || 0), 0);
 
   // Cloudflare R2 standard free tier capacity: 10 GB (10,737,418,240 bytes)
   const R2_CAPACITY_BYTES = 10 * 1024 * 1024 * 1024;
@@ -8843,8 +8851,8 @@ function _updateGalleryCounts(apiStorage = null, syncStatus = null) {
   const usedPct = (totalBytes / R2_CAPACITY_BYTES) * 100;
   const freePct = Math.max(0, 100 - usedPct);
 
-  const avgBytes = total > 0 ? Math.round(totalBytes / total) : 0;
-  const largestBytes = apiStorage?.largestFileSize ?? _rawGalleryList.reduce((max, cur) => Math.max(max, cur.file_size || 0), 0);
+  const avgBytes = activeCount > 0 ? Math.round(activeBytes / activeCount) : 0;
+  const largestBytes = apiStorage?.largestFileSize ?? activeItems.reduce((max, cur) => Math.max(max, cur.file_size || 0), 0);
 
   // 1. Sync Status Badges
   if (r2SyncText) {
@@ -8856,16 +8864,17 @@ function _updateGalleryCounts(apiStorage = null, syncStatus = null) {
 
   // 2. Sidebar Badge & Filter Tabs
   if (badge) {
-    badge.textContent = total;
-    badge.style.display = total > 0 ? '' : 'none';
+    badge.textContent = activeCount;
+    badge.style.display = activeCount > 0 ? '' : 'none';
   }
-  if (countAll) countAll.textContent = total;
+  if (countAll) countAll.textContent = activeCount;
   if (countPhotos) countPhotos.textContent = photos;
   if (countSvg) countSvg.textContent = svgs;
+  if (countTrash) countTrash.textContent = trashCount;
 
   // 3. KPI Cards
-  if (statTotalCount) statTotalCount.textContent = total;
-  if (statBreakdown) statBreakdown.textContent = `${photos} ${photos === 1 ? 'Photo' : 'Photos'} • ${svgs} ${svgs === 1 ? 'SVG / Vector' : 'SVGs'}`;
+  if (statTotalCount) statTotalCount.textContent = activeCount;
+  if (statBreakdown) statBreakdown.textContent = `${photos} ${photos === 1 ? 'Photo' : 'Photos'} • ${svgs} ${svgs === 1 ? 'SVG' : 'SVGs'}${trashCount > 0 ? ` • ${trashCount} in Trash` : ''}`;
   if (statStorageUsed) statStorageUsed.textContent = _formatFileSize(totalBytes);
   if (statUsedPct) {
     const pctStr = usedPct < 0.01 && totalBytes > 0 ? '< 0.01%' : (usedPct.toFixed(2) + '%');
@@ -8873,7 +8882,7 @@ function _updateGalleryCounts(apiStorage = null, syncStatus = null) {
   }
   if (statStorageFree) statStorageFree.textContent = _formatFileSize(freeBytes);
   if (statFreePct) statFreePct.textContent = `${freePct.toFixed(1)}% capacity available`;
-  if (statAvgSize) statAvgSize.textContent = total > 0 ? _formatFileSize(avgBytes) : '0 B';
+  if (statAvgSize) statAvgSize.textContent = activeCount > 0 ? _formatFileSize(avgBytes) : '0 B';
   if (statLargest) statLargest.textContent = largestBytes > 0 ? (`Max: ${_formatFileSize(largestBytes)}`) : 'Max: 0 B';
 
   // 4. Visual Quota Bar
@@ -8890,28 +8899,49 @@ function _updateGalleryCounts(apiStorage = null, syncStatus = null) {
 
   // 5. Footer Bar Summary
   if (footerText) {
-    footerText.textContent = `${total} ${total === 1 ? 'item' : 'items'} (${_formatFileSize(totalBytes)}) stored in Cloudflare R2 • ${_formatFileSize(freeBytes)} free capacity remaining`;
+    footerText.textContent = `${activeCount} active items (${_formatFileSize(activeBytes)}) • ${trashCount} in trash (${_formatFileSize(totalBytes - activeBytes)}) • ${_formatFileSize(freeBytes)} free capacity remaining`;
   }
 }
 
-// ── 4. Render Gallery Grid ───────────────────────────────────────
+// ── 4. Render Gallery Grid (Fast GPU Accelerated 60FPS) ───────────
 function renderGalleryGrid() {
   const grid = document.getElementById('gallery-grid');
+  const trashBanner = document.getElementById('gallery-trash-banner');
+  const uploadCard = document.getElementById('gallery-upload-zone-wrap');
+  const foldersCard = document.querySelector('.gallery-folders-card');
   if (!grid) return;
 
-  // Filter by media type
-  let filtered = [..._rawGalleryList];
-  if (_galleryFilter === 'photos') {
-    filtered = filtered.filter(x => !x.mime_type?.includes('svg') && !x.filename?.toLowerCase().endsWith('.svg'));
-  } else if (_galleryFilter === 'svg') {
-    filtered = filtered.filter(x => x.mime_type?.includes('svg') || x.filename?.toLowerCase().endsWith('.svg'));
+  const isTrashMode = _galleryFilter === 'trash';
+
+  if (trashBanner) {
+    trashBanner.style.display = isTrashMode ? 'flex' : 'none';
+  }
+  if (uploadCard) {
+    uploadCard.style.display = isTrashMode ? 'none' : '';
+  }
+  if (foldersCard) {
+    foldersCard.style.display = isTrashMode ? 'none' : '';
   }
 
-  // Filter by Active Folder
-  if (_galleryActiveFolder === '__root__') {
-    filtered = filtered.filter(x => !x.folder);
-  } else if (_galleryActiveFolder !== 'all') {
-    filtered = filtered.filter(x => x.folder === _galleryActiveFolder);
+  let filtered = [];
+  if (isTrashMode) {
+    filtered = _rawGalleryList.filter(x => x.is_deleted);
+  } else {
+    filtered = _rawGalleryList.filter(x => !x.is_deleted);
+
+    // Filter by media type
+    if (_galleryFilter === 'photos') {
+      filtered = filtered.filter(x => !x.mime_type?.includes('svg') && !x.filename?.toLowerCase().endsWith('.svg'));
+    } else if (_galleryFilter === 'svg') {
+      filtered = filtered.filter(x => x.mime_type?.includes('svg') || x.filename?.toLowerCase().endsWith('.svg'));
+    }
+
+    // Filter by Active Folder
+    if (_galleryActiveFolder === '__root__') {
+      filtered = filtered.filter(x => !x.folder);
+    } else if (_galleryActiveFolder !== 'all') {
+      filtered = filtered.filter(x => x.folder === _galleryActiveFolder);
+    }
   }
 
   // Search query
@@ -8942,16 +8972,28 @@ function renderGalleryGrid() {
   }
 
   if (filtered.length === 0) {
-    grid.innerHTML = `
-      <div class="gallery-empty-state">
-        <div class="gallery-empty-icon">
-          <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+    if (isTrashMode) {
+      grid.innerHTML = `
+        <div class="gallery-empty-state">
+          <div class="gallery-empty-icon" style="background:#fee2e2;color:#dc2626;">
+            <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+          </div>
+          <h3 style="margin:0;font-size:15px;color:var(--text-primary);">${_gallerySearchQuery ? 'No matching trashed images' : 'Trash Bin is Empty'}</h3>
+          <p style="margin:0;font-size:12.5px;color:var(--text-muted);max-width:360px;">${_gallerySearchQuery ? 'No trashed files match your search query.' : 'When you delete images, they are stored here safely. You can restore them anytime or permanently erase them.'}</p>
         </div>
-        <h3 style="margin:0;font-size:15px;color:var(--text-primary);">${_gallerySearchQuery ? 'No matching images found' : (_galleryActiveFolder !== 'all' ? `No images in "${_galleryActiveFolder}" folder` : 'No images uploaded yet')}</h3>
-        <p style="margin:0;font-size:12.5px;color:var(--text-muted);max-width:360px;">${_gallerySearchQuery ? 'Try searching for a different keyword or filename.' : 'Drag & drop images into the upload area above to store them in Cloudflare R2.'}</p>
-        ${!_gallerySearchQuery ? `<button class="btn btn--primary btn--sm" onclick="document.getElementById('gallery-file-input').click()" style="margin-top:4px;">Upload to this folder</button>` : ''}
-      </div>
-    `;
+      `;
+    } else {
+      grid.innerHTML = `
+        <div class="gallery-empty-state">
+          <div class="gallery-empty-icon">
+            <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+          </div>
+          <h3 style="margin:0;font-size:15px;color:var(--text-primary);">${_gallerySearchQuery ? 'No matching images found' : (_galleryActiveFolder !== 'all' ? `No images in "${_galleryActiveFolder}" folder` : 'No images uploaded yet')}</h3>
+          <p style="margin:0;font-size:12.5px;color:var(--text-muted);max-width:360px;">${_gallerySearchQuery ? 'Try searching for a different keyword or filename.' : 'Drag & drop images into the upload area above to store them in Cloudflare R2.'}</p>
+          ${!_gallerySearchQuery ? `<button class="btn btn--primary btn--sm" onclick="document.getElementById('gallery-file-input').click()" style="margin-top:4px;">Upload to this folder</button>` : ''}
+        </div>
+      `;
+    }
     return;
   }
 
@@ -8961,12 +9003,12 @@ function renderGalleryGrid() {
     const dateStr = _formatShortDate(item.created_at);
 
     return `
-      <div class="gallery-item-card" data-id="${item.unique_id}">
-        <div class="gallery-thumb-wrap" onclick="openMediaInspector('${item.unique_id}')" title="Click to view details &amp; copy code">
-          <img src="${escapeHtml(item.url)}" alt="${escapeHtml(item.alt_text || item.title || item.filename)}" class="gallery-thumb-img" loading="lazy" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\\'http://www.w3.org/2000/svg\\' width=\\'100\\' height=\\'100\\' viewBox=\\'0 0 24 24\\' fill=\\'none\\' stroke=\\'%2364748b\\' stroke-width=\\'2\\'><rect x=\\'3\\' y=\\'3\\' width=\\'18\\' height=\\'18\\' rx=\\'2\\'/><circle cx=\\'8.5\\' cy=\\'8.5\\' r=\\'1.5\\'/><polyline points=\\'21 15 16 10 5 21\\'/></svg>'" />
+      <div class="gallery-item-card ${item.is_deleted ? 'gallery-item-card--trashed' : ''}" data-id="${item.unique_id}">
+        <div class="gallery-thumb-wrap" onclick="openMediaInspector('${item.unique_id}')" title="Click to inspect asset details">
+          <img src="${escapeHtml(item.url)}" alt="${escapeHtml(item.alt_text || item.title || item.filename)}" class="gallery-thumb-img" loading="lazy" decoding="async" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\\'http://www.w3.org/2000/svg\\' width=\\'100\\' height=\\'100\\' viewBox=\\'0 0 24 24\\' fill=\\'none\\' stroke=\\'%2364748b\\' stroke-width=\\'2\\'><rect x=\\'3\\' y=\\'3\\' width=\\'18\\' height=\\'18\\' rx=\\'2\\'/><circle cx=\\'8.5\\' cy=\\'8.5\\' r=\\'1.5\\'/><polyline points=\\'21 15 16 10 5 21\\'/></svg>'" />
           <span class="gallery-badge-format">${escapeHtml(ext.toUpperCase())}</span>
           <span class="gallery-badge-size">${sizeStr}</span>
-          ${item.folder ? `<span class="gallery-card-folder-badge" title="Folder: ${escapeHtml(item.folder)}"><svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:3px;"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>${escapeHtml(item.folder)}</span>` : ''}
+          ${item.is_deleted ? `<span class="gallery-card-trash-badge" title="Trashed"><svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:2px;"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg>In Trash</span>` : (item.folder ? `<span class="gallery-card-folder-badge" title="Folder: ${escapeHtml(item.folder)}"><svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:3px;"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>${escapeHtml(item.folder)}</span>` : '')}
         </div>
         <div class="gallery-card-body">
           <div class="gallery-id-row">
@@ -8979,15 +9021,24 @@ function renderGalleryGrid() {
           <div class="gallery-card-meta">
             <span>${dateStr}</span>
             <div class="gallery-card-actions">
-              <button type="button" class="gallery-icon-btn" onclick="_copyMediaDirectUrl('${escapeHtml(item.url)}')" title="Copy Public CDN URL">
-                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
-              </button>
-              <button type="button" class="gallery-icon-btn" onclick="openMediaInspector('${item.unique_id}')" title="Inspect &amp; Edit Metadata">
-                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-              </button>
-              <button type="button" class="gallery-icon-btn danger" onclick="deleteMediaConfirm('${item.unique_id}', '${escapeHtml(item.filename || item.unique_id)}')" title="Delete Asset from R2">
-                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
-              </button>
+              ${item.is_deleted ? `
+                <button type="button" class="gallery-icon-btn success" onclick="_restoreAsset('${item.unique_id}')" title="Restore asset to gallery">
+                  <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+                </button>
+                <button type="button" class="gallery-icon-btn danger" onclick="_deletePermanentConfirm('${item.unique_id}', '${escapeHtml(item.filename || item.unique_id)}')" title="Permanently delete from Cloudflare R2">
+                  <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+                </button>
+              ` : `
+                <button type="button" class="gallery-icon-btn" onclick="_copyMediaDirectUrl('${escapeHtml(item.url)}')" title="Copy Public CDN URL">
+                  <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+                </button>
+                <button type="button" class="gallery-icon-btn" onclick="openMediaInspector('${item.unique_id}')" title="Inspect &amp; Edit Metadata">
+                  <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                </button>
+                <button type="button" class="gallery-icon-btn danger" onclick="_trashAssetConfirm('${item.unique_id}', '${escapeHtml(item.filename || item.unique_id)}')" title="Move Asset to Trash">
+                  <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+                </button>
+              `}
             </div>
           </div>
         </div>
@@ -9214,6 +9265,37 @@ function openMediaInspector(uniqueId) {
   if (altBnInp) altBnInp.value = item.alt_text_bn || '';
   if (currIdInp) currIdInp.value = item.unique_id;
 
+  // Inspector footer action buttons depending on trash state
+  const footerEl = modal.querySelector('.modal-footer');
+  if (footerEl) {
+    if (item.is_deleted) {
+      footerEl.innerHTML = `
+        <button type="button" class="btn btn--ghost" style="color:#dc2626;" onclick="_deletePermanentConfirm('${item.unique_id}', '${escapeHtml(item.filename || item.unique_id)}')">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+          <span>Delete Permanently</span>
+        </button>
+        <div style="display:flex;gap:10px;">
+          <button class="btn btn--ghost" type="button" onclick="closeMediaInspector()">Close</button>
+          <button class="btn btn--primary" type="button" onclick="_restoreAsset('${item.unique_id}')" style="background:#10b981;border-color:#10b981;">
+            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:3px;"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+            Restore Asset
+          </button>
+        </div>
+      `;
+    } else {
+      footerEl.innerHTML = `
+        <button type="button" class="btn btn--ghost" style="color:#dc2626;" onclick="_deleteInspectorMedia()">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+          <span>Move to Trash</span>
+        </button>
+        <div style="display:flex;gap:10px;">
+          <button class="btn btn--ghost" type="button" onclick="closeMediaInspector()">Close</button>
+          <button class="btn btn--primary" type="button" id="media-insp-save-btn" onclick="_saveInspectorMetadata()">Save Metadata</button>
+        </div>
+      `;
+    }
+  }
+
   modal.hidden = false;
 }
 
@@ -9280,24 +9362,77 @@ function _deleteInspectorMedia() {
   if (!_galleryCurrentInspectorItem) return;
   const item = _galleryCurrentInspectorItem;
   closeMediaInspector();
-  deleteMediaConfirm(item.unique_id, item.filename || item.unique_id);
+  _trashAssetConfirm(item.unique_id, item.filename || item.unique_id);
 }
 
-function deleteMediaConfirm(uniqueId, filename) {
+// ── 9. Trash & Deletion Confirmations ─────────────────────────────
+function _trashAssetConfirm(uniqueId, filename) {
   _confirmModal({
-    title: 'Delete Asset from R2',
-    body: `Permanently delete <strong>${escapeHtml(filename)}</strong> (<code style="color:#4f46e5;">${uniqueId}</code>) from Cloudflare R2 storage?<br><div style="margin-top:8px;font-size:12px;color:#991b1b;background:#fef2f2;border:1px solid #fecaca;padding:8px 12px;border-radius:8px;">This will remove the file from the CDN. Any articles referencing this direct URL will need an updated image.</div>`,
-    confirmText: 'Delete Asset',
+    title: 'Move Asset to Trash',
+    body: `Are you sure you want to move <strong>${escapeHtml(filename)}</strong> (<code style="color:#4f46e5;">${uniqueId}</code>) to the <strong>Trash Bin</strong>?<br><div style="margin-top:8px;font-size:12px;color:#1e293b;background:#f8fafc;border:1px solid #e2e8f0;padding:8px 12px;border-radius:8px;">The file remains safely in Cloudflare R2 and can be restored at any time from the Trash Bin tab.</div>`,
+    confirmText: 'Move to Trash',
     variant: 'danger',
     onConfirm: async () => {
       try {
-        const res = await _apiDelete(`/api/media?action=delete&id=${encodeURIComponent(uniqueId)}`);
+        const res = await _apiDelete(`/api/media?action=trash&id=${encodeURIComponent(uniqueId)}`);
         if (res && res.ok) {
-          _rawGalleryList = _rawGalleryList.filter(x => x.unique_id !== uniqueId && x.id !== uniqueId);
+          const item = _rawGalleryList.find(x => x.unique_id === uniqueId || x.id === uniqueId);
+          if (item) {
+            item.is_deleted = true;
+            item.deleted_at = new Date().toISOString();
+          }
           renderGalleryFolders();
           _updateGalleryCounts();
           renderGalleryGrid();
-          showToast('success', `Asset ${filename} deleted from Cloudflare R2.`);
+          showToast('success', `Moved "${filename}" to Trash Bin.`);
+        }
+      } catch(e) {
+        showToast('error', 'Failed to move to trash: ' + e.message);
+      }
+    }
+  });
+}
+
+async function _restoreAsset(uniqueId) {
+  try {
+    const res = await _apiPost(`/api/media?action=restore&id=${encodeURIComponent(uniqueId)}`);
+    if (res && res.ok) {
+      const item = _rawGalleryList.find(x => x.unique_id === uniqueId || x.id === uniqueId);
+      if (item) {
+        item.is_deleted = false;
+        item.deleted_at = null;
+      }
+      if (_galleryCurrentInspectorItem && _galleryCurrentInspectorItem.unique_id === uniqueId) {
+        closeMediaInspector();
+      }
+      renderGalleryFolders();
+      _updateGalleryCounts();
+      renderGalleryGrid();
+      showToast('success', 'Asset restored to active gallery.');
+    }
+  } catch(e) {
+    showToast('error', 'Failed to restore asset: ' + e.message);
+  }
+}
+
+function _deletePermanentConfirm(uniqueId, filename) {
+  _confirmModal({
+    title: 'Permanently Erase from Cloudflare R2',
+    body: `Permanently erase <strong>${escapeHtml(filename)}</strong> (<code style="color:#dc2626;">${uniqueId}</code>) from your Cloudflare R2 bucket?<br><div style="margin-top:8px;font-size:12px;color:#991b1b;background:#fef2f2;border:1px solid #fecaca;padding:8px 12px;border-radius:8px;"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:3px;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><strong>Irreversible Action:</strong> This file will be permanently deleted from Cloudflare R2 and CDN. This action cannot be recovered.</div>`,
+    confirmText: 'Permanently Delete',
+    variant: 'danger',
+    onConfirm: async () => {
+      try {
+        const res = await _apiDelete(`/api/media?action=delete_permanent&id=${encodeURIComponent(uniqueId)}`);
+        if (res && res.ok) {
+          _rawGalleryList = _rawGalleryList.filter(x => x.unique_id !== uniqueId && x.id !== uniqueId);
+          if (_galleryCurrentInspectorItem && _galleryCurrentInspectorItem.unique_id === uniqueId) {
+            closeMediaInspector();
+          }
+          renderGalleryFolders();
+          _updateGalleryCounts();
+          renderGalleryGrid();
+          showToast('success', `Permanently erased "${filename}" from Cloudflare R2.`);
         }
       } catch(e) {
         showToast('error', 'Failed to delete asset: ' + e.message);
@@ -9306,7 +9441,35 @@ function deleteMediaConfirm(uniqueId, filename) {
   });
 }
 
-// ── 9. Universal Gallery Picker Modal (for Articles / Sections) ───
+function _emptyTrashConfirm() {
+  const trashCount = _rawGalleryList.filter(x => x.is_deleted).length;
+  if (trashCount === 0) {
+    showToast('info', 'Trash Bin is already empty.');
+    return;
+  }
+  _confirmModal({
+    title: `Empty Trash Bin (${trashCount} ${trashCount === 1 ? 'item' : 'items'})`,
+    body: `Are you sure you want to permanently erase all <strong>${trashCount}</strong> trashed items from your Cloudflare R2 bucket?<br><div style="margin-top:8px;font-size:12px;color:#991b1b;background:#fef2f2;border:1px solid #fecaca;padding:8px 12px;border-radius:8px;"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:3px;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><strong>Irreversible Action:</strong> All trashed images will be permanently erased from Cloudflare R2. This action cannot be recovered.</div>`,
+    confirmText: 'Empty Trash Now',
+    variant: 'danger',
+    onConfirm: async () => {
+      try {
+        const res = await _apiPost('/api/media?action=empty_trash');
+        if (res && res.ok) {
+          _rawGalleryList = _rawGalleryList.filter(x => !x.is_deleted);
+          renderGalleryFolders();
+          _updateGalleryCounts();
+          renderGalleryGrid();
+          showToast('success', `Emptied Trash (${res.deletedCount || trashCount} items permanently erased).`);
+        }
+      } catch(e) {
+        showToast('error', 'Failed to empty trash: ' + e.message);
+      }
+    }
+  });
+}
+
+// ── 10. Universal Gallery Picker Modal (for Articles / Sections) ───
 function openGalleryPicker(callback) {
   _galleryPickerCallback = callback;
   _galleryPickerSelectedItem = null;
@@ -9348,7 +9511,7 @@ function _renderPickerGrid(searchQuery = '') {
   const grid = document.getElementById('picker-gallery-grid');
   if (!grid) return;
 
-  let items = [..._rawGalleryList];
+  let items = _rawGalleryList.filter(x => !x.is_deleted);
 
   // Filter by folder
   if (_galleryPickerActiveFolder === '__root__') {

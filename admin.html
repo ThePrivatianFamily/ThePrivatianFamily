@@ -1650,6 +1650,11 @@
               <span>Vectors &amp; SVGs</span>
               <span class="gallery-tab-count" id="gallery-filter-count-svg">0</span>
             </button>
+            <button id="gallery-filter-trash" class="gallery-tab-pill gallery-tab-pill--trash" onclick="_setGalleryFilter('trash')">
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:3px;"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+              <span>Trash Bin</span>
+              <span class="gallery-tab-count" id="gallery-filter-count-trash">0</span>
+            </button>
           </div>
 
           <div class="gallery-toolbar-actions">
@@ -1671,6 +1676,23 @@
               <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
             </button>
           </div>
+        </div>
+
+        <!-- Trash Bin Top Notice Banner -->
+        <div id="gallery-trash-banner" class="gallery-trash-banner" style="display:none;">
+          <div class="gallery-trash-banner-left">
+            <div class="gallery-trash-banner-icon">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+            </div>
+            <div>
+              <h4 style="margin:0 0 2px;font-size:13px;font-weight:700;color:#991b1b;">Trash Bin — Safely Stored Assets</h4>
+              <p style="margin:0;font-size:12px;color:#b91c1c;">Deleted assets are kept safely here without being deleted from R2. You can restore them anytime or permanently delete them.</p>
+            </div>
+          </div>
+          <button type="button" class="btn btn--danger btn--sm" id="gallery-empty-trash-btn" onclick="_emptyTrashConfirm()">
+            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+            <span>Empty Trash Bin</span>
+          </button>
         </div>
 
         <!-- Media Grid Container -->
