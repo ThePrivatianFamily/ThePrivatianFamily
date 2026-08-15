@@ -22,10 +22,11 @@
   <base href="/" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Source+Sans+3:wght@300;400;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Noto+Serif+Bengali:wght@400;600;700&family=Source+Sans+3:wght@300;400;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/style.css" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="/supabase-config.js"></script>
+  <script src="/lang.js"></script>
   <script src="/components.js"></script>
 
   <style>
@@ -687,7 +688,10 @@
 (function(){
   function qp(n){return new URLSearchParams(window.location.search).get(n)||'';}
   function g(i){return document.getElementById(i);}
-  function fmt(iso){if(!iso)return '';return new Date(iso).toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'});}
+  function fmt(iso){
+    if(!iso) return '';
+    return window.PrivatianLang ? window.PrivatianLang.formatDisplayDate(iso) : new Date(iso).toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'});
+  }
   function slugify(n){return (n||'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'');}
   function escH(s){return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 
@@ -698,95 +702,113 @@
       slug = decodeURIComponent(match[1]);
     }
   }
-  var isAll = !slug || slug === 'all';
-  var sectionName = isAll ? 'All Articles' : (slug.charAt(0).toUpperCase() + slug.slice(1).replace(/-/g, ' '));
 
-  document.querySelector('title').textContent = sectionName + ' — The Privatian Family';
-  var metaDesc = document.querySelector('meta[name="description"]');
-  if (metaDesc) metaDesc.setAttribute('content', 'Browse articles and stories in ' + sectionName + ' of The Privatian Family.');
+  var _loadedSections = [];
+  var _loadedCustomConfig = {};
+  var _loadedArticles = [];
 
-  ['sec-title', 'bc'].forEach(function(id){ var e = g(id); if (e) e.textContent = sectionName; });
-  var hb = g('hero-badge'); if (hb) hb.textContent = sectionName;
-  var allLbl = g('all-grid-lbl'); if (allLbl) allLbl.textContent = 'All Articles in ' + sectionName;
-  var selLbl = g('selected-lbl'); if (selLbl) selLbl.textContent = 'Selected Stories in ' + sectionName;
+  function renderSectionPage() {
+    var isBn = window.PrivatianLang && window.PrivatianLang.getLang() === 'bn';
+    var isAll = !slug || slug === 'all';
 
-  // 1. Fetch section info, custom settings & articles
-  Promise.all([
-    fetch('/api/sections').then(function(r){return r.json();}).catch(function(){return [];}),
-    fetch('/api/sections?action=section-config&slug=' + encodeURIComponent(slug || 'all')).then(function(r){return r.json();}).catch(function(){return {};}),
-    fetch('/api/articles?action=public' + (isAll ? '' : '&section=' + encodeURIComponent(slug))).then(function(r){return r.json();}).catch(function(){return [];})
-  ]).then(function(results){
-    var sections = results[0] || [];
-    var customConfig = results[1] || {};
-    var articles = results[2] || [];
-
-    // Match exact section
-    var cur = sections.find(function(s){ return s.slug === slug; });
-    if (cur) {
-      sectionName = cur.name;
-      ['sec-title', 'bc'].forEach(function(id){ var e = g(id); if (e) e.textContent = sectionName; });
-      if (hb) hb.textContent = sectionName;
-      if (allLbl) allLbl.textContent = 'All Articles in ' + sectionName;
-      if (selLbl) selLbl.textContent = 'Selected Stories in ' + sectionName;
-      document.querySelector('title').textContent = sectionName + ' — The Privatian Family';
+    var cur = _loadedSections.find(function(s){ return s.slug === slug; });
+    var sectionName = '';
+    if (isAll) {
+      sectionName = isBn ? 'সকল প্রতিবেদন' : 'All Articles';
+    } else if (cur) {
+      sectionName = isBn ? (cur.name_bn || cur.name) : cur.name;
+    } else {
+      sectionName = slug.charAt(0).toUpperCase() + slug.slice(1).replace(/-/g, ' ');
     }
 
-    if (customConfig.description && g('sec-meta')) {
-      g('sec-meta').textContent = customConfig.description;
-    } else if (g('sec-meta')) {
-      g('sec-meta').textContent = 'Explore insightful reporting, research, and perspectives in ' + sectionName + '.';
+    var siteSuffix = isBn ? 'দ্য প্রাইভেসিয়ান পরিবার' : 'The Privatian Family';
+    document.querySelector('title').textContent = sectionName + ' — ' + siteSuffix;
+
+    var crumbHome = document.querySelector('.id-crumb a');
+    if (crumbHome) crumbHome.textContent = isBn ? 'মূল পাতা' : 'Home';
+
+    var backHome = document.querySelector('.id-back');
+    if (backHome) {
+      backHome.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="15 18 9 12 15 6"/></svg> ` + (isBn ? 'মূল পাতায় ফিরুন' : 'Back to Home');
+    }
+
+    ['sec-title', 'bc'].forEach(function(id){ var e = g(id); if (e) e.textContent = sectionName; });
+    var hb = g('hero-badge'); if (hb) hb.textContent = sectionName;
+
+    var allLbl = g('all-grid-lbl');
+    if (allLbl) allLbl.textContent = isBn ? (sectionName + ' বিভাগের সকল প্রতিবেদন') : ('All Articles in ' + sectionName);
+
+    var selLbl = g('selected-lbl');
+    if (selLbl) selLbl.textContent = isBn ? (sectionName + ' বিভাগের নির্বাচিত প্রতিবেদন') : ('Selected Stories in ' + sectionName);
+
+    var latestSbHd = document.querySelector('.hero-sb-hd span');
+    if (latestSbHd) latestSbHd.textContent = isBn ? 'এই বিভাগের সাম্প্রতিক খবর' : 'Latest in This Section';
+
+    var metaDescEl = g('sec-meta');
+    if (metaDescEl) {
+      if (isBn) {
+        metaDescEl.textContent = _loadedCustomConfig.description_bn || ('প্রাইভেসিয়ান পরিবারে ' + sectionName + ' বিভাগের গবেষণা, ঐতিহ্য ও প্রবন্ধসমূহ পড়ুন।');
+      } else {
+        metaDescEl.textContent = _loadedCustomConfig.description || ('Explore insightful reporting, research, and perspectives in ' + sectionName + '.');
+      }
     }
 
     // ── RENDER HERO FEATURED ARTICLE ──
     var heroArt = null;
-    if (customConfig.featuredArticleId) {
-      heroArt = articles.find(function(a){ return a.id === customConfig.featuredArticleId; });
+    if (_loadedCustomConfig.featuredArticleId) {
+      heroArt = _loadedArticles.find(function(a){ return a.id === _loadedCustomConfig.featuredArticleId; });
     }
-    if (!heroArt && articles.length > 0) {
-      // Fallback: newest article with image or first article
-      heroArt = articles.find(function(a){ return a.hero_img_url; }) || articles[0];
+    if (!heroArt && _loadedArticles.length > 0) {
+      heroArt = _loadedArticles.find(function(a){ return a.hero_img_url; }) || _loadedArticles[0];
     }
 
     if (heroArt) {
       var heroLink = g('hero-link');
       var artHref = heroArt.slug ? '/article/' + heroArt.slug : '/article/' + heroArt.id;
-      if (heroLink) { heroLink.href = artHref; heroLink.textContent = heroArt.title; }
+      var hTitle = isBn ? (heroArt.title_bn || heroArt.title) : heroArt.title;
+      var hDeck = isBn ? (heroArt.deck_bn !== undefined ? heroArt.deck_bn : heroArt.deck) : heroArt.deck;
+      var hAuthor = isBn ? (heroArt.author_bn || heroArt.author || 'দ্য প্রাইভেসিয়ান পরিবার') : (heroArt.author || 'The Privatian Family');
+      var hSec = isBn ? (heroArt.section_bn || heroArt.section || sectionName) : (heroArt.section || sectionName);
+
+      if (heroLink) { heroLink.href = artHref; heroLink.textContent = hTitle; }
       var heroImg = g('hero-img');
       if (heroImg) {
         heroImg.src = heroArt.hero_img_url || '/img1.png';
-        heroImg.alt = heroArt.title || '';
+        heroImg.alt = hTitle || '';
       }
       var heroDeck = g('hero-deck');
       if (heroDeck) {
-        heroDeck.textContent = heroArt.deck || 'Read the full story from The Privatian Family.';
+        heroDeck.textContent = hDeck || (isBn ? 'সম্পূর্ণ প্রতিবেদন পড়ুন।' : 'Read the full story from The Privatian Family.');
       }
       var heroAuthor = g('hero-author');
-      if (heroAuthor) heroAuthor.textContent = heroArt.author || 'The Privatian Family';
+      if (heroAuthor) heroAuthor.textContent = hAuthor;
       var heroDate = g('hero-date');
       if (heroDate) heroDate.textContent = fmt(heroArt.published_at);
-      if (hb) hb.textContent = heroArt.section || sectionName;
+      if (hb) hb.textContent = hSec;
     } else {
-      if (g('hero-link')) g('hero-link').textContent = 'No published articles in this section yet.';
+      if (g('hero-link')) g('hero-link').textContent = isBn ? 'এই বিভাগে এখনো কোনো প্রকাশিত প্রতিবেদন নেই।' : 'No published articles in this section yet.';
       if (g('hero-img')) g('hero-img').src = '/img1.png';
-      if (g('hero-deck')) g('hero-deck').textContent = 'Check back soon for new publications and stories.';
+      if (g('hero-deck')) g('hero-deck').textContent = isBn ? 'নতুন প্রতিবেদনের জন্য শীঘ্রই আবার দেখুন।' : 'Check back soon for new publications and stories.';
     }
 
     // ── RENDER LATEST 5 ARTICLES IN THIS SECTION ──
     var latestList = g('latest-sb-list');
     if (latestList) {
-      var latest5 = articles.slice(0, 5);
+      var latest5 = _loadedArticles.slice(0, 5);
       if (latest5.length === 0) {
-        latestList.innerHTML = '<li class="hero-sb-item" style="padding:24px;text-align:center;color:#94a3b8;font-size:13px;">No recent articles yet.</li>';
+        latestList.innerHTML = '<li class="hero-sb-item" style="padding:24px;text-align:center;color:#94a3b8;font-size:13px;">' + (isBn ? 'কোনো সাম্প্রতিক প্রতিবেদন নেই।' : 'No recent articles yet.') + '</li>';
       } else {
         latestList.innerHTML = latest5.map(function(a, idx){
           var artHref = a.slug ? '/article/' + a.slug : '/article/' + a.id;
-          var numPad = String(idx + 1).padStart(2, '0');
+          var numPad = isBn ? (window.PrivatianLang ? window.PrivatianLang.toBengaliNumber(idx + 1) : String(idx + 1)) : String(idx + 1).padStart(2, '0');
+          var aTitle = isBn ? (a.title_bn || a.title) : a.title;
+          var aSec = isBn ? (a.section_bn || a.section || sectionName) : (a.section || sectionName);
           return '<li class="hero-sb-item">' +
             '<a href="' + artHref + '">' +
               '<span class="hs-num">' + numPad + '</span>' +
               '<div class="hs-content">' +
-                '<div class="hs-sec">' + escH(a.section || sectionName) + '</div>' +
-                '<h4 class="hs-title">' + escH(a.title) + '</h4>' +
+                '<div class="hs-sec">' + escH(aSec) + '</div>' +
+                '<h4 class="hs-title">' + escH(aTitle) + '</h4>' +
                 '<div class="hs-date">' + fmt(a.published_at) + '</div>' +
               '</div>' +
             '</a>' +
@@ -800,16 +822,15 @@
     var selGrid = g('selected-grid');
     var selectedArticles = [];
 
-    if (customConfig.selectedArticleIds && customConfig.selectedArticleIds.length > 0) {
-      customConfig.selectedArticleIds.forEach(function(sid){
-        var found = articles.find(function(a){ return a.id === sid; });
+    if (_loadedCustomConfig.selectedArticleIds && _loadedCustomConfig.selectedArticleIds.length > 0) {
+      _loadedCustomConfig.selectedArticleIds.forEach(function(sid){
+        var found = _loadedArticles.find(function(a){ return a.id === sid; });
         if (found) selectedArticles.push(found);
       });
     }
 
-    // If none specifically curated in admin, fallback to top articles
-    if (selectedArticles.length === 0 && articles.length > 1) {
-      selectedArticles = articles.filter(function(a){ return !heroArt || a.id !== heroArt.id; }).slice(0, 4);
+    if (selectedArticles.length === 0 && _loadedArticles.length > 1) {
+      selectedArticles = _loadedArticles.filter(function(a){ return !heroArt || a.id !== heroArt.id; }).slice(0, 4);
     }
 
     if (selectedArticles.length > 0 && selWrap && selGrid) {
@@ -819,13 +840,16 @@
         var thumb = a.hero_img_url
           ? '<img src="' + a.hero_img_url + '" alt="' + escH(a.title) + '" loading="lazy" />'
           : '<div style="width:100%;height:100%;background:#e2e8f0;"></div>';
+        var aTitle = isBn ? (a.title_bn || a.title) : a.title;
+        var aSec = isBn ? (a.section_bn || a.section || sectionName) : (a.section || sectionName);
+        var aAuthor = isBn ? (a.author_bn || a.author) : a.author;
         return '<a href="' + artHref + '" class="sel-card">' +
           '<div class="sel-card-img-wrap">' + thumb + '</div>' +
           '<div class="sel-card-body">' +
-            '<span class="sel-badge">' + escH(a.section || sectionName) + '</span>' +
-            '<h3 class="sel-title">' + escH(a.title) + '</h3>' +
+            '<span class="sel-badge">' + escH(aSec) + '</span>' +
+            '<h3 class="sel-title">' + escH(aTitle) + '</h3>' +
             '<div class="sel-meta">' +
-              (a.author ? '<span>' + escH(a.author) + '</span> • ' : '') +
+              (aAuthor ? '<span>' + escH(aAuthor) + '</span> • ' : '') +
               '<span>' + fmt(a.published_at) + '</span>' +
             '</div>' +
           '</div>' +
@@ -838,33 +862,40 @@
     // ── RENDER ALL ARTICLES IN THIS SECTION (FULL-WIDTH GRID) ──
     var allGrid = g('all-grid');
     var allCnt = g('all-grid-cnt');
-    if (allCnt) allCnt.textContent = articles.length ? articles.length + ' stories' : '';
+    if (allCnt) {
+      var countNum = isBn ? (window.PrivatianLang ? window.PrivatianLang.toBengaliNumber(_loadedArticles.length) : _loadedArticles.length) : _loadedArticles.length;
+      allCnt.textContent = _loadedArticles.length ? (countNum + (isBn ? ' টি প্রতিবেদন' : ' stories')) : '';
+    }
 
     if (allGrid) {
-      if (articles.length === 0) {
+      if (_loadedArticles.length === 0) {
         allGrid.innerHTML = '<div class="ag-empty">' +
           '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="48" height="48">' +
             '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>' +
             '<polyline points="14 2 14 8 20 8"/>' +
           '</svg>' +
-          '<h3>No articles published yet</h3>' +
-          '<p>Articles published in this section will appear here.</p>' +
+          '<h3>' + (isBn ? 'কোনো প্রকাশিত প্রতিবেদন নেই' : 'No articles published yet') + '</h3>' +
+          '<p>' + (isBn ? 'এই বিভাগে প্রকাশিত প্রতিবেদনসমূহ এখানে যুক্ত হবে।' : 'Articles published in this section will appear here.') + '</p>' +
         '</div>';
       } else {
-        allGrid.innerHTML = articles.map(function(a){
+        allGrid.innerHTML = _loadedArticles.map(function(a){
           var secSl = slugify(a.section || '');
           var artHref = a.slug ? '/article/' + a.slug : '/article/' + a.id;
           var thumb = a.hero_img_url
             ? '<img src="' + a.hero_img_url + '" alt="' + escH(a.title) + '" loading="lazy" />'
             : '<div style="width:100%;height:100%;background:#e2e8f0;"></div>';
+          var aTitle = isBn ? (a.title_bn || a.title) : a.title;
+          var aDeck = isBn ? (a.deck_bn !== undefined ? a.deck_bn : a.deck) : a.deck;
+          var aSec = isBn ? (a.section_bn || a.section || sectionName) : (a.section || sectionName);
+          var aAuthor = isBn ? (a.author_bn || a.author) : a.author;
           return '<article class="ac">' +
             '<a href="' + artHref + '" class="ac-img-wrap">' + thumb + '</a>' +
             '<div class="ac-body">' +
-              '<a href="/section/' + secSl + '" class="ac-sec">' + escH(a.section || sectionName) + '</a>' +
-              '<h3 class="ac-title"><a href="' + artHref + '">' + escH(a.title) + '</a></h3>' +
-              (a.deck ? '<p class="ac-deck">' + escH(a.deck) + '</p>' : '') +
+              '<a href="/section/' + secSl + '" class="ac-sec">' + escH(aSec) + '</a>' +
+              '<h3 class="ac-title"><a href="' + artHref + '">' + escH(aTitle) + '</a></h3>' +
+              (aDeck ? '<p class="ac-deck">' + escH(aDeck) + '</p>' : '') +
               '<div class="ac-meta">' +
-                (a.author ? '<span>' + escH(a.author) + '</span> <span>•</span> ' : '') +
+                (aAuthor ? '<span>' + escH(aAuthor) + '</span> <span>•</span> ' : '') +
                 '<span>' + fmt(a.published_at) + '</span>' +
               '</div>' +
             '</div>' +
@@ -872,9 +903,27 @@
         }).join('');
       }
     }
+  }
+
+  // 1. Fetch section info, custom settings & articles
+  Promise.all([
+    fetch('/api/sections').then(function(r){return r.json();}).catch(function(){return [];}),
+    fetch('/api/sections?action=section-config&slug=' + encodeURIComponent(slug || 'all')).then(function(r){return r.json();}).catch(function(){return {};}),
+    fetch('/api/articles?action=public' + (slug && slug !== 'all' ? '&section=' + encodeURIComponent(slug) : '')).then(function(r){return r.json();}).catch(function(){return [];})
+  ]).then(function(results){
+    _loadedSections = results[0] || [];
+    _loadedCustomConfig = results[1] || {};
+    _loadedArticles = results[2] || [];
+    renderSectionPage();
   }).catch(function(err){
     console.error('[Section load error]:', err);
   });
+
+  // Reactive listener for language changes
+  document.addEventListener('privatian:language-changed', function() {
+    renderSectionPage();
+  });
+
 })();
 </script>
 

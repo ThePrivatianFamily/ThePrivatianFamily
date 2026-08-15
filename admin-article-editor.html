@@ -882,6 +882,86 @@ kbd {
   white-space: nowrap;
 }
 
+/* ── BILINGUAL EDITOR LANGUAGE SWITCHER ── */
+.ed-lang-switcher {
+  display: inline-flex;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 6px;
+  padding: 2px;
+  gap: 2px;
+  flex-shrink: 0;
+}
+.ed-lang-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 28px;
+  padding: 0 10px;
+  border-radius: 4px;
+  font: 600 11.5px/1 var(--sans);
+  color: rgba(255, 255, 255, 0.7);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+.ed-lang-tab:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.08);
+}
+.ed-lang-tab.active {
+  background: #0a528e;
+  color: #ffffff;
+  font-weight: 700;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+}
+.ed-lang-flag {
+  font-size: 9.5px;
+  font-weight: 800;
+  padding: 2px 4px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.18);
+  letter-spacing: 0.04em;
+}
+.ed-lang-tab.active .ed-lang-flag {
+  background: rgba(255, 255, 255, 0.25);
+}
+.ed-lang-badge-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #f0f7ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 20px;
+  padding: 5px 12px;
+  font: 600 12px/1 var(--sans);
+  color: #0a528e;
+  margin-bottom: 14px;
+  user-select: none;
+}
+.pm-lang-block {
+  margin-top: 10px;
+  padding: 10px 14px;
+  border-radius: 6px;
+  font-size: 12.5px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.pm-lang-block.fail {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #991b1b;
+}
+.pm-lang-block.pass {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  color: #166534;
+}
+
 .tb-btn {
   font: 600 12px/1 var(--sans);
   border: none;
@@ -1321,6 +1401,18 @@ button, input, select, textarea, [contenteditable] {
       <span class="ft-pulse-dot" id="art-status-dot"></span>
       <span id="art-sync-status">Saved</span>
     </div>
+
+    <div class="tb-vr"></div>
+
+    <!-- Bilingual Language Switcher -->
+    <div class="ed-lang-switcher" id="ed-lang-switcher" role="tablist" aria-label="Article Language">
+      <button type="button" class="ed-lang-tab active" id="tab-lang-en" onclick="switchEditorLang('en')" role="tab" aria-selected="true" title="Switch to English article content">
+        <span class="ed-lang-flag">EN</span> English
+      </button>
+      <button type="button" class="ed-lang-tab" id="tab-lang-bn" onclick="switchEditorLang('bn')" role="tab" aria-selected="false" title="Switch to Bengali (বাংলা) article content">
+        <span class="ed-lang-flag">BN</span> বাংলা
+      </button>
+    </div>
   </div>
 
   <!-- Right Side: Focus, Outline, Shortcuts, Settings, Preview, Save, Publish -->
@@ -1598,6 +1690,12 @@ button, input, select, textarea, [contenteditable] {
 
   <!-- HEADER -->
   <div id="ed-hdr">
+    <!-- Active Language Pill -->
+    <div id="ed-lang-indicator" class="ed-lang-badge-pill">
+      <span id="ed-lang-pill-dot" style="width:7px;height:7px;border-radius:50%;background:#0a528e;display:inline-block;"></span>
+      <span id="ed-lang-pill-txt">Editing in English (EN)</span>
+    </div>
+
     <div class="sec-wrap" id="sec-wrap">
       <div id="sec-pill" onclick="toggleSecDd(event)">
         <span id="sec-lbl">Select Section</span>
@@ -1975,6 +2073,127 @@ let _serverTS = 0;    // server updated_at timestamp
 let _TAGS   = [];     // article tags array
 let _featImgUrl = ''; // featured image URL
 
+// ── Dual-Language Article State (English & Bengali) ──
+let _currentEditLang = 'en'; // 'en' | 'bn'
+let _langData = {
+  en: {
+    title: '',
+    deck: '',
+    content_html: '',
+    author: '',
+    author_role: '',
+    author_bio: '',
+    hero_caption: '',
+    hero_credit: '',
+    seo_title: '',
+    meta_description: '',
+    tags: []
+  },
+  bn: {
+    title: '',
+    deck: '',
+    content_html: '',
+    author: '',
+    author_role: '',
+    author_bio: '',
+    hero_caption: '',
+    hero_credit: '',
+    seo_title: '',
+    meta_description: '',
+    tags: []
+  }
+};
+
+function saveCurrentLangToBuffer() {
+  const currentTags = _TAGS.filter(t => !t.startsWith('feat_pos:'));
+  _langData[_currentEditLang] = {
+    title: gt('ed-headline'),
+    deck: gt('ed-deck'),
+    content_html: g('ed-rt') ? g('ed-rt').innerHTML : '',
+    author: gt('ed-author'),
+    author_role: gt('bio-role'),
+    author_bio: gt('bio-desc'),
+    hero_caption: (g('ed-feat-caption-inline')?.value || g('sd-feat-caption')?.value || '').trim(),
+    hero_credit: (g('ed-feat-credit-inline')?.value || g('sd-feat-credit')?.value || '').trim(),
+    seo_title: (g('sd-seo-title')?.value || '').trim(),
+    meta_description: (g('sd-meta-desc')?.value || '').trim(),
+    tags: currentTags
+  };
+}
+
+function loadBufferToInputs(lang) {
+  const data = _langData[lang] || {};
+  tx('ed-headline', data.title || '');
+  tx('ed-deck', data.deck || '');
+  tx('ed-author', data.author || '');
+  tx('bio-name', data.author || '');
+  tx('bio-role', data.author_role || '');
+  tx('bio-desc', data.author_bio || '');
+
+  const rt = g('ed-rt');
+  if (rt) rt.innerHTML = data.content_html || '';
+
+  if (g('sd-feat-caption')) g('sd-feat-caption').value = data.hero_caption || '';
+  if (g('ed-feat-caption-inline')) g('ed-feat-caption-inline').value = data.hero_caption || '';
+  if (g('sd-feat-credit')) g('sd-feat-credit').value = data.hero_credit || '';
+  if (g('ed-feat-credit-inline')) g('ed-feat-credit-inline').value = data.hero_credit || '';
+
+  if (g('sd-seo-title')) {
+    g('sd-seo-title').value = data.seo_title || '';
+    seoCC(g('sd-seo-title'), 'sd-seo-cc', 60);
+  }
+  if (g('sd-meta-desc')) {
+    g('sd-meta-desc').value = data.meta_description || '';
+    seoCC(g('sd-meta-desc'), 'sd-meta-cc', 160);
+  }
+
+  _TAGS = Array.isArray(data.tags) ? [...data.tags] : [];
+  renderTags();
+
+  // Update Search Preview
+  if (g('sp-ttl')) g('sp-ttl').textContent = data.seo_title || data.title || 'Article Title';
+  if (g('sp-desc')) g('sp-desc').textContent = data.meta_description || 'Meta description will appear here.';
+
+  // Update Placeholders & UI indicator
+  const isBn = lang === 'bn';
+  const hl = g('ed-headline');
+  if (hl) hl.setAttribute('data-ph', isBn ? 'প্রতিবেদনের প্রধান শিরোনাম লিখুন…' : 'Article headline…');
+  const dk = g('ed-deck');
+  if (dk) dk.setAttribute('data-ph', isBn ? 'একটি আকর্ষণীয় উপশিরোনাম বা সারসংক্ষেপ যোগ করুন…' : 'Add a compelling subtitle…');
+  const auth = g('ed-author');
+  if (auth) auth.setAttribute('data-ph', isBn ? 'লেখকের নাম' : 'Author name');
+  const bDesc = g('bio-desc');
+  if (bDesc) bDesc.setAttribute('data-ph', isBn ? 'লেখক সম্পর্কে সংক্ষিপ্ত বিবরণ…' : 'A short bio about the author…');
+
+  const indTxt = g('ed-lang-pill-txt');
+  if (indTxt) indTxt.textContent = isBn ? 'সম্পাদনা চলছে বাংলায় (BN)' : 'Editing in English (EN)';
+  const indDot = g('ed-lang-pill-dot');
+  if (indDot) indDot.style.background = isBn ? '#16a34a' : '#0a528e';
+
+  updateMetrics();
+}
+
+function switchEditorLang(targetLang) {
+  if (targetLang === _currentEditLang) return;
+  saveCurrentLangToBuffer();
+  _currentEditLang = targetLang;
+
+  // Toggle toolbar tab classes
+  const tabEn = g('tab-lang-en');
+  const tabBn = g('tab-lang-bn');
+  if (tabEn) {
+    tabEn.classList.toggle('active', targetLang === 'en');
+    tabEn.setAttribute('aria-selected', targetLang === 'en');
+  }
+  if (tabBn) {
+    tabBn.classList.toggle('active', targetLang === 'bn');
+    tabBn.setAttribute('aria-selected', targetLang === 'bn');
+  }
+
+  loadBufferToInputs(targetLang);
+  toast(targetLang === 'bn' ? 'Switched to বাংলা (BN) editor' : 'Switched to English (EN) editor', 'info');
+}
+
 // Debounce timers
 let _lsTimer   = null;
 let _srvTimer  = null;
@@ -2091,21 +2310,44 @@ async function loadArticle(id) {
 }
 
 function fill(a) {
-  ART_ID = a.id; STATUS = a.status || 'draft';
+  ART_ID = a.id;
+  STATUS = a.status || 'draft';
   refreshArticleIdDisplay();
-  tx('ed-headline', a.title || '');
-  tx('ed-deck',     a.deck  || '');
-  tx('ed-author',   a.author      || '');
-  tx('ed-date',     a.published_at
-    ? fmtDate(new Date(a.published_at))
-    : fmtDate(new Date(a.created_at || Date.now())));
-  tx('bio-name', a.author      || '');
-  tx('bio-role', a.author_role || '');
-  tx('bio-desc', a.author_bio  || '');
+
+  // Populate English Buffer
+  _langData.en = {
+    title: a.title || '',
+    deck: a.deck || '',
+    content_html: a.content_html || '',
+    author: a.author || '',
+    author_role: a.author_role || '',
+    author_bio: a.author_bio || '',
+    hero_caption: a.hero_caption || '',
+    hero_credit: a.hero_credit || '',
+    seo_title: a.seo_title || '',
+    meta_description: a.meta_description || '',
+    tags: a.tags ? a.tags.split(',').filter(Boolean).filter(t => !t.startsWith('feat_pos:')) : []
+  };
+
+  // Populate Bengali Buffer
+  _langData.bn = {
+    title: a.title_bn || '',
+    deck: a.deck_bn || '',
+    content_html: a.content_html_bn || '',
+    author: a.author_bn || '',
+    author_role: a.author_role_bn || '',
+    author_bio: a.author_bio_bn || '',
+    hero_caption: a.hero_caption_bn || '',
+    hero_credit: a.hero_credit_bn || '',
+    seo_title: a.seo_title_bn || '',
+    meta_description: a.meta_description_bn || '',
+    tags: a.tags_bn ? a.tags_bn.split(',').filter(Boolean).filter(t => !t.startsWith('feat_pos:')) : []
+  };
+
   syncSlug(a.slug || '', 'load');
   if (a.section) setSec(a.section);
-  if (a.content_html) g('ed-rt').innerHTML = a.content_html;
   if (a.author_photo_url) showAuthorPhoto(a.author_photo_url);
+
   // ── Featured image & drawer fields ───────────────────
   _featPos = 'top';
   if (a.tags) {
@@ -2118,25 +2360,13 @@ function fill(a) {
   } else {
     removeFeatImg();
   }
-  if (a.hero_img_alt)   g('sd-feat-alt').value    = a.hero_img_alt;
-  if (a.hero_caption)   {
-    g('sd-feat-caption').value = a.hero_caption;
-    if (g('ed-feat-caption-inline')) g('ed-feat-caption-inline').value = a.hero_caption;
-  }
-  if (a.hero_credit)    {
-    g('sd-feat-credit').value  = a.hero_credit;
-    if (g('ed-feat-credit-inline')) g('ed-feat-credit-inline').value = a.hero_credit;
-  }
-  if (a.seo_title)    { g('sd-seo-title').value = a.seo_title; seoCC(g('sd-seo-title'),'sd-seo-cc',60); }
-  if (a.meta_description) { g('sd-meta-desc').value = a.meta_description; seoCC(g('sd-meta-desc'),'sd-meta-cc',160); }
-  if (a.tags)  {
-    _TAGS = a.tags.split(',').filter(Boolean).filter(t => !t.startsWith('feat_pos:'));
-    renderTags();
-  }
-  // Update search preview
-  g('sp-ttl').textContent = a.seo_title || a.title || 'Article Title';
-  if (a.meta_description) g('sp-desc').textContent = a.meta_description;
-  refreshStatus(); updateMetrics();
+  if (a.hero_img_alt) g('sd-feat-alt').value = a.hero_img_alt;
+
+  tx('ed-date', a.published_at ? fmtDate(new Date(a.published_at)) : fmtDate(new Date(a.created_at || Date.now())));
+
+  // Load active language buffer into UI
+  loadBufferToInputs(_currentEditLang);
+  refreshStatus();
 }
 
 function syncSlug(val, src) {
@@ -2262,11 +2492,13 @@ function lsKey() { return 'pf_draft_' + (ART_ID || 'new'); }
 
 function lsSave() {
   try {
+    saveCurrentLangToBuffer();
     localStorage.setItem(lsKey(), JSON.stringify({
       ...buildPayload(),
-      _ts:      Date.now(),
-      _rtHtml:  g('ed-rt').innerHTML,
-      _artId:   ART_ID,
+      _ts:          Date.now(),
+      _langData:    _langData,
+      _currentLang: _currentEditLang,
+      _artId:       ART_ID,
     }));
   } catch(e) {}
 }
@@ -2290,11 +2522,17 @@ function checkLocalDraft() {
 function restoreLocal() {
   try {
     const d = JSON.parse(localStorage.getItem(lsKey()) || '{}');
-    if (d._rtHtml) g('ed-rt').innerHTML = d._rtHtml;
-    if (d.title)   tx('ed-headline', d.title);
-    if (d.deck)    tx('ed-deck',     d.deck);
+    if (d._langData) {
+      _langData = d._langData;
+      if (d._currentLang) _currentEditLang = d._currentLang;
+      loadBufferToInputs(_currentEditLang);
+    } else {
+      if (d.content_html) g('ed-rt').innerHTML = d.content_html;
+      if (d.title)   tx('ed-headline', d.title);
+      if (d.deck)    tx('ed-deck',     d.deck);
+      if (d.author)  tx('ed-author',   d.author);
+    }
     if (d.section) setSec(d.section);
-    if (d.author)  tx('ed-author',   d.author);
     DIRTY = true;
   } catch(e) { toast('Restore failed', 'err'); }
   g('restore-banner').classList.remove('show');
@@ -2504,24 +2742,40 @@ async function pubArt() {
 }
 
 function openPubModal() {
-  const items = [];
-  const title   = gt('ed-headline');
-  const body    = (g('ed-rt')?.innerText || '').trim();
-  const section = g('sec-lbl')?.textContent;
-  const author  = gt('ed-author');
-  const slug    = g('tb-slug')?.value?.trim();
+  saveCurrentLangToBuffer();
 
-  // Required checks (block publish)
+  const en = _langData.en || {};
+  const bn = _langData.bn || {};
+
+  const enBody = (en.content_html || '').replace(/<[^>]+>/g, ' ').trim();
+  const bnBody = (bn.content_html || '').replace(/<[^>]+>/g, ' ').trim();
+  const section = g('sec-lbl')?.textContent;
+  const slug = g('tb-slug')?.value?.trim();
+
+  // English Checks
+  const enTitlePass = !!en.title?.trim();
+  const enDeckPass  = !!en.deck?.trim();
+  const enBodyPass  = enBody.length > 20;
+  const enAuthorPass = !!en.author?.trim();
+
+  // Bengali Checks (Mandatory: Both languages must be filled before publishing!)
+  const bnTitlePass = !!bn.title?.trim();
+  const bnDeckPass  = !!bn.deck?.trim();
+  const bnBodyPass  = bnBody.length > 20;
+  const bnAuthorPass = !!bn.author?.trim();
+
+  // Shared Checks
+  const featPass = !!_featImgUrl;
+  const secPass = !!section && section !== 'Select Section';
+
   const checks = [
-    { label: 'Headline', pass: !!title,   req: true },
-    { label: 'Featured Image (Mandatory)', pass: !!_featImgUrl, req: true },
-    { label: 'Article body', pass: body.length > 50,  req: true },
-    { label: 'Section selected', pass: !!section && section !== 'Select Section', req: true },
-    { label: 'Author name', pass: !!author, req: true },
-    // Recommendations (warn only)
-    { label: 'Subtitle / Deck', pass: !!gt('ed-deck'), req: false },
-    { label: 'Slug is set', pass: !!slug, req: false },
-    { label: 'Author bio', pass: !!gt('bio-desc'), req: false },
+    { label: 'English: Headline & Subtitle', pass: enTitlePass && enDeckPass, req: true },
+    { label: 'English: Article Body & Author', pass: enBodyPass && enAuthorPass, req: true },
+    { label: 'বাংলা (Bengali): Headline & Subtitle', pass: bnTitlePass && bnDeckPass, req: true },
+    { label: 'বাংলা (Bengali): Article Body & Author', pass: bnBodyPass && bnAuthorPass, req: true },
+    { label: 'Featured Image (Mandatory)', pass: featPass, req: true },
+    { label: 'Section Selected', pass: secPass, req: true },
+    { label: 'Slug / Permalink configured', pass: !!slug, req: false },
   ];
 
   const hasBlocker = checks.some(c => c.req && !c.pass);
@@ -2530,16 +2784,27 @@ function openPubModal() {
   const iconFail = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`;
   const iconWarn = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`;
 
-  g('pm-body').innerHTML = checks.map(c => `
+  let html = checks.map(c => `
     <div class="pm-item ${c.pass ? 'pass' : c.req ? 'fail' : 'warn'}">
       <span class="pm-ico">${c.pass ? iconPass : c.req ? iconFail : iconWarn}</span>
       <span>${c.label}${!c.pass && !c.req ? ' (recommended)' : ''}</span>
     </div>
   `).join('');
 
+  if (!bnTitlePass || !bnDeckPass || !bnBodyPass || !bnAuthorPass) {
+    html += `
+      <div class="pm-lang-block fail">
+        <strong>⚠️ Bilingual Requirement:</strong>
+        <span>Both English and Bengali content must be filled before publishing. Please switch to the <b>[BN] বাংলা</b> tab in the topbar to complete the Bengali translation.</span>
+      </div>
+    `;
+  }
+
+  g('pm-body').innerHTML = html;
+
   const pubBtn = g('pm-publish-btn');
   pubBtn.disabled = hasBlocker;
-  pubBtn.title = hasBlocker ? 'Fix required fields before publishing (Featured Image is required)' : '';
+  pubBtn.title = hasBlocker ? 'Complete required fields in both English and Bengali before publishing' : '';
 
   g('pub-overlay').classList.add('show');
 }
@@ -2573,21 +2838,32 @@ async function doPublish() {
       if (sb) {
         const row = {
           title: payload.title || 'Untitled',
+          title_bn: payload.title_bn || '',
           deck: payload.deck || '',
+          deck_bn: payload.deck_bn || '',
           content_html: payload.content_html || '',
+          content_html_bn: payload.content_html_bn || '',
           section: payload.section || '',
           author: payload.author || '',
+          author_bn: payload.author_bn || '',
           author_bio: payload.author_bio || '',
+          author_bio_bn: payload.author_bio_bn || '',
           author_role: payload.author_role || '',
+          author_role_bn: payload.author_role_bn || '',
           author_photo_url: payload.author_photo_url || '',
           hero_img_url: payload.hero_img_url || '',
           hero_img_alt: payload.hero_img_alt || '',
           hero_caption: payload.hero_caption || '',
+          hero_caption_bn: payload.hero_caption_bn || '',
           hero_credit: payload.hero_credit || '',
+          hero_credit_bn: payload.hero_credit_bn || '',
           slug: payload.slug || 'untitled',
           seo_title: payload.seo_title || '',
+          seo_title_bn: payload.seo_title_bn || '',
           meta_description: payload.meta_description || '',
+          meta_description_bn: payload.meta_description_bn || '',
           tags: payload.tags || '',
+          tags_bn: payload.tags_bn || '',
           status: 'published',
           content: null, // Clear working draft
           published_at: new Date().toISOString(),
@@ -2696,30 +2972,51 @@ async function unpubArt() {
 }
 
 function buildPayload() {
+  saveCurrentLangToBuffer();
+
   const currentSlug = (g('sd-slug-input')?.value || g('tb-slug')?.value || '').trim();
-  const cleanTags = _TAGS.filter(t => !t.startsWith('feat_pos:'));
-  cleanTags.push('feat_pos:' + (_featPos || 'top'));
-  const tagsStr = cleanTags.join(',');
+  const cleanTagsEn = (_langData.en.tags || []).filter(t => !t.startsWith('feat_pos:'));
+  cleanTagsEn.push('feat_pos:' + (_featPos || 'top'));
+  const tagsEnStr = cleanTagsEn.join(',');
+
+  const cleanTagsBn = (_langData.bn.tags || []).filter(t => !t.startsWith('feat_pos:'));
+  cleanTagsBn.push('feat_pos:' + (_featPos || 'top'));
+  const tagsBnStr = cleanTagsBn.join(',');
 
   return {
-    id:              ART_ID,
-    slug:            currentSlug || undefined,
-    status:          STATUS || 'draft',
-    title:           gt('ed-headline'),
-    deck:            gt('ed-deck'),
-    section:         g('sec-lbl').textContent === 'Select Section' ? '' : g('sec-lbl').textContent,
-    author:          gt('ed-author'),
-    author_role:     gt('bio-role'),
-    author_bio:      gt('bio-desc'),
+    id:               ART_ID,
+    slug:             currentSlug || undefined,
+    status:           STATUS || 'draft',
+    section:          g('sec-lbl').textContent === 'Select Section' ? '' : g('sec-lbl').textContent,
     author_photo_url: g('author-photo-img').src && g('author-photo-img').style.display !== 'none' ? g('author-photo-img').src : '',
-    hero_img_url:    _featImgUrl || '',
-    hero_img_alt:    (g('sd-feat-alt')?.value  || '').trim(),
-    hero_caption:    (g('ed-feat-caption-inline')?.value || g('sd-feat-caption')?.value || '').trim(),
-    hero_credit:     (g('ed-feat-credit-inline')?.value  || g('sd-feat-credit')?.value  || '').trim(),
-    seo_title:       (g('sd-seo-title')?.value || '').trim(),
-    meta_description:(g('sd-meta-desc')?.value  || '').trim(),
-    tags:            tagsStr,
-    content_html:    g('ed-rt').innerHTML,
+    hero_img_url:     _featImgUrl || '',
+    hero_img_alt:     (g('sd-feat-alt')?.value  || '').trim(),
+
+    // English fields
+    title:            _langData.en.title || '',
+    deck:             _langData.en.deck || '',
+    content_html:     _langData.en.content_html || '',
+    author:           _langData.en.author || '',
+    author_role:      _langData.en.author_role || '',
+    author_bio:       _langData.en.author_bio || '',
+    hero_caption:     _langData.en.hero_caption || '',
+    hero_credit:      _langData.en.hero_credit || '',
+    seo_title:        _langData.en.seo_title || '',
+    meta_description: _langData.en.meta_description || '',
+    tags:             tagsEnStr,
+
+    // Bengali fields
+    title_bn:            _langData.bn.title || '',
+    deck_bn:             _langData.bn.deck || '',
+    content_html_bn:     _langData.bn.content_html || '',
+    author_bn:           _langData.bn.author || '',
+    author_role_bn:      _langData.bn.author_role || '',
+    author_bio_bn:       _langData.bn.author_bio || '',
+    hero_caption_bn:     _langData.bn.hero_caption || '',
+    hero_credit_bn:      _langData.bn.hero_credit || '',
+    seo_title_bn:        _langData.bn.seo_title || '',
+    meta_description_bn: _langData.bn.meta_description || '',
+    tags_bn:             tagsBnStr,
   };
 }
 

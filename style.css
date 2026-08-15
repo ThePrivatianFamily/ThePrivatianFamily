@@ -29,8 +29,8 @@
   --text-on-dark:     #e8f2fb;   /* light text on dark navy bg */
 
   /* Typography */
-  --font-serif:       'Libre Baskerville', Georgia, serif;
-  --font-sans:        'Source Sans 3', 'Helvetica Neue', Arial, sans-serif;
+  --font-serif:       'Libre Baskerville', 'Noto Serif Bengali', Georgia, serif;
+  --font-sans:        'Source Sans 3', 'Hind Siliguri', 'Helvetica Neue', Arial, sans-serif;
 
   /* Layout */
   --max-width:        1280px;
@@ -92,7 +92,48 @@ body.menu-open .site-header {
 .nav-list li.nav-divider { width: 1px; height: 18px; background: #c5bfb5; margin: 0 4px; flex-shrink: 0; }
 .nav-link { font-family: var(--font-sans); font-size: 14.5px; font-weight: 700; color: var(--text-primary); padding: 6px 12px; letter-spacing: 0.01em; transition: color 0.15s; display: block; }
 .nav-link:hover { color: var(--brand-navy); }
-.header-actions { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
+.header-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+
+/* BILINGUAL LANGUAGE TOGGLE (HEADER) */
+.header-lang-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 1px;
+  background: var(--brand-tint);
+  border: 1px solid var(--border-light);
+  border-radius: 4px;
+  padding: 2px 4px;
+  user-select: none;
+}
+.lang-btn {
+  font-family: var(--font-sans);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  padding: 3px 7px;
+  border-radius: 3px;
+  line-height: 1.2;
+  transition: all 0.15s ease;
+  cursor: pointer;
+  background: transparent;
+  border: none;
+}
+.lang-btn:hover {
+  color: var(--brand-navy);
+}
+.lang-btn.active {
+  background: var(--brand-navy);
+  color: #ffffff;
+  font-weight: 700;
+  box-shadow: 0 1px 3px rgba(10, 82, 142, 0.28);
+}
+.lang-sep {
+  font-size: 11px;
+  color: var(--text-muted);
+  opacity: 0.5;
+  padding: 0 1px;
+}
+
 .menu-btn { display: flex; align-items: center; gap: 6px; font-family: var(--font-sans); font-size: 14.5px; font-weight: 600; color: var(--brand-navy); padding: 8px 14px; border: 1px solid var(--brand-navy); border-radius: 2px; transition: background 0.15s, color 0.15s; letter-spacing: 0.01em; }
 .menu-btn:hover, .menu-btn.is-open { background: var(--brand-navy); color: #fff; }
 .menu-hamburger { font-size: 16px; }

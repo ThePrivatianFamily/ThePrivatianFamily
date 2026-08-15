@@ -103,20 +103,23 @@
   };
 
   var DEFAULT_SUBSECTIONS = [
-    { id: 'sub-1', label: 'FAMILY LEGACY', href: '/section/community-heritage', icon: null, enabled: true },
-    { id: 'sub-2', label: 'EXPERIENCE', href: '/section/culture', icon: null, enabled: true },
-    { id: 'sub-3', label: 'THE PRIVATIAN READS', href: '/section/findings', icon: null, enabled: true },
-    { id: 'sub-4', label: 'EVENTS', href: '/events', icon: 'calendar', enabled: true }
+    { id: 'sub-1', label: 'FAMILY LEGACY', label_bn: 'পারিবারিক ঐতিহ্য', href: '/section/community-heritage', icon: null, enabled: true },
+    { id: 'sub-2', label: 'EXPERIENCE', label_bn: 'অভিজ্ঞতা ও সংস্কৃতি', href: '/section/culture', icon: null, enabled: true },
+    { id: 'sub-3', label: 'THE PRIVATIAN READS', label_bn: 'প্রাইভেসিয়ান পঠন', href: '/section/findings', icon: null, enabled: true },
+    { id: 'sub-4', label: 'EVENTS', label_bn: 'অনুষ্ঠানসমূহ', href: '/events', icon: 'calendar', enabled: true }
   ];
 
   var DEFAULT_SECTIONS = [
-    { id: 'findings',  name: 'Findings',             slug: 'findings' },
-    { id: 'community', name: 'Community & Heritage', slug: 'community-heritage' },
-    { id: 'culture',   name: 'Culture',              slug: 'culture' },
-    { id: 'privacy',   name: 'Privacy & Values',     slug: 'privacy-values' },
-    { id: 'world',     name: 'Nation & World',       slug: 'nation-world' },
-    { id: 'arts',      name: 'Arts & Legacy',        slug: 'arts-legacy' },
-    { id: 'economy',   name: 'Work & Economy',       slug: 'work-economy' }
+    { id: 'findings',  name: 'Findings',             name_bn: 'অনুসন্ধান',         slug: 'findings' },
+    { id: 'community', name: 'Community & Heritage', name_bn: 'সমাজ ও ঐতিহ্য',     slug: 'community-heritage' },
+    { id: 'culture',   name: 'Culture',              name_bn: 'সংস্কৃতি',          slug: 'culture' },
+    { id: 'privacy',   name: 'Privacy & Values',     name_bn: 'গোপনীয়তা ও মূল্যবোধ', slug: 'privacy-values' },
+    { id: 'world',     name: 'Nation & World',       name_bn: 'দেশ ও বিশ্ব',        slug: 'nation-world' },
+    { id: 'arts',      name: 'Arts & Legacy',        name_bn: 'শিল্প ও উত্তরাধিকার', slug: 'arts-legacy' },
+    { id: 'economy',   name: 'Work & Economy',       name_bn: 'কর্ম ও অর্থনীতি',    slug: 'work-economy' },
+    { id: 'students',  name: 'Students',             name_bn: 'শিক্ষার্থীবৃন্দ',     slug: 'students' },
+    { id: 'science',   name: 'Science',              name_bn: 'বিজ্ঞান',           slug: 'science' },
+    { id: 'society',   name: 'Society',              name_bn: 'সমাজ',             slug: 'society' }
   ];
 
   function escapeHTML(str) {
@@ -124,9 +127,24 @@
     return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   }
 
+  function getSectionDisplayName(s) {
+    if (!s) return '';
+    var isBn = window.PrivatianLang && window.PrivatianLang.getLang() === 'bn';
+    if (isBn) {
+      if (s.name_bn) return s.name_bn;
+      for (var i = 0; i < DEFAULT_SECTIONS.length; i++) {
+        if (DEFAULT_SECTIONS[i].slug === s.slug || DEFAULT_SECTIONS[i].id === s.id || DEFAULT_SECTIONS[i].name === s.name) {
+          return DEFAULT_SECTIONS[i].name_bn;
+        }
+      }
+    }
+    return s.name || s.name_bn || '';
+  }
+
   function getMenuSettings() {
     try {
-      var raw = localStorage.getItem(MENU_SETTINGS_KEY);
+      var isBn = window.PrivatianLang && window.PrivatianLang.getLang() === 'bn';
+      var raw = localStorage.getItem(isBn ? MENU_SETTINGS_KEY + '_bn' : MENU_SETTINGS_KEY) || localStorage.getItem(MENU_SETTINGS_KEY);
       if (raw) {
         var parsed = JSON.parse(raw);
         if (parsed && typeof parsed === 'object') return parsed;
@@ -151,7 +169,8 @@
 
   function getFooterSettings() {
     try {
-      var raw = localStorage.getItem(FOOTER_SETTINGS_KEY);
+      var isBn = window.PrivatianLang && window.PrivatianLang.getLang() === 'bn';
+      var raw = localStorage.getItem(isBn ? FOOTER_SETTINGS_KEY + '_bn' : FOOTER_SETTINGS_KEY) || localStorage.getItem(FOOTER_SETTINGS_KEY);
       if (raw) {
         var parsed = JSON.parse(raw);
         if (parsed && typeof parsed === 'object') return parsed;
@@ -162,7 +181,8 @@
 
   function getHeaderSettings() {
     try {
-      var raw = localStorage.getItem(HEADER_SETTINGS_KEY);
+      var isBn = window.PrivatianLang && window.PrivatianLang.getLang() === 'bn';
+      var raw = localStorage.getItem(isBn ? HEADER_SETTINGS_KEY + '_bn' : HEADER_SETTINGS_KEY) || localStorage.getItem(HEADER_SETTINGS_KEY);
       if (raw) {
         var parsed = JSON.parse(raw);
         if (!parsed.subsections) {
@@ -189,6 +209,17 @@
     var mount = document.getElementById('site-header-mount');
     if (!mount) return;
 
+    var isBn = window.PrivatianLang && window.PrivatianLang.getLang() === 'bn';
+    var curLang = isBn ? 'bn' : 'en';
+    var menuLabel = window.PrivatianLang ? window.PrivatianLang.t('menu') : 'Menu';
+    var searchPlaceholder = window.PrivatianLang ? window.PrivatianLang.t('searchPlaceholder') : 'Search articles, topics, sections…';
+    var searchClose = window.PrivatianLang ? window.PrivatianLang.t('searchClose') : 'Close';
+    var searchClear = window.PrivatianLang ? window.PrivatianLang.t('searchClear') : 'Clear';
+    var sectionsTitle = window.PrivatianLang ? window.PrivatianLang.t('sections') : 'Sections';
+    var seriesTitle = window.PrivatianLang ? window.PrivatianLang.t('featuredSeries') : 'Featured series';
+    var exploreTitle = window.PrivatianLang ? window.PrivatianLang.t('explorePrivatian') : 'Explore the Privatian';
+    var latestTitle = window.PrivatianLang ? window.PrivatianLang.t('readLatest') : 'Read the latest';
+
     var headerHTML = `
   <header class="site-header" id="site-header">
     <div class="header-inner">
@@ -199,8 +230,15 @@
         <ul class="nav-list" id="main-nav-list"></ul>
       </nav>
       <div class="header-actions">
+        <!-- Language Switcher Toggle -->
+        <div class="header-lang-toggle" id="header-lang-toggle" role="group" aria-label="Language selection">
+          <button type="button" class="lang-btn ${!isBn ? 'active' : ''}" onclick="window.PrivatianLang && window.PrivatianLang.setLang('en')" title="Switch to English">EN</button>
+          <span class="lang-sep">|</span>
+          <button type="button" class="lang-btn ${isBn ? 'active' : ''}" onclick="window.PrivatianLang && window.PrivatianLang.setLang('bn')" title="বাংলায় পরিবর্তন করুন">বাংলা</button>
+        </div>
+
         <button class="menu-btn" id="menu-toggle-btn" aria-expanded="false" aria-controls="menu-overlay" aria-label="Open menu">
-          <span class="menu-hamburger">&#9776;</span> Menu
+          <span class="menu-hamburger">&#9776;</span> <span class="menu-btn-text">${escapeHTML(menuLabel)}</span>
         </button>
         <button class="search-btn" id="search-btn" aria-label="Search">
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -219,30 +257,30 @@
     <div class="search-overlay-inner">
       <div class="search-input-wrap">
         <svg class="search-icon-inline" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-        <input type="search" id="search-input" class="search-input" placeholder="Search articles, topics, sections…" autocomplete="off" spellcheck="false" />
-        <button class="search-clear-btn" id="search-clear-btn" aria-label="Clear search" hidden>&#10005;</button>
+        <input type="search" id="search-input" class="search-input" placeholder="${escapeHTML(searchPlaceholder)}" autocomplete="off" spellcheck="false" />
+        <button class="search-clear-btn" id="search-clear-btn" aria-label="${escapeHTML(searchClear)}" hidden>&#10005;</button>
       </div>
       <div id="search-results" class="search-results" aria-live="polite"></div>
     </div>
-    <button class="search-close-btn" id="search-close-btn" aria-label="Close search">&#10005; Close</button>
+    <button class="search-close-btn" id="search-close-btn" aria-label="${escapeHTML(searchClose)}">&#10005; ${escapeHTML(searchClose)}</button>
   </div>
 
   <!-- MENU OVERLAY -->
   <div class="menu-overlay" id="menu-overlay" aria-hidden="true" role="dialog" aria-modal="true" aria-label="Site navigation menu">
     <div class="menu-overlay-inner">
       <div class="menu-col" id="mo-col-sections">
-        <h2 class="menu-section-title" id="mo-title-sections">Sections</h2>
+        <h2 class="menu-section-title" id="mo-title-sections">${escapeHTML(sectionsTitle)}</h2>
         <ul class="menu-section-list" id="menu-section-list"></ul>
       </div>
       <div class="menu-col" id="mo-col-series-explore">
-        <h2 class="menu-section-title" id="mo-title-series"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:text-bottom;margin-right:4px;"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg> Featured series</h2>
+        <h2 class="menu-section-title" id="mo-title-series"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:text-bottom;margin-right:4px;"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg> ${escapeHTML(seriesTitle)}</h2>
         <div id="mo-series-list"></div>
         <hr class="menu-divider" />
-        <h2 class="menu-explore-title" id="mo-title-explore">Explore the Privatian</h2>
+        <h2 class="menu-explore-title" id="mo-title-explore">${escapeHTML(exploreTitle)}</h2>
         <ul class="menu-explore-list" id="mo-explore-list"></ul>
       </div>
       <div class="menu-col menu-col-latest" id="mo-col-latest">
-        <h2 class="menu-section-title" id="mo-title-latest">Read the latest</h2>
+        <h2 class="menu-section-title" id="mo-title-latest">${escapeHTML(latestTitle)}</h2>
         <div id="mo-latest-list"></div>
       </div>
     </div>
@@ -270,16 +308,27 @@
     if (!mount) return;
 
     var cfg = getFooterSettings();
+    var isBn = window.PrivatianLang && window.PrivatianLang.getLang() === 'bn';
+
+    var sectionsTitle = isBn ? (cfg.sectionsTitle_bn || window.PrivatianLang.t('sections')) : (cfg.sectionsTitle || 'Sections');
+    var exploreTitle  = isBn ? (cfg.exploreTitle_bn || window.PrivatianLang.t('explorePrivatian')) : (cfg.exploreTitle || 'Explore the Privatian');
+    var seriesTitle   = isBn ? (cfg.seriesTitle_bn || window.PrivatianLang.t('recentSeries')) : (cfg.seriesTitle || 'Our recent series');
+    var socialTitle   = isBn ? (cfg.socialTitle_bn || window.PrivatianLang.t('followUs')) : (cfg.socialTitle || 'Follow us on');
+    var tagline       = isBn ? (cfg.tagline_bn || 'দ্য প্রাইভেসিয়ান সোসাইটির আনুষ্ঠানিক প্রকাশনা — কেমব্রিজ, ম্যাসাচুসেটস') : (cfg.tagline || 'The Official Publication of The Privatian Society — Cambridge, Massachusetts');
+    var copyright     = isBn ? (cfg.copyright_bn || '© ২০২৬ দ্য প্রাইভেসিয়ান পরিবার। সর্বস্বত্ব সংরক্ষিত।') : (cfg.copyright || '© 2026 The Privatian Family. All rights reserved.');
 
     var exploreHtml = (cfg.explore || []).filter(function(e) { return e.enabled !== false; }).map(function(e) {
-      return `<li><a href="${escapeHTML(e.href || '/')}" target="${escapeHTML(e.target || '_self')}">${escapeHTML(e.label || '')}</a></li>`;
+      var label = isBn ? (e.label_bn || e.label || '') : (e.label || '');
+      return `<li><a href="${escapeHTML(e.href || '/')}" target="${escapeHTML(e.target || '_self')}">${escapeHTML(label)}</a></li>`;
     }).join('');
 
     var seriesHtml = (cfg.series || []).filter(function(s) { return s.enabled !== false; }).map(function(s) {
+      var title = isBn ? (s.title_bn || s.title || '') : (s.title || '');
+      var desc  = isBn ? (s.description_bn || s.description || '') : (s.description || '');
       return `
         <div class="footer-series-item">
-          <h4 class="footer-series-name"><a href="${escapeHTML(s.href || '/')}">${escapeHTML(s.title || '')}</a></h4>
-          ${s.description ? `<p class="footer-series-desc">${escapeHTML(s.description)}</p>` : ''}
+          <h4 class="footer-series-name"><a href="${escapeHTML(s.href || '/')}">${escapeHTML(title)}</a></h4>
+          ${desc ? `<p class="footer-series-desc">${escapeHTML(desc)}</p>` : ''}
         </div>
       `;
     }).join('');
@@ -294,7 +343,8 @@
     }).join('');
 
     var bottomLinksHtml = (cfg.bottomLinks || []).filter(function(b) { return b.enabled !== false; }).map(function(b) {
-      return `<a href="${escapeHTML(b.href || '#')}" target="${escapeHTML(b.target || '_self')}">${escapeHTML(b.label || '')}</a>`;
+      var label = isBn ? (b.label_bn || b.label || '') : (b.label || '');
+      return `<a href="${escapeHTML(b.href || '#')}" target="${escapeHTML(b.target || '_self')}">${escapeHTML(label)}</a>`;
     }).join('');
 
     var rawLogoSvg = (cfg.logoSvg && cfg.logoSvg.trim().indexOf('<svg') !== -1) ? cfg.logoSvg.trim() : FOOTER_LOGO_SVG;
@@ -311,11 +361,11 @@
     <div class="footer-main" id="footer-main">
       <div class="footer-inner">
         <div class="footer-col" id="footer-col-sections">
-          <h3 class="footer-col-title">${escapeHTML(cfg.sectionsTitle || 'Sections')}</h3>
+          <h3 class="footer-col-title">${escapeHTML(sectionsTitle)}</h3>
           <ul class="footer-col-list" id="footer-section-list"></ul>
         </div>
         <div class="footer-col" id="footer-col-explore">
-          <h3 class="footer-col-title">${escapeHTML(cfg.exploreTitle || 'Explore the Privatian')}</h3>
+          <h3 class="footer-col-title">${escapeHTML(exploreTitle)}</h3>
           <ul class="footer-col-list">
             ${exploreHtml}
           </ul>
@@ -325,12 +375,12 @@
             <span class="footer-series-icon">
               <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" style="display:inline-block;vertical-align:-1px;margin-right:4px;"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
             </span>
-            ${escapeHTML(cfg.seriesTitle || 'Our recent series')}
+            ${escapeHTML(seriesTitle)}
           </h3>
           ${seriesHtml}
         </div>
         <div class="footer-col footer-col-social" id="footer-col-social">
-          <h3 class="footer-col-title">${escapeHTML(cfg.socialTitle || 'Follow us on')}</h3>
+          <h3 class="footer-col-title">${escapeHTML(socialTitle)}</h3>
           <div class="footer-social-grid">
             ${socialHtml}
           </div>
@@ -343,8 +393,8 @@
           <div class="footer-logo-wrap">
             ${sizedLogoSvg}
           </div>
-          ${cfg.tagline ? `<div class="footer-tagline">${escapeHTML(cfg.tagline)}</div>` : ''}
-          ${cfg.copyright ? `<div class="footer-copyright">${escapeHTML(cfg.copyright)}</div>` : ''}
+          ${tagline ? `<div class="footer-tagline">${escapeHTML(tagline)}</div>` : ''}
+          ${copyright ? `<div class="footer-copyright">${escapeHTML(copyright)}</div>` : ''}
         </div>
         <nav class="footer-bottom-links" aria-label="Footer legal links">
           ${bottomLinksHtml}
@@ -371,7 +421,7 @@
     });
 
     ul.innerHTML = filtered.map(function(s) {
-      return `<li><a href="/section/${s.slug}">${escapeHTML(s.name)}</a></li>`;
+      return `<li><a href="/section/${s.slug}">${escapeHTML(getSectionDisplayName(s))}</a></li>`;
     }).join('');
   }
 
@@ -383,6 +433,7 @@
     if (!inner) return;
     var settings = getHeaderSettings();
     var subs = (settings && settings.subsections) ? settings.subsections : DEFAULT_SUBSECTIONS;
+    var isBn = window.PrivatianLang && window.PrivatianLang.getLang() === 'bn';
     var calSVG = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>';
     inner.innerHTML = '';
     var count = 0;
@@ -391,10 +442,18 @@
       a.href = s.href || '#';
       a.className = 'sub-link' + (s.icon === 'calendar' ? ' sub-link-icon' : '');
       a.id = 'sub-link-' + (i + 1);
+      var label = isBn ? (s.label_bn || (function() {
+        for (var k = 0; k < DEFAULT_SUBSECTIONS.length; k++) {
+          if (DEFAULT_SUBSECTIONS[k].id === s.id || (s.label && DEFAULT_SUBSECTIONS[k].label.toLowerCase() === s.label.toLowerCase()) || (s.href && DEFAULT_SUBSECTIONS[k].href === s.href)) {
+            return DEFAULT_SUBSECTIONS[k].label_bn;
+          }
+        }
+        return s.label || '';
+      })()) : (s.label || '');
       if (s.icon === 'calendar') {
-        a.innerHTML = calSVG + ' ' + s.label;
+        a.innerHTML = calSVG + ' ' + escapeHTML(label);
       } else {
-        a.textContent = s.label;
+        a.textContent = label;
       }
       inner.appendChild(a);
       count++;
@@ -425,22 +484,31 @@
     }
 
     // Apply Browser Tab Title & Meta settings (Tab Hover Card)
-    var tabTitle = settings.browserTabTitle || (settings.siteTitle ? (settings.siteTitle + (settings.tabTagline ? ' — ' + settings.tabTagline : '')) : '');
+    var isBn = window.PrivatianLang && window.PrivatianLang.getLang() === 'bn';
+    var defaultSiteTitle = isBn ? 'দ্য প্রাইভেসিয়ান পরিবার' : 'The Privatian Family';
+    var defaultTagline = isBn ? 'অন্তর্দৃষ্টি, গল্প ও ঐতিহ্য' : 'Insights, Stories & Heritage';
+
+    var siteTitle = isBn ? (settings.siteTitle_bn || settings.siteTitle || defaultSiteTitle) : (settings.siteTitle || defaultSiteTitle);
+    var tabTagline = isBn ? (settings.tabTagline_bn || settings.tabTagline || defaultTagline) : (settings.tabTagline || defaultTagline);
+    var browserTabTitle = isBn ? (settings.browserTabTitle_bn || (siteTitle + ' — ' + tabTagline)) : (settings.browserTabTitle || (siteTitle + ' — ' + tabTagline));
+
     var path = window.location.pathname || '';
-    if (tabTitle && (path.endsWith('index.html') || path === '/' || path === '' || path.endsWith('/'))) {
-      document.title = tabTitle;
+    if (browserTabTitle && (path.endsWith('index.html') || path === '/' || path === '' || path.endsWith('/'))) {
+      document.title = browserTabTitle;
     }
-    if (settings.metaDescription) {
+    var metaDesc = isBn ? (settings.metaDescription_bn || settings.metaDescription) : settings.metaDescription;
+    if (metaDesc) {
       var m = document.querySelector('meta[name="description"]');
-      if (m) m.setAttribute('content', settings.metaDescription);
+      if (m) m.setAttribute('content', metaDesc);
       var ogm = document.querySelector('meta[property="og:description"]');
-      if (ogm) ogm.setAttribute('content', settings.metaDescription);
+      if (ogm) ogm.setAttribute('content', metaDesc);
     }
-    if (tabTitle) {
+    if (browserTabTitle) {
       var ogt = document.querySelector('meta[property="og:title"]');
-      if (ogt) ogt.setAttribute('content', tabTitle);
+      if (ogt) ogt.setAttribute('content', browserTabTitle);
     }
   }
+
   function populateSections() {
     var secs = getSections();
 
@@ -467,7 +535,7 @@
           a.style.color = 'var(--brand-navy)';
           a.style.fontWeight = '700';
         }
-        a.textContent = s.name;
+        a.textContent = getSectionDisplayName(s);
         li.appendChild(a);
         mainNavList.appendChild(li);
 
@@ -488,7 +556,7 @@
         var li = document.createElement('li');
         var a  = document.createElement('a');
         a.href = s.slug ? ('/section/' + s.slug) : '#';
-        a.textContent = s.name;
+        a.textContent = getSectionDisplayName(s);
         if (s.slug === currentSlug) a.style.color = 'var(--brand-navy)';
         li.appendChild(a);
         menuList.appendChild(li);
@@ -503,7 +571,7 @@
         var li = document.createElement('li');
         var a  = document.createElement('a');
         a.href = s.slug ? ('/section/' + s.slug) : '#';
-        a.textContent = s.name;
+        a.textContent = getSectionDisplayName(s);
         li.appendChild(a);
         footerList.appendChild(li);
       });
@@ -517,15 +585,19 @@
   function populateMenuOverlay() {
     var menuConfig = getMenuSettings();
     if (!menuConfig) menuConfig = DEFAULT_MENU_CONFIG;
+    var isBn = window.PrivatianLang && window.PrivatianLang.getLang() === 'bn';
 
     // 1. Column 1: Sections Title
     var titleSectionsEl = document.getElementById('mo-title-sections');
-    if (titleSectionsEl) titleSectionsEl.textContent = menuConfig.sectionsTitle || 'Sections';
+    if (titleSectionsEl) {
+      titleSectionsEl.textContent = isBn ? (menuConfig.sectionsTitle_bn || window.PrivatianLang.t('sections')) : (menuConfig.sectionsTitle || 'Sections');
+    }
 
     // 2. Column 2: Featured Series
     var titleSeriesEl = document.getElementById('mo-title-series');
     if (titleSeriesEl) {
-      titleSeriesEl.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:text-bottom;margin-right:4px;"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg> ' + escapeHTML(menuConfig.seriesTitle || 'Featured series');
+      var sTitle = isBn ? (menuConfig.seriesTitle_bn || window.PrivatianLang.t('featuredSeries')) : (menuConfig.seriesTitle || 'Featured series');
+      titleSeriesEl.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:text-bottom;margin-right:4px;"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg> ' + escapeHTML(sTitle);
     }
     var seriesListEl = document.getElementById('mo-series-list');
     if (seriesListEl) {
@@ -534,15 +606,19 @@
       seriesArr.forEach(function(s) {
         var wrap = document.createElement('div');
         wrap.className = 'menu-series';
-        wrap.innerHTML = '<h3 class="menu-series-name"><a href="' + (s.href || '#') + '">' + escapeHTML(s.title) + '</a></h3>' +
-                         '<p class="menu-series-desc">' + escapeHTML(s.description || '') + '</p>';
+        var title = isBn ? (s.title_bn || s.title || '') : (s.title || '');
+        var desc  = isBn ? (s.description_bn || s.description || '') : (s.description || '');
+        wrap.innerHTML = '<h3 class="menu-series-name"><a href="' + (s.href || '#') + '">' + escapeHTML(title) + '</a></h3>' +
+                         '<p class="menu-series-desc">' + escapeHTML(desc) + '</p>';
         seriesListEl.appendChild(wrap);
       });
     }
 
     // 3. Column 2: Explore the Privatian
     var titleExploreEl = document.getElementById('mo-title-explore');
-    if (titleExploreEl) titleExploreEl.textContent = menuConfig.exploreTitle || 'Explore the Privatian';
+    if (titleExploreEl) {
+      titleExploreEl.textContent = isBn ? (menuConfig.exploreTitle_bn || window.PrivatianLang.t('explorePrivatian')) : (menuConfig.exploreTitle || 'Explore the Privatian');
+    }
     var exploreListEl = document.getElementById('mo-explore-list');
     if (exploreListEl) {
       exploreListEl.innerHTML = '';
@@ -552,7 +628,7 @@
         var a = document.createElement('a');
         a.href = e.href || '#';
         if (e.target) a.target = e.target;
-        a.textContent = e.label;
+        a.textContent = isBn ? (e.label_bn || e.label || '') : (e.label || '');
         li.appendChild(a);
         exploreListEl.appendChild(li);
       });
@@ -560,7 +636,9 @@
 
     // 4. Column 3: Read the latest
     var titleLatestEl = document.getElementById('mo-title-latest');
-    if (titleLatestEl) titleLatestEl.textContent = menuConfig.latestTitle || 'Read the latest';
+    if (titleLatestEl) {
+      titleLatestEl.textContent = isBn ? (menuConfig.latestTitle_bn || window.PrivatianLang.t('readLatest')) : (menuConfig.latestTitle || 'Read the latest');
+    }
     var latestListEl = document.getElementById('mo-latest-list');
     if (latestListEl) {
       latestListEl.innerHTML = '';
@@ -568,8 +646,9 @@
       latestArr.forEach(function(item) {
         var itemDiv = document.createElement('div');
         itemDiv.className = 'menu-latest-item';
-        itemDiv.innerHTML = (item.imageUrl ? '<img src="' + item.imageUrl + '" alt="' + escapeHTML(item.title) + '" class="menu-latest-img" />' : '') +
-                            '<h3 class="menu-latest-title"><a href="' + (item.href || '#') + '">' + escapeHTML(item.title) + '</a></h3>';
+        var title = isBn ? (item.title_bn || item.title || '') : (item.title || '');
+        itemDiv.innerHTML = (item.imageUrl ? '<img src="' + item.imageUrl + '" alt="' + escapeHTML(title) + '" class="menu-latest-img" />' : '') +
+                            '<h3 class="menu-latest-title"><a href="' + (item.href || '#') + '">' + escapeHTML(title) + '</a></h3>';
         latestListEl.appendChild(itemDiv);
       });
     }
@@ -904,11 +983,19 @@
       if (res.ok) data = await res.json();
     } catch(err) {}
 
+    var isBn = window.PrivatianLang && window.PrivatianLang.getLang() === 'bn';
+    var data = null;
+    try {
+      var res = await fetch('/api/sections?action=header' + (isBn ? '&lang=bn' : ''));
+      if (res.ok) data = await res.json();
+    } catch(err) {}
+
     if (!data) {
       try {
         var sb = window._sb || (window.initSupabaseClient && window.initSupabaseClient());
         if (sb) {
-          var { data: sData } = await sb.from('sections').select('name').eq('admin_id', '__header_config__').maybeSingle();
+          var targetId = isBn ? '__header_config_bn__' : '__header_config__';
+          var { data: sData } = await sb.from('sections').select('name').eq('admin_id', targetId).maybeSingle();
           if (sData && sData.name) {
             var parsed = JSON.parse(sData.name);
             if (parsed && typeof parsed === 'object') data = parsed;
@@ -919,7 +1006,7 @@
 
     if (data && typeof data === 'object') {
       try {
-        localStorage.setItem(HEADER_SETTINGS_KEY, JSON.stringify(data));
+        localStorage.setItem(isBn ? HEADER_SETTINGS_KEY + '_bn' : HEADER_SETTINGS_KEY, JSON.stringify(data));
       } catch(e) {}
       applyLogoSettings();
       populateSections();
@@ -929,9 +1016,10 @@
 
   async function fetchMenuFromAPI() {
     if (window.location.protocol === 'file:') return;
+    var isBn = window.PrivatianLang && window.PrivatianLang.getLang() === 'bn';
     var data = null;
     try {
-      var res = await fetch('/api/sections?action=menu');
+      var res = await fetch('/api/sections?action=menu' + (isBn ? '&lang=bn' : ''));
       if (res.ok) data = await res.json();
     } catch(err) {}
 
@@ -939,7 +1027,8 @@
       try {
         var sb = window._sb || (window.initSupabaseClient && window.initSupabaseClient());
         if (sb) {
-          var { data: sData } = await sb.from('sections').select('name').eq('admin_id', '__menu_config__').maybeSingle();
+          var targetId = isBn ? '__menu_config_bn__' : '__menu_config__';
+          var { data: sData } = await sb.from('sections').select('name').eq('admin_id', targetId).maybeSingle();
           if (sData && sData.name) {
             var parsed = JSON.parse(sData.name);
             if (parsed && typeof parsed === 'object') data = parsed;
@@ -950,7 +1039,7 @@
 
     if (data && typeof data === 'object') {
       try {
-        localStorage.setItem(MENU_SETTINGS_KEY, JSON.stringify(data));
+        localStorage.setItem(isBn ? MENU_SETTINGS_KEY + '_bn' : MENU_SETTINGS_KEY, JSON.stringify(data));
       } catch(e) {}
       populateMenuOverlay();
     }
@@ -958,9 +1047,10 @@
 
   async function fetchFooterFromAPI() {
     if (window.location.protocol === 'file:') return;
+    var isBn = window.PrivatianLang && window.PrivatianLang.getLang() === 'bn';
     var data = null;
     try {
-      var res = await fetch('/api/sections?action=footer');
+      var res = await fetch('/api/sections?action=footer' + (isBn ? '&lang=bn' : ''));
       if (res.ok) data = await res.json();
     } catch(err) {}
 
@@ -968,7 +1058,8 @@
       try {
         var sb = window._sb || (window.initSupabaseClient && window.initSupabaseClient());
         if (sb) {
-          var { data: sData } = await sb.from('sections').select('name').eq('admin_id', '__footer_config__').maybeSingle();
+          var targetId = isBn ? '__footer_config_bn__' : '__footer_config__';
+          var { data: sData } = await sb.from('sections').select('name').eq('admin_id', targetId).maybeSingle();
           if (sData && sData.name) {
             var parsed = JSON.parse(sData.name);
             if (parsed && typeof parsed === 'object') data = parsed;
@@ -980,7 +1071,8 @@
     if (!data) {
       try {
         if (typeof PRIVATIAN_SUPABASE_URL !== 'undefined' && typeof PRIVATIAN_SUPABASE_KEY !== 'undefined') {
-          var sRes = await fetch(PRIVATIAN_SUPABASE_URL + '/rest/v1/sections?admin_id=eq.__footer_config__&select=name', {
+          var targetId = isBn ? '__footer_config_bn__' : '__footer_config__';
+          var sRes = await fetch(PRIVATIAN_SUPABASE_URL + '/rest/v1/sections?admin_id=eq.' + targetId + '&select=name', {
             headers: {
               'apikey': PRIVATIAN_SUPABASE_KEY,
               'Authorization': 'Bearer ' + PRIVATIAN_SUPABASE_KEY
@@ -999,7 +1091,7 @@
 
     if (data && typeof data === 'object') {
       try {
-        localStorage.setItem(FOOTER_SETTINGS_KEY, JSON.stringify(data));
+        localStorage.setItem(isBn ? FOOTER_SETTINGS_KEY + '_bn' : FOOTER_SETTINGS_KEY, JSON.stringify(data));
       } catch(e) {}
       renderFooter();
     }
@@ -1022,6 +1114,33 @@
     }
   }
 
+  function reRenderAllComponents() {
+    _headerReady = false;
+    var existingHeader = document.getElementById('site-header');
+    var existingSub = document.getElementById('sub-header');
+    var existingSearch = document.getElementById('search-overlay');
+    var existingMenu = document.getElementById('menu-overlay');
+    var existingFooter = document.getElementById('site-footer');
+
+    if (existingHeader) {
+      var mountH = document.createElement('div');
+      mountH.id = 'site-header-mount';
+      existingHeader.parentNode.replaceChild(mountH, existingHeader);
+    }
+    if (existingSub) existingSub.remove();
+    if (existingSearch) existingSearch.remove();
+    if (existingMenu) existingMenu.remove();
+
+    if (existingFooter) {
+      var mountF = document.createElement('div');
+      mountF.id = 'site-footer-mount';
+      existingFooter.parentNode.replaceChild(mountF, existingFooter);
+    }
+
+    initHeader();
+    renderFooter();
+  }
+
   function init() {
     initHeader();
     renderFooter();
@@ -1030,6 +1149,11 @@
     fetchMenuFromAPI();           // async: sync Navigation Menu overlay from DB
     fetchFooterFromAPI();         // async: sync Footer settings from DB
   }
+
+  // Reactive listener for language switch
+  document.addEventListener('privatian:language-changed', function() {
+    reRenderAllComponents();
+  });
 
   // Expose immediate initializer for instant rendering right after mount tag
   window.initPrivatianHeader = initHeader;

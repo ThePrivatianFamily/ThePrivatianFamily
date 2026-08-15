@@ -14,7 +14,9 @@ const { logActivity } = require('./_lib/activity');
 const { createClient } = require('@supabase/supabase-js');
 
 function sb() {
-  return createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
+  const supabaseUrl = process.env.SUPABASE_URL || 'https://aenhajqjsgskimfzvlfr.supabase.co';
+  const supabaseKey = process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_KEY || process.env.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFlbmhhanFqc2dza2ltZnp2bGZyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY2MDc1MDUsImV4cCI6MjEwMjE4MzUwNX0.q0wmF77hpsb8M7CQOYMq8GrDuQJ32vn1NcWFXTc5UAY';
+  return createClient(supabaseUrl, supabaseKey);
 }
 
 function slugify(text) {
@@ -41,7 +43,7 @@ module.exports = async function handler(req, res) {
     const limit   = Math.min(parseInt(req.query.limit  || '50', 10), 100);
     const offset  = Math.max(parseInt(req.query.offset || '0',  10), 0);
     let query = sb().from('articles')
-      .select('id, slug, title, deck, section, author, published_at, hero_img_url, tags')
+      .select('id, slug, title, title_bn, deck, deck_bn, section, author, author_bn, published_at, hero_img_url, tags')
       .eq('status', 'published')
       .or('is_deleted.is.null,is_deleted.eq.false')
       .order('published_at', { ascending: false })
@@ -102,7 +104,7 @@ module.exports = async function handler(req, res) {
     if (!session) return;
     const { data, error } = await sb()
       .from('articles')
-      .select('id, slug, title, deck, section, author, status, created_at, updated_at, published_at, hero_img_url, content')
+      .select('id, slug, title, title_bn, deck, deck_bn, section, author, author_bn, status, created_at, updated_at, published_at, hero_img_url, content')
       .or('is_deleted.is.null,is_deleted.eq.false')
       .order('updated_at', { ascending: false });
     if (error) return res.status(500).json({ error: error.message });
@@ -115,7 +117,7 @@ module.exports = async function handler(req, res) {
     if (!session) return;
     const { data, error } = await sb()
       .from('articles')
-      .select('id, slug, title, section, author, status, deleted_at, hero_img_url')
+      .select('id, slug, title, title_bn, section, author, author_bn, status, deleted_at, hero_img_url')
       .eq('is_deleted', true)
       .order('deleted_at', { ascending: false });
     if (error) return res.status(500).json({ error: error.message });
@@ -162,10 +164,10 @@ module.exports = async function handler(req, res) {
     if (!session) return;
 
     const {
-      id: bodyId, title = '', deck = '', section = '', author = '', author_role = '',
-      author_bio = '', author_photo_url = '', hero_img_url = '', hero_img_alt = '',
-      hero_caption = '', hero_credit = '', content_html = '', slug: bodySlug,
-      seo_title = '', meta_description = '', tags = '', status: bodyStatus,
+      id: bodyId, title = '', title_bn = '', deck = '', deck_bn = '', section = '', author = '', author_bn = '', author_role = '', author_role_bn = '',
+      author_bio = '', author_bio_bn = '', author_photo_url = '', hero_img_url = '', hero_img_alt = '',
+      hero_caption = '', hero_caption_bn = '', hero_credit = '', hero_credit_bn = '', content_html = '', content_html_bn = '', slug: bodySlug,
+      seo_title = '', seo_title_bn = '', meta_description = '', meta_description_bn = '', tags = '', tags_bn = '', status: bodyStatus,
       is_draft = false,
     } = req.body || {};
 
@@ -179,9 +181,9 @@ module.exports = async function handler(req, res) {
       // We ONLY update the working draft in the `content` column without touching the live published article!
       if (existing && existing.status === 'published' && is_draft) {
         const draftPayload = {
-          title, deck, section, author, author_role, author_bio, author_photo_url,
-          hero_img_url, hero_img_alt, hero_caption, hero_credit, content_html,
-          seo_title, meta_description, tags,
+          title, title_bn, deck, deck_bn, section, author, author_bn, author_role, author_role_bn, author_bio, author_bio_bn, author_photo_url,
+          hero_img_url, hero_img_alt, hero_caption, hero_caption_bn, hero_credit, hero_credit_bn, content_html, content_html_bn,
+          seo_title, seo_title_bn, meta_description, meta_description_bn, tags, tags_bn,
           draft_saved_at: new Date().toISOString()
         };
         const { data, error } = await client.from('articles')
@@ -209,9 +211,9 @@ module.exports = async function handler(req, res) {
 
       // OTHERWISE: DIRECT LIVE PUBLISH OR DRAFT ARTICLE UPDATE
       const updates = {
-        title, deck, section, author, author_role, author_bio, author_photo_url,
-        hero_img_url, hero_img_alt, hero_caption, hero_credit, content_html,
-        seo_title, meta_description, tags,
+        title, title_bn, deck, deck_bn, section, author, author_bn, author_role, author_role_bn, author_bio, author_bio_bn, author_photo_url,
+        hero_img_url, hero_img_alt, hero_caption, hero_caption_bn, hero_credit, hero_credit_bn, content_html, content_html_bn,
+        seo_title, seo_title_bn, meta_description, meta_description_bn, tags, tags_bn,
         content: null, // Clear working draft because live article is now updated
         updated_at: new Date().toISOString(),
       };
@@ -256,9 +258,9 @@ module.exports = async function handler(req, res) {
         }
       }
       const newArticle = {
-        slug, title, deck, section, author, author_role, author_bio, author_photo_url,
-        hero_img_url, hero_img_alt, hero_caption, hero_credit, content_html,
-        seo_title, meta_description, tags,
+        slug, title, title_bn, deck, deck_bn, section, author, author_bn, author_role, author_role_bn, author_bio, author_bio_bn, author_photo_url,
+        hero_img_url, hero_img_alt, hero_caption, hero_caption_bn, hero_credit, hero_credit_bn, content_html, content_html_bn,
+        seo_title, seo_title_bn, meta_description, meta_description_bn, tags, tags_bn,
         status: bodyStatus || 'draft',
         created_by: session.email,
       };

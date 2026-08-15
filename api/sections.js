@@ -18,6 +18,7 @@ function rowToAdminSection(row) {
   return {
     id:        row.admin_id || row.slug,
     name:      row.name,
+    name_bn:   row.name_bn || '',
     slug:      row.slug || '',
     locked:    row.locked    || false,
     deleted:   row.is_deleted || false,
@@ -32,46 +33,50 @@ module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
   res.setHeader('Cache-Control', 'no-store');
 
-  if (req.method === 'OPTIONS') return res.status(200).end();
-
-  const sb = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
+  const supabaseUrl = process.env.SUPABASE_URL || 'https://aenhajqjsgskimfzvlfr.supabase.co';
+  const supabaseKey = process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_KEY || process.env.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFlbmhhanFqc2dza2ltZnp2bGZyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY2MDc1MDUsImV4cCI6MjEwMjE4MzUwNX0.q0wmF77hpsb8M7CQOYMq8GrDuQJ32vn1NcWFXTc5UAY';
+  const sb = createClient(supabaseUrl, supabaseKey);
   const action = req.query && req.query.action;
 
   // ── MENU CONFIGURATION (GET / POST) ─────────────────────────────────────
   if (action === 'menu') {
+    const isBn = (req.query && req.query.lang === 'bn') || (req.body && req.body.lang === 'bn');
+    const settingsKey = isBn ? 'navigation_menu_config_bn' : 'navigation_menu_config';
+    const fallbackId = isBn ? '__menu_config_bn__' : '__menu_config__';
+
     const DEFAULT_MENU_CONFIG = {
-      sectionsTitle: 'Sections',
-      seriesTitle: 'Featured series',
+      sectionsTitle: isBn ? 'বিভাগসমূহ' : 'Sections',
+      seriesTitle: isBn ? 'বিশেষ সিরিজ' : 'Featured series',
       series: [
         {
           id: 'series-1',
-          title: 'Wondering',
+          title: isBn ? 'অনুসন্ধিৎসু' : 'Wondering',
           href: '/section/findings',
-          description: 'A series of profound questions explored by The Privatian Family experts.',
+          description: isBn ? 'প্রাইভেটিয়ান ফ্যামিলি বিশেষজ্ঞদের গভীর অনুসন্ধানী আলোচনা।' : 'A series of profound questions explored by The Privatian Family experts.',
           enabled: true
         }
       ],
-      exploreTitle: 'Explore the Privatian',
+      exploreTitle: isBn ? 'প্রাইভেটিয়ান এক্সপ্লোর করুন' : 'Explore the Privatian',
       explore: [
-        { id: 'exp-1', label: 'Events', href: '/events', target: '_self', enabled: true },
-        { id: 'exp-2', label: 'Article archive', href: '/', target: '_self', enabled: true },
-        { id: 'exp-3', label: 'About us', href: '/', target: '_self', enabled: true },
-        { id: 'exp-4', label: 'News+', href: '/', target: '_self', enabled: true },
-        { id: 'exp-5', label: 'Podcast', href: '/', target: '_self', enabled: true }
+        { id: 'exp-1', label: isBn ? 'ইভেন্টসমূহ' : 'Events', href: '/events', target: '_self', enabled: true },
+        { id: 'exp-2', label: isBn ? 'আর্টিকেল আর্কাইভ' : 'Article archive', href: '/', target: '_self', enabled: true },
+        { id: 'exp-3', label: isBn ? 'আমাদের সম্পর্কে' : 'About us', href: '/', target: '_self', enabled: true },
+        { id: 'exp-4', label: isBn ? 'সংবাদ+' : 'News+', href: '/', target: '_self', enabled: true },
+        { id: 'exp-5', label: isBn ? 'পডকাস্ট' : 'Podcast', href: '/', target: '_self', enabled: true }
       ],
-      latestTitle: 'Read the latest',
+      latestTitle: isBn ? 'সর্বশেষ পড়ুন' : 'Read the latest',
       latestMode: 'curated',
       latest: [
         {
           id: 'latest-1',
-          title: "For families in transition, 'not all traditions are equal'",
+          title: isBn ? 'পরিবর্তনশীল পরিবারের জন্য সকল ঐতিহ্য সমান নয়' : "For families in transition, 'not all traditions are equal'",
           href: '/section/community-heritage',
           imageUrl: 'img1.png',
           enabled: true
         },
         {
           id: 'latest-2',
-          title: 'The art of the pen: How writing shapes cultural identity',
+          title: isBn ? 'লেখনীর শিল্প: যেভাবে সাহিত্য সাংস্কৃতিক পরিচয় গড়ে তোলে' : 'The art of the pen: How writing shapes cultural identity',
           href: '/section/culture',
           imageUrl: 'img3.png',
           enabled: true
@@ -81,13 +86,13 @@ module.exports = async function handler(req, res) {
 
     if (req.method === 'GET') {
       try {
-        const { data } = await sb.from('site_settings').select('value').eq('key', 'navigation_menu_config').maybeSingle();
+        const { data } = await sb.from('site_settings').select('value').eq('key', settingsKey).maybeSingle();
         if (data && data.value) return res.status(200).json(data.value);
       } catch(e) {}
 
       // Fallback read from sections table
       try {
-        const { data: sData } = await sb.from('sections').select('name').eq('admin_id', '__menu_config__').maybeSingle();
+        const { data: sData } = await sb.from('sections').select('name').eq('admin_id', fallbackId).maybeSingle();
         if (sData && sData.name) {
           const parsed = JSON.parse(sData.name);
           if (parsed && typeof parsed === 'object') return res.status(200).json(parsed);
@@ -105,7 +110,7 @@ module.exports = async function handler(req, res) {
       let saved = false;
       try {
         const { error } = await sb.from('site_settings').upsert({
-          key: 'navigation_menu_config',
+          key: settingsKey,
           value: menuConfig,
           updated_at: new Date().toISOString()
         }, { onConflict: 'key' });
@@ -115,21 +120,21 @@ module.exports = async function handler(req, res) {
       if (!saved) {
         // Fallback save in sections table
         try {
-          const { data: existing } = await sb.from('sections').select('id').eq('admin_id', '__menu_config__').maybeSingle();
+          const { data: existing } = await sb.from('sections').select('id').eq('admin_id', fallbackId).maybeSingle();
           if (existing) {
             await sb.from('sections').update({
               name: JSON.stringify(menuConfig),
-              slug: '__menu_config__',
+              slug: fallbackId,
               display_order: 9999,
               is_active: false,
               locked: true,
               is_deleted: true
-            }).eq('admin_id', '__menu_config__');
+            }).eq('admin_id', fallbackId);
           } else {
             await sb.from('sections').insert({
-              admin_id: '__menu_config__',
+              admin_id: fallbackId,
               name: JSON.stringify(menuConfig),
-              slug: '__menu_config__',
+              slug: fallbackId,
               display_order: 9999,
               is_active: false,
               locked: true,
@@ -144,10 +149,10 @@ module.exports = async function handler(req, res) {
         actor: session,
         action: 'layout.menu_save',
         category: 'layout',
-        summary: `${session.name || session.email} updated Navigation Menu configuration`,
-        target_id: 'navigation_menu_config',
+        summary: `${session.name || session.email} updated Navigation Menu configuration (${isBn ? 'Bengali' : 'English'})`,
+        target_id: settingsKey,
         target_name: 'Navigation Menu',
-        details: {},
+        details: { lang: isBn ? 'bn' : 'en' },
         req
       }).catch(() => {});
 
@@ -157,20 +162,24 @@ module.exports = async function handler(req, res) {
 
   // ── HEADER CONFIGURATION (GET / POST) ───────────────────────────────────
   if (action === 'header') {
+    const isBn = (req.query && req.query.lang === 'bn') || (req.body && req.body.lang === 'bn');
+    const settingsKey = isBn ? 'site_header_config_bn' : 'site_header_config';
+    const fallbackId = isBn ? '__header_config_bn__' : '__header_config__';
+
     const DEFAULT_HEADER_CONFIG = {
-      siteTitle: 'The Privatian Family',
-      tabTagline: 'Insights, Stories & Heritage',
-      browserTabTitle: 'The Privatian Family — Insights, Stories & Heritage',
-      metaDescription: 'The Official Publication of The Privatian Society — Cambridge, Massachusetts.',
+      siteTitle: isBn ? 'দ্য প্রাইভেটিয়ান ফ্যামিলি' : 'The Privatian Family',
+      tabTagline: isBn ? 'জ্ঞান, ঐতিহ্য ও জীবনের কথা' : 'Insights, Stories & Heritage',
+      browserTabTitle: isBn ? 'দ্য প্রাইভেটিয়ান ফ্যামিলি — জ্ঞান, ঐতিহ্য ও জীবনের কথা' : 'The Privatian Family — Insights, Stories & Heritage',
+      metaDescription: isBn ? 'দ্য প্রাইভেটিয়ান সোসাইটির অফিশিয়াল প্রকাশনা — ক্যামব্রিজ, ম্যাসাচুসেটস।' : 'The Official Publication of The Privatian Society — Cambridge, Massachusetts.',
       faviconUrl: '',
       logoSvg: null,
       logoHeight: 80,
       enabledNavSections: null,
       subsections: [
-        { id: 'sub-1', label: 'FAMILY LEGACY', href: '/section/community-heritage', icon: null, enabled: true },
-        { id: 'sub-2', label: 'EXPERIENCE', href: '/section/culture', icon: null, enabled: true },
-        { id: 'sub-3', label: 'RESEARCH & VALUES', href: '/section/privacy-values', icon: null, enabled: true },
-        { id: 'sub-4', label: 'PERSPECTIVES', href: '/section/opinion', icon: null, enabled: true }
+        { id: 'sub-1', label: isBn ? 'পারিবারিক ঐতিহ্য' : 'FAMILY LEGACY', href: '/section/community-heritage', icon: null, enabled: true },
+        { id: 'sub-2', label: isBn ? 'অভিজ্ঞতা' : 'EXPERIENCE', href: '/section/culture', icon: null, enabled: true },
+        { id: 'sub-3', label: isBn ? 'গবেষণা ও মূল্যবোধ' : 'RESEARCH & VALUES', href: '/section/privacy-values', icon: null, enabled: true },
+        { id: 'sub-4', label: isBn ? 'দৃষ্টিভঙ্গি' : 'PERSPECTIVES', href: '/section/opinion', icon: null, enabled: true }
       ],
       social: [
         { id: 'soc-1', platform: 'instagram', label: 'Instagram', href: 'https://instagram.com', enabled: true },
@@ -183,13 +192,13 @@ module.exports = async function handler(req, res) {
 
     if (req.method === 'GET') {
       try {
-        const { data } = await sb.from('site_settings').select('value').eq('key', 'site_header_config').maybeSingle();
+        const { data } = await sb.from('site_settings').select('value').eq('key', settingsKey).maybeSingle();
         if (data && data.value) return res.status(200).json(data.value);
       } catch(e) {}
 
       // Fallback read from sections table
       try {
-        const { data: sData } = await sb.from('sections').select('name').eq('admin_id', '__header_config__').maybeSingle();
+        const { data: sData } = await sb.from('sections').select('name').eq('admin_id', fallbackId).maybeSingle();
         if (sData && sData.name) {
           const parsed = JSON.parse(sData.name);
           if (parsed && typeof parsed === 'object') return res.status(200).json(parsed);
@@ -207,7 +216,7 @@ module.exports = async function handler(req, res) {
       let saved = false;
       try {
         const { error } = await sb.from('site_settings').upsert({
-          key: 'site_header_config',
+          key: settingsKey,
           value: headerConfig,
           updated_at: new Date().toISOString()
         }, { onConflict: 'key' });
@@ -217,21 +226,21 @@ module.exports = async function handler(req, res) {
       if (!saved) {
         // Fallback save in sections table
         try {
-          const { data: existing } = await sb.from('sections').select('id').eq('admin_id', '__header_config__').maybeSingle();
+          const { data: existing } = await sb.from('sections').select('id').eq('admin_id', fallbackId).maybeSingle();
           if (existing) {
             await sb.from('sections').update({
               name: JSON.stringify(headerConfig),
-              slug: '__header_config__',
+              slug: fallbackId,
               display_order: 9998,
               is_active: false,
               locked: true,
               is_deleted: true
-            }).eq('admin_id', '__header_config__');
+            }).eq('admin_id', fallbackId);
           } else {
             await sb.from('sections').insert({
-              admin_id: '__header_config__',
+              admin_id: fallbackId,
               name: JSON.stringify(headerConfig),
-              slug: '__header_config__',
+              slug: fallbackId,
               display_order: 9998,
               is_active: false,
               locked: true,
@@ -247,10 +256,10 @@ module.exports = async function handler(req, res) {
         actor: session,
         action: 'layout.header_save',
         category: 'layout',
-        summary: `${session.name || session.email} updated Header configuration & site title`,
-        target_id: 'site_header_config',
+        summary: `${session.name || session.email} updated Header configuration (${isBn ? 'Bengali' : 'English'})`,
+        target_id: settingsKey,
         target_name: 'Header Settings',
-        details: {},
+        details: { lang: isBn ? 'bn' : 'en' },
         req
       }).catch(() => {});
 
@@ -475,15 +484,19 @@ module.exports = async function handler(req, res) {
       }
     };
 
+    const isBn = (req.query && req.query.lang === 'bn') || (req.body && req.body.lang === 'bn');
+    const settingsKey = isBn ? 'site_homepage_config_bn' : 'site_homepage_config';
+    const fallbackId = isBn ? '__homepage_config_bn__' : '__homepage_config__';
+
     if (req.method === 'GET') {
       try {
-        const { data } = await sb.from('site_settings').select('value').eq('key', 'site_homepage_config').maybeSingle();
+        const { data } = await sb.from('site_settings').select('value').eq('key', settingsKey).maybeSingle();
         if (data && data.value) return res.status(200).json(data.value);
       } catch(e) {}
 
       // Fallback read from sections table
       try {
-        const { data: sData } = await sb.from('sections').select('name').eq('admin_id', '__homepage_config__').maybeSingle();
+        const { data: sData } = await sb.from('sections').select('name').eq('admin_id', fallbackId).maybeSingle();
         if (sData && sData.name) {
           const parsed = JSON.parse(sData.name);
           if (parsed && typeof parsed === 'object') return res.status(200).json(parsed);
@@ -501,7 +514,7 @@ module.exports = async function handler(req, res) {
       let saved = false;
       try {
         const { error } = await sb.from('site_settings').upsert({
-          key: 'site_homepage_config',
+          key: settingsKey,
           value: homepageConfig,
           updated_at: new Date().toISOString()
         }, { onConflict: 'key' });
@@ -511,21 +524,21 @@ module.exports = async function handler(req, res) {
       if (!saved) {
         // Fallback save in sections table
         try {
-          const { data: existing } = await sb.from('sections').select('id').eq('admin_id', '__homepage_config__').maybeSingle();
+          const { data: existing } = await sb.from('sections').select('id').eq('admin_id', fallbackId).maybeSingle();
           if (existing) {
             await sb.from('sections').update({
               name: JSON.stringify(homepageConfig),
-              slug: '__homepage_config__',
+              slug: fallbackId,
               display_order: 9997,
               is_active: false,
               locked: true,
               is_deleted: true
-            }).eq('admin_id', '__homepage_config__');
+            }).eq('admin_id', fallbackId);
           } else {
             await sb.from('sections').insert({
-              admin_id: '__homepage_config__',
+              admin_id: fallbackId,
               name: JSON.stringify(homepageConfig),
-              slug: '__homepage_config__',
+              slug: fallbackId,
               display_order: 9997,
               is_active: false,
               locked: true,
@@ -542,10 +555,10 @@ module.exports = async function handler(req, res) {
           actor: session,
           action: 'layout.homepage_save',
           category: 'layout',
-          summary: `${session.name || session.email} updated Homepage builder configuration (Hero, Events, Series)`,
-          target_id: 'site_homepage_config',
+          summary: `${session.name || session.email} updated Homepage builder configuration (${isBn ? 'Bengali' : 'English'})`,
+          target_id: settingsKey,
           target_name: 'Homepage Builder',
-          details: {},
+          details: { lang: isBn ? 'bn' : 'en' },
           req
         });
       } catch(e) {}
@@ -556,35 +569,39 @@ module.exports = async function handler(req, res) {
 
   // ── FOOTER CONFIGURATION (GET / POST) ───────────────────────────────────
   if (action === 'footer') {
+    const isBn = (req.query && req.query.lang === 'bn') || (req.body && req.body.lang === 'bn');
+    const settingsKey = isBn ? 'site_footer_config_bn' : 'site_footer_config';
+    const fallbackId = isBn ? '__footer_config_bn__' : '__footer_config__';
+
     const DEFAULT_FOOTER_CONFIG = {
-      sectionsTitle: 'Sections',
+      sectionsTitle: isBn ? 'বিভাগসমূহ' : 'Sections',
       enabledSections: null,
-      exploreTitle: 'Explore the Privatian',
+      exploreTitle: isBn ? 'প্রাইভেটিয়ান এক্সপ্লোর করুন' : 'Explore the Privatian',
       explore: [
-        { id: 'f-exp-1', label: 'Events', href: '/events', target: '_self', enabled: true },
-        { id: 'f-exp-2', label: 'Article archive', href: '/', target: '_self', enabled: true },
-        { id: 'f-exp-3', label: 'About us', href: '/', target: '_self', enabled: true },
-        { id: 'f-exp-4', label: 'News+', href: '/', target: '_self', enabled: true },
-        { id: 'f-exp-5', label: 'Podcast', href: '/', target: '_self', enabled: true }
+        { id: 'f-exp-1', label: isBn ? 'ইভেন্টসমূহ' : 'Events', href: '/events', target: '_self', enabled: true },
+        { id: 'f-exp-2', label: isBn ? 'আর্টিকেল আর্কাইভ' : 'Article archive', href: '/', target: '_self', enabled: true },
+        { id: 'f-exp-3', label: isBn ? 'আমাদের সম্পর্কে' : 'About us', href: '/', target: '_self', enabled: true },
+        { id: 'f-exp-4', label: isBn ? 'সংবাদ+' : 'News+', href: '/', target: '_self', enabled: true },
+        { id: 'f-exp-5', label: isBn ? 'পডকাস্ট' : 'Podcast', href: '/', target: '_self', enabled: true }
       ],
-      seriesTitle: 'Our recent series',
+      seriesTitle: isBn ? 'আমাদের সাম্প্রতিক সিরিজ' : 'Our recent series',
       series: [
         {
           id: 'f-ser-1',
-          title: 'Wondering',
+          title: isBn ? 'অনুসন্ধিৎসু' : 'Wondering',
           href: '/section/findings',
-          description: 'A series of profound questions explored by The Privatian Family experts.',
+          description: isBn ? 'প্রাইভেটিয়ান ফ্যামিলি বিশেষজ্ঞদের গভীর অনুসন্ধানী আলোচনা।' : 'A series of profound questions explored by The Privatian Family experts.',
           enabled: true
         },
         {
           id: 'f-ser-2',
-          title: 'Life | Heritage',
+          title: isBn ? 'জীবন | ঐতিহ্য' : 'Life | Heritage',
           href: '/section/community-heritage',
-          description: 'A series focused on the personal side of Privatian family research and tradition.',
+          description: isBn ? 'পারিবারিক ঐতিহ্য ও ব্যক্তিগত গবেষণার উপর গুরুত্ব দেওয়া একটি বিশেষ সিরিজ।' : 'A series focused on the personal side of Privatian family research and tradition.',
           enabled: true
         }
       ],
-      socialTitle: 'Follow us on',
+      socialTitle: isBn ? 'অনুসরণ করুন' : 'Follow us on',
       social: [
         { id: 'f-soc-1', platform: 'instagram', label: 'Instagram', href: 'https://instagram.com', enabled: true },
         { id: 'f-soc-2', platform: 'linkedin', label: 'LinkedIn', href: 'https://linkedin.com', enabled: true },
@@ -595,26 +612,26 @@ module.exports = async function handler(req, res) {
       ],
       logoSvg: '',
       logoHeight: 80,
-      tagline: 'The Official Publication of The Privatian Society — Cambridge, Massachusetts',
-      copyright: '© 2026 The Privatian Family. All rights reserved.',
+      tagline: isBn ? 'দ্য প্রাইভেটিয়ান সোসাইটির অফিশিয়াল প্রকাশনা — ক্যামব্রিজ, ম্যাসাচুসেটস' : 'The Official Publication of The Privatian Society — Cambridge, Massachusetts',
+      copyright: isBn ? '© ২০২৬ দ্য প্রাইভেটিয়ান ফ্যামিলি। সর্বস্বত্ব সংরক্ষিত।' : '© 2026 The Privatian Family. All rights reserved.',
       bottomLinks: [
-        { id: 'f-bot-1', label: 'For Media & Journalists', href: '#', target: '_self', enabled: true },
-        { id: 'f-bot-2', label: 'Family News & Archives', href: '#', target: '_self', enabled: true },
-        { id: 'f-bot-3', label: 'Digital Accessibility', href: '#', target: '_self', enabled: true },
-        { id: 'f-bot-4', label: 'Privacy Policy', href: '#', target: '_self', enabled: true },
-        { id: 'f-bot-5', label: 'Trademark', href: '#', target: '_self', enabled: true }
+        { id: 'f-bot-1', label: isBn ? 'মিডিয়া ও সাংবাদিকদের জন্য' : 'For Media & Journalists', href: '#', target: '_self', enabled: true },
+        { id: 'f-bot-2', label: isBn ? 'পারিবারিক সংবাদ ও আর্কাইভ' : 'Family News & Archives', href: '#', target: '_self', enabled: true },
+        { id: 'f-bot-3', label: isBn ? 'ডিজিটাল এক্সেসিবিলিটি' : 'Digital Accessibility', href: '#', target: '_self', enabled: true },
+        { id: 'f-bot-4', label: isBn ? 'গোপনীয়তা নীতি' : 'Privacy Policy', href: '#', target: '_self', enabled: true },
+        { id: 'f-bot-5', label: isBn ? 'ট্রেডমার্ক' : 'Trademark', href: '#', target: '_self', enabled: true }
       ]
     };
 
     if (req.method === 'GET') {
       try {
-        const { data } = await sb.from('site_settings').select('value').eq('key', 'site_footer_config').maybeSingle();
+        const { data } = await sb.from('site_settings').select('value').eq('key', settingsKey).maybeSingle();
         if (data && data.value) return res.status(200).json(data.value);
       } catch(e) {}
 
       // Fallback read from sections table
       try {
-        const { data: sData } = await sb.from('sections').select('name').eq('admin_id', '__footer_config__').maybeSingle();
+        const { data: sData } = await sb.from('sections').select('name').eq('admin_id', fallbackId).maybeSingle();
         if (sData && sData.name) {
           const parsed = JSON.parse(sData.name);
           if (parsed && typeof parsed === 'object') return res.status(200).json(parsed);
@@ -632,7 +649,7 @@ module.exports = async function handler(req, res) {
       let saved = false;
       try {
         const { error } = await sb.from('site_settings').upsert({
-          key: 'site_footer_config',
+          key: settingsKey,
           value: footerConfig,
           updated_at: new Date().toISOString()
         }, { onConflict: 'key' });
@@ -642,21 +659,21 @@ module.exports = async function handler(req, res) {
       if (!saved) {
         // Fallback save in sections table
         try {
-          const { data: existing } = await sb.from('sections').select('id').eq('admin_id', '__footer_config__').maybeSingle();
+          const { data: existing } = await sb.from('sections').select('id').eq('admin_id', fallbackId).maybeSingle();
           if (existing) {
             await sb.from('sections').update({
               name: JSON.stringify(footerConfig),
-              slug: '__footer_config__',
+              slug: fallbackId,
               display_order: 9996,
               is_active: false,
               locked: true,
               is_deleted: true
-            }).eq('admin_id', '__footer_config__');
+            }).eq('admin_id', fallbackId);
           } else {
             await sb.from('sections').insert({
-              admin_id: '__footer_config__',
+              admin_id: fallbackId,
               name: JSON.stringify(footerConfig),
-              slug: '__footer_config__',
+              slug: fallbackId,
               display_order: 9996,
               is_active: false,
               locked: true,
@@ -673,10 +690,10 @@ module.exports = async function handler(req, res) {
           actor: session,
           action: 'layout.footer_save',
           category: 'layout',
-          summary: `${session.name || session.email} updated Footer layout configuration`,
-          target_id: 'site_footer_config',
+          summary: `${session.name || session.email} updated Footer layout configuration (${isBn ? 'Bengali' : 'English'})`,
+          target_id: settingsKey,
           target_name: 'Footer Layout',
-          details: {},
+          details: { lang: isBn ? 'bn' : 'en' },
           req
         });
       } catch(e) {}
@@ -687,12 +704,15 @@ module.exports = async function handler(req, res) {
 
   // ── INDIVIDUAL SECTION CUSTOM CONFIGURATION (GET / POST) ────────────────
   if (action === 'section-config') {
+    const isBn = (req.query && req.query.lang === 'bn') || (req.body && req.body.lang === 'bn');
+    const settingsKey = isBn ? 'sections_custom_configs_bn' : 'sections_custom_configs';
+    const fallbackId = isBn ? '__section_configs_bn__' : '__section_configs__';
     const slug = (req.query && req.query.slug) || (req.body && req.body.slug) || 'all';
 
     if (req.method === 'GET') {
       let allConfigs = {};
       try {
-        const { data } = await sb.from('site_settings').select('value').eq('key', 'sections_custom_configs').maybeSingle();
+        const { data } = await sb.from('site_settings').select('value').eq('key', settingsKey).maybeSingle();
         if (data && data.value && typeof data.value === 'object') {
           allConfigs = data.value;
         }
@@ -700,7 +720,7 @@ module.exports = async function handler(req, res) {
 
       if (Object.keys(allConfigs).length === 0) {
         try {
-          const { data: sData } = await sb.from('sections').select('name').eq('admin_id', '__section_configs__').maybeSingle();
+          const { data: sData } = await sb.from('sections').select('name').eq('admin_id', fallbackId).maybeSingle();
           if (sData && sData.name) {
             const parsed = JSON.parse(sData.name);
             if (parsed && typeof parsed === 'object') allConfigs = parsed;
@@ -726,7 +746,7 @@ module.exports = async function handler(req, res) {
       const payload = req.body || {};
       let allConfigs = {};
       try {
-        const { data } = await sb.from('site_settings').select('value').eq('key', 'sections_custom_configs').maybeSingle();
+        const { data } = await sb.from('site_settings').select('value').eq('key', settingsKey).maybeSingle();
         if (data && data.value && typeof data.value === 'object') {
           allConfigs = data.value;
         }
@@ -734,7 +754,7 @@ module.exports = async function handler(req, res) {
 
       if (Object.keys(allConfigs).length === 0) {
         try {
-          const { data: sData } = await sb.from('sections').select('name').eq('admin_id', '__section_configs__').maybeSingle();
+          const { data: sData } = await sb.from('sections').select('name').eq('admin_id', fallbackId).maybeSingle();
           if (sData && sData.name) {
             const parsed = JSON.parse(sData.name);
             if (parsed && typeof parsed === 'object') allConfigs = parsed;
@@ -753,7 +773,7 @@ module.exports = async function handler(req, res) {
       let saved = false;
       try {
         const { error } = await sb.from('site_settings').upsert({
-          key: 'sections_custom_configs',
+          key: settingsKey,
           value: allConfigs,
           updated_at: new Date().toISOString()
         }, { onConflict: 'key' });
@@ -764,21 +784,21 @@ module.exports = async function handler(req, res) {
 
       // Fallback save in sections table
       try {
-        const { data: existing } = await sb.from('sections').select('id').eq('admin_id', '__section_configs__').maybeSingle();
+        const { data: existing } = await sb.from('sections').select('id').eq('admin_id', fallbackId).maybeSingle();
         if (existing) {
           await sb.from('sections').update({
             name: JSON.stringify(allConfigs),
-            slug: '__section_configs__',
+            slug: fallbackId,
             display_order: 9995,
             is_active: false,
             locked: true,
             is_deleted: true
-          }).eq('admin_id', '__section_configs__');
+          }).eq('admin_id', fallbackId);
         } else {
           await sb.from('sections').insert({
-            admin_id: '__section_configs__',
+            admin_id: fallbackId,
             name: JSON.stringify(allConfigs),
-            slug: '__section_configs__',
+            slug: fallbackId,
             display_order: 9995,
             is_active: false,
             locked: true,
@@ -835,7 +855,7 @@ module.exports = async function handler(req, res) {
       return res.status(200).json(
         rows
           .filter(r => !r.locked)
-          .map(r => ({ name: r.name, slug: r.slug, display_order: r.display_order }))
+          .map(r => ({ name: r.name, name_bn: r.name_bn || '', slug: r.slug, display_order: r.display_order }))
       );
     }
   }
@@ -847,6 +867,7 @@ module.exports = async function handler(req, res) {
 
     const body = req.body || {};
     const name    = (body.name   || '').trim();
+    const name_bn = (body.name_bn || '').trim();
     const slug    = (body.slug   || '').trim();
     const adminId = (body.admin_id || slug || '').trim();
 
@@ -866,7 +887,7 @@ module.exports = async function handler(req, res) {
     const nextOrder = (maxRow && maxRow[0] ? maxRow[0].display_order : 0) + 1;
 
     const { data, error } = await sb.from('sections').insert({
-      name, slug, admin_id: adminId,
+      name, name_bn, slug, admin_id: adminId,
       display_order: nextOrder,
       is_active: true, locked: false, is_deleted: false, deleted_at: null,
     }).select().single();
@@ -881,7 +902,7 @@ module.exports = async function handler(req, res) {
         summary: `${session.name || session.email} created new section "${name}" (/section/${slug})`,
         target_id: adminId,
         target_name: name,
-        details: { slug, name, admin_id: adminId },
+        details: { slug, name, name_bn, admin_id: adminId },
         req
       });
     } catch(e) {}
@@ -897,13 +918,19 @@ module.exports = async function handler(req, res) {
     const id   = req.query && req.query.id;
     const body = req.body || {};
     const name = (body.name || '').trim();
+    const name_bn = body.name_bn !== undefined ? String(body.name_bn).trim() : undefined;
     const slug = (body.slug || '').trim();
 
     if (!id)   return res.status(400).json({ error: 'id (admin_id) is required' });
-    if (!name) return res.status(400).json({ error: 'name is required' });
+    if (!name && name_bn === undefined) return res.status(400).json({ error: 'name or name_bn is required' });
+
+    const updateObj = {};
+    if (name) updateObj.name = name;
+    if (slug) updateObj.slug = slug;
+    if (name_bn !== undefined) updateObj.name_bn = name_bn;
 
     const { data, error } = await sb.from('sections')
-      .update({ name, slug })
+      .update(updateObj)
       .eq('admin_id', id)
       .select().single();
 

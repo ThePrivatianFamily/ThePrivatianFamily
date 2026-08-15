@@ -156,7 +156,18 @@
           <span id="breadcrumb-current">Sections</span>
         </nav>
       </div>
-      <div class="topbar-right" style="display:flex;align-items:center;gap:12px;">
+      <div class="topbar-right" style="display:flex;align-items:center;gap:14px;">
+        <!-- Content Language Selector for Admin Settings -->
+        <div class="admin-lang-switcher" id="admin-lang-switcher" role="tablist" aria-label="Content Language">
+          <span style="font-size:11px;font-weight:700;color:var(--text-muted);margin:0 4px 0 2px;letter-spacing:0.02em;">CONTENT:</span>
+          <button type="button" class="admin-lang-btn active" id="admin-lang-en" onclick="setAdminContentLang('en')" title="Switch to English content editor">
+            <span class="ed-lang-flag">EN</span> English
+          </button>
+          <button type="button" class="admin-lang-btn" id="admin-lang-bn" onclick="setAdminContentLang('bn')" title="Switch to বাংলা (Bengali) content editor">
+            <span class="ed-lang-flag">BN</span> বাংলা
+          </button>
+        </div>
+
         <div id="topbar-actions" style="display:flex;align-items:center;gap:10px;">
           <!-- injected per page -->
         </div>
@@ -1159,17 +1170,22 @@
 
   </main>
 
-  <!-- â•â• ADD / EDIT MODAL â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+  <!-- ══ ADD / EDIT MODAL ═══════════════════════════════════════════════════ -->
   <div class="modal-overlay" id="modal-overlay" hidden>
     <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
       <div class="modal-header">
         <h2 class="modal-title" id="modal-title">New Section</h2>
       </div>
       <div class="modal-body">
-        <label class="form-label" for="section-name-input">Section Name</label>
+        <label class="form-label" for="section-name-input">Section Name (English)</label>
         <input type="text" id="section-name-input" class="form-input" placeholder="e.g. Culture, Science, Heritage…" maxlength="60" autocomplete="off" />
 
-        <div class="form-group" style="margin-top: 18px;">
+        <div class="form-group" style="margin-top: 14px;">
+          <label class="form-label" for="section-name-bn-input">Section Name (বাংলা) <span style="color:var(--text-muted);font-weight:normal;">(ঐচ্ছিক)</span></label>
+          <input type="text" id="section-name-bn-input" class="form-input" placeholder="যেমন: সংস্কৃতি, বিজ্ঞান, ঐতিহ্য…" maxlength="60" autocomplete="off" />
+        </div>
+
+        <div class="form-group" style="margin-top: 14px;">
           <label class="form-label" for="section-slug-input">URL Slug</label>
           <div class="slug-input-wrap">
             <span class="slug-prefix">/section/</span>
@@ -1187,7 +1203,7 @@
     </div>
   </div>
 
-  <!-- â•â• CONFIRM DELETE MODAL â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+  <!-- ══ CONFIRM DELETE MODAL ═══════════════════════════════════════════════ -->
   <div class="modal-overlay" id="confirm-overlay" hidden>
     <div class="modal modal--danger" role="dialog" aria-modal="true" aria-labelledby="confirm-title">
       <div class="modal-header">
@@ -1257,10 +1273,14 @@
 
         <!-- ══ PANE 1: GENERAL & SEO ══ -->
         <div id="studio-pane-general" class="studio-pane">
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px;">
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:20px;">
             <div class="form-group">
-              <label class="form-label" for="studio-name-input" style="font-weight:700;">Section Name <span style="color:var(--danger)">*</span></label>
+              <label class="form-label" for="studio-name-input" style="font-weight:700;">Section Name (EN) <span style="color:var(--danger)">*</span></label>
               <input type="text" id="studio-name-input" class="form-input" placeholder="e.g. Community & Heritage" oninput="updateStudioSlugPreview()" />
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="studio-name-bn-input" style="font-weight:700;">Section Name (BN বাংলা)</label>
+              <input type="text" id="studio-name-bn-input" class="form-input" placeholder="যেমন: সমাজ ও ঐতিহ্য" />
             </div>
             <div class="form-group">
               <label class="form-label" for="studio-slug-input" style="font-weight:700;">URL Slug</label>

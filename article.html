@@ -8,11 +8,12 @@
   <base href="/" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Source+Sans+3:wght@300;400;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Noto+Serif+Bengali:wght@400;600;700&family=Source+Sans+3:wght@300;400;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/style.css" />
   <link rel="stylesheet" href="/article.css" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="/supabase-config.js"></script>
+  <script src="/lang.js"></script>
   <script src="/components.js"></script>
   <style>
     /* Hide hardcoded placeholders when loading a real article */
@@ -400,43 +401,119 @@
           document.head.appendChild(ldScript);
         } catch(e) {}
 
-        // ── Section pill & breadcrumb ──
-        var secSlug = slugify(a.section || '');
-        var secHref = a.section ? '/section/' + secSlug : '/';
-        var pill = g('article-section-pill');
-        var secLink = g('article-section-link');
-        if(pill){
-          pill.textContent = a.section || '';
-          pill.href = secHref;
-          pill.style.display = a.section ? 'inline-block' : 'none';
-        }
-        if(secLink){
-          secLink.textContent = a.section || 'Home';
-          secLink.href = secHref;
+        var _currentArticle = a;
+
+        function renderArticleContent(art) {
+          if (!art) return;
+          var isBn = window.PrivatianLang && window.PrivatianLang.getLang() === 'bn';
+
+          // ── Section pill & breadcrumb ──
+          var secRaw = art.section || '';
+          var secDisplay = isBn ? (art.section_bn || secRaw) : secRaw;
+          var secSlug = slugify(secRaw);
+          var secHref = secRaw ? '/section/' + secSlug : '/';
+          var pill = g('article-section-pill');
+          var secLink = g('article-section-link');
+          if(pill){
+            pill.textContent = secDisplay || '';
+            pill.href = secHref;
+            pill.style.display = secDisplay ? 'inline-block' : 'none';
+          }
+          if(secLink){
+            secLink.textContent = secDisplay || (isBn ? 'মূল পাতা' : 'Home');
+            secLink.href = secHref;
+          }
+
+          // ── Headline, deck ──
+          var title = isBn ? (art.title_bn || art.title || '') : (art.title || '');
+          var deckText = isBn ? (art.deck_bn !== undefined ? art.deck_bn : art.deck) : (art.deck || '');
+          var headline = g('article-headline');
+          if(headline) headline.textContent = title;
+          var deck = g('article-deck');
+          if(deck){
+            deck.textContent = deckText;
+            deck.style.display = deckText ? '' : 'none';
+          }
+
+          // ── Meta row ──
+          var authName = isBn ? (art.author_bn || art.author || '') : (art.author || '');
+          var byLabel = isBn ? (window.PrivatianLang ? window.PrivatianLang.t('by') : 'লিখেছেন') : 'By';
+          var authEl = g('article-author');
+          if(authEl) authEl.innerHTML = authName ? (byLabel + ' <strong>' + escapeHtml(authName) + '</strong>') : '';
+
+          var dateEl = g('article-date');
+          var rawDate = art.published_at || art.created_at;
+          if(dateEl) {
+            dateEl.textContent = window.PrivatianLang ? window.PrivatianLang.formatDisplayDate(rawDate) : fmt(rawDate);
+          }
+
+          var contentHtml = isBn ? (art.content_html_bn || art.content_html || '') : (art.content_html || '');
+          var rtEl = g('article-readtime');
+          if(rtEl) {
+            var minutes = readTime(contentHtml);
+            rtEl.textContent = window.PrivatianLang ? window.PrivatianLang.formatReadTime(minutes) : (minutes + ' min read');
+          }
+
+          // ── Article body ──
+          var body = g('article-content');
+          if(body){
+            body.innerHTML = contentHtml;
+          }
+
+          // ── Hero caption & credit ──
+          var cap = g('article-hero-caption');
+          if(cap){
+            var capText = isBn ? (art.hero_caption_bn || art.hero_caption || '') : (art.hero_caption || '');
+            var credText = isBn ? (art.hero_credit_bn || art.hero_credit || '') : (art.hero_credit || '');
+            var credit  = credText ? '<span class="caption-credit">' + escapeHtml(credText) + '</span>' : '';
+            cap.innerHTML = escapeHtml(capText) + (credit ? ' ' + credit : '');
+            cap.style.display = (capText || credText) ? '' : 'none';
+          }
+
+          // ── Author bio ──
+          var bioWrap = g('article-author-bio');
+          var bioName = g('author-bio-name');
+          var bioRole = g('author-bio-role');
+          var bioDesc = g('author-bio-desc');
+          var bioAvatar = g('author-bio-avatar');
+
+          var bName = isBn ? (art.author_bn || art.author || '') : (art.author || '');
+          var bRole = isBn ? (art.author_role_bn || art.author_role || '') : (art.author_role || '');
+          var bDesc = isBn ? (art.author_bio_bn || art.author_bio || '') : (art.author_bio || '');
+
+          if (bioWrap) {
+            if (!bName && !bDesc) {
+              bioWrap.style.display = 'none';
+            } else {
+              bioWrap.style.display = '';
+              if(bioName) bioName.textContent = bName;
+              if(bioRole) bioRole.textContent = bRole;
+              if(bioDesc) bioDesc.textContent = bDesc;
+              if(bioAvatar && art.author_photo_url){
+                bioAvatar.innerHTML = '<img src="' + art.author_photo_url + '" alt="' + escapeHtml(bName) + '" style="width:52px;height:52px;border-radius:50%;object-fit:cover;" />';
+              }
+            }
+          }
+
+          // ── Related heading ──
+          var relH = document.querySelector('.related-heading');
+          if (relH) relH.textContent = isBn ? (window.PrivatianLang ? window.PrivatianLang.t('relatedArticles') : 'সম্পর্কিত প্রতিবেদন') : 'Related Stories';
+
+          // ── Document Title ──
+          var siteSuffix = isBn ? 'দ্য প্রাইভেসিয়ান পরিবার' : 'The Privatian Family';
+          document.title = (title || 'Article') + ' — ' + siteSuffix;
         }
 
-        // ── Headline, deck ──
-        var headline = g('article-headline');
-        if(headline) headline.textContent = a.title || '';
-        var deck = g('article-deck');
-        if(deck){
-          deck.textContent = a.deck || '';
-          deck.style.display = a.deck ? '' : 'none';
+        function escapeHtml(text) {
+          return String(text || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
         }
 
-        // ── Meta row ──
-        var authEl = g('article-author');
-        if(authEl) authEl.innerHTML = a.author ? 'By <strong>' + a.author + '</strong>' : '';
-        var dateEl = g('article-date');
-        if(dateEl) dateEl.textContent = fmt(a.published_at || a.created_at);
-        var rtEl = g('article-readtime');
-        if(rtEl) rtEl.textContent = readTime(a.content_html || '') + ' min read';
+        renderArticleContent(a);
 
-        // ── Article body ──
-        var body = g('article-content');
-        if(body){
-          body.innerHTML = a.content_html || '';
-        }
+        // Reactive language switch listener
+        document.addEventListener('privatian:language-changed', function() {
+          if (_currentArticle) renderArticleContent(_currentArticle);
+        });
 
         // ── Hero / Featured image & positioning ──
         var featPos = 'top';
@@ -448,6 +525,7 @@
         var heroImg = g('article-hero-img');
         var fig = g('article-hero-figure');
         var mainBody = g('article-body');
+        var body = g('article-content');
         if(heroImg && fig){
           if(a.hero_img_url && featPos !== 'hidden'){
             heroImg.src = a.hero_img_url;
@@ -477,39 +555,12 @@
             fig.style.display = 'none';
           }
         }
-        var cap = g('article-hero-caption');
-        if(cap){
-          var capText = a.hero_caption || '';
-          var credit  = a.hero_credit  ? '<span class="caption-credit">' + a.hero_credit + '</span>' : '';
-          cap.innerHTML = capText + (credit ? ' ' + credit : '');
-          cap.style.display = (capText || a.hero_credit) ? '' : 'none';
-        }
-
-        // ── Author bio ──
-        var bioWrap = g('article-author-bio');
-        var bioName = g('author-bio-name');
-        var bioRole = g('author-bio-role');
-        var bioDesc = g('author-bio-desc');
-        var bioAvatar = g('author-bio-avatar');
-
-        if (bioWrap) {
-          if (!a.author && !a.author_bio) {
-            bioWrap.style.display = 'none';
-          } else {
-            bioWrap.style.display = '';
-            if(bioName) bioName.textContent = a.author || '';
-            if(bioRole) bioRole.textContent = a.author_role || '';
-            if(bioDesc) bioDesc.textContent = a.author_bio || '';
-            if(bioAvatar && a.author_photo_url){
-              bioAvatar.innerHTML = '<img src="' + a.author_photo_url + '" alt="' + (a.author||'') + '" style="width:52px;height:52px;border-radius:50%;object-fit:cover;" />';
-            }
-          }
-        }
 
         // ── Reveal page content now (main data loaded) ──
         revealPage();
 
         // ── Related articles (same section, exclude self) ──
+        var secSlug = slugify(a.section || '');
         fetch('/api/articles?action=public&section=' + secSlug + '&limit=4')
           .then(function(r){ return r.json(); })
           .then(function(list){
@@ -518,19 +569,22 @@
             var relSec = g('article-related');
             if(grid && relSec && others.length){
               relSec.style.display = '';
+              var isBn = window.PrivatianLang && window.PrivatianLang.getLang() === 'bn';
               grid.innerHTML = others.map(function(r){
                 var rSlug = slugify(r.section||'');
                 var artUrl = r.slug ? '/article/' + r.slug : '/article/' + r.id;
                 var thumb = r.hero_img_url
                   ? '<img src="'+r.hero_img_url+'" alt="" class="related-card-img" loading="lazy" />'
                   : '<div style="width:100%;height:100%;background:#e8f1f9"></div>';
-                var date  = fmt(r.published_at);
+                var rDate = window.PrivatianLang ? window.PrivatianLang.formatDisplayDate(r.published_at) : fmt(r.published_at);
+                var rTitle = isBn ? (r.title_bn || r.title) : r.title;
+                var rSecName = isBn ? (r.section_bn || r.section || '') : (r.section || '');
                 return '<article class="related-card">'
                   +'<a href="'+artUrl+'" class="related-card-img-link"><div class="related-card-img-wrap">'+thumb+'</div></a>'
                   +'<div class="related-card-body">'
-                  +'<a href="/section/'+rSlug+'" class="related-card-section">'+(r.section||'')+'</a>'
-                  +'<h3 class="related-card-title"><a href="'+artUrl+'" class="related-card-title-link">'+r.title+'</a></h3>'
-                  +'<div class="related-card-meta">'+date+'</div>'
+                  +'<a href="/section/'+rSlug+'" class="related-card-section">'+escapeHtml(rSecName)+'</a>'
+                  +'<h3 class="related-card-title"><a href="'+artUrl+'" class="related-card-title-link">'+escapeHtml(rTitle)+'</a></h3>'
+                  +'<div class="related-card-meta">'+rDate+'</div>'
                   +'</div></article>';
               }).join('');
             } else if(relSec){

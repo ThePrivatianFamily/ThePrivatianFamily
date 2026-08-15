@@ -99,9 +99,55 @@ async function recordActivityLog({ action, category = 'general', summary, target
 }
 window.recordActivityLog = recordActivityLog;
 
+// ── Admin Content Language Toggle (EN / BN) ──────────────────────────────
+var _adminContentLang = localStorage.getItem('privatian_admin_content_lang') || 'en';
+
+window.setAdminContentLang = function(lang) {
+  _adminContentLang = lang || 'en';
+  try { localStorage.setItem('privatian_admin_content_lang', _adminContentLang); } catch(e) {}
+
+  const btnEn = document.getElementById('admin-lang-en');
+  const btnBn = document.getElementById('admin-lang-bn');
+  if (btnEn) btnEn.classList.toggle('active', _adminContentLang === 'en');
+  if (btnBn) btnBn.classList.toggle('active', _adminContentLang === 'bn');
+
+  if (typeof showToast === 'function') {
+    showToast('info', _adminContentLang === 'bn' ? 'Switched editor to Bengali (বাংলা) configuration' : 'Switched editor to English configuration');
+  }
+
+  // Refresh currently active page
+  if (_currentAdminPage === 'sections') {
+    if (typeof loadSectionsFromAPI === 'function') loadSectionsFromAPI();
+  } else if (_currentAdminPage === 'header') {
+    if (typeof loadHeaderSettings === 'function') {
+      loadHeaderSettings().then(hs => {
+        _hsInstance = hs;
+        window._appliedHeaderConfig = JSON.parse(JSON.stringify(hs));
+        renderHsTabCard(hs);
+        renderHsLogoCard(hs);
+        renderHsNavSections(hs);
+        renderHsSubsections(hs);
+      });
+    }
+  } else if (_currentAdminPage === 'menu') {
+    if (typeof initMenuPage === 'function') initMenuPage();
+  } else if (_currentAdminPage === 'homepage') {
+    if (typeof initHomepagePage === 'function') initHomepagePage();
+  } else if (_currentAdminPage === 'footer') {
+    if (typeof initFooterPage === 'function') initFooterPage();
+  }
+};
+
+document.addEventListener('DOMContentLoaded', () => {
+  const btnEn = document.getElementById('admin-lang-en');
+  const btnBn = document.getElementById('admin-lang-bn');
+  if (btnEn) btnEn.classList.toggle('active', _adminContentLang === 'en');
+  if (btnBn) btnBn.classList.toggle('active', _adminContentLang === 'bn');
+});
+
 // -- Core "All" section (always available, editable, permanent/cannot be deleted) --
 const ALL_SECTION = {
-  id: 'all', name: 'All', slug: '', locked: false, isPermanent: true,
+  id: 'all', name: 'All', name_bn: 'সকল', slug: '', locked: false, isPermanent: true,
   deleted: false, createdAt: '2024-01-01T00:00:00Z'
 };
 
@@ -131,7 +177,16 @@ async function loadSectionsFromAPI() {
   try {
     const data = await _apiGet('/api/sections?status=all');
     if (Array.isArray(data)) {
-      loaded = data.filter(r => !isSystemConfig(r));
+      loaded = data.filter(r => !isSystemConfig(r)).map(r => ({
+        id:        r.id || r.admin_id || r.slug,
+        name:      r.name,
+        name_bn:   r.name_bn || '',
+        slug:      r.slug || '',
+        locked:    r.locked || false,
+        deleted:   r.deleted || r.is_deleted || false,
+        deletedAt: r.deletedAt || r.deleted_at || null,
+        createdAt: r.createdAt || r.created_at || new Date().toISOString()
+      }));
     }
   } catch(e) {
     console.warn('[Admin] loadSectionsFromAPI endpoint failed, trying Supabase direct:', e.message);
@@ -146,6 +201,7 @@ async function loadSectionsFromAPI() {
           loaded = data.filter(r => !isSystemConfig(r)).map(r => ({
             id:        r.admin_id || r.slug,
             name:      r.name,
+            name_bn:   r.name_bn || '',
             slug:      r.slug || '',
             locked:    r.locked || false,
             deleted:   r.is_deleted || false,
@@ -304,17 +360,26 @@ function renderActive(active) {
   const quickPicker = document.getElementById('section-quick-picker');
   if (quickPicker) {
     quickPicker.innerHTML = '<option value="">Choose a section to edit…</option>' +
-      sorted.map(s => `<option value="${s.id}">${escapeHtml(s.name)} (${s.slug ? '/section/' + s.slug : '/'})</option>`).join('');
+      sorted.map(s => {
+        const lbl = (_adminContentLang === 'bn' && s.name_bn) ? `${s.name_bn} (${s.name})` : s.name;
+        return `<option value="${s.id}">${escapeHtml(lbl)} (${s.slug ? '/section/' + s.slug : '/'})</option>`;
+      }).join('');
   }
 
   sorted.forEach(s => {
     const isPermanent = s.id === 'all' || s.isPermanent;
     const tr = document.createElement('tr');
+    const nameHtml = (_adminContentLang === 'bn' && s.name_bn)
+      ? `<strong>${escapeHtml(s.name_bn)}</strong> <span style="font-size:12px;color:var(--text-muted);margin-left:4px;">(${escapeHtml(s.name)})</span>`
+      : (s.name_bn
+          ? `${escapeHtml(s.name)} <span style="font-size:12px;color:var(--text-muted);margin-left:4px;">[${escapeHtml(s.name_bn)}]</span>`
+          : escapeHtml(s.name)
+        );
 
     tr.innerHTML = `
       <td>
         <div class="section-name-cell">
-          <span class="section-name-text">${escapeHtml(s.name)}</span>
+          <span class="section-name-text">${nameHtml}</span>
         </div>
       </td>
       <td class="col-slug">
@@ -372,7 +437,7 @@ function renderTrash(trash) {
     tr.innerHTML = `
       <td>
         <div class="section-name-cell" style="color: var(--text-muted); text-decoration: line-through;">
-          ${escapeHtml(s.name)}
+          ${escapeHtml(s.name)} ${s.name_bn ? `[${escapeHtml(s.name_bn)}]` : ''}
         </div>
       </td>
       <td class="articles-count articles-count--dash col-articles">—</td>
@@ -425,9 +490,10 @@ function permanentDeleteSectionConfirm(id) {
 }
 
 // ── Actions ──────────────────────────────────────────────────
-async function addSection(name, slug) {
+async function addSection(name, slug, name_bn = '') {
   const trimmed = name.trim();
   const slugVal = slug.trim();
+  const bnVal = (name_bn || '').trim();
   // Optimistic duplicate check (in-memory, fast)
   if (sections.some(s => !s.deleted && s.name.toLowerCase() === trimmed.toLowerCase()))
     return 'A section with that name already exists.';
@@ -437,7 +503,7 @@ async function addSection(name, slug) {
   updateGlobalSyncStatus('syncing', 'Saving to database...');
   try {
     const created = await _apiPost('/api/sections', {
-      name: trimmed, slug: slugVal, admin_id: genId(trimmed)
+      name: trimmed, name_bn: bnVal, slug: slugVal, admin_id: genId(trimmed)
     });
     sections.push(created);
     render();
@@ -449,7 +515,7 @@ async function addSection(name, slug) {
       summary: `Created section "${trimmed}" (/section/${slugVal || genSlug(trimmed)})`,
       target_id: created?.id || slugVal,
       target_name: trimmed,
-      details: { name: trimmed, slug: slugVal }
+      details: { name: trimmed, name_bn: bnVal, slug: slugVal }
     });
     return null;
   } catch(e) {
@@ -458,9 +524,10 @@ async function addSection(name, slug) {
   }
 }
 
-async function renameSection(id, name, slug) {
+async function renameSection(id, name, slug, name_bn = '') {
   const trimmed = name.trim();
   const slugVal = slug.trim();
+  const bnVal = (name_bn || '').trim();
   // Optimistic duplicate check
   if (sections.some(s => s.id !== id && !s.deleted && s.name.toLowerCase() === trimmed.toLowerCase()))
     return 'A section with that name already exists.';
@@ -469,9 +536,10 @@ async function renameSection(id, name, slug) {
   
   if (id === 'all') {
     ALL_SECTION.name = trimmed;
+    ALL_SECTION.name_bn = bnVal || 'সকল';
     ALL_SECTION.slug = slugVal;
     const local = sections.find(s => s.id === 'all');
-    if (local) { local.name = trimmed; local.slug = slugVal; }
+    if (local) { local.name = trimmed; local.name_bn = bnVal || 'সকল'; local.slug = slugVal; }
     try {
       localStorage.setItem('pf_all_section_name', trimmed);
       localStorage.setItem('pf_all_section_slug', slugVal);
@@ -485,16 +553,16 @@ async function renameSection(id, name, slug) {
       summary: `Renamed core section to "${trimmed}"`,
       target_id: 'all',
       target_name: trimmed,
-      details: { name: trimmed, slug: slugVal }
+      details: { name: trimmed, name_bn: bnVal, slug: slugVal }
     });
     return null;
   }
 
   updateGlobalSyncStatus('syncing', 'Saving to database...');
   try {
-    const updated = await _apiPut(`/api/sections?id=${encodeURIComponent(id)}`, { name: trimmed, slug: slugVal });
+    const updated = await _apiPut(`/api/sections?id=${encodeURIComponent(id)}`, { name: trimmed, name_bn: bnVal, slug: slugVal });
     const local = sections.find(s => s.id === id);
-    if (local) { local.name = updated.name; local.slug = updated.slug; }
+    if (local) { local.name = updated.name; local.name_bn = updated.name_bn || bnVal; local.slug = updated.slug; }
     render();
     updateGlobalSyncStatus('synced', 'Synced with database');
     showToast('success', `Renamed to "${trimmed}".`);
@@ -504,7 +572,7 @@ async function renameSection(id, name, slug) {
       summary: `Renamed section to "${trimmed}" (/section/${slugVal || genSlug(trimmed)})`,
       target_id: id,
       target_name: trimmed,
-      details: { name: trimmed, slug: slugVal }
+      details: { name: trimmed, name_bn: bnVal, slug: slugVal }
     });
     return null;
   } catch(e) {
@@ -643,6 +711,8 @@ function openAddModal() {
   modalTitle.textContent = 'New Section';
   modalSaveBtn.textContent = 'Save Section';
   nameInput.value = '';
+  const nameBnInp = document.getElementById('section-name-bn-input');
+  if (nameBnInp) nameBnInp.value = '';
   if (slugInput) slugInput.value = '';
   if (slugPreview) slugPreview.textContent = '';
   hideModalError();
@@ -658,6 +728,8 @@ function openEditModal(id) {
   modalTitle.textContent = 'Edit Section';
   modalSaveBtn.textContent = 'Save Changes';
   nameInput.value = s.name;
+  const nameBnInp = document.getElementById('section-name-bn-input');
+  if (nameBnInp) nameBnInp.value = s.name_bn || '';
   if (slugInput) slugInput.value = s.slug || '';
   updateSlugPreview();
   hideModalError();
@@ -692,21 +764,26 @@ async function openSectionStudio(id) {
   const idEl = document.getElementById('studio-sec-id');
   const slugEl = document.getElementById('studio-sec-slug');
   const nameInput = document.getElementById('studio-name-input');
+  const nameBnInput = document.getElementById('studio-name-bn-input');
   const slugInput = document.getElementById('studio-slug-input');
   const descInput = document.getElementById('studio-desc-input');
   const writeArtBtn = document.getElementById('studio-write-art-btn');
 
-  if (titleEl) titleEl.textContent = s.name;
+  if (titleEl) titleEl.textContent = (_adminContentLang === 'bn' && s.name_bn) ? `${s.name_bn} (${s.name})` : s.name;
   if (idEl) idEl.value = s.id;
   if (slugEl) slugEl.value = s.slug || 'all';
   if (nameInput) nameInput.value = s.name;
+  if (nameBnInput) nameBnInput.value = s.name_bn || '';
   if (slugInput) slugInput.value = s.slug || '';
 
   // Set Section Switcher dropdown options
   if (switcherEl) {
     switcherEl.innerHTML = sections
       .filter(sec => !sec.deleted)
-      .map(sec => `<option value="${sec.id}" ${sec.id === s.id ? 'selected' : ''}>${escapeHtml(sec.name)}</option>`)
+      .map(sec => {
+        const secLabel = (_adminContentLang === 'bn' && sec.name_bn) ? `${sec.name_bn} (${sec.name})` : sec.name;
+        return `<option value="${sec.id}" ${sec.id === s.id ? 'selected' : ''}>${escapeHtml(secLabel)}</option>`;
+      })
       .join('');
   }
 
@@ -744,7 +821,7 @@ async function openSectionStudio(id) {
   // Load existing configuration for this section
   let existingConfig = { featuredArticleId: null, selectedArticleIds: [], customTitle: '', description: '' };
   try {
-    const res = await _apiGet(`/api/sections?action=section-config&slug=${encodeURIComponent(s.slug || 'all')}`);
+    const res = await _apiGet(`/api/sections?action=section-config&slug=${encodeURIComponent(s.slug || 'all')}${_adminContentLang === 'bn' ? '&lang=bn' : ''}`);
     if (res && typeof res === 'object') existingConfig = res;
   } catch(e) {}
 
@@ -1046,6 +1123,7 @@ async function saveSectionStudio() {
 
   const id = _studioCurrentSection.id;
   const newName = (document.getElementById('studio-name-input')?.value || '').trim();
+  const newNameBn = (document.getElementById('studio-name-bn-input')?.value || '').trim();
   const newSlug = (document.getElementById('studio-slug-input')?.value || '').trim();
   const desc = (document.getElementById('studio-desc-input')?.value || '').trim();
   const heroArtId = document.getElementById('studio-hero-select')?.value || null;
@@ -1065,20 +1143,23 @@ async function saveSectionStudio() {
   updateGlobalSyncStatus('syncing', 'Saving section changes...');
 
   try {
-    // 1. If name or slug changed and not core all:
-    if (id !== 'all' && (newName !== _studioCurrentSection.name || newSlug !== _studioCurrentSection.slug)) {
+    // 1. If name, name_bn, or slug changed:
+    if (id !== 'all' && (newName !== _studioCurrentSection.name || newNameBn !== (_studioCurrentSection.name_bn || '') || newSlug !== _studioCurrentSection.slug)) {
       await _apiPut(`/api/sections?id=${encodeURIComponent(id)}`, {
         name: newName,
+        name_bn: newNameBn,
         slug: newSlug || genSlug(newName)
       });
       _studioCurrentSection.name = newName;
+      _studioCurrentSection.name_bn = newNameBn;
       _studioCurrentSection.slug = newSlug || genSlug(newName);
     }
 
     // 2. Save section custom configuration (hero, selected slots, description)
     const configSlug = _studioCurrentSection.slug || 'all';
-    await _apiPost(`/api/sections?action=section-config&slug=${encodeURIComponent(configSlug)}`, {
+    await _apiPost(`/api/sections?action=section-config&slug=${encodeURIComponent(configSlug)}${_adminContentLang === 'bn' ? '&lang=bn' : ''}`, {
       slug: configSlug,
+      lang: _adminContentLang,
       featuredArticleId: heroArtId,
       selectedArticleIds: selIds,
       description: desc
@@ -1093,7 +1174,7 @@ async function saveSectionStudio() {
       summary: `Saved Section Studio configuration for "${newName}" (Hero: ${heroArtId || 'Auto'}, ${selIds.length} Pinned Slots)`,
       target_id: id,
       target_name: newName,
-      details: { name: newName, slug: newSlug, heroArticleId: heroArtId, slotArticleIds: selIds, description: desc }
+      details: { name: newName, name_bn: newNameBn, slug: newSlug, heroArticleId: heroArtId, slotArticleIds: selIds, description: desc }
     });
 
     // Refresh sections list
@@ -1143,6 +1224,7 @@ if (slugInput) {
 
 modalSaveBtn.addEventListener('click', async () => {
   const nameVal = nameInput.value.trim();
+  const nameBnVal = (document.getElementById('section-name-bn-input')?.value || '').trim();
   const slugVal = slugInput ? slugInput.value.trim() : '';
   if (!nameVal) { showModalError('Section name cannot be empty.'); return; }
   if (slugVal && !validateSlug(slugVal)) {
@@ -1151,8 +1233,8 @@ modalSaveBtn.addEventListener('click', async () => {
   }
   modalSaveBtn.disabled = true;
   const err = editingId
-    ? await renameSection(editingId, nameVal, slugVal)
-    : await addSection(nameVal, slugVal);
+    ? await renameSection(editingId, nameVal, slugVal, nameBnVal)
+    : await addSection(nameVal, slugVal, nameBnVal);
   modalSaveBtn.disabled = false;
   if (err) { showModalError(err); return; }
   closeModal();
@@ -2031,18 +2113,18 @@ const DEFAULT_HEADER_SETTINGS = {
 
 async function loadHeaderSettings() {
   try {
-    const data = await _apiGet('/api/sections?action=header');
+    const data = await _apiGet('/api/sections?action=header' + (_adminContentLang === 'bn' ? '&lang=bn' : ''));
     if (data && typeof data === 'object') {
       const merged = Object.assign({}, DEFAULT_HEADER_SETTINGS, data);
       if (!merged.subsections) merged.subsections = DEFAULT_HEADER_SUBSECTIONS.map(s => ({...s}));
-      try { localStorage.setItem(HEADER_SETTINGS_KEY, JSON.stringify(merged)); } catch(e) {}
+      try { localStorage.setItem(HEADER_SETTINGS_KEY + '_' + _adminContentLang, JSON.stringify(merged)); } catch(e) {}
       return merged;
     }
   } catch(err) {
     console.warn('[Admin] loadHeaderSettings API failed (using cache):', err.message);
   }
   try {
-    const raw = localStorage.getItem(HEADER_SETTINGS_KEY);
+    const raw = localStorage.getItem(HEADER_SETTINGS_KEY + '_' + _adminContentLang) || localStorage.getItem(HEADER_SETTINGS_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
       const merged = Object.assign({}, DEFAULT_HEADER_SETTINGS, parsed);
@@ -2054,7 +2136,8 @@ async function loadHeaderSettings() {
   try {
     const sb = window._sb || (window.initSupabaseClient && window.initSupabaseClient());
     if (sb) {
-      const { data: sData } = await sb.from('sections').select('name').eq('admin_id', '__header_config__').maybeSingle();
+      const targetAdminId = _adminContentLang === 'bn' ? '__header_config_bn__' : '__header_config__';
+      const { data: sData } = await sb.from('sections').select('name').eq('admin_id', targetAdminId).maybeSingle();
       if (sData && sData.name) {
         const parsed = JSON.parse(sData.name);
         if (parsed && typeof parsed === 'object') {
@@ -2150,11 +2233,12 @@ function renderHsTabCard(hs) {
 
 async function saveHeaderSettings(hs) {
   hs.updatedAt = new Date().toISOString();
+  hs.lang = _adminContentLang;
   try {
-    localStorage.setItem(HEADER_SETTINGS_KEY, JSON.stringify(hs));
+    localStorage.setItem(HEADER_SETTINGS_KEY + '_' + _adminContentLang, JSON.stringify(hs));
   } catch(e) {}
   try {
-    await _apiPost('/api/sections?action=header', hs);
+    await _apiPost('/api/sections?action=header' + (_adminContentLang === 'bn' ? '&lang=bn' : ''), hs);
   } catch(err) {
     console.warn('[Admin] saveHeaderSettings API error:', err.message);
   }
@@ -3225,7 +3309,7 @@ async function initMenuPage() {
 async function loadMenuSettings() {
   let loaded = null;
   try {
-    const data = await _apiGet('/api/sections?action=menu');
+    const data = await _apiGet('/api/sections?action=menu' + (_adminContentLang === 'bn' ? '&lang=bn' : ''));
     if (data && typeof data === 'object') {
       loaded = Object.assign({}, JSON.parse(JSON.stringify(DEFAULT_MENU_CONFIG)), data);
     }
@@ -3233,7 +3317,7 @@ async function loadMenuSettings() {
 
   if (!loaded) {
     try {
-      const cached = localStorage.getItem('privatian_menu_settings');
+      const cached = localStorage.getItem('privatian_menu_settings_' + _adminContentLang) || localStorage.getItem('privatian_menu_settings');
       if (cached) loaded = Object.assign({}, JSON.parse(JSON.stringify(DEFAULT_MENU_CONFIG)), JSON.parse(cached));
       else loaded = JSON.parse(JSON.stringify(DEFAULT_MENU_CONFIG));
     } catch(e) {
@@ -3992,11 +4076,12 @@ async function saveMenuSettings() {
 
   try {
     // 1. Save to Supabase database via API
-    await _apiPost('/api/sections?action=menu', menuDraftConfig);
+    menuDraftConfig.lang = _adminContentLang;
+    await _apiPost('/api/sections?action=menu' + (_adminContentLang === 'bn' ? '&lang=bn' : ''), menuDraftConfig);
 
     // 2. Publish to local applied cache
     try {
-      localStorage.setItem('privatian_menu_settings', JSON.stringify(menuDraftConfig));
+      localStorage.setItem('privatian_menu_settings_' + _adminContentLang, JSON.stringify(menuDraftConfig));
     } catch(e) {}
 
     // 3. Reset base and undo/redo stacks to the new applied state
@@ -4352,7 +4437,7 @@ async function loadArticlesForHomepagePicker() {
 async function loadHomepageSettings() {
   let loaded = null;
   try {
-    const data = await _apiGet('/api/sections?action=homepage');
+    const data = await _apiGet('/api/sections?action=homepage' + (_adminContentLang === 'bn' ? '&lang=bn' : ''));
     if (data && typeof data === 'object') loaded = data;
   } catch(err) {}
 
@@ -4360,7 +4445,8 @@ async function loadHomepageSettings() {
     try {
       const sb = window._sb || (window.initSupabaseClient && window.initSupabaseClient());
       if (sb) {
-        const { data: sData } = await sb.from('sections').select('name').eq('admin_id', '__homepage_config__').maybeSingle();
+        const targetAdminId = _adminContentLang === 'bn' ? '__homepage_config_bn__' : '__homepage_config__';
+        const { data: sData } = await sb.from('sections').select('name').eq('admin_id', targetAdminId).maybeSingle();
         if (sData && sData.name) {
           const parsed = JSON.parse(sData.name);
           if (parsed && typeof parsed === 'object') loaded = parsed;
@@ -4371,7 +4457,7 @@ async function loadHomepageSettings() {
 
   if (!loaded) {
     try {
-      const cached = localStorage.getItem('privatian_homepage_settings');
+      const cached = localStorage.getItem('privatian_homepage_settings_' + _adminContentLang) || localStorage.getItem('privatian_homepage_settings');
       if (cached) loaded = JSON.parse(cached);
     } catch(e) {}
   }
@@ -5397,10 +5483,11 @@ async function saveHomepageSettings() {
   updateGlobalSyncStatus('syncing', 'Saving to database...');
 
   try {
-    const res = await _apiPost('/api/sections?action=homepage', homepageDraftConfig);
+    homepageDraftConfig.lang = _adminContentLang;
+    const res = await _apiPost('/api/sections?action=homepage' + (_adminContentLang === 'bn' ? '&lang=bn' : ''), homepageDraftConfig);
     appliedHomepageConfig = JSON.parse(JSON.stringify(homepageDraftConfig));
     try {
-      localStorage.setItem('privatian_homepage_settings', JSON.stringify(homepageDraftConfig));
+      localStorage.setItem('privatian_homepage_settings_' + _adminContentLang, JSON.stringify(homepageDraftConfig));
     } catch(e) {}
     homepageUndoStack = [];
     homepageRedoStack = [];
@@ -5582,7 +5669,7 @@ async function initFooterPage() {
 
   // Tier 1: Try API
   try {
-    const data = await _apiGet('/api/sections?action=footer');
+    const data = await _apiGet('/api/sections?action=footer' + (_adminContentLang === 'bn' ? '&lang=bn' : ''));
     if (data && typeof data === 'object' && Object.keys(data).length > 0) {
       loadedConfig = data;
     }
@@ -5593,7 +5680,8 @@ async function initFooterPage() {
     try {
       const sb = window._sb || (window.initSupabaseClient && window.initSupabaseClient());
       if (sb) {
-        const { data: sData } = await sb.from('sections').select('name').eq('admin_id', '__footer_config__').maybeSingle();
+        const targetAdminId = _adminContentLang === 'bn' ? '__footer_config_bn__' : '__footer_config__';
+        const { data: sData } = await sb.from('sections').select('name').eq('admin_id', targetAdminId).maybeSingle();
         if (sData && sData.name) {
           const parsed = JSON.parse(sData.name);
           if (parsed && typeof parsed === 'object') loadedConfig = parsed;
@@ -5606,7 +5694,8 @@ async function initFooterPage() {
   if (!loadedConfig) {
     try {
       if (typeof PRIVATIAN_SUPABASE_URL !== 'undefined' && typeof PRIVATIAN_SUPABASE_KEY !== 'undefined') {
-        const res = await fetch(`${PRIVATIAN_SUPABASE_URL}/rest/v1/sections?admin_id=eq.__footer_config__&select=name`, {
+        const targetAdminId = _adminContentLang === 'bn' ? '__footer_config_bn__' : '__footer_config__';
+        const res = await fetch(`${PRIVATIAN_SUPABASE_URL}/rest/v1/sections?admin_id=eq.${targetAdminId}&select=name`, {
           headers: {
             'apikey': PRIVATIAN_SUPABASE_KEY,
             'Authorization': 'Bearer ' + PRIVATIAN_SUPABASE_KEY
@@ -5626,7 +5715,7 @@ async function initFooterPage() {
   // Tier 4: LocalStorage
   if (!loadedConfig) {
     try {
-      const cached = localStorage.getItem(FOOTER_SETTINGS_KEY);
+      const cached = localStorage.getItem(FOOTER_SETTINGS_KEY + '_' + _adminContentLang) || localStorage.getItem(FOOTER_SETTINGS_KEY);
       if (cached) loadedConfig = JSON.parse(cached);
     } catch(err) {}
   }
@@ -6711,30 +6800,32 @@ async function saveFooterSettings() {
 
   // 1. Try API POST
   try {
-    const result = await _apiPost('/api/sections?action=footer', footerDraftConfig);
+    footerDraftConfig.lang = _adminContentLang;
+    const result = await _apiPost('/api/sections?action=footer' + (_adminContentLang === 'bn' ? '&lang=bn' : ''), footerDraftConfig);
     if (result && (result.ok || result.data)) savedOk = true;
   } catch(err) {}
 
-  // 2. Direct Supabase Fallback (sections table under __footer_config__)
+  // 2. Direct Supabase Fallback (sections table under __footer_config__ or __footer_config_bn__)
   if (!savedOk) {
     try {
       const sb = window._sb || (window.initSupabaseClient && window.initSupabaseClient());
       if (sb) {
-        const { data: existing } = await sb.from('sections').select('id').eq('admin_id', '__footer_config__').maybeSingle();
+        const targetAdminId = _adminContentLang === 'bn' ? '__footer_config_bn__' : '__footer_config__';
+        const { data: existing } = await sb.from('sections').select('id').eq('admin_id', targetAdminId).maybeSingle();
         if (existing) {
           await sb.from('sections').update({
             name: JSON.stringify(footerDraftConfig),
-            slug: '__footer_config__',
+            slug: targetAdminId,
             display_order: 9996,
             is_active: false,
             locked: true,
             is_deleted: true
-          }).eq('admin_id', '__footer_config__');
+          }).eq('admin_id', targetAdminId);
         } else {
           await sb.from('sections').insert({
-            admin_id: '__footer_config__',
+            admin_id: targetAdminId,
             name: JSON.stringify(footerDraftConfig),
-            slug: '__footer_config__',
+            slug: targetAdminId,
             display_order: 9996,
             is_active: false,
             locked: true,
@@ -6748,7 +6839,7 @@ async function saveFooterSettings() {
 
   // 3. Always persist to localStorage
   try {
-    localStorage.setItem(FOOTER_SETTINGS_KEY, JSON.stringify(footerDraftConfig));
+    localStorage.setItem(FOOTER_SETTINGS_KEY + '_' + _adminContentLang, JSON.stringify(footerDraftConfig));
   } catch(e) {}
 
   appliedFooterConfig = JSON.parse(JSON.stringify(footerDraftConfig));
