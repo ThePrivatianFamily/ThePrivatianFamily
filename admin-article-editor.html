@@ -2077,6 +2077,8 @@ async function verifyEditorDbSync(shouldToast = false) {
     }
   }
 }
+
+function updateMetrics() {
   const text = (g('ed-rt')?.innerText || '').replace(/\s+/g,' ').trim();
   const words = text ? text.split(' ').filter(Boolean).length : 0;
   const chars = text.length;
