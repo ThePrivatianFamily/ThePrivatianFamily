@@ -1178,7 +1178,6 @@
 
   // ── 6. LIVE DATA FETCHING ──────────────────────────────────────────
   async function fetchSectionsFromAPI() {
-    if (window.location.protocol === 'file:') return;
     var data = null;
     try {
       var res = await fetch('/api/sections?status=active');
@@ -1241,13 +1240,6 @@
   }
 
   async function fetchHeaderSettingsFromAPI() {
-    if (window.location.protocol === 'file:') return;
-    var data = null;
-    try {
-      var res = await fetch('/api/sections?action=header');
-      if (res.ok) data = await res.json();
-    } catch(err) {}
-
     var isBn = window.PrivatianLang && window.PrivatianLang.getLang() === 'bn';
     var data = null;
     try {
@@ -1280,7 +1272,6 @@
   }
 
   async function fetchMenuFromAPI() {
-    if (window.location.protocol === 'file:') return;
     var isBn = window.PrivatianLang && window.PrivatianLang.getLang() === 'bn';
     var data = null;
     try {
@@ -1311,7 +1302,6 @@
   }
 
   async function fetchFooterFromAPI() {
-    if (window.location.protocol === 'file:') return;
     var isBn = window.PrivatianLang && window.PrivatianLang.getLang() === 'bn';
     var data = null;
     try {

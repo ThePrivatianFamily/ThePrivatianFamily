@@ -68,20 +68,33 @@ document.addEventListener('DOMContentLoaded', function () {
  * Fetch persistent homepage configuration from API and apply to DOM.
  */
 async function fetchHomepageConfigFromAPI() {
+  var isBn = window.PrivatianLang && window.PrivatianLang.getLang() === 'bn';
+  var cfg = null;
   try {
-    var isBn = window.PrivatianLang && window.PrivatianLang.getLang() === 'bn';
     const res = await fetch('/api/sections?action=homepage' + (isBn ? '&lang=bn' : ''));
-    if (!res.ok) return;
-    const cfg = await res.json();
-    if (cfg && typeof cfg === 'object') {
-      _lastHomepageConfig = cfg;
-      try {
-        localStorage.setItem(isBn ? 'privatian_homepage_settings_bn' : 'privatian_homepage_settings', JSON.stringify(cfg));
-      } catch(e) {}
-      applyHomepageConfig(cfg);
-    }
-  } catch(err) {
-    console.warn('[Privatian] Homepage config fetch fallback:', err.message);
+    if (res.ok) cfg = await res.json();
+  } catch(err) {}
+
+  if (!cfg || typeof cfg !== 'object') {
+    try {
+      var sb = window._sb || (window.initSupabaseClient && window.initSupabaseClient());
+      if (sb) {
+        var targetId = isBn ? '__homepage_config_bn__' : '__homepage_config__';
+        var { data: sData } = await sb.from('sections').select('name').eq('admin_id', targetId).maybeSingle();
+        if (sData && sData.name) {
+          var parsed = JSON.parse(sData.name);
+          if (parsed && typeof parsed === 'object') cfg = parsed;
+        }
+      }
+    } catch(e) {}
+  }
+
+  if (cfg && typeof cfg === 'object') {
+    _lastHomepageConfig = cfg;
+    try {
+      localStorage.setItem(isBn ? 'privatian_homepage_settings_bn' : 'privatian_homepage_settings', JSON.stringify(cfg));
+    } catch(e) {}
+    applyHomepageConfig(cfg);
   }
 }
 

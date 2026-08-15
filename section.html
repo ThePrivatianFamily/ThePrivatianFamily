@@ -905,19 +905,50 @@
     }
   }
 
-  // 1. Fetch section info, custom settings & articles
-  Promise.all([
-    fetch('/api/sections').then(function(r){return r.json();}).catch(function(){return [];}),
-    fetch('/api/sections?action=section-config&slug=' + encodeURIComponent(slug || 'all')).then(function(r){return r.json();}).catch(function(){return {};}),
-    fetch('/api/articles?action=public' + (slug && slug !== 'all' ? '&section=' + encodeURIComponent(slug) : '')).then(function(r){return r.json();}).catch(function(){return [];})
-  ]).then(function(results){
-    _loadedSections = results[0] || [];
-    _loadedCustomConfig = results[1] || {};
-    _loadedArticles = results[2] || [];
-    renderSectionPage();
-  }).catch(function(err){
-    console.error('[Section load error]:', err);
-  });
+  // 1. Fetch section info, custom settings & articles from database
+  async function loadSectionData() {
+    try {
+      var results = await Promise.all([
+        fetch('/api/sections').then(function(r){return r.json();}).catch(function(){return null;}),
+        fetch('/api/sections?action=section-config&slug=' + encodeURIComponent(slug || 'all')).then(function(r){return r.json();}).catch(function(){return null;}),
+        fetch('/api/articles?action=public' + (slug && slug !== 'all' ? '&section=' + encodeURIComponent(slug) : '')).then(function(r){return r.json();}).catch(function(){return null;})
+      ]);
+
+      _loadedSections = Array.isArray(results[0]) ? results[0] : [];
+      _loadedCustomConfig = (results[1] && typeof results[1] === 'object') ? results[1] : {};
+      _loadedArticles = Array.isArray(results[2]) ? results[2] : [];
+
+      // Direct Supabase Fallback if API was unavailable
+      if (!_loadedSections.length || !_loadedArticles.length) {
+        try {
+          var sb = window._sb || (window.initSupabaseClient && window.initSupabaseClient());
+          if (sb) {
+            if (!_loadedSections.length) {
+              var { data: sData } = await sb.from('sections').select('*').eq('is_active', true).or('is_deleted.is.null,is_deleted.eq.false').order('display_order');
+              if (Array.isArray(sData)) {
+                var sys = ['__homepage_config__', '__header_config__', '__menu_config__', '__footer_config__'];
+                _loadedSections = sData.filter(function(s) { return !sys.includes(s.admin_id); });
+              }
+            }
+            if (!_loadedArticles.length) {
+              var q = sb.from('articles').select('*').eq('status', 'published').or('is_deleted.is.null,is_deleted.eq.false').order('published_at', { ascending: false });
+              if (slug && slug !== 'all') {
+                q = q.eq('section', slug);
+              }
+              var { data: aData } = await q;
+              if (Array.isArray(aData)) _loadedArticles = aData;
+            }
+          }
+        } catch(e) {}
+      }
+
+      renderSectionPage();
+    } catch(err) {
+      console.error('[Section load error]:', err);
+    }
+  }
+
+  loadSectionData();
 
   // Reactive listener for language changes
   document.addEventListener('privatian:language-changed', function() {
