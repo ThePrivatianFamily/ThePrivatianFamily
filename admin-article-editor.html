@@ -545,6 +545,34 @@ body{padding-bottom:34px}
 .feat-act-btn.rm{color:#dc2626;border-color:#fca5a5}
 .feat-act-btn.rm:hover{background:#fef2f2}
 
+/* ── INLINE FEATURED IMAGE CARD ──────────────────── */
+.ed-feat-card{background:var(--card);padding:24px 48px;border-bottom:1px solid #f0ece8;transition:all .2s ease}
+.ed-feat-dropzone{border:2px dashed #cbd5e1;border-radius:12px;padding:22px 20px;background:#f8fafc;display:flex;align-items:center;gap:18px;cursor:pointer;transition:all .2s ease}
+.ed-feat-dropzone:hover{border-color:var(--navy);background:#f0f7ff;transform:translateY(-1px)}
+.ed-feat-drop-icon{width:46px;height:46px;border-radius:10px;background:#e2e8f0;color:var(--navy);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:.15s}
+.ed-feat-dropzone:hover .ed-feat-drop-icon{background:#0a528e;color:#fff}
+.ed-feat-drop-text{flex:1}
+.ed-feat-drop-title{font:700 15px/1.2 var(--sans);color:var(--dark);display:flex;align-items:center;gap:8px}
+.ed-feat-req-tag{font:700 10px/1 var(--sans);color:#dc2626;background:#fef2f2;border:1px solid #fecaca;padding:3px 6px;border-radius:4px;text-transform:uppercase;letter-spacing:.05em}
+.ed-feat-drop-sub{font:400 12.5px/1.4 var(--sans);color:#64748b;margin-top:4px}
+.ed-feat-upload-btn{font:600 12.5px/1 var(--sans);color:#fff;background:var(--navy);border:none;border-radius:6px;padding:9px 16px;cursor:pointer;transition:.15s;white-space:nowrap}
+.ed-feat-upload-btn:hover{opacity:.9}
+.ed-feat-preview-wrap{display:flex;flex-direction:column;gap:14px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:16px}
+.ed-feat-img-container{position:relative;border-radius:8px;overflow:hidden;max-height:280px;background:#0f172a}
+.ed-feat-img-container img{width:100%;height:auto;max-height:280px;object-fit:cover;display:block}
+.ed-feat-badge{position:absolute;top:10px;left:10px;background:rgba(10,82,142,0.9);backdrop-filter:blur(4px);color:#fff;font:700 10px/1 var(--sans);text-transform:uppercase;letter-spacing:.08em;padding:5px 9px;border-radius:4px;box-shadow:0 2px 6px rgba(0,0,0,.2)}
+.ed-feat-meta-controls{display:flex;flex-direction:column;gap:12px}
+.ed-feat-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.ed-feat-lbl{font:700 11px/1 var(--sans);color:#475569;text-transform:uppercase;letter-spacing:.06em;min-width:110px}
+.ed-feat-pos-group{display:flex;gap:4px;background:#e2e8f0;padding:3px;border-radius:8px;flex-wrap:wrap}
+.ed-pos-btn{font:600 11.5px/1 var(--sans);color:#475569;background:transparent;border:none;border-radius:6px;padding:6px 10px;cursor:pointer;transition:all .12s ease;white-space:nowrap}
+.ed-pos-btn:hover{color:var(--navy);background:rgba(255,255,255,.5)}
+.ed-pos-btn.active{background:#fff;color:var(--navy);box-shadow:0 1px 3px rgba(0,0,0,.1);font-weight:700}
+.ed-feat-inputs-row{display:flex;gap:8px}
+.ed-feat-input{flex:1;font:400 12px/1.4 var(--sans);color:var(--text);background:#fff;border:1px solid #cbd5e1;border-radius:6px;padding:7px 10px;outline:none;transition:.12s}
+.ed-feat-input:focus{border-color:var(--navy);box-shadow:0 0 0 2px rgba(10,82,142,.1)}
+.ed-feat-actions-row{display:flex;gap:8px;justify-content:flex-end}
+
 /* Search preview */
 .seo-preview{background:#f8fafc;border:1px solid #dde4ea;border-radius:7px;padding:11px 13px}
 .sp-ttl{font:600 14px/1.3 var(--sans);color:#1a0dab;margin-bottom:2px;
@@ -773,6 +801,46 @@ body{padding-bottom:34px}
     </div>
   </div>
 
+  <!-- FEATURED IMAGE CARD (Mandatory for Publishing) -->
+  <div id="ed-feat-wrap" class="ed-feat-card">
+    <div id="ed-feat-empty" class="ed-feat-dropzone" onclick="trigFeatImg()" title="Click to upload Featured Image (Mandatory)">
+      <div class="ed-feat-drop-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5-4 4-2-2-5 5"/></svg>
+      </div>
+      <div class="ed-feat-drop-text">
+        <div class="ed-feat-drop-title">Featured Image <span class="ed-feat-req-tag">Required for Publishing</span></div>
+        <div class="ed-feat-drop-sub">Click to upload the primary image used across homepage cards, section cards, social previews, and article layout</div>
+      </div>
+      <button type="button" class="ed-feat-upload-btn">Upload Image</button>
+    </div>
+
+    <div id="ed-feat-filled" class="ed-feat-preview-wrap" style="display:none;">
+      <div class="ed-feat-img-container">
+        <img id="ed-feat-preview-img" src="" alt="Featured image" />
+        <div class="ed-feat-badge">★ Featured Image</div>
+      </div>
+      <div class="ed-feat-meta-controls">
+        <div class="ed-feat-row">
+          <label class="ed-feat-lbl">Article Position:</label>
+          <div class="ed-feat-pos-group" id="inline-feat-pos-group">
+            <button type="button" class="ed-pos-btn active" data-pos="top" onclick="setFeatPosition('top')" title="Top (Header Hero Banner)">🔝 Top (Header)</button>
+            <button type="button" class="ed-pos-btn" data-pos="middle" onclick="setFeatPosition('middle')" title="Inside Body (Between Paragraphs)">📄 Middle (Body)</button>
+            <button type="button" class="ed-pos-btn" data-pos="bottom" onclick="setFeatPosition('bottom')" title="Bottom (End of Article)">🔚 Bottom (End)</button>
+            <button type="button" class="ed-pos-btn" data-pos="hidden" onclick="setFeatPosition('hidden')" title="Cards & Social Only (Hidden in Body)">👁️ Hidden in Body</button>
+          </div>
+        </div>
+        <div class="ed-feat-row ed-feat-inputs-row">
+          <input type="text" id="ed-feat-caption-inline" placeholder="Add image caption..." oninput="syncFeatMeta('caption', this.value)" class="ed-feat-input" />
+          <input type="text" id="ed-feat-credit-inline" placeholder="Credit / Source (e.g. Reuters)..." oninput="syncFeatMeta('credit', this.value)" class="ed-feat-input" />
+        </div>
+        <div class="ed-feat-actions-row">
+          <button type="button" class="feat-act-btn" onclick="trigFeatImg()">Replace Image</button>
+          <button type="button" class="feat-act-btn rm" onclick="removeFeatImg()">Remove</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- BODY -->
   <div id="ed-body">
     <div id="ed-rt" contenteditable="true" spellcheck="true"
@@ -944,7 +1012,7 @@ body{padding-bottom:34px}
     <!-- ── Featured Image ─── -->
     <div class="sd-sec" id="sds-feat">
       <button class="sd-sec-hd" onclick="toggleSdSec('sds-feat')">
-        Featured Image
+        Featured Image <span style="color:#ef4444;font-size:10px;margin-left:4px;font-weight:700;">*Required</span>
         <svg class="sd-chevron" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
       </button>
       <div class="sd-sec-body">
@@ -961,16 +1029,25 @@ body{padding-bottom:34px}
           <span style="font:400 10px/1 var(--sans);color:var(--light)">JPEG · PNG · WebP</span>
         </div>
         <div class="sd-field">
+          <label class="sd-lbl">Article Position</label>
+          <div class="ed-feat-pos-group" id="sd-feat-pos-group">
+            <button type="button" class="ed-pos-btn active" data-pos="top" onclick="setFeatPosition('top')">Top</button>
+            <button type="button" class="ed-pos-btn" data-pos="middle" onclick="setFeatPosition('middle')">Middle</button>
+            <button type="button" class="ed-pos-btn" data-pos="bottom" onclick="setFeatPosition('bottom')">Bottom</button>
+            <button type="button" class="ed-pos-btn" data-pos="hidden" onclick="setFeatPosition('hidden')">Hidden</button>
+          </div>
+        </div>
+        <div class="sd-field">
           <label class="sd-lbl">Alt Text</label>
           <input type="text" class="sd-inp" id="sd-feat-alt" placeholder="Describe the image…" oninput="DIRTY=true" />
         </div>
         <div class="sd-field">
           <label class="sd-lbl">Caption</label>
-          <input type="text" class="sd-inp" id="sd-feat-caption" placeholder="Image caption…" oninput="DIRTY=true" />
+          <input type="text" class="sd-inp" id="sd-feat-caption" placeholder="Image caption…" oninput="syncFeatMeta('caption-sd', this.value)" />
         </div>
         <div class="sd-field">
           <label class="sd-lbl">Credit / Source</label>
-          <input type="text" class="sd-inp" id="sd-feat-credit" placeholder="e.g. NASA / ESA / Reuters" oninput="DIRTY=true" />
+          <input type="text" class="sd-inp" id="sd-feat-credit" placeholder="e.g. NASA / ESA / Reuters" oninput="syncFeatMeta('credit-sd', this.value)" />
         </div>
       </div>
     </div>
@@ -1179,14 +1256,33 @@ function fill(a) {
   if (a.section) setSec(a.section);
   if (a.content_html) g('ed-rt').innerHTML = a.content_html;
   if (a.author_photo_url) showAuthorPhoto(a.author_photo_url);
-  // ── Drawer fields ────────────────────────────────────
-  if (a.hero_img_url) { _featImgUrl = a.hero_img_url; showFeatPreview(a.hero_img_url); }
+  // ── Featured image & drawer fields ───────────────────
+  _featPos = 'top';
+  if (a.tags) {
+    const m = a.tags.match(/feat_pos:(top|middle|bottom|hidden)/);
+    if (m) _featPos = m[1];
+  }
+  if (a.hero_img_url) {
+    _featImgUrl = a.hero_img_url;
+    showFeatPreview(a.hero_img_url);
+  } else {
+    removeFeatImg();
+  }
   if (a.hero_img_alt)   g('sd-feat-alt').value    = a.hero_img_alt;
-  if (a.hero_caption)   g('sd-feat-caption').value = a.hero_caption;
-  if (a.hero_credit)    g('sd-feat-credit').value  = a.hero_credit;
+  if (a.hero_caption)   {
+    g('sd-feat-caption').value = a.hero_caption;
+    if (g('ed-feat-caption-inline')) g('ed-feat-caption-inline').value = a.hero_caption;
+  }
+  if (a.hero_credit)    {
+    g('sd-feat-credit').value  = a.hero_credit;
+    if (g('ed-feat-credit-inline')) g('ed-feat-credit-inline').value = a.hero_credit;
+  }
   if (a.seo_title)    { g('sd-seo-title').value = a.seo_title; seoCC(g('sd-seo-title'),'sd-seo-cc',60); }
   if (a.meta_description) { g('sd-meta-desc').value = a.meta_description; seoCC(g('sd-meta-desc'),'sd-meta-cc',160); }
-  if (a.tags)  { _TAGS = a.tags.split(',').filter(Boolean); renderTags(); }
+  if (a.tags)  {
+    _TAGS = a.tags.split(',').filter(Boolean).filter(t => !t.startsWith('feat_pos:'));
+    renderTags();
+  }
   // Update search preview
   g('sp-ttl').textContent = a.seo_title || a.title || 'Article Title';
   if (a.meta_description) g('sp-desc').textContent = a.meta_description;
@@ -1457,6 +1553,7 @@ function openPubModal() {
   // Required checks (block publish)
   const checks = [
     { label: 'Headline', pass: !!title,   req: true },
+    { label: 'Featured Image (Mandatory)', pass: !!_featImgUrl, req: true },
     { label: 'Article body', pass: body.length > 50,  req: true },
     { label: 'Section selected', pass: !!section && section !== 'Select Section', req: true },
     { label: 'Author name', pass: !!author, req: true },
@@ -1477,7 +1574,7 @@ function openPubModal() {
 
   const pubBtn = g('pm-publish-btn');
   pubBtn.disabled = hasBlocker;
-  pubBtn.title = hasBlocker ? 'Fix required fields before publishing' : '';
+  pubBtn.title = hasBlocker ? 'Fix required fields before publishing (Featured Image is required)' : '';
 
   g('pub-overlay').classList.add('show');
 }
@@ -1614,6 +1711,10 @@ async function unpubArt() {
 
 function buildPayload() {
   const currentSlug = (g('sd-slug-input')?.value || g('tb-slug')?.value || '').trim();
+  const cleanTags = _TAGS.filter(t => !t.startsWith('feat_pos:'));
+  cleanTags.push('feat_pos:' + (_featPos || 'top'));
+  const tagsStr = cleanTags.join(',');
+
   return {
     id:              ART_ID,
     slug:            currentSlug || undefined,
@@ -1627,11 +1728,11 @@ function buildPayload() {
     author_photo_url: g('author-photo-img').src && g('author-photo-img').style.display !== 'none' ? g('author-photo-img').src : '',
     hero_img_url:    _featImgUrl || '',
     hero_img_alt:    (g('sd-feat-alt')?.value  || '').trim(),
-    hero_caption:    (g('sd-feat-caption')?.value || '').trim(),
-    hero_credit:     (g('sd-feat-credit')?.value  || '').trim(),
+    hero_caption:    (g('ed-feat-caption-inline')?.value || g('sd-feat-caption')?.value || '').trim(),
+    hero_credit:     (g('ed-feat-credit-inline')?.value  || g('sd-feat-credit')?.value  || '').trim(),
     seo_title:       (g('sd-seo-title')?.value || '').trim(),
     meta_description:(g('sd-meta-desc')?.value  || '').trim(),
-    tags:            _TAGS.join(','),
+    tags:            tagsStr,
     content_html:    g('ed-rt').innerHTML,
   };
 }
@@ -1671,7 +1772,37 @@ function seoCC(el, ccId, limit) {
   cc.className = 'sd-cc' + (len > limit ? ' over' : len > limit * .85 ? ' warn' : '');
 }
 
-// ── FEATURED IMAGE (drawer) ──────────────────────────────
+// ── FEATURED IMAGE ──────────────────────────────────────
+let _featPos = 'top';
+
+function setFeatPosition(pos) {
+  _featPos = pos;
+  document.querySelectorAll('.ed-pos-btn').forEach(b => {
+    b.classList.toggle('active', b.getAttribute('data-pos') === pos);
+  });
+  DIRTY = true;
+  const labels = {
+    top: 'Top (Header Hero)',
+    middle: 'Middle (Inside Body)',
+    bottom: 'Bottom (End of Article)',
+    hidden: 'Hidden in Body (Cards Only)'
+  };
+  toast('Featured image position: ' + (labels[pos] || pos), 'ok');
+}
+
+function syncFeatMeta(src, val) {
+  if (src === 'caption') {
+    if (g('sd-feat-caption')) g('sd-feat-caption').value = val;
+  } else if (src === 'caption-sd') {
+    if (g('ed-feat-caption-inline')) g('ed-feat-caption-inline').value = val;
+  } else if (src === 'credit') {
+    if (g('sd-feat-credit')) g('sd-feat-credit').value = val;
+  } else if (src === 'credit-sd') {
+    if (g('ed-feat-credit-inline')) g('ed-feat-credit-inline').value = val;
+  }
+  DIRTY = true;
+}
+
 function trigFeatImg() {
   g('feat-img-inp').value = ''; g('feat-img-inp').click();
 }
@@ -1685,21 +1816,52 @@ async function handleFeatImgFile(input) {
     if (!r.ok) throw new Error(d.error || 'Upload init failed');
     await fetch(d.uploadUrl, { method: 'PUT', headers: { 'Content-Type': file.type }, body: file });
     _featImgUrl = d.publicUrl;
-    g('feat-img-el').src = d.publicUrl;
+    showFeatPreview(d.publicUrl);
     DIRTY = true; lsSave();
+    toast('Featured image uploaded ✓', 'ok');
   } catch(e) { toast('Featured image upload failed: ' + e.message, 'err'); }
 }
 function showFeatPreview(url) {
   _featImgUrl = url;
-  g('feat-img-el').src = url;
-  g('feat-preview').style.display = 'block';
-  g('feat-zone').style.display    = 'none';
+  // Inline Card
+  const inlineWrap = g('ed-feat-filled');
+  const inlineEmpty = g('ed-feat-empty');
+  const inlineImg = g('ed-feat-preview-img');
+  if (inlineWrap) inlineWrap.style.display = 'flex';
+  if (inlineEmpty) inlineEmpty.style.display = 'none';
+  if (inlineImg) inlineImg.src = url;
+
+  // Drawer
+  const drawerPreview = g('feat-preview');
+  const drawerZone = g('feat-zone');
+  const drawerImg = g('feat-img-el');
+  if (drawerPreview) drawerPreview.style.display = 'block';
+  if (drawerZone) drawerZone.style.display = 'none';
+  if (drawerImg) drawerImg.src = url;
+
+  // Sync position button active state
+  document.querySelectorAll('.ed-pos-btn').forEach(b => {
+    b.classList.toggle('active', b.getAttribute('data-pos') === (_featPos || 'top'));
+  });
 }
 function removeFeatImg() {
   _featImgUrl = '';
-  g('feat-img-el').src = '';
-  g('feat-preview').style.display = 'none';
-  g('feat-zone').style.display    = 'flex';
+  // Inline Card
+  const inlineWrap = g('ed-feat-filled');
+  const inlineEmpty = g('ed-feat-empty');
+  const inlineImg = g('ed-feat-preview-img');
+  if (inlineWrap) inlineWrap.style.display = 'none';
+  if (inlineEmpty) inlineEmpty.style.display = 'flex';
+  if (inlineImg) inlineImg.src = '';
+
+  // Drawer
+  const drawerPreview = g('feat-preview');
+  const drawerZone = g('feat-zone');
+  const drawerImg = g('feat-img-el');
+  if (drawerPreview) drawerPreview.style.display = 'none';
+  if (drawerZone) drawerZone.style.display = 'flex';
+  if (drawerImg) drawerImg.src = '';
+
   DIRTY = true;
 }
 

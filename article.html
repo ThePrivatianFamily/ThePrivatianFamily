@@ -328,14 +328,47 @@
         var rtEl = g('article-readtime');
         if(rtEl) rtEl.textContent = readTime(a.content_html || '') + ' min read';
 
-        // ── Hero image ──
+        // ── Article body ──
+        var body = g('article-content');
+        if(body){
+          body.innerHTML = a.content_html || '';
+        }
+
+        // ── Hero / Featured image & positioning ──
+        var featPos = 'top';
+        if (a.tags) {
+          var posMatch = a.tags.match(/feat_pos:(top|middle|bottom|hidden)/);
+          if (posMatch) featPos = posMatch[1];
+        }
+
         var heroImg = g('article-hero-img');
         var fig = g('article-hero-figure');
+        var mainBody = g('article-body');
         if(heroImg && fig){
-          if(a.hero_img_url){
+          if(a.hero_img_url && featPos !== 'hidden'){
             heroImg.src = a.hero_img_url;
             heroImg.alt = a.hero_img_alt || a.title || '';
             fig.style.display = '';
+
+            // Reposition figure according to selected placement
+            if (featPos === 'middle' && body) {
+              var pList = body.querySelectorAll('p');
+              if (pList.length >= 3) {
+                var midIdx = Math.floor(pList.length / 2);
+                pList[midIdx - 1].after(fig);
+              } else if (pList.length > 0) {
+                pList[0].after(fig);
+              } else {
+                body.prepend(fig);
+              }
+            } else if (featPos === 'bottom' && body) {
+              body.append(fig);
+            } else {
+              // Default Top placement
+              if (mainBody && body) {
+                mainBody.insertBefore(fig, body);
+              }
+            }
           } else {
             fig.style.display = 'none';
           }
@@ -346,12 +379,6 @@
           var credit  = a.hero_credit  ? '<span class="caption-credit">' + a.hero_credit + '</span>' : '';
           cap.innerHTML = capText + (credit ? ' ' + credit : '');
           cap.style.display = (capText || a.hero_credit) ? '' : 'none';
-        }
-
-        // ── Article body ──
-        var body = g('article-content');
-        if(body){
-          body.innerHTML = a.content_html || '';
         }
 
         // ── Author bio ──
