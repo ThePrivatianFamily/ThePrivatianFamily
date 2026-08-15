@@ -283,15 +283,22 @@
 
   <!-- SEARCH OVERLAY -->
   <div id="search-overlay" class="search-overlay" role="dialog" aria-modal="true" aria-label="Search" hidden>
+    <div class="search-overlay-backdrop" id="search-overlay-backdrop"></div>
     <div class="search-overlay-inner">
-      <div class="search-input-wrap">
-        <svg class="search-icon-inline" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-        <input type="search" id="search-input" class="search-input" placeholder="${escapeHTML(searchPlaceholder)}" autocomplete="off" spellcheck="false" />
-        <button class="search-clear-btn" id="search-clear-btn" aria-label="${escapeHTML(searchClear)}" hidden>&#10005;</button>
+      <div class="search-header-bar">
+        <div class="search-input-wrap">
+          <svg class="search-icon-inline" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+          <input type="search" id="search-input" class="search-input" placeholder="${escapeHTML(searchPlaceholder)}" autocomplete="off" spellcheck="false" enterkeyhint="search" />
+          <button type="button" class="search-clear-btn" id="search-clear-btn" aria-label="${escapeHTML(searchClear)}" style="display:none;">&#10005;</button>
+        </div>
+        <button type="button" class="search-close-btn" id="search-close-btn" aria-label="${escapeHTML(searchClose)}">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+          <span class="search-close-text">${escapeHTML(searchClose)}</span>
+        </button>
       </div>
+      <div class="search-quick-tags" id="search-quick-tags"></div>
       <div id="search-results" class="search-results" aria-live="polite"></div>
     </div>
-    <button class="search-close-btn" id="search-close-btn" aria-label="${escapeHTML(searchClose)}">&#10005; ${escapeHTML(searchClose)}</button>
   </div>
 
   <!-- MENU OVERLAY -->
@@ -857,12 +864,14 @@
 
   // ── 4. SEARCH MODAL SYSTEM ──────────────────────────────────────────
   function initSearch() {
-    var searchBtn      = document.getElementById('search-btn');
-    var searchOverlay  = document.getElementById('search-overlay');
-    var searchInput    = document.getElementById('search-input');
-    var searchResults  = document.getElementById('search-results');
-    var searchClearBtn = document.getElementById('search-clear-btn');
-    var searchCloseBtn = document.getElementById('search-close-btn');
+    var searchBtn          = document.getElementById('search-btn');
+    var searchOverlay      = document.getElementById('search-overlay');
+    var searchBackdrop     = document.getElementById('search-overlay-backdrop');
+    var searchInput        = document.getElementById('search-input');
+    var searchResults      = document.getElementById('search-results');
+    var searchClearBtn     = document.getElementById('search-clear-btn');
+    var searchCloseBtn     = document.getElementById('search-close-btn');
+    var searchQuickTagsEl  = document.getElementById('search-quick-tags');
 
     function buildArticleIndex() {
       var articles = [];
@@ -877,7 +886,7 @@
       selectors.forEach(function(sel) {
         document.querySelectorAll(sel).forEach(function(el) {
           var title = el.textContent.trim();
-          if (title.length > 8 && !articles.find(function(a){ return a.title === title; })) {
+          if (title.length > 6 && !articles.find(function(a){ return a.title === title; })) {
             var sectionEl = el.closest('[class*="col"], [class*="section"], article, .article-card, .hero-area');
             var tag = '';
             if (sectionEl) {
@@ -891,7 +900,7 @@
       if (articles.length < 3) {
         document.querySelectorAll('h2, h3').forEach(function(h) {
           var title = h.textContent.trim();
-          if (title.length > 8 && !articles.find(function(a){ return a.title === title; })) {
+          if (title.length > 6 && !articles.find(function(a){ return a.title === title; })) {
             articles.push({ title: title, tag: '', el: h });
           }
         });
@@ -901,16 +910,49 @@
 
     var articleIndex = [];
 
+    function renderQuickTags() {
+      if (!searchQuickTagsEl) return;
+      var isBn = window.PrivatianLang && window.PrivatianLang.getLang() === 'bn';
+      var tags = isBn ? 
+        ['অনুসন্ধিৎসু', 'সমাজ ও ঐতিহ্য', 'সংস্কৃতি', 'মূল্যবোধ', 'দেশ ও বিশ্ব', 'শিল্প ও উত্তরাধিকার', 'অনুষ্ঠান'] :
+        ['Findings', 'Community & Heritage', 'Culture', 'Privacy & Values', 'Nation & World', 'Arts & Legacy', 'Events'];
+      
+      var prefix = isBn ? 'দ্রুত খুঁজুন:' : 'Explore:';
+      var html = '<span class="search-quick-label">' + prefix + '</span>';
+      tags.forEach(function(t) {
+        html += '<button type="button" class="search-quick-tag" data-tag="' + escapeHTML(t) + '">' + escapeHTML(t) + '</button>';
+      });
+      searchQuickTagsEl.innerHTML = html;
+
+      searchQuickTagsEl.querySelectorAll('.search-quick-tag').forEach(function(btn) {
+        btn.addEventListener('click', function(e) {
+          e.preventDefault();
+          var tagVal = btn.getAttribute('data-tag');
+          if (searchInput) {
+            searchInput.value = tagVal;
+            if (searchClearBtn) searchClearBtn.style.display = 'flex';
+            performSearch(tagVal);
+          }
+        });
+      });
+    }
+
     function openSearch() {
       if (!searchOverlay) return;
       articleIndex = buildArticleIndex();
+      renderQuickTags();
       searchOverlay.removeAttribute('hidden');
       requestAnimationFrame(function() {
         searchOverlay.classList.add('is-open');
       });
       setTimeout(function() { if (searchInput) searchInput.focus(); }, 80);
       document.body.style.overflow = 'hidden';
-      if (searchResults) searchResults.innerHTML = '<p class="search-hint">Start typing to search&hellip; &nbsp;<kbd>Ctrl+K</kbd> to toggle &nbsp;<kbd>Esc</kbd> to close</p>';
+      var isBn = window.PrivatianLang && window.PrivatianLang.getLang() === 'bn';
+      if (searchResults) {
+        searchResults.innerHTML = '<p class="search-hint">' + 
+          (isBn ? 'অনুসন্ধান করতে লিখুন অথবা ওপরের বিভাগ বেছে নিন…' : 'Start typing to search or select a topic above…') + 
+          '</p>';
+      }
     }
 
     function closeSearch() {
@@ -920,7 +962,7 @@
       document.body.style.overflow = '';
       if (searchInput) searchInput.value = '';
       if (searchResults) searchResults.innerHTML = '';
-      if (searchClearBtn) searchClearBtn.hidden = true;
+      if (searchClearBtn) searchClearBtn.style.display = 'none';
     }
 
     function highlightMatch(text, q) {
@@ -931,9 +973,12 @@
 
     function performSearch(query) {
       if (!searchResults) return;
-      var q = query.trim();
+      var isBn = window.PrivatianLang && window.PrivatianLang.getLang() === 'bn';
+      var q = (query || '').trim();
       if (!q) {
-        searchResults.innerHTML = '<p class="search-hint">Start typing to search&hellip;</p>';
+        searchResults.innerHTML = '<p class="search-hint">' + 
+          (isBn ? 'অনুসন্ধান করতে লিখুন অথবা ওপরের বিভাগ বেছে নিন…' : 'Start typing to search or select a topic above…') + 
+          '</p>';
         return;
       }
       var lower = q.toLowerCase();
@@ -942,18 +987,22 @@
       });
 
       if (!matches.length) {
-        searchResults.innerHTML = '<p class="search-empty">No results for <strong>"' + q + '"</strong></p>';
+        searchResults.innerHTML = '<p class="search-empty">' + 
+          (isBn ? '<strong>"' + escapeHTML(q) + '"</strong> এর জন্য কোনো ফলাফল পাওয়া যায়নি' : 'No results found for <strong>"' + escapeHTML(q) + '"</strong>') + 
+          '</p>';
         return;
       }
 
       var html = '<div class="search-results-grid">';
-      matches.slice(0, 12).forEach(function(a, idx) {
+      matches.slice(0, 16).forEach(function(a, idx) {
         html += '<div class="search-result-item" data-idx="' + idx + '" tabindex="0" role="button">';
-        if (a.tag) html += '<div class="search-result-tag">' + a.tag + '</div>';
-        html += '<div class="search-result-title">' + highlightMatch(a.title, q) + '</div></div>';
+        if (a.tag) html += '<div class="search-result-tag">' + escapeHTML(a.tag) + '</div>';
+        html += '<div class="search-result-title">' + highlightMatch(escapeHTML(a.title), q) + '</div></div>';
       });
       html += '</div>';
-      if (matches.length > 12) html += '<p class="search-hint">' + (matches.length - 12) + ' more — refine your search</p>';
+      if (matches.length > 16) {
+        html += '<p class="search-hint">' + (matches.length - 16) + (isBn ? ' টি অতিরিক্ত ফলাফল রয়েছে — নির্দিষ্ট করে অনুসন্ধান করুন' : ' more results — refine your search') + '</p>';
+      }
       searchResults.innerHTML = html;
 
       searchResults.querySelectorAll('.search-result-item').forEach(function(item) {
@@ -985,21 +1034,25 @@
     }
 
     if (searchCloseBtn) searchCloseBtn.addEventListener('click', closeSearch);
+    if (searchBackdrop) searchBackdrop.addEventListener('click', closeSearch);
 
     if (searchInput) {
       searchInput.addEventListener('input', function() {
-        if (searchClearBtn) searchClearBtn.hidden = !searchInput.value;
+        if (searchClearBtn) searchClearBtn.style.display = searchInput.value ? 'flex' : 'none';
         performSearch(searchInput.value);
       });
       searchInput.addEventListener('keydown', function(e) { if (e.key === 'Escape') closeSearch(); });
     }
 
     if (searchClearBtn) {
-      searchClearBtn.addEventListener('click', function() {
-        searchInput.value = '';
-        searchClearBtn.hidden = true;
-        searchInput.focus();
-        performSearch('');
+      searchClearBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        if (searchInput) {
+          searchInput.value = '';
+          searchClearBtn.style.display = 'none';
+          searchInput.focus();
+          performSearch('');
+        }
       });
     }
 
