@@ -85,10 +85,11 @@ async function logActivity({
       return data;
     }
 
+    logEntry.id = 'log_' + Date.now().toString(36) + '_' + Math.random().toString(36).substr(2, 6);
+
     // 2. If table doesn't exist yet or errors, write to fallback storage in `site_settings`
-    console.warn('[ActivityLogger] activity_logs table insert notice:', error ? error.message : 'no data');
+    let savedInFallback = false;
     try {
-      // Append to site_settings array
       const { data: currentSettings } = await sb
         .from('site_settings')
         .select('value')
@@ -100,19 +101,55 @@ async function logActivity({
         logsList = Array.isArray(currentSettings.value) ? currentSettings.value : [];
       }
 
-      logEntry.id = 'log_' + Date.now().toString(36) + '_' + Math.random().toString(36).substr(2, 6);
       logsList.unshift(logEntry);
-      if (logsList.length > 2000) logsList = logsList.slice(0, 2000); // retain last 2000 records
+      if (logsList.length > 3000) logsList = logsList.slice(0, 3000);
 
-      await sb.from('site_settings').upsert({
+      const { error: setErr } = await sb.from('site_settings').upsert({
         key: 'activity_logs_store',
         value: logsList,
         updated_at: new Date().toISOString()
       }, { onConflict: 'key' });
 
-      return logEntry;
-    } catch(fbErr) {
-      console.error('[ActivityLogger] Fallback storage failed:', fbErr.message);
+      if (!setErr) savedInFallback = true;
+    } catch(fbErr) {}
+
+    // 3. Fallback Tier 3: Sections system table (__activity_logs_store__)
+    if (!savedInFallback) {
+      try {
+        const { data: existingRow } = await sb.from('sections').select('id, name').eq('admin_id', '__activity_logs_store__').maybeSingle();
+        let logsList = [];
+        if (existingRow && existingRow.name) {
+          try {
+            const parsed = JSON.parse(existingRow.name);
+            if (Array.isArray(parsed)) logsList = parsed;
+          } catch(e) {}
+        }
+        logsList.unshift(logEntry);
+        if (logsList.length > 3000) logsList = logsList.slice(0, 3000);
+
+        if (existingRow) {
+          await sb.from('sections').update({
+            name: JSON.stringify(logsList),
+            slug: '__activity_logs_store__',
+            display_order: 9993,
+            is_active: false,
+            locked: true,
+            is_deleted: true
+          }).eq('admin_id', '__activity_logs_store__');
+        } else {
+          await sb.from('sections').insert({
+            admin_id: '__activity_logs_store__',
+            name: JSON.stringify(logsList),
+            slug: '__activity_logs_store__',
+            display_order: 9993,
+            is_active: false,
+            locked: true,
+            is_deleted: true
+          });
+        }
+      } catch(secErr) {
+        console.error('[ActivityLogger] Sections table fallback failed:', secErr.message);
+      }
     }
 
     return logEntry;

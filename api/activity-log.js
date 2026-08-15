@@ -72,16 +72,36 @@ module.exports = async function handler(req, res) {
       console.warn('[activity-log/list] Supabase table query failed:', e.message);
     }
 
-    // Fallback: fetch from site_settings store if table query returned nothing or failed
+    // Fallback: fetch from site_settings store or sections system table
     if (!logs) {
       try {
-        const { data: storeRow } = await client
-          .from('site_settings')
-          .select('value')
-          .eq('key', 'activity_logs_store')
-          .maybeSingle();
+        let rawList = [];
+        try {
+          const { data: storeRow } = await client
+            .from('site_settings')
+            .select('value')
+            .eq('key', 'activity_logs_store')
+            .maybeSingle();
 
-        let rawList = (storeRow && Array.isArray(storeRow.value)) ? storeRow.value : [];
+          if (storeRow && Array.isArray(storeRow.value) && storeRow.value.length > 0) {
+            rawList = storeRow.value;
+          }
+        } catch(e) {}
+
+        if (rawList.length === 0) {
+          try {
+            const { data: secRow } = await client
+              .from('sections')
+              .select('name')
+              .eq('admin_id', '__activity_logs_store__')
+              .maybeSingle();
+
+            if (secRow && secRow.name) {
+              const parsed = JSON.parse(secRow.name);
+              if (Array.isArray(parsed)) rawList = parsed;
+            }
+          } catch(e) {}
+        }
 
         // Apply filters in memory
         if (category && category !== 'all') {
@@ -155,13 +175,34 @@ module.exports = async function handler(req, res) {
     // Fallback if table returned 0
     if (totalLogs === 0) {
       try {
-        const { data: storeRow } = await client
-          .from('site_settings')
-          .select('value')
-          .eq('key', 'activity_logs_store')
-          .maybeSingle();
+        let list = [];
+        try {
+          const { data: storeRow } = await client
+            .from('site_settings')
+            .select('value')
+            .eq('key', 'activity_logs_store')
+            .maybeSingle();
 
-        const list = (storeRow && Array.isArray(storeRow.value)) ? storeRow.value : [];
+          if (storeRow && Array.isArray(storeRow.value) && storeRow.value.length > 0) {
+            list = storeRow.value;
+          }
+        } catch(e) {}
+
+        if (list.length === 0) {
+          try {
+            const { data: secRow } = await client
+              .from('sections')
+              .select('name')
+              .eq('admin_id', '__activity_logs_store__')
+              .maybeSingle();
+
+            if (secRow && secRow.name) {
+              const parsed = JSON.parse(secRow.name);
+              if (Array.isArray(parsed)) list = parsed;
+            }
+          } catch(e) {}
+        }
+
         totalLogs = list.length;
         if (list.length > 0) lastActivityAt = list[0].timestamp;
 
