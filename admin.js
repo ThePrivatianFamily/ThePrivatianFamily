@@ -1248,6 +1248,7 @@ const PAGE_CONFIG = {
   articles:  { title: 'Articles',  breadcrumb: 'Articles' },
   settings:  { title: 'Settings',  breadcrumb: 'Settings' },
   access:    { title: 'Manage Access', breadcrumb: 'Manage Access' },
+  activity:  { title: 'Activity Log & Audit Trail', breadcrumb: 'Activity Log' },
 };
 
 function navigateTo(page) {
@@ -1271,6 +1272,7 @@ function navigateTo(page) {
   if (page === 'header')   { initHeaderPage(); }
   if (page === 'footer')   { initFooterPage(); }
   if (page === 'articles') { initArticlesPage(); }
+  if (page === 'activity') { loadActivityLogs(); }
   if (page === 'sections') {
     // New Section button
     const btn = document.createElement('button');
@@ -6105,6 +6107,321 @@ if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', initGlobalModalListeners);
 } else {
   initGlobalModalListeners();
+}
+
+// ═════════════════════════════════════════════════════════════════════
+// ── ACTIVITY LOG & AUDIT TRAIL ENGINE ─────────────────────────────────
+// ═════════════════════════════════════════════════════════════════════
+
+var _allActivityLogs = [];
+var _activitySearchDebounceTimer = null;
+var _selectedActivityLog = null;
+
+function debounceActivitySearch() {
+  if (_activitySearchDebounceTimer) clearTimeout(_activitySearchDebounceTimer);
+  _activitySearchDebounceTimer = setTimeout(() => {
+    loadActivityLogs();
+  }, 260);
+}
+
+function formatActivityRelativeTime(isoString) {
+  if (!isoString) return '—';
+  const d = new Date(isoString);
+  const now = new Date();
+  const diffMs = now - d;
+  const diffSec = Math.floor(diffMs / 1000);
+  const diffMin = Math.floor(diffSec / 60);
+  const diffHours = Math.floor(diffMin / 60);
+  const diffDays = Math.floor(diffHours / 24);
+
+  if (diffSec < 45) return 'Just now';
+  if (diffMin < 60) return `${diffMin}m ago`;
+  if (diffHours < 24) return `${diffHours}h ago`;
+  if (diffDays === 1) {
+    return `Yesterday, ${d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+  }
+  if (diffDays < 7) {
+    return `${diffDays}d ago (${d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })})`;
+  }
+  return d.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: d.getFullYear() !== now.getFullYear() ? 'numeric' : undefined,
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+}
+
+function getActivityCategoryPill(cat) {
+  const c = (cat || 'general').toLowerCase();
+  const config = {
+    auth:     { label: 'AUTH', bg: '#f3e8ff', color: '#6b21a8', border: '#e9d5ff' },
+    admins:   { label: 'ACCESS', bg: '#fef3c7', color: '#92400e', border: '#fde68a' },
+    articles: { label: 'ARTICLE', bg: '#dbeafe', color: '#1e40af', border: '#bfdbfe' },
+    sections: { label: 'SECTION', bg: '#d1fae5', color: '#065f46', border: '#a7f3d0' },
+    layout:   { label: 'LAYOUT', bg: '#e0e7ff', color: '#3730a3', border: '#c7d2fe' },
+    settings: { label: 'CONFIG', bg: '#f1f5f9', color: '#334155', border: '#cbd5e1' },
+  };
+  const item = config[c] || { label: c.toUpperCase(), bg: '#f1f5f9', color: '#334155', border: '#e2e8f0' };
+  return `<span style="display:inline-block;padding:2px 7px;font-size:10px;font-weight:700;letter-spacing:.04em;border-radius:4px;background:${item.bg};color:${item.color};border:1px solid ${item.border};">${item.label}</span>`;
+}
+
+async function loadActivityLogs(showToastFeedback = false) {
+  const tbody = document.getElementById('activity-table-tbody');
+  const loadingEl = document.getElementById('activity-table-loading');
+  const emptyEl = document.getElementById('activity-table-empty');
+  const catFilter = document.getElementById('activity-filter-category')?.value || 'all';
+  const actorFilter = document.getElementById('activity-filter-actor')?.value || '';
+  const dateFilter = document.getElementById('activity-filter-date')?.value || 'all';
+  const searchVal = (document.getElementById('activity-search-input')?.value || '').trim();
+
+  if (tbody && !tbody.children.length) {
+    if (loadingEl) loadingEl.style.display = 'block';
+  }
+  if (emptyEl) emptyEl.style.display = 'none';
+
+  try {
+    const params = new URLSearchParams();
+    params.set('action', 'list');
+    params.set('limit', '300');
+    if (catFilter && catFilter !== 'all') params.set('category', catFilter);
+    if (actorFilter) params.set('actor', actorFilter);
+    if (searchVal) params.set('search', searchVal);
+
+    const [listData, statsData] = await Promise.all([
+      _apiGet(`/api/activity-log?${params.toString()}`),
+      _apiGet('/api/activity-log?action=stats').catch(() => null)
+    ]);
+
+    if (loadingEl) loadingEl.style.display = 'none';
+
+    let items = (listData && Array.isArray(listData.items)) ? listData.items : (Array.isArray(listData) ? listData : []);
+
+    // Filter by date client-side if specified
+    if (dateFilter !== 'all') {
+      const now = new Date();
+      items = items.filter(log => {
+        if (!log.timestamp) return true;
+        const logDate = new Date(log.timestamp);
+        if (dateFilter === 'today') {
+          const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+          return logDate >= startOfToday;
+        } else if (dateFilter === '7d') {
+          const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+          return logDate >= sevenDaysAgo;
+        } else if (dateFilter === '30d') {
+          const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+          return logDate >= thirtyDaysAgo;
+        }
+        return true;
+      });
+    }
+
+    _allActivityLogs = items;
+
+    // Update Stats
+    if (statsData) {
+      const statTotal = document.getElementById('stat-total-logs');
+      const statToday = document.getElementById('stat-today-logs');
+      const statActors = document.getElementById('stat-active-actors');
+      if (statTotal) statTotal.textContent = statsData.totalLogs || items.length;
+      if (statToday) statToday.textContent = statsData.todayCount !== undefined ? statsData.todayCount : '—';
+      if (statActors) statActors.textContent = statsData.uniqueActorsCount !== undefined ? statsData.uniqueActorsCount : '—';
+    }
+
+    // Populate Actor Dropdown dynamically
+    const actorSelect = document.getElementById('activity-filter-actor');
+    if (actorSelect && items.length > 0) {
+      const currentVal = actorSelect.value;
+      const uniqueActors = new Set();
+      items.forEach(it => { if (it.actor_email) uniqueActors.add(it.actor_email); });
+      let opts = '<option value="">All Operators</option>';
+      uniqueActors.forEach(email => {
+        opts += `<option value="${escapeHtml(email)}" ${email === currentVal ? 'selected' : ''}>${escapeHtml(email)}</option>`;
+      });
+      actorSelect.innerHTML = opts;
+    }
+
+    renderActivityLogs(items);
+
+    if (showToastFeedback) {
+      showToast('success', 'Activity log stream updated.');
+    }
+  } catch(err) {
+    if (loadingEl) loadingEl.style.display = 'none';
+    console.error('[loadActivityLogs error]:', err.message);
+    showToast('error', 'Failed to load activity logs: ' + err.message);
+  }
+}
+
+function renderActivityLogs(logs) {
+  const tbody = document.getElementById('activity-table-tbody');
+  const emptyEl = document.getElementById('activity-table-empty');
+  if (!tbody) return;
+
+  if (!logs || logs.length === 0) {
+    tbody.innerHTML = '';
+    if (emptyEl) emptyEl.style.display = 'block';
+    return;
+  }
+
+  if (emptyEl) emptyEl.style.display = 'none';
+
+  tbody.innerHTML = logs.map(log => {
+    const actorEmail = log.actor_email || 'system';
+    const actorName = log.actor_name || actorEmail;
+    const actorRole = log.actor_role || 'Admin';
+    const timeFormatted = formatActivityRelativeTime(log.timestamp);
+    const fullDate = log.timestamp ? new Date(log.timestamp).toLocaleString('en-US') : '';
+    const ip = (log.details && log.details.ip) ? log.details.ip : '—';
+
+    const rolePill = `<span style="font-size:10px;padding:1px 6px;border-radius:10px;font-weight:600;background:${actorRole === 'Admin' ? '#dbeafe' : '#e0e7ff'};color:${actorRole === 'Admin' ? '#1e40af' : '#3730a3'};">${escapeHtml(actorRole)}</span>`;
+
+    // Target link if article or section
+    let targetLinkHtml = '';
+    if (log.category === 'articles' && log.target_id) {
+      targetLinkHtml = ` <a href="admin-article-editor.html?id=${encodeURIComponent(log.target_id)}" target="_blank" style="font-size:11px;color:var(--brand-navy,#0a528e);text-decoration:underline;margin-left:4px;">(Edit Article)</a>`;
+    } else if (log.category === 'sections' && log.target_id) {
+      targetLinkHtml = ` <a href="/section/${encodeURIComponent(log.target_id)}" target="_blank" style="font-size:11px;color:var(--brand-navy,#0a528e);text-decoration:underline;margin-left:4px;">(View Section)</a>`;
+    }
+
+    return `
+      <tr style="border-bottom:1px solid #f1f5f9;">
+        <td style="padding:12px 16px;vertical-align:middle;font-size:12px;color:var(--text-secondary);" title="${escapeHtml(fullDate)}">
+          <div style="font-weight:600;color:var(--text-primary);">${escapeHtml(timeFormatted)}</div>
+          <div style="font-size:11px;color:var(--text-muted);margin-top:2px;">${escapeHtml(fullDate.split(',')[0] || '')}</div>
+        </td>
+        <td style="padding:12px 16px;vertical-align:middle;">
+          <div style="font-weight:600;color:var(--text-primary);display:flex;align-items:center;gap:6px;">
+            <span>${escapeHtml(actorName)}</span>
+            ${rolePill}
+          </div>
+          <div style="font-size:11.5px;color:var(--text-muted);margin-top:2px;">${escapeHtml(actorEmail)}</div>
+        </td>
+        <td style="padding:12px 16px;vertical-align:middle;">
+          ${getActivityCategoryPill(log.category)}
+        </td>
+        <td style="padding:12px 16px;vertical-align:middle;">
+          <div style="font-weight:500;color:var(--text-primary);line-height:1.4;">
+            ${escapeHtml(log.summary || log.action)}
+            ${targetLinkHtml}
+          </div>
+        </td>
+        <td style="padding:12px 16px;vertical-align:middle;font-size:11.5px;color:var(--text-muted);font-family:monospace;">
+          ${escapeHtml(ip)}
+        </td>
+        <td style="padding:12px 16px;vertical-align:middle;text-align:right;">
+          <button type="button" class="action-btn" title="Inspect Event Details" onclick="openActivityDetails('${log.id}')" style="padding:5px 8px;font-size:12px;display:inline-flex;align-items:center;gap:4px;color:var(--brand-navy,#0a528e);border:1px solid #cbd5e1;border-radius:6px;background:#fff;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            <span>Inspect</span>
+          </button>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function openActivityDetails(logId) {
+  const log = _allActivityLogs.find(l => String(l.id) === String(logId));
+  if (!log) return;
+  _selectedActivityLog = log;
+
+  const modal = document.getElementById('modal-activity-details');
+  if (!modal) return;
+
+  const titleEl = document.getElementById('act-modal-title');
+  const actorEl = document.getElementById('act-modal-actor');
+  const emailEl = document.getElementById('act-modal-email');
+  const roleEl = document.getElementById('act-modal-role');
+  const timeEl = document.getElementById('act-modal-time');
+  const ipEl = document.getElementById('act-modal-ip');
+  const uaEl = document.getElementById('act-modal-ua');
+  const catBadgeEl = document.getElementById('act-modal-cat-badge');
+  const sumEl = document.getElementById('act-modal-summary');
+  const targetEl = document.getElementById('act-modal-target');
+  const jsonEl = document.getElementById('act-modal-json');
+
+  if (titleEl) titleEl.textContent = `Event: ${log.action || 'Activity'}`;
+  if (actorEl) actorEl.textContent = log.actor_name || log.actor_email || 'System';
+  if (emailEl) emailEl.textContent = log.actor_email || 'system';
+  if (roleEl) roleEl.innerHTML = `<span style="font-size:11px;padding:2px 8px;border-radius:12px;font-weight:700;background:#dbeafe;color:#1e40af;">Role: ${escapeHtml(log.actor_role || 'Admin')}</span>`;
+  if (timeEl) timeEl.textContent = log.timestamp ? new Date(log.timestamp).toLocaleString('en-US') : '—';
+  if (ipEl) ipEl.textContent = `IP: ${(log.details && log.details.ip) || 'Unknown'}`;
+  if (uaEl) uaEl.textContent = `UA: ${(log.details && log.details.userAgent) || 'Unknown'}`;
+  if (catBadgeEl) catBadgeEl.innerHTML = getActivityCategoryPill(log.category);
+  if (sumEl) sumEl.textContent = log.summary || log.action;
+  if (targetEl) {
+    if (log.target_id || log.target_name) {
+      targetEl.textContent = `Target: ${log.target_name || ''} (ID: ${log.target_id || 'N/A'})`;
+    } else {
+      targetEl.textContent = '';
+    }
+  }
+  if (jsonEl) {
+    jsonEl.textContent = JSON.stringify(log, null, 2);
+  }
+
+  modal.hidden = false;
+}
+
+function closeActivityDetails() {
+  const modal = document.getElementById('modal-activity-details');
+  if (modal) modal.hidden = true;
+  _selectedActivityLog = null;
+}
+
+function copyActivityJSON() {
+  if (!_selectedActivityLog) return;
+  const str = JSON.stringify(_selectedActivityLog, null, 2);
+  navigator.clipboard.writeText(str).then(() => {
+    showToast('success', 'Event JSON copied to clipboard.');
+  }).catch(() => {
+    showToast('info', 'Copied.');
+  });
+}
+
+function exportActivityLogs(format) {
+  if (!_allActivityLogs || !_allActivityLogs.length) {
+    showToast('error', 'No activity logs available to export.');
+    return;
+  }
+
+  const dateStamp = new Date().toISOString().split('T')[0];
+
+  if (format === 'json') {
+    const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(_allActivityLogs, null, 2));
+    const dlAnchor = document.createElement('a');
+    dlAnchor.setAttribute('href', dataStr);
+    dlAnchor.setAttribute('download', `the_privatian_family_activity_log_${dateStamp}.json`);
+    document.body.appendChild(dlAnchor);
+    dlAnchor.click();
+    dlAnchor.remove();
+    showToast('success', 'Activity logs exported as JSON.');
+  } else if (format === 'csv') {
+    const headers = ['ID', 'Timestamp', 'Actor Name', 'Actor Email', 'Actor Role', 'Category', 'Action', 'Summary', 'Target ID', 'Target Name', 'Client IP'];
+    const rows = _allActivityLogs.map(l => [
+      `"${String(l.id || '').replace(/"/g, '""')}"`,
+      `"${String(l.timestamp || '').replace(/"/g, '""')}"`,
+      `"${String(l.actor_name || '').replace(/"/g, '""')}"`,
+      `"${String(l.actor_email || '').replace(/"/g, '""')}"`,
+      `"${String(l.actor_role || '').replace(/"/g, '""')}"`,
+      `"${String(l.category || '').replace(/"/g, '""')}"`,
+      `"${String(l.action || '').replace(/"/g, '""')}"`,
+      `"${String(l.summary || '').replace(/"/g, '""')}"`,
+      `"${String(l.target_id || '').replace(/"/g, '""')}"`,
+      `"${String(l.target_name || '').replace(/"/g, '""')}"`,
+      `"${String((l.details && l.details.ip) || '').replace(/"/g, '""')}"`
+    ]);
+
+    const csvContent = 'data:text/csv;charset=utf-8,' + encodeURIComponent([headers.join(','), ...rows.map(r => r.join(','))].join('\n'));
+    const dlAnchor = document.createElement('a');
+    dlAnchor.setAttribute('href', csvContent);
+    dlAnchor.setAttribute('download', `the_privatian_family_activity_log_${dateStamp}.csv`);
+    document.body.appendChild(dlAnchor);
+    dlAnchor.click();
+    dlAnchor.remove();
+    showToast('success', 'Activity logs exported as CSV.');
+  }
 }
 
 

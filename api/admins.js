@@ -11,6 +11,7 @@
  */
 
 const { requireAuth, requireAdmin } = require('./_lib/auth');
+const { logActivity } = require('./_lib/activity');
 const { createClient } = require('@supabase/supabase-js');
 
 function sb() {
@@ -88,6 +89,18 @@ module.exports = async function handler(req, res) {
       .insert({ email: emailNorm, role, added_by: session.email, status: 'active' })
       .select().single();
     if (error) return res.status(500).json({ error: error.message });
+
+    logActivity({
+      actor: session,
+      action: 'admin.add',
+      category: 'admins',
+      summary: `${session.name || session.email} added "${emailNorm}" to whitelist as ${role}`,
+      target_id: data.id,
+      target_name: emailNorm,
+      details: { role, target_email: emailNorm },
+      req
+    }).catch(() => {});
+
     return res.status(201).json(data);
   }
 
@@ -125,11 +138,27 @@ module.exports = async function handler(req, res) {
     }
 
     let auditAction = null;
-    if (updates.status === 'suspended')                              auditAction = 'suspended';
-    if (updates.status === 'active' && target.status === 'suspended') auditAction = 'unsuspended';
-    if (updates.status === 'active' && target.status === 'deleted')   auditAction = 'restored';
-    if (updates.status === 'deleted')                                 auditAction = 'deleted';
-    if (updates.role && updates.role !== target.role)                 auditAction = 'role_changed_to_' + updates.role;
+    let actionSummary = '';
+    if (updates.status === 'suspended') {
+      auditAction = 'suspended';
+      actionSummary = `${session.name || session.email} suspended account "${target.email}"`;
+    }
+    if (updates.status === 'active' && target.status === 'suspended') {
+      auditAction = 'unsuspended';
+      actionSummary = `${session.name || session.email} unsuspended/restored account "${target.email}"`;
+    }
+    if (updates.status === 'active' && target.status === 'deleted') {
+      auditAction = 'restored';
+      actionSummary = `${session.name || session.email} restored account "${target.email}" from recycle bin`;
+    }
+    if (updates.status === 'deleted') {
+      auditAction = 'deleted';
+      actionSummary = `${session.name || session.email} moved account "${target.email}" to recycle bin`;
+    }
+    if (updates.role && updates.role !== target.role) {
+      auditAction = 'role_changed_to_' + updates.role;
+      actionSummary = `${session.name || session.email} changed role of "${target.email}" from ${target.role} to ${updates.role}`;
+    }
 
     if (auditAction) {
       updates.modified_by     = session.email;
@@ -139,6 +168,20 @@ module.exports = async function handler(req, res) {
 
     const { data, error } = await client.from('allowed_admins').update(updates).eq('id', id).select().single();
     if (error) return res.status(500).json({ error: error.message });
+
+    if (auditAction) {
+      logActivity({
+        actor: session,
+        action: 'admin.' + auditAction,
+        category: 'admins',
+        summary: actionSummary,
+        target_id: target.id,
+        target_name: target.email,
+        details: { old: target, updates },
+        req
+      }).catch(() => {});
+    }
+
     return res.status(200).json(data);
   }
 
@@ -165,6 +208,18 @@ module.exports = async function handler(req, res) {
       modified_at: new Date().toISOString(), modified_action: 'deleted'
     }).eq('id', id);
     if (error) return res.status(500).json({ error: error.message });
+
+    logActivity({
+      actor: session,
+      action: 'admin.remove_to_recycle',
+      category: 'admins',
+      summary: `${session.name || session.email} moved account "${target.email}" to Recycle bin`,
+      target_id: target.id,
+      target_name: target.email,
+      details: { previousStatus: target.status },
+      req
+    }).catch(() => {});
+
     return res.status(200).json({ success: true });
   }
 
@@ -180,8 +235,21 @@ module.exports = async function handler(req, res) {
 
     const { error } = await client.from('allowed_admins').delete().eq('id', id);
     if (error) return res.status(500).json({ error: error.message });
+
+    logActivity({
+      actor: session,
+      action: 'admin.purge_permanent',
+      category: 'admins',
+      summary: `${session.name || session.email} permanently deleted account "${target.email}" from whitelist`,
+      target_id: id,
+      target_name: target.email,
+      details: {},
+      req
+    }).catch(() => {});
+
     return res.status(200).json({ success: true, email: target.email });
   }
 
   return res.status(400).json({ error: 'Unknown action or method' });
 };
+

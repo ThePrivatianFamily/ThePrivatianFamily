@@ -11,6 +11,7 @@ const { OAuth2Client } = require('google-auth-library');
 const { createClient }  = require('@supabase/supabase-js');
 const jwt               = require('jsonwebtoken');
 const { verifySession, requireAuth } = require('./_lib/auth');
+const { logActivity }   = require('./_lib/activity');
 
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', req.headers.origin || '*');
@@ -30,6 +31,19 @@ module.exports = async function handler(req, res) {
 
   // ── LOGOUT ──────────────────────────────────────────────────────
   if (action === 'logout') {
+    const s = verifySession(req);
+    if (s) {
+      logActivity({
+        actor: s,
+        action: 'auth.logout',
+        category: 'auth',
+        summary: `${s.name || s.email} logged out of Admin Panel`,
+        target_id: s.email,
+        target_name: s.email,
+        details: {},
+        req
+      }).catch(() => {});
+    }
     res.setHeader('Set-Cookie', 'privatian_session=; HttpOnly; Secure; SameSite=Strict; Max-Age=0; Path=/');
     return res.status(200).json({ success: true });
   }
@@ -76,6 +90,18 @@ module.exports = async function handler(req, res) {
       res.setHeader('Set-Cookie',
         `privatian_session=${token}; HttpOnly; Secure; SameSite=Strict; Max-Age=86400; Path=/`
       );
+
+      // Record Activity Log for login
+      logActivity({
+        actor: { email: admin.email, name, role: admin.role },
+        action: 'auth.login',
+        category: 'auth',
+        summary: `${name} (${admin.email}) logged in successfully via Google OAuth`,
+        target_id: admin.id || admin.email,
+        target_name: admin.email,
+        details: { method: 'Google OAuth', role: admin.role },
+        req
+      }).catch(() => {});
 
       return res.status(200).json({
         success: true, token,

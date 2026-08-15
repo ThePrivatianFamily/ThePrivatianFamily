@@ -12,6 +12,7 @@
 
 const { createClient } = require('@supabase/supabase-js');
 const { verifySession, requireAuth, requireAdmin } = require('./_lib/auth');
+const { logActivity } = require('./_lib/activity');
 
 function rowToAdminSection(row) {
   return {
@@ -139,6 +140,17 @@ module.exports = async function handler(req, res) {
           console.warn('[DB fallback save error]:', err.message);
         }
       }
+      logActivity({
+        actor: session,
+        action: 'layout.menu_save',
+        category: 'layout',
+        summary: `${session.name || session.email} updated Navigation Menu configuration`,
+        target_id: 'navigation_menu_config',
+        target_name: 'Navigation Menu',
+        details: {},
+        req
+      }).catch(() => {});
+
       return res.status(200).json({ ok: true, data: menuConfig });
     }
   }
@@ -157,8 +169,15 @@ module.exports = async function handler(req, res) {
       subsections: [
         { id: 'sub-1', label: 'FAMILY LEGACY', href: '/section/community-heritage', icon: null, enabled: true },
         { id: 'sub-2', label: 'EXPERIENCE', href: '/section/culture', icon: null, enabled: true },
-        { id: 'sub-3', label: 'THE PRIVATIAN READS', href: '/section/findings', icon: null, enabled: true },
-        { id: 'sub-4', label: 'EVENTS', href: '/events', icon: 'calendar', enabled: true }
+        { id: 'sub-3', label: 'RESEARCH & VALUES', href: '/section/privacy-values', icon: null, enabled: true },
+        { id: 'sub-4', label: 'PERSPECTIVES', href: '/section/opinion', icon: null, enabled: true }
+      ],
+      social: [
+        { id: 'soc-1', platform: 'instagram', label: 'Instagram', href: 'https://instagram.com', enabled: true },
+        { id: 'soc-2', platform: 'linkedin', label: 'LinkedIn', href: 'https://linkedin.com', enabled: true },
+        { id: 'soc-3', platform: 'tiktok', label: 'TikTok', href: 'https://tiktok.com', enabled: true },
+        { id: 'soc-4', platform: 'facebook', label: 'Facebook', href: 'https://facebook.com', enabled: true },
+        { id: 'soc-5', platform: 'youtube', label: 'YouTube', href: 'https://youtube.com', enabled: true }
       ]
     };
 
@@ -223,6 +242,18 @@ module.exports = async function handler(req, res) {
           console.warn('[DB fallback header save error]:', err.message);
         }
       }
+
+      logActivity({
+        actor: session,
+        action: 'layout.header_save',
+        category: 'layout',
+        summary: `${session.name || session.email} updated Header configuration & site title`,
+        target_id: 'site_header_config',
+        target_name: 'Header Settings',
+        details: {},
+        req
+      }).catch(() => {});
+
       return res.status(200).json({ ok: true, data: headerConfig });
     }
   }
@@ -505,6 +536,18 @@ module.exports = async function handler(req, res) {
           console.warn('[DB fallback homepage save error]:', err.message);
         }
       }
+
+      logActivity({
+        actor: session,
+        action: 'layout.homepage_save',
+        category: 'layout',
+        summary: `${session.name || session.email} updated Homepage builder configuration (Hero, Events, Series)`,
+        target_id: 'site_homepage_config',
+        target_name: 'Homepage Builder',
+        details: {},
+        req
+      }).catch(() => {});
+
       return res.status(200).json({ ok: true, data: homepageConfig });
     }
   }
@@ -622,6 +665,18 @@ module.exports = async function handler(req, res) {
           console.warn('[DB fallback footer save error]:', err.message);
         }
       }
+
+      logActivity({
+        actor: session,
+        action: 'layout.footer_save',
+        category: 'layout',
+        summary: `${session.name || session.email} updated Footer layout configuration`,
+        target_id: 'site_footer_config',
+        target_name: 'Footer Layout',
+        details: {},
+        req
+      }).catch(() => {});
+
       return res.status(200).json({ ok: true, data: footerConfig });
     }
   }
@@ -727,8 +782,16 @@ module.exports = async function handler(req, res) {
           });
         }
       } catch(err) {
-        console.warn('[DB fallback section config save error]:', err.message);
-      }
+      logActivity({
+        actor: session,
+        action: 'section.customize',
+        category: 'sections',
+        summary: `${session.name || session.email} updated Section Studio configuration for section "${slug}"`,
+        target_id: slug,
+        target_name: payload.customTitle || slug,
+        details: { slug, featuredArticleId: payload.featuredArticleId, selectedArticleIds: payload.selectedArticleIds },
+        req
+      }).catch(() => {});
 
       return res.status(200).json({ ok: true, data: allConfigs[slug] });
     }
@@ -798,6 +861,18 @@ module.exports = async function handler(req, res) {
     }).select().single();
 
     if (error) return res.status(500).json({ error: error.message });
+
+    logActivity({
+      actor: session,
+      action: 'section.create',
+      category: 'sections',
+      summary: `${session.name || session.email} created new section "${name}" (/section/${slug})`,
+      target_id: adminId,
+      target_name: name,
+      details: { slug, name, admin_id: adminId },
+      req
+    }).catch(() => {});
+
     return res.status(201).json(rowToAdminSection(data));
   }
 
@@ -820,6 +895,18 @@ module.exports = async function handler(req, res) {
       .select().single();
 
     if (error) return res.status(500).json({ error: error.message });
+
+    logActivity({
+      actor: session,
+      action: 'section.edit',
+      category: 'sections',
+      summary: `${session.name || session.email} renamed section ID "${id}" to "${name}" (/section/${slug})`,
+      target_id: id,
+      target_name: name,
+      details: { slug, name },
+      req
+    }).catch(() => {});
+
     return res.status(200).json(rowToAdminSection(data));
   }
 
@@ -837,6 +924,18 @@ module.exports = async function handler(req, res) {
       .select().single();
 
     if (error) return res.status(500).json({ error: error.message });
+
+    logActivity({
+      actor: session,
+      action: 'section.restore',
+      category: 'sections',
+      summary: `${session.name || session.email} restored section "${data.name || id}" from trash`,
+      target_id: id,
+      target_name: data.name || id,
+      details: {},
+      req
+    }).catch(() => {});
+
     return res.status(200).json(rowToAdminSection(data));
   }
 
@@ -857,6 +956,18 @@ module.exports = async function handler(req, res) {
 
       const { error } = await sb.from('sections').delete().eq('admin_id', id);
       if (error) return res.status(500).json({ error: error.message });
+
+      logActivity({
+        actor: session,
+        action: 'section.delete_permanent',
+        category: 'sections',
+        summary: `${session.name || session.email} permanently deleted section ID "${id}"`,
+        target_id: id,
+        target_name: id,
+        details: { permanent: true },
+        req
+      }).catch(() => {});
+
       return res.status(200).json({ ok: true });
     }
 
@@ -870,6 +981,18 @@ module.exports = async function handler(req, res) {
       .select().single();
 
     if (error) return res.status(500).json({ error: error.message });
+
+    logActivity({
+      actor: session,
+      action: 'section.delete',
+      category: 'sections',
+      summary: `${session.name || session.email} moved section "${data.name || id}" to trash`,
+      target_id: id,
+      target_name: data.name || id,
+      details: { is_deleted: true },
+      req
+    }).catch(() => {});
+
     return res.status(200).json(rowToAdminSection(data));
   }
 
