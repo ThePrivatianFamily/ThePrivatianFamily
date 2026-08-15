@@ -631,26 +631,33 @@ module.exports = async function handler(req, res) {
     const slug = (req.query && req.query.slug) || (req.body && req.body.slug) || 'all';
 
     if (req.method === 'GET') {
+      let allConfigs = {};
       try {
         const { data } = await sb.from('site_settings').select('value').eq('key', 'sections_custom_configs').maybeSingle();
-        const allConfigs = (data && data.value) || {};
-        if (req.query.all === '1' || !req.query.slug) {
-          return res.status(200).json(allConfigs);
+        if (data && data.value && typeof data.value === 'object') {
+          allConfigs = data.value;
         }
-        return res.status(200).json(allConfigs[slug] || {
-          featuredArticleId: null,
-          selectedArticleIds: [],
-          customTitle: '',
-          description: ''
-        });
-      } catch(e) {
-        return res.status(200).json({
-          featuredArticleId: null,
-          selectedArticleIds: [],
-          customTitle: '',
-          description: ''
-        });
+      } catch(e) {}
+
+      if (Object.keys(allConfigs).length === 0) {
+        try {
+          const { data: sData } = await sb.from('sections').select('name').eq('admin_id', '__section_configs__').maybeSingle();
+          if (sData && sData.name) {
+            const parsed = JSON.parse(sData.name);
+            if (parsed && typeof parsed === 'object') allConfigs = parsed;
+          }
+        } catch(e) {}
       }
+
+      if (req.query.all === '1' || !req.query.slug) {
+        return res.status(200).json(allConfigs);
+      }
+      return res.status(200).json(allConfigs[slug] || {
+        featuredArticleId: null,
+        selectedArticleIds: [],
+        customTitle: '',
+        description: ''
+      });
     }
 
     if (req.method === 'POST') {
@@ -666,6 +673,16 @@ module.exports = async function handler(req, res) {
         }
       } catch(e) {}
 
+      if (Object.keys(allConfigs).length === 0) {
+        try {
+          const { data: sData } = await sb.from('sections').select('name').eq('admin_id', '__section_configs__').maybeSingle();
+          if (sData && sData.name) {
+            const parsed = JSON.parse(sData.name);
+            if (parsed && typeof parsed === 'object') allConfigs = parsed;
+          }
+        } catch(e) {}
+      }
+
       allConfigs[slug] = {
         featuredArticleId: payload.featuredArticleId || null,
         selectedArticleIds: Array.isArray(payload.selectedArticleIds) ? payload.selectedArticleIds.slice(0, 4) : [],
@@ -674,14 +691,43 @@ module.exports = async function handler(req, res) {
         updatedAt: new Date().toISOString()
       };
 
+      let saved = false;
       try {
-        await sb.from('site_settings').upsert({
+        const { error } = await sb.from('site_settings').upsert({
           key: 'sections_custom_configs',
           value: allConfigs,
           updated_at: new Date().toISOString()
         }, { onConflict: 'key' });
+        if (!error) saved = true;
       } catch(err) {
         console.warn('[Sections config save error]:', err.message);
+      }
+
+      // Fallback save in sections table
+      try {
+        const { data: existing } = await sb.from('sections').select('id').eq('admin_id', '__section_configs__').maybeSingle();
+        if (existing) {
+          await sb.from('sections').update({
+            name: JSON.stringify(allConfigs),
+            slug: '__section_configs__',
+            display_order: 9995,
+            is_active: false,
+            locked: true,
+            is_deleted: true
+          }).eq('admin_id', '__section_configs__');
+        } else {
+          await sb.from('sections').insert({
+            admin_id: '__section_configs__',
+            name: JSON.stringify(allConfigs),
+            slug: '__section_configs__',
+            display_order: 9995,
+            is_active: false,
+            locked: true,
+            is_deleted: true
+          });
+        }
+      } catch(err) {
+        console.warn('[DB fallback section config save error]:', err.message);
       }
 
       return res.status(200).json({ ok: true, data: allConfigs[slug] });
@@ -705,7 +751,7 @@ module.exports = async function handler(req, res) {
     const { data, error } = await query;
     if (error) return res.status(500).json({ error: error.message });
 
-    const rows = (data || []).filter(r => r.admin_id !== '__menu_config__' && r.admin_id !== '__header_config__' && r.admin_id !== '__homepage_config__' && r.admin_id !== '__footer_config__');
+    const rows = (data || []).filter(r => r.admin_id !== '__menu_config__' && r.admin_id !== '__header_config__' && r.admin_id !== '__homepage_config__' && r.admin_id !== '__footer_config__' && r.admin_id !== '__section_configs__');
 
     if (statusParam === 'all' && session) {
       // Admin format: full section objects

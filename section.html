@@ -710,7 +710,7 @@
   var allLbl = g('all-grid-lbl'); if (allLbl) allLbl.textContent = 'All Articles in ' + sectionName;
   var selLbl = g('selected-lbl'); if (selLbl) selLbl.textContent = 'Selected Stories in ' + sectionName;
 
-  // 1. Fetch section info & custom settings
+  // 1. Fetch section info, custom settings & articles
   Promise.all([
     fetch('/api/sections').then(function(r){return r.json();}).catch(function(){return [];}),
     fetch('/api/sections?action=section-config&slug=' + encodeURIComponent(slug || 'all')).then(function(r){return r.json();}).catch(function(){return {};}),
