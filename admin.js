@@ -650,35 +650,50 @@ function updateGlobalSyncStatus(forcedState, forcedText) {
     if (_currentAdminPage === 'footer') {
       if (typeof isFooterModified === 'function' && isFooterModified()) {
         state = 'unsaved';
-        text = 'Unsaved changes';
+        text = 'Unsaved footer changes';
       }
     } else if (_currentAdminPage === 'menu') {
       if (typeof isMenuModified === 'function' && isMenuModified()) {
         state = 'unsaved';
-        text = 'Unsaved changes';
+        text = 'Unsaved menu changes';
       }
     } else if (_currentAdminPage === 'homepage') {
       if (typeof isHomepageModified === 'function' && isHomepageModified()) {
         state = 'unsaved';
-        text = 'Unsaved changes';
+        text = 'Unsaved homepage changes';
       }
     } else if (_currentAdminPage === 'header') {
       if (typeof isHeaderModified === 'function' && isHeaderModified()) {
         state = 'unsaved';
-        text = 'Unsaved changes';
+        text = 'Unsaved header changes';
       }
     } else {
-      state = 'synced';
-      text = 'Synced with database';
+      // Check if any background section has unsaved edits
+      if (typeof isFooterModified === 'function' && isFooterModified()) {
+        state = 'unsaved';
+        text = 'Unsaved footer changes';
+      } else if (typeof isMenuModified === 'function' && isMenuModified()) {
+        state = 'unsaved';
+        text = 'Unsaved menu changes';
+      } else if (typeof isHomepageModified === 'function' && isHomepageModified()) {
+        state = 'unsaved';
+        text = 'Unsaved homepage changes';
+      } else if (typeof isHeaderModified === 'function' && isHeaderModified()) {
+        state = 'unsaved';
+        text = 'Unsaved header changes';
+      } else {
+        state = 'synced';
+        text = 'Synced with database';
+      }
     }
   }
 
-  // 1. Update Global Topbar Badge
+  // 1. Update Global Sidebar Badge (Below The Privatian / Admin Panel)
   const gWrap = document.getElementById('global-sync-status-wrap');
   const gDot = document.getElementById('global-status-dot');
   const gText = document.getElementById('global-sync-status');
   if (gWrap) {
-    gWrap.className = 'ft-header-badge ' + state;
+    gWrap.className = 'sidebar-sync-badge ' + state;
   }
   if (gDot) {
     gDot.className = 'ft-pulse-dot' + (state !== 'synced' ? ' ' + state : '');
@@ -687,7 +702,7 @@ function updateGlobalSyncStatus(forcedState, forcedText) {
     gText.textContent = text;
   }
 
-  // 2. Update In-Page Badges for all pages
+  // 2. Update In-Page Badges for all pages (strictly isolated to their own section)
   const inPageBadges = [
     { wrap: 'ft-save-status-wrap', dot: 'ft-status-dot', text: 'ft-save-status', page: 'footer' },
     { wrap: 'menu-save-status-wrap', dot: 'menu-status-dot', text: 'menu-save-status', page: 'menu' },
@@ -701,9 +716,13 @@ function updateGlobalSyncStatus(forcedState, forcedText) {
     const t = document.getElementById(b.text);
     if (!w) return;
 
-    let pageState = state;
-    let pageText = text;
-    if (!forcedState) {
+    let pageState = 'synced';
+    let pageText = 'Synced with database';
+
+    if (forcedState && _currentAdminPage === b.page) {
+      pageState = forcedState;
+      pageText = forcedText || (pageState === 'synced' ? 'Synced with database' : (pageState === 'unsaved' ? 'Unsaved changes' : (pageState === 'error' ? 'Sync error (offline/cache)' : 'Syncing with database...')));
+    } else {
       if (b.page === 'footer') {
         pageState = typeof isFooterModified === 'function' && isFooterModified() ? 'unsaved' : 'synced';
         pageText = pageState === 'unsaved' ? 'Unsaved changes' : 'Synced with database';
@@ -723,6 +742,55 @@ function updateGlobalSyncStatus(forcedState, forcedText) {
     if (d) d.className = 'ft-pulse-dot' + (pageState !== 'synced' ? ' ' + pageState : '');
     if (t) t.textContent = pageText;
   });
+}
+
+// ── Live Database Connection & Verification Engine ───────────────
+var _isVerifyingDb = false;
+
+async function verifyDatabaseSync(showToast = false) {
+  if (_isVerifyingDb) return;
+  _isVerifyingDb = true;
+
+  if (showToast) {
+    updateGlobalSyncStatus('syncing', 'Testing database...');
+  }
+
+  let dbOk = false;
+  try {
+    const sb = window._sb || (window.initSupabaseClient && window.initSupabaseClient());
+    if (sb) {
+      const { data, error } = await sb.from('sections').select('id').limit(1);
+      if (!error && Array.isArray(data)) dbOk = true;
+    }
+  } catch(e) {}
+
+  if (!dbOk) {
+    try {
+      if (typeof PRIVATIAN_SUPABASE_URL !== 'undefined' && typeof PRIVATIAN_SUPABASE_KEY !== 'undefined') {
+        const res = await fetch(`${PRIVATIAN_SUPABASE_URL}/rest/v1/sections?select=id&limit=1`, {
+          headers: {
+            'apikey': PRIVATIAN_SUPABASE_KEY,
+            'Authorization': 'Bearer ' + PRIVATIAN_SUPABASE_KEY
+          }
+        });
+        if (res.ok) dbOk = true;
+      }
+    } catch(e) {}
+  }
+
+  _isVerifyingDb = false;
+
+  if (dbOk) {
+    updateGlobalSyncStatus();
+    if (showToast) {
+      showToast('success', 'Database connection verified & synchronized ✓');
+    }
+  } else {
+    updateGlobalSyncStatus('error', 'Sync error (offline/cache)');
+    if (showToast) {
+      showToast('error', 'Database connection error. Working with local cache.');
+    }
+  }
 }
 
 // ── Page navigation ───────────────────────────────────────────

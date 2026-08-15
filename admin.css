@@ -113,6 +113,64 @@ body {
   margin-top: 1px;
 }
 
+/* Sidebar Database Sync Status Badge (Below The Privatian / Admin Panel) */
+.sidebar-sync-badge {
+  margin-top: 12px;
+  display: flex;
+  align-items: center;
+  gap: 7.5px;
+  padding: 5.5px 10px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  user-select: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.sidebar-sync-badge.synced {
+  background: rgba(34, 197, 94, 0.12);
+  color: #86efac;
+  border: 1px solid rgba(34, 197, 94, 0.3);
+}
+
+.sidebar-sync-badge.synced:hover {
+  background: rgba(34, 197, 94, 0.2);
+  border-color: rgba(34, 197, 94, 0.5);
+}
+
+.sidebar-sync-badge.unsaved {
+  background: rgba(234, 179, 8, 0.14);
+  color: #fde047;
+  border: 1px solid rgba(234, 179, 8, 0.35);
+}
+
+.sidebar-sync-badge.unsaved:hover {
+  background: rgba(234, 179, 8, 0.22);
+  border-color: rgba(234, 179, 8, 0.5);
+}
+
+.sidebar-sync-badge.syncing {
+  background: rgba(14, 165, 233, 0.14);
+  color: #7dd3fc;
+  border: 1px solid rgba(14, 165, 233, 0.35);
+}
+
+.sidebar-sync-badge.error {
+  background: rgba(239, 68, 68, 0.14);
+  color: #fca5a5;
+  border: 1px solid rgba(239, 68, 68, 0.35);
+}
+
+.sidebar-sync-badge .ft-pulse-dot {
+  width: 6.5px;
+  height: 6.5px;
+  flex-shrink: 0;
+}
+
 /* Nav */
 .sidebar-nav {
   flex: 1;

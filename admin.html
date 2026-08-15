@@ -28,6 +28,11 @@
           <span class="sidebar-logo-sub">Admin Panel</span>
         </div>
       </a>
+      <!-- GLOBAL DATABASE SYNC BADGE -->
+      <div id="global-sync-status-wrap" class="sidebar-sync-badge synced" title="Click to test live database connection" onclick="verifyDatabaseSync(false)">
+        <span class="ft-pulse-dot" id="global-status-dot"></span>
+        <span id="global-sync-status">Synced with database</span>
+      </div>
     </div>
 
     <nav class="sidebar-nav" aria-label="Admin navigation">
@@ -144,11 +149,6 @@
         </nav>
       </div>
       <div class="topbar-right" style="display:flex;align-items:center;gap:12px;">
-        <!-- GLOBAL DATABASE SYNC BADGE -->
-        <div id="global-sync-status-wrap" class="ft-header-badge synced" title="Database synchronization status">
-          <span class="ft-pulse-dot" id="global-status-dot"></span>
-          <span id="global-sync-status">Synced with database</span>
-        </div>
         <div id="topbar-actions" style="display:flex;align-items:center;gap:10px;">
           <!-- injected per page -->
         </div>
