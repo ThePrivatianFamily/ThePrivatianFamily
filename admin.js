@@ -303,10 +303,7 @@ function renderActive(active) {
       </td>
       <td>
         <div class="action-group">
-          <button class="action-btn action-btn--studio" data-id="${s.id}" title="Open Section Studio (Edit Info, Hero, &amp; Articles)" aria-label="Studio for ${escapeHtml(s.name)}" style="color:var(--brand-navy,#0a528e);">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-          </button>
-          <button class="action-btn action-btn--edit" data-id="${s.id}" title="Edit Section" aria-label="Edit ${escapeHtml(s.name)}">${ICONS.pencil}</button>
+          <button class="action-btn action-btn--edit" data-id="${s.id}" title="Edit Section &amp; Layout" aria-label="Edit ${escapeHtml(s.name)}">${ICONS.pencil}</button>
           ${!isPermanent ? `
             <button class="action-btn action-btn--delete" data-id="${s.id}" title="Move to trash" aria-label="Delete ${escapeHtml(s.name)}">${ICONS.trash}</button>
           ` : `
@@ -319,7 +316,7 @@ function renderActive(active) {
   });
 
   // Bind row actions
-  sectionsTable.querySelectorAll('.action-btn--studio, .action-btn--edit').forEach(btn => {
+  sectionsTable.querySelectorAll('.action-btn--edit').forEach(btn => {
     btn.addEventListener('click', () => openSectionStudio(btn.dataset.id));
   });
   sectionsTable.querySelectorAll('.action-btn--delete').forEach(btn => {
@@ -816,11 +813,11 @@ function renderStudioArticlesTable(articlesList) {
             <a href="${artUrl}" target="_blank" class="action-btn" title="View Public Article" style="font-size:12px;text-decoration:none;display:inline-flex;align-items:center;padding:4px 6px;">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
             </a>
-            <button type="button" class="action-btn" title="Set as Hero Story" onclick="makeStudioHero('${a.id}')" style="color:#d97706;padding:4px 6px;">
-              ★
+            <button type="button" class="action-btn" title="Set as Hero Story" onclick="makeStudioHero('${a.id}')" style="color:#d97706;padding:4px 6px;display:inline-flex;align-items:center;">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
             </button>
-            <button type="button" class="action-btn" title="Pin to Slot 1" onclick="pinStudioSlot('${a.id}', 1)" style="font-size:10.5px;font-weight:700;padding:3px 6px;border:1px solid #cbd5e1;border-radius:4px;">
-              +Slot 1
+            <button type="button" class="action-btn" title="Pin to Slot 1" onclick="pinStudioSlot('${a.id}', 1)" style="font-size:11px;font-weight:600;padding:3px 7px;border:1px solid #cbd5e1;border-radius:4px;color:var(--brand-navy,#0a528e);">
+              Slot 1
             </button>
           </div>
         </td>
@@ -861,6 +858,46 @@ function pinStudioSlot(articleId, slotNum) {
   }
   switchStudioTab('layout');
   showToast('success', `Article pinned to Slot ${slotNum}.`);
+}
+
+async function lookupHeroArticleById(rawInput) {
+  const id = (rawInput || '').trim();
+  if (!id) {
+    showToast('info', 'Please enter an Article ID.');
+    return;
+  }
+
+  await loadAllArticlesForStudio();
+  let art = _studioAllArticles.find(a => a.id === id || a.slug === id);
+
+  if (!art) {
+    try {
+      const direct = await _apiGet(`/api/articles?id=${encodeURIComponent(id)}`);
+      if (direct && direct.id) {
+        art = direct;
+        _studioAllArticles.push(art);
+      }
+    } catch(e) {}
+  }
+
+  if (!art) {
+    showToast('error', `Article with ID "${id}" was not found.`);
+    return;
+  }
+
+  const heroSelect = document.getElementById('studio-hero-select');
+  if (heroSelect) {
+    let opt = heroSelect.querySelector(`option[value="${art.id}"]`);
+    if (!opt) {
+      opt = document.createElement('option');
+      opt.value = art.id;
+      opt.textContent = `${art.title || 'Untitled'} (${art.author || 'Author'})`;
+      heroSelect.appendChild(opt);
+    }
+    heroSelect.value = art.id;
+    updateStudioHeroPreview(art.id);
+  }
+  showToast('success', `Applied Hero Featured Story: "${art.title || art.id}".`);
 }
 
 async function saveSectionStudio() {
