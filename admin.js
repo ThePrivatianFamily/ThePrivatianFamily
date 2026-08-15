@@ -912,7 +912,7 @@ async function saveSectionStudio() {
     showToast('success', `Section "${newName}" and website layout saved successfully.`);
 
     // Refresh sections list
-    await loadSections();
+    await loadSectionsFromAPI();
   } catch(e) {
     updateGlobalSyncStatus('error', 'Sync error');
     showToast('error', 'Failed to save section changes: ' + e.message);
@@ -923,6 +923,10 @@ async function saveSectionStudio() {
     }
   }
 }
+
+// Alias helper
+const loadSections = loadSectionsFromAPI;
+window.loadSections = loadSectionsFromAPI;
 
 function showModalError(msg) {
   modalError.textContent = msg;
