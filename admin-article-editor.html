@@ -2251,6 +2251,8 @@ function restoreLocal() {
 function discardLocal() {
   localStorage.removeItem(lsKey());
   g('restore-banner').classList.remove('show');
+}
+
 // ── AUDIT LOGGING HELPER ─────────────────────────────────────────
 function recordActivityLog({ action, category, summary, target_id, target_name, details = {} }) {
   const user = window.PRIVATIAN_USER || (window.getPrivatianSession && window.getPrivatianSession()) || {};
