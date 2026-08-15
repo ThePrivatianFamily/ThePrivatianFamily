@@ -490,9 +490,10 @@ body{padding-bottom:34px}
 :root{--drawer:320px}
 #sd{position:fixed;top:calc(var(--tb) + var(--fmt));right:0;bottom:34px;
   width:var(--drawer);background:#fff;border-left:1px solid var(--border);
-  z-index:700;transform:translateX(100%);transition:transform .25s cubic-bezier(.4,0,.2,1);
+  z-index:700;transform:translateX(100%);visibility:hidden;
+  transition:transform .25s cubic-bezier(.4,0,.2,1), visibility .25s;
   display:flex;flex-direction:column;overflow:hidden;box-shadow:-4px 0 16px rgba(0,0,0,.06)}
-#sd.open{transform:translateX(0)}
+#sd.open{transform:translateX(0);visibility:visible}
 .sd-scroll{flex:1;overflow-y:auto}
 .sd-sec{border-bottom:1px solid var(--border)}
 .sd-sec-hd{display:flex;align-items:center;justify-content:space-between;
@@ -640,19 +641,22 @@ body.zen-mode #zen-exit-btn {
 #toc-drawer {
   position: fixed;
   top: calc(var(--tb) + var(--fmt));
-  left: -300px;
+  left: 0;
   width: 300px;
   bottom: 0;
   background: #ffffff;
   border-right: 1.5px solid var(--border);
   box-shadow: 6px 0 28px rgba(0,0,0,0.08);
   z-index: 850;
-  transition: left 0.26s cubic-bezier(0.16, 1, 0.3, 1);
+  transform: translateX(-100%);
+  visibility: hidden;
+  transition: transform 0.26s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.26s;
   display: flex;
   flex-direction: column;
 }
 #toc-drawer.open {
-  left: 0;
+  transform: translateX(0);
+  visibility: visible;
 }
 .toc-head {
   display: flex;
@@ -834,6 +838,121 @@ kbd {
    Seamless fluid experience from 320px mobile to 4K desktop
 ═════════════════════════════════════════════════════════════════ */
 
+/* Global Toolbar layout */
+#tb {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: var(--tb);
+  z-index: 1000;
+  background: var(--dark);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  box-shadow: 0 2px 16px rgba(0,0,0,.3), 0 1px 0 rgba(255,255,255,.05);
+  box-sizing: border-box;
+}
+
+.tb-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.tb-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.tb-btn {
+  font: 600 12px/1 var(--sans);
+  border: none;
+  border-radius: 6px;
+  height: 32px;
+  padding: 0 12px;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all .15s ease;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  box-sizing: border-box;
+}
+
+.tb-more-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.tb-more-btn {
+  padding: 0 8px !important;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.15);
+  color: #fff;
+}
+.tb-more-btn:hover {
+  background: rgba(255,255,255,0.16);
+}
+
+.tb-more-dd {
+  display: none;
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  background: #ffffff;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.18);
+  min-width: 200px;
+  z-index: 1200;
+  overflow: hidden;
+  padding: 6px 0;
+}
+.tb-more-dd.open {
+  display: block;
+  animation: ddFadeIn 0.15s ease;
+}
+@keyframes ddFadeIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.tb-more-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 14px;
+  border: none;
+  background: transparent;
+  font: 600 12.5px/1 var(--sans);
+  color: #334155;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.12s ease;
+}
+.tb-more-item:hover {
+  background: #f1f5f9;
+  color: var(--navy);
+}
+.tb-more-item svg {
+  color: #64748b;
+  flex-shrink: 0;
+}
+
+/* Visibility classes */
+.tb-desktop-only { display: inline-flex !important; }
+.tb-mobile-only { display: none !important; }
+.tb-mobile-icon { display: none !important; }
+
 /* Smooth touch scrolling & scrollbar styling */
 #tb, #fmt, .sd-scroll, .toc-list, .pm-body {
   -webkit-overflow-scrolling: touch;
@@ -847,6 +966,79 @@ kbd {
 /* Base interactive ergonomics */
 button, input, select, textarea, [contenteditable] {
   touch-action: manipulation;
+}
+
+/* Formatting Bar standard height */
+#fmt {
+  position: fixed;
+  top: var(--tb);
+  left: 0;
+  right: 0;
+  height: var(--fmt);
+  z-index: 900;
+  background: #fff;
+  border-bottom: 1.5px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  padding: 0 14px;
+  box-shadow: 0 2px 8px rgba(0,0,0,.05);
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+#fmt::-webkit-scrollbar { display: none; }
+
+#fmt-block {
+  font: 600 12px/1 var(--sans);
+  color: var(--text);
+  background: #f8fafc;
+  border: 1px solid #dde4ea;
+  border-radius: 6px;
+  height: 32px;
+  padding: 0 8px;
+  cursor: pointer;
+  outline: none;
+  margin-right: 4px;
+  transition: .12s;
+  box-sizing: border-box;
+}
+
+.fb {
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  min-height: 32px;
+  border: none;
+  border-radius: 6px;
+  background: none;
+  cursor: pointer;
+  color: #4a5568;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font: 600 13px/1 var(--sans);
+  transition: .12s;
+  position: relative;
+  box-sizing: border-box;
+}
+
+.fmt-hist {
+  display: inline-flex;
+  align-items: center;
+  background: #f8fafc;
+  border: 1.5px solid #d5dfe8;
+  border-radius: 6px;
+  height: 32px;
+  padding: 1px;
+  margin-right: 4px;
+  box-sizing: border-box;
+}
+.fmt-hist .fb {
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
+  min-height: 28px;
 }
 
 /* ── TABLET BREAKPOINT (<= 1024px) ────────────────────────────── */
@@ -866,126 +1058,89 @@ button, input, select, textarea, [contenteditable] {
   }
 }
 
-/* ── INTERMEDIATE BREAKPOINT (<= 860px) ───────────────────────── */
+/* ── RESPONSIVE BREAKPOINT (<= 860px) ─────────────────────────── */
 @media (max-width: 860px) {
   :root {
     --tb: 48px;
     --fmt: 44px;
-  }
-  body {
-    padding-top: calc(var(--tb) + var(--fmt));
-  }
-  #tb {
-    padding: 0 10px;
-    gap: 6px;
-    overflow-x: auto;
-    white-space: nowrap;
-  }
-  .tb-back {
-    padding: 6px 8px;
-    font-size: 11px;
-  }
-  .tb-slug-g {
-    flex: initial;
-  }
-  #tb-slug {
-    width: 130px;
-    padding: 4px 7px;
-    font-size: 11.5px;
-  }
-  .tb-btn {
-    padding: 6px 10px;
-    font-size: 11.5px;
-  }
-  .ed-sync-badge {
-    padding: 3.5px 8px;
-    font-size: 10.5px;
-  }
-  #fmt {
-    overflow-x: auto;
-    white-space: nowrap;
-    padding: 0 8px;
-    gap: 2px;
-  }
-  .fb {
-    width: 32px;
-    height: 32px;
-    min-width: 32px;
-  }
-  .fs {
-    margin: 0 3px;
-  }
-}
-
-/* ── MOBILE BREAKPOINT (<= 640px) ─────────────────────────────── */
-@media (max-width: 640px) {
-  :root {
-    --tb: 48px;
-    --fmt: 46px;
     --col: 100vw;
   }
   body {
     padding-top: calc(var(--tb) + var(--fmt));
     padding-bottom: max(38px, env(safe-area-inset-bottom));
+    overflow-x: hidden;
   }
 
-  /* Admin Toolbar on Mobile */
+  /* Toggle desktop/mobile topbar elements */
+  .tb-desktop-only { display: none !important; }
+  .tb-mobile-only { display: inline-flex !important; }
+  .tb-btn-lbl { display: none !important; }
+  .tb-mobile-icon { display: inline-block !important; }
+
   #tb {
-    padding: 0 8px;
-    gap: 5px;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
+    padding: 0 10px;
   }
-  .tb-lbl {
-    display: none;
-  }
-  #tb-slug {
-    width: 100px;
+  .tb-back {
+    padding: 6px 8px;
     font-size: 11px;
+    gap: 4px;
   }
-  .tb-id-pill {
-    padding: 3px 6px;
-    font-size: 10px;
+  .tb-badge {
+    padding: 3px 7px;
+    font-size: 8.5px;
+  }
+  .ed-sync-badge {
+    padding: 4px 6px;
   }
   .ed-sync-badge #art-sync-status {
     display: none;
   }
-  .ed-sync-badge {
-    padding: 5px 6px;
-  }
   .tb-btn {
-    padding: 6px 9px;
+    padding: 0 8px;
+    height: 30px;
     font-size: 11px;
-    gap: 3px;
+  }
+  .tb-btn.tb-settings, .tb-btn.tb-preview {
+    padding: 0 8px;
+  }
+  .tb-btn.tb-save {
+    padding: 0 10px;
+    background: #0a528e;
+  }
+  .tb-btn.tb-pub {
+    padding: 0 10px;
+    background: #1a7a4a;
   }
 
-  /* Formatting Bar on Mobile */
+  /* Formatting Bar */
   #fmt {
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
     padding: 0 8px;
     gap: 2px;
   }
   #fmt-block {
-    padding: 4px 6px;
+    height: 30px;
     font-size: 11px;
-    min-width: 95px;
-    margin-right: 3px;
+    padding: 0 5px;
   }
   .fb {
-    width: 34px;
-    height: 34px;
-    min-width: 34px;
-    font-size: 13px;
+    width: 30px;
+    height: 30px;
+    min-width: 30px;
+    min-height: 30px;
+  }
+  .fmt-hist {
+    height: 30px;
   }
   .fmt-hist .fb {
-    width: 28px;
-    height: 28px;
+    width: 26px;
+    height: 26px;
+    min-width: 26px;
+    min-height: 26px;
   }
 
-  /* Main Canvas on Mobile */
+  /* Canvas on mobile */
   #canvas {
-    margin: 0 0 40px;
+    margin: 8px 0 50px;
     border-radius: 0;
     box-shadow: none;
     max-width: 100%;
@@ -995,22 +1150,22 @@ button, input, select, textarea, [contenteditable] {
     padding: 20px 16px 16px;
   }
   .ed-h1 {
-    font-size: clamp(22px, 6.2vw, 30px);
-    line-height: 1.2;
+    font-size: clamp(22px, 6.5vw, 30px);
+    line-height: 1.22;
     margin-bottom: 10px;
   }
   .ed-deck {
-    font-size: clamp(14px, 4vw, 17px);
+    font-size: clamp(14px, 4vw, 16px);
     line-height: 1.5;
-    margin-bottom: 16px;
+    margin-bottom: 14px;
   }
   .ed-meta {
-    padding-top: 14px;
-    font-size: 12px;
+    padding-top: 12px;
+    font-size: 11.5px;
     gap: 2px 4px;
   }
 
-  /* Featured image card on mobile */
+  /* Inline featured image card */
   .ed-feat-card {
     padding: 16px 16px;
   }
@@ -1023,10 +1178,10 @@ button, input, select, textarea, [contenteditable] {
   .ed-feat-drop-title {
     justify-content: center;
     flex-wrap: wrap;
-    font-size: 14px;
+    font-size: 13.5px;
   }
   .ed-feat-drop-sub {
-    font-size: 11.5px;
+    font-size: 11px;
   }
   .ed-feat-img-container {
     max-height: 220px;
@@ -1063,203 +1218,127 @@ button, input, select, textarea, [contenteditable] {
     padding: 8px 10px;
   }
 
-  /* Body Rich Text Editor on Mobile */
+  /* Rich Text Body */
   #ed-body {
     padding: 20px 16px 36px;
   }
   #ed-rt {
-    font-size: 17px;
-    line-height: 1.72;
+    font-size: 16.5px;
+    line-height: 1.7;
     min-height: 260px;
   }
-  #ed-rt p {
-    margin: 0 0 1.3em;
-  }
   #ed-rt h2 {
-    font-size: 23px;
+    font-size: 22px;
     line-height: 1.25;
-    margin: 1.8em 0 .5em;
-    padding-top: 1em;
+    margin: 1.6em 0 .4em;
+    padding-top: .8em;
   }
   #ed-rt h3 {
-    font-size: 19px;
+    font-size: 18px;
     line-height: 1.3;
-    margin: 1.5em 0 .4em;
+    margin: 1.4em 0 .4em;
   }
   #ed-rt h4 {
     font-size: 13px;
-    margin: 1.4em 0 .4em;
+    margin: 1.2em 0 .4em;
   }
   #ed-rt blockquote {
-    margin: 1.8em 0;
-    padding: 20px 16px 20px 48px;
+    margin: 1.6em 0;
+    padding: 18px 14px 18px 44px;
   }
   #ed-rt blockquote::before {
-    font-size: 60px;
-    left: 10px;
+    font-size: 54px;
+    left: 8px;
     top: -6px;
   }
   #ed-rt blockquote::after {
-    font-size: 60px;
-    right: 10px;
-    bottom: -22px;
+    font-size: 54px;
+    right: 8px;
+    bottom: -20px;
   }
   #ed-rt blockquote p {
-    font-size: 16.5px;
-    line-height: 1.6;
+    font-size: 16px;
+    line-height: 1.55;
   }
   #ed-rt blockquote.featured {
-    padding: 20px 16px 20px 52px;
+    padding: 18px 14px 18px 48px;
   }
   #ed-rt blockquote.featured::before {
-    font-size: 58px;
-    left: 10px;
+    font-size: 52px;
+    left: 8px;
   }
   #ed-rt blockquote.featured::after {
-    font-size: 58px;
-    right: 10px;
+    font-size: 52px;
+    right: 8px;
   }
   #ed-rt blockquote.featured p {
-    font-size: 16.5px;
-    line-height: 1.62;
+    font-size: 16px;
+    line-height: 1.58;
   }
   .ed-callout {
-    padding: 14px 14px;
-    font-size: 14px;
-    margin: 1.4em 0;
+    padding: 12px 14px;
+    font-size: 13.5px;
+    margin: 1.3em 0;
     gap: 8px;
   }
-  .ed-callout-icon {
-    font-size: 16px;
-  }
-  #ed-rt pre {
-    padding: 14px 16px;
-    font-size: 12.5px;
-    margin: 1.5em 0;
-  }
 
-  /* Bio card on Mobile */
+  /* Author bio */
   #ed-bio {
     padding: 16px 16px 28px;
   }
   .bio-card {
-    grid-template-columns: 50px 1fr;
+    grid-template-columns: 48px 1fr;
     gap: 12px;
-    padding: 16px 14px;
+    padding: 14px 12px;
   }
-  #author-photo-zone {
-    width: 50px;
-    height: 50px;
-  }
-  #author-photo-svg, #author-photo-img {
-    width: 50px;
-    height: 50px;
-  }
-  .bio-name {
-    font-size: 14px;
-  }
-  .bio-role {
-    font-size: 11.5px;
-  }
-  .bio-desc {
-    font-size: 12.5px;
-    line-height: 1.5;
+  #author-photo-zone, #author-photo-svg, #author-photo-img {
+    width: 48px;
+    height: 48px;
   }
 
-  /* Drawers on Mobile (Full Screen / Slide Over) */
+  /* Drawers on Mobile */
   #sd {
     top: 0;
     bottom: 0;
-    width: 100%;
-    max-width: 100vw;
+    right: 0;
+    width: min(340px, 100vw);
     z-index: 1500;
     border-left: none;
-    box-shadow: none;
+    box-shadow: -8px 0 32px rgba(0,0,0,0.25);
   }
   #toc-drawer {
     top: 0;
     bottom: 0;
-    width: 88vw;
-    max-width: 320px;
+    left: 0;
+    width: min(320px, 85vw);
     z-index: 1500;
-  }
-  .sd-sec-hd {
-    padding: 14px 16px;
-  }
-  .sd-inp, .sd-field input, .sd-field textarea {
-    font-size: 15px !important; /* Prevents auto-zoom on iOS */
+    border-right: none;
+    box-shadow: 8px 0 32px rgba(0,0,0,0.25);
   }
 
-  /* Popovers & Modals on Mobile */
+  /* Popovers */
   #lp {
     width: calc(100vw - 24px) !important;
     max-width: 320px;
     left: 12px !important;
-    right: 12px !important;
   }
   .cp-popover {
     width: calc(100vw - 24px) !important;
     max-width: 280px;
     left: 12px !important;
-    right: 12px !important;
-  }
-  #pub-modal {
-    width: 94vw;
-    max-width: 420px;
-    border-radius: 12px;
-  }
-  .pm-head, .pm-body, .pm-foot {
-    padding-left: 16px;
-    padding-right: 16px;
-  }
-  .shortcuts-modal-box {
-    width: 94vw;
-    border-radius: 12px;
-    max-height: 85vh;
-  }
-  .shortcuts-grid {
-    padding: 16px;
-    gap: 14px;
-  }
-
-  /* Metrics bar on Mobile */
-  #metrics-bar {
-    height: calc(34px + env(safe-area-inset-bottom));
-    padding-bottom: env(safe-area-inset-bottom);
-    gap: 10px;
-    font-size: 11px;
-  }
-
-  /* Floating selection toolbar */
-  #sel-tb {
-    padding: 4px 6px;
-  }
-  .stb {
-    width: 32px;
-    height: 30px;
-  }
-
-  /* Toast notification */
-  #toast {
-    right: 12px;
-    left: 12px;
-    bottom: calc(44px + env(safe-area-inset-bottom));
-    max-width: calc(100vw - 24px);
   }
 }
 
-/* ── SMALL MOBILE (<= 380px) ──────────────────────────────────── */
-@media (max-width: 380px) {
-  #tb-slug {
-    width: 80px;
+/* ── SMALL MOBILE (<= 400px) ──────────────────────────────────── */
+@media (max-width: 400px) {
+  .tb-back-txt {
+    display: none;
   }
   .tb-back {
-    padding: 5px 6px;
-    font-size: 10px;
+    padding: 6px 6px;
   }
-  .tb-btn {
-    padding: 5px 7px;
-    font-size: 10.5px;
+  .tb-badge {
+    display: none;
   }
   .bio-card {
     grid-template-columns: 1fr;
@@ -1273,52 +1352,92 @@ button, input, select, textarea, [contenteditable] {
 
 <!-- ═══ ADMIN TOOLBAR ════════════════════════════════════════════ -->
 <div id="tb">
-  <a href="admin.html#articles" class="tb-back">
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
-    Articles
-  </a>
-  <div class="tb-vr"></div>
-  <div class="tb-slug-g">
-    <span class="tb-lbl">Slug</span>
-    <input type="text" id="tb-slug" placeholder="article-slug" />
+  <!-- Left: Navigation, Slug & Status -->
+  <div class="tb-left">
+    <a href="admin.html#articles" class="tb-back" title="Back to Articles">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+      <span class="tb-back-txt">Articles</span>
+    </a>
+    <div class="tb-vr tb-desktop-only"></div>
+    <div class="tb-slug-g tb-desktop-only">
+      <span class="tb-lbl">Slug</span>
+      <input type="text" id="tb-slug" placeholder="article-slug" oninput="syncSlug(this.value, 'tb'); DIRTY=true;" />
+    </div>
+    <div class="tb-vr tb-desktop-only"></div>
+    <span class="tb-badge draft" id="tb-badge">● Draft</span>
+    <!-- ARTICLE UNIQUE ID PILL (Desktop) -->
+    <div id="tb-art-id-pill" class="tb-id-pill tb-desktop-only" onclick="copyArticleId()" title="Click to copy permanent Article Unique ID">
+      <span style="opacity:0.6;font-size:9.5px;text-transform:uppercase;">ID:</span>
+      <span id="tb-art-id-txt" style="font-family:monospace;">...</span>
+      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+    </div>
+    <!-- DATABASE SYNC BADGE -->
+    <div id="art-sync-status-wrap" class="ed-sync-badge synced" title="Click to test live database connection" onclick="verifyEditorDbSync(true)">
+      <span class="ft-pulse-dot" id="art-status-dot"></span>
+      <span id="art-sync-status">Saved</span>
+    </div>
   </div>
-  <div class="tb-vr"></div>
-  <span class="tb-badge draft" id="tb-badge">● Draft</span>
-  <!-- ARTICLE UNIQUE ID PILL -->
-  <div id="tb-art-id-pill" class="tb-id-pill" onclick="copyArticleId()" title="Click to copy permanent Article Unique ID">
-    <span style="opacity:0.6;font-size:9.5px;text-transform:uppercase;">ID:</span>
-    <span id="tb-art-id-txt" style="font-family:monospace;">...</span>
-    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+
+  <!-- Right: Action Buttons -->
+  <div class="tb-right">
+    <!-- Desktop-only helper tools -->
+    <button class="tb-btn tb-preview tb-desktop-only" id="tb-zen-btn" onclick="toggleZenMode()" title="Distraction-Free Focus Mode (Ctrl+Shift+F)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
+      <span>Focus</span>
+    </button>
+    <button class="tb-btn tb-preview tb-desktop-only" id="tb-toc-btn" onclick="toggleTocDrawer()" title="Article Headings Outline">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+      <span>Outline</span>
+    </button>
+    <button class="tb-btn tb-preview tb-desktop-only" onclick="openShortcutsModal()" title="Keyboard Shortcuts Cheat Sheet" style="padding:0 8px;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+    </button>
+    <div class="tb-vr tb-desktop-only"></div>
+
+    <!-- Common Actions (Mobile + Desktop) -->
+    <button class="tb-btn tb-settings" id="sd-toggle" onclick="toggleDrawer()" title="Article Settings">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      <span class="tb-btn-lbl">Settings</span>
+    </button>
+    <button class="tb-btn tb-preview" onclick="previewArt()" title="Preview Article">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="tb-mobile-icon"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+      <span class="tb-btn-lbl">Preview</span>
+    </button>
+    <button class="tb-btn tb-save" id="tb-save-btn" onclick="saveArt()" title="Save Draft">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" class="tb-mobile-icon"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+      <span class="tb-btn-lbl-save">Save</span>
+    </button>
+    <button class="tb-btn tb-pub" id="tb-pub-btn" onclick="pubArt()" title="Publish Article">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" class="tb-mobile-icon"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+      <span class="tb-btn-lbl-pub">Publish</span>
+    </button>
+    <button class="tb-btn tb-unpub" id="tb-unpub-btn" onclick="unpubArt()" style="display:none;" title="Unpublish this article">Unpublish</button>
+
+    <!-- Mobile More Menu (⋯) Dropdown Toggle -->
+    <div class="tb-more-wrap tb-mobile-only" id="tb-more-wrap">
+      <button type="button" class="tb-btn tb-more-btn" id="tb-more-btn" onclick="toggleMoreMenu(event)" title="More Actions">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/><circle cx="5" cy="12" r="1.5"/></svg>
+      </button>
+      <div class="tb-more-dd" id="tb-more-dd" onclick="event.stopPropagation()">
+        <button type="button" class="tb-more-item" onclick="toggleZenMode(); closeMoreMenu();">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
+          Focus / Zen Mode
+        </button>
+        <button type="button" class="tb-more-item" onclick="toggleTocDrawer(); closeMoreMenu();">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+          Article Outline
+        </button>
+        <button type="button" class="tb-more-item" onclick="openShortcutsModal(); closeMoreMenu();">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          Keyboard Shortcuts
+        </button>
+        <button type="button" class="tb-more-item" onclick="copyArticleId(); closeMoreMenu();">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          Copy Article Unique ID
+        </button>
+      </div>
+    </div>
   </div>
-  <!-- DATABASE SYNC BADGE IN ARTICLE EDITOR -->
-  <div id="art-sync-status-wrap" class="ed-sync-badge synced" title="Click to test live database connection" onclick="verifyEditorDbSync(true)">
-    <span class="ft-pulse-dot" id="art-status-dot"></span>
-    <span id="art-sync-status">Synced with database</span>
-  </div>
-  <div class="tb-vr"></div>
-  <!-- ZEN FOCUS MODE BUTTON -->
-  <button class="tb-btn tb-preview" id="tb-zen-btn" onclick="toggleZenMode()" title="Distraction-Free Focus Mode (Ctrl+Shift+F)" style="display:flex;align-items:center;gap:5px;">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
-    Focus
-  </button>
-  <!-- OUTLINE / TOC BUTTON -->
-  <button class="tb-btn tb-preview" id="tb-toc-btn" onclick="toggleTocDrawer()" title="Article Headings Outline" style="display:flex;align-items:center;gap:5px;">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
-    Outline
-  </button>
-  <!-- SHORTCUTS HELPER BUTTON -->
-  <button class="tb-btn tb-preview" onclick="openShortcutsModal()" title="Keyboard Shortcuts Cheat Sheet" style="padding:7px 10px;">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-  </button>
-  <div class="tb-vr"></div>
-  <button class="tb-btn tb-settings" id="sd-toggle" onclick="toggleDrawer()" title="Article Settings">
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-    Settings
-  </button>
-  <button class="tb-btn tb-preview" onclick="previewArt()">Preview</button>
-  <button class="tb-btn tb-save" id="tb-save-btn" onclick="saveArt()">Save Draft</button>
-  <button class="tb-btn tb-pub" id="tb-pub-btn" onclick="pubArt()">Publish</button>
-  <button class="tb-btn tb-unpub" id="tb-unpub-btn" onclick="unpubArt()" style="display:none;" title="Unpublish this article from the live website">Unpublish</button>
 </div>
 
 <!-- ═══ FORMAT BAR ═══════════════════════════════════════════════ -->
@@ -2693,6 +2812,17 @@ function closeAllDrawers() {
   if (bd) bd.style.display = 'none';
 }
 
+function toggleMoreMenu(e) {
+  if (e) e.stopPropagation();
+  const dd = g('tb-more-dd');
+  if (dd) dd.classList.toggle('open');
+}
+
+function closeMoreMenu() {
+  const dd = g('tb-more-dd');
+  if (dd) dd.classList.remove('open');
+}
+
 function toggleSdSec(id) {
   g(id).classList.toggle('collapsed');
 }
@@ -3161,6 +3291,10 @@ function globalClick(e) {
   const cp = g('cp-popover');
   if (cp && !cp.contains(e.target) && !e.target.closest('#btn-fc-txt, #btn-fc-hl')) {
     closeColorPopover();
+  }
+  // Close topbar more menu if click outside
+  if (!g('tb-more-wrap')?.contains(e.target)) {
+    closeMoreMenu();
   }
 }
 

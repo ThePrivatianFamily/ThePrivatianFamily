@@ -143,18 +143,26 @@
     </div>
   </aside>
 
-  <!-- â•â• MAIN CONTENT â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+  <!-- ═══ SIDEBAR BACKDROP (MOBILE) ═════════════════════════════ -->
+  <div id="admin-sidebar-backdrop" onclick="toggleAdminSidebar(false)"></div>
+
+  <!-- ═══ MAIN CONTENT ═════════════════════════════════════════════ -->
   <main class="main-content" id="main-content">
 
     <!-- TOP BAR -->
     <header class="topbar">
-      <div class="topbar-left">
-        <h1 class="topbar-title" id="page-title">Sections</h1>
-        <nav class="breadcrumb" aria-label="Breadcrumb">
-          <span>Admin</span>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><polyline points="9 18 15 12 9 6"/></svg>
-          <span id="breadcrumb-current">Sections</span>
-        </nav>
+      <div class="topbar-left" style="display:flex;align-items:center;gap:12px;">
+        <button type="button" class="sidebar-mobile-toggle" id="sidebar-mobile-toggle" onclick="toggleAdminSidebar(event)" aria-label="Toggle Navigation">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        </button>
+        <div>
+          <h1 class="topbar-title" id="page-title">Sections</h1>
+          <nav class="breadcrumb" aria-label="Breadcrumb">
+            <span>Admin</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><polyline points="9 18 15 12 9 6"/></svg>
+            <span id="breadcrumb-current">Sections</span>
+          </nav>
+        </div>
       </div>
       <div class="topbar-right" style="display:flex;align-items:center;gap:12px;">
         <div id="topbar-actions" style="display:flex;align-items:center;gap:10px;">
