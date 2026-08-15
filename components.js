@@ -239,9 +239,17 @@
       <a href="index.html" class="site-logo" id="site-logo-link" aria-label="The Privatian Family - Home">
         ${HEADER_LOGO_SVG}
       </a>
-      <nav class="main-nav" id="main-nav" aria-label="Main navigation">
-        <ul class="nav-list" id="main-nav-list"></ul>
-      </nav>
+      <div class="main-nav-wrapper" id="main-nav-wrapper">
+        <button type="button" class="nav-scroll-btn nav-scroll-left" id="nav-scroll-left" aria-label="Scroll navigation left" style="display:none;">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+        </button>
+        <nav class="main-nav" id="main-nav" aria-label="Main navigation">
+          <ul class="nav-list" id="main-nav-list"></ul>
+        </nav>
+        <button type="button" class="nav-scroll-btn nav-scroll-right" id="nav-scroll-right" aria-label="Scroll navigation right" style="display:none;">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+        </button>
+      </div>
       <div class="header-actions">
         <!-- Language Switcher Toggle -->
         <div class="header-lang-toggle" id="header-lang-toggle" role="group" aria-label="Language selection">
@@ -262,7 +270,15 @@
     </div>
   </header>
   <div class="sub-header" id="sub-header">
-    <div class="sub-header-inner" id="sub-header-inner"></div>
+    <div class="sub-header-wrapper" id="sub-header-wrapper">
+      <button type="button" class="sub-scroll-btn sub-scroll-left" id="sub-scroll-left" aria-label="Scroll sub-navigation left" style="display:none;">
+        <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+      </button>
+      <div class="sub-header-inner" id="sub-header-inner"></div>
+      <button type="button" class="sub-scroll-btn sub-scroll-right" id="sub-scroll-right" aria-label="Scroll sub-navigation right" style="display:none;">
+        <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+      </button>
+    </div>
   </div>
 
   <!-- SEARCH OVERLAY -->
@@ -480,6 +496,164 @@
     });
     var subHeader = document.getElementById('sub-header');
     if (subHeader) subHeader.style.display = count === 0 ? 'none' : '';
+    initSubHeaderScroll();
+  }
+
+  // ── 2b-ii. FLEXIBLE SCROLL CONTROLLERS FOR HEADER NAV & SUBHEADER ──
+  function updateNavScrollControls() {
+    var wrapper = document.getElementById('main-nav-wrapper');
+    var nav = document.getElementById('main-nav');
+    var leftBtn = document.getElementById('nav-scroll-left');
+    var rightBtn = document.getElementById('nav-scroll-right');
+    var list = document.getElementById('main-nav-list');
+    if (!nav || !wrapper) return;
+
+    var scrollLeft = nav.scrollLeft;
+    var maxScroll = Math.max(0, nav.scrollWidth - nav.clientWidth);
+    var hasOverflow = maxScroll > 2;
+
+    if (list) {
+      if (hasOverflow) {
+        list.classList.add('is-overflowing');
+      } else {
+        list.classList.remove('is-overflowing');
+      }
+    }
+
+    if (leftBtn) {
+      if (hasOverflow && scrollLeft > 3) {
+        leftBtn.style.display = 'flex';
+        wrapper.classList.add('has-overflow-left');
+      } else {
+        leftBtn.style.display = 'none';
+        wrapper.classList.remove('has-overflow-left');
+      }
+    }
+
+    if (rightBtn) {
+      if (hasOverflow && scrollLeft < maxScroll - 3) {
+        rightBtn.style.display = 'flex';
+        wrapper.classList.add('has-overflow-right');
+      } else {
+        rightBtn.style.display = 'none';
+        wrapper.classList.remove('has-overflow-right');
+      }
+    }
+  }
+
+  function handleNavWheel(e) {
+    var nav = document.getElementById('main-nav');
+    if (!nav) return;
+    if (nav.scrollWidth > nav.clientWidth) {
+      if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
+        e.preventDefault();
+        nav.scrollLeft += e.deltaY;
+        updateNavScrollControls();
+      }
+    }
+  }
+
+  function initNavScroll() {
+    var nav = document.getElementById('main-nav');
+    var leftBtn = document.getElementById('nav-scroll-left');
+    var rightBtn = document.getElementById('nav-scroll-right');
+    if (!nav) return;
+
+    if (leftBtn && !leftBtn._bound) {
+      leftBtn._bound = true;
+      leftBtn.onclick = function(e) {
+        e.preventDefault();
+        nav.scrollBy({ left: -160, behavior: 'smooth' });
+        setTimeout(updateNavScrollControls, 200);
+      };
+    }
+    if (rightBtn && !rightBtn._bound) {
+      rightBtn._bound = true;
+      rightBtn.onclick = function(e) {
+        e.preventDefault();
+        nav.scrollBy({ left: 160, behavior: 'smooth' });
+        setTimeout(updateNavScrollControls, 200);
+      };
+    }
+
+    nav.removeEventListener('scroll', updateNavScrollControls);
+    nav.addEventListener('scroll', updateNavScrollControls, { passive: true });
+
+    nav.removeEventListener('wheel', handleNavWheel);
+    nav.addEventListener('wheel', handleNavWheel, { passive: false });
+
+    // Scroll active link into view if offscreen
+    var activeLink = nav.querySelector('.nav-link.active, .nav-link--active');
+    if (activeLink) {
+      try {
+        var nRect = nav.getBoundingClientRect();
+        var aRect = activeLink.getBoundingClientRect();
+        if (aRect.left < nRect.left || aRect.right > nRect.right) {
+          activeLink.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+        }
+      } catch(e) {}
+    }
+
+    setTimeout(updateNavScrollControls, 50);
+    setTimeout(updateNavScrollControls, 250);
+  }
+
+  function updateSubHeaderScrollControls() {
+    var wrapper = document.getElementById('sub-header-wrapper');
+    var inner = document.getElementById('sub-header-inner');
+    var leftBtn = document.getElementById('sub-scroll-left');
+    var rightBtn = document.getElementById('sub-scroll-right');
+    if (!inner || !wrapper) return;
+
+    var scrollLeft = inner.scrollLeft;
+    var maxScroll = Math.max(0, inner.scrollWidth - inner.clientWidth);
+    var hasOverflow = maxScroll > 2;
+
+    if (leftBtn) {
+      if (hasOverflow && scrollLeft > 3) {
+        leftBtn.style.display = 'flex';
+      } else {
+        leftBtn.style.display = 'none';
+      }
+    }
+
+    if (rightBtn) {
+      if (hasOverflow && scrollLeft < maxScroll - 3) {
+        rightBtn.style.display = 'flex';
+      } else {
+        rightBtn.style.display = 'none';
+      }
+    }
+  }
+
+  function initSubHeaderScroll() {
+    var inner = document.getElementById('sub-header-inner');
+    var leftBtn = document.getElementById('sub-scroll-left');
+    var rightBtn = document.getElementById('sub-scroll-right');
+    if (!inner) return;
+
+    if (leftBtn && !leftBtn._bound) {
+      leftBtn._bound = true;
+      leftBtn.onclick = function(e) {
+        e.preventDefault();
+        inner.scrollBy({ left: -140, behavior: 'smooth' });
+        setTimeout(updateSubHeaderScrollControls, 200);
+      };
+    }
+    if (rightBtn && !rightBtn._bound) {
+      rightBtn._bound = true;
+      rightBtn.onclick = function(e) {
+        e.preventDefault();
+        inner.scrollBy({ left: 140, behavior: 'smooth' });
+        setTimeout(updateSubHeaderScrollControls, 200);
+      };
+    }
+
+    inner.removeEventListener('scroll', updateSubHeaderScrollControls);
+    inner.addEventListener('scroll', updateSubHeaderScrollControls, { passive: true });
+
+    setTimeout(updateSubHeaderScrollControls, 50);
+    setTimeout(updateSubHeaderScrollControls, 250);
   }
 
   // -- 2c. APPLY LOGO & BROWSER TAB SETTINGS
@@ -566,6 +740,7 @@
           mainNavList.appendChild(div);
         }
       });
+      initNavScroll();
     }
 
     // B. Menu Overlay Section List
@@ -933,6 +1108,16 @@
     }
     window.addEventListener('scroll', updatePinnedHeader, { passive: true });
     updatePinnedHeader();
+
+    window.addEventListener('resize', function() {
+      updatePinnedHeader();
+      updateNavScrollControls();
+      updateSubHeaderScrollControls();
+    }, { passive: true });
+    window.addEventListener('orientationchange', function() {
+      setTimeout(updateNavScrollControls, 150);
+      setTimeout(updateSubHeaderScrollControls, 150);
+    });
 
     // Search
     initSearch();
