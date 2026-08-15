@@ -2259,6 +2259,29 @@ async function saveHeaderSettings(hs) {
   hs.lang = _adminContentLang;
   try {
     localStorage.setItem(HEADER_SETTINGS_KEY + '_' + _adminContentLang, JSON.stringify(hs));
+    // Also sync structural settings (enabledNavSections, subsections enabled, logo, etc.) into other language cache
+    const otherLang = (_adminContentLang === 'bn') ? 'en' : 'bn';
+    const otherRaw = localStorage.getItem(HEADER_SETTINGS_KEY + '_' + otherLang);
+    if (otherRaw) {
+      const otherHs = JSON.parse(otherRaw);
+      otherHs.enabledNavSections = hs.enabledNavSections;
+      otherHs.logoHeight = hs.logoHeight;
+      otherHs.logoSvg = hs.logoSvg;
+      otherHs.faviconUrl = hs.faviconUrl;
+      if (Array.isArray(hs.subsections) && Array.isArray(otherHs.subsections)) {
+        otherHs.subsections = hs.subsections.map((srcSub, idx) => {
+          const match = otherHs.subsections.find(t => t.id === srcSub.id) || otherHs.subsections[idx] || {};
+          return {
+            ...match,
+            id: srcSub.id,
+            enabled: srcSub.enabled !== false,
+            icon: srcSub.icon !== undefined ? srcSub.icon : match.icon,
+            href: (_adminContentLang === 'en') ? srcSub.href : (match.href || srcSub.href)
+          };
+        });
+      }
+      localStorage.setItem(HEADER_SETTINGS_KEY + '_' + otherLang, JSON.stringify(otherHs));
+    }
   } catch(e) {}
   try {
     await _apiPost('/api/sections?action=header' + (_adminContentLang === 'bn' ? '&lang=bn' : ''), hs);

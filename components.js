@@ -998,6 +998,9 @@
 
     function openSearch() {
       if (!searchOverlay) return;
+      if (typeof window.PrivatianCloseMenu === 'function') {
+        window.PrivatianCloseMenu();
+      }
       var isBn = window.PrivatianLang && window.PrivatianLang.getLang() === 'bn';
       var cfg = getSearchConfig();
 
@@ -1022,6 +1025,7 @@
       });
       setTimeout(function() { if (searchInput) searchInput.focus(); }, 80);
       document.body.style.overflow = 'hidden';
+      document.documentElement.style.overflow = 'hidden';
 
       if (searchResults) {
         var hint = isBn ? (cfg.hintText_bn || cfg.hintText || 'অনুসন্ধান করতে লিখুন অথবা ওপরের বিষয় বেছে নিন…') : (cfg.hintText || 'Start typing to search or select a topic above…');
@@ -1033,11 +1037,18 @@
       if (!searchOverlay) return;
       searchOverlay.classList.remove('is-open');
       setTimeout(function() { searchOverlay.setAttribute('hidden', ''); }, 230);
-      document.body.style.overflow = '';
+      var menuOverlay = document.getElementById('menu-overlay');
+      if (!menuOverlay || !menuOverlay.classList.contains('is-open')) {
+        document.body.style.overflow = '';
+        document.documentElement.style.overflow = '';
+      }
       if (searchInput) searchInput.value = '';
       if (searchResults) searchResults.innerHTML = '';
       if (searchClearBtn) searchClearBtn.style.display = 'none';
     }
+
+    window.PrivatianCloseSearch = closeSearch;
+    window.PrivatianOpenSearch = openSearch;
 
     function highlightMatch(text, q) {
       if (!q) return text;
@@ -1170,12 +1181,16 @@
 
     function openMenu() {
       if (!menuOverlay || !menuBtn) return;
+      if (typeof window.PrivatianCloseSearch === 'function') {
+        window.PrivatianCloseSearch();
+      }
+      var isBn = window.PrivatianLang && window.PrivatianLang.getLang() === 'bn';
       _savedScrollY = window.scrollY;
       positionMenuOverlay();
       menuOverlay.classList.add('is-open');
       menuBtn.classList.add('is-open');
       menuBtn.setAttribute('aria-expanded', 'true');
-      menuBtn.innerHTML = '<span style="font-size:16px">&#10005;</span> Close';
+      menuBtn.innerHTML = '<span style="font-size:16px">&#10005;</span> ' + (isBn ? 'বন্ধ' : 'Close');
       document.body.classList.add('menu-open');
       document.documentElement.classList.add('menu-open');
       document.body.style.overflow = 'hidden';
@@ -1184,16 +1199,23 @@
 
     function closeMenu() {
       if (!menuOverlay || !menuBtn) return;
+      var isBn = window.PrivatianLang && window.PrivatianLang.getLang() === 'bn';
       menuOverlay.classList.remove('is-open');
       menuBtn.classList.remove('is-open');
       menuBtn.setAttribute('aria-expanded', 'false');
-      menuBtn.innerHTML = '<span class="menu-hamburger">&#9776;</span> Menu';
+      menuBtn.innerHTML = '<span class="menu-hamburger">&#9776;</span> <span class="menu-btn-text">' + (isBn ? 'মেনু' : 'Menu') + '</span>';
       document.body.classList.remove('menu-open');
       document.documentElement.classList.remove('menu-open');
-      document.body.style.overflow = '';
-      document.documentElement.style.overflow = '';
+      var searchOverlay = document.getElementById('search-overlay');
+      if (!searchOverlay || !searchOverlay.classList.contains('is-open')) {
+        document.body.style.overflow = '';
+        document.documentElement.style.overflow = '';
+      }
       window.scrollTo(0, _savedScrollY);
     }
+
+    window.PrivatianCloseMenu = closeMenu;
+    window.PrivatianOpenMenu = openMenu;
 
     if (menuBtn && menuOverlay) {
       menuBtn.addEventListener('click', function(e) {

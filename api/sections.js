@@ -505,7 +505,7 @@ module.exports = async function handler(req, res) {
 
       // Bidirectional sync: enabledNavSections, subsections order, IDs, enabled (on/off), URLs
       const updatedOtherConfig = syncHeaderStructures(headerConfig, otherLangConfig, isBn);
-      const finalSourceConfig = isBn ? syncHeaderStructures(otherLangConfig, headerConfig, false) : headerConfig;
+      const finalSourceConfig = headerConfig;
 
       let saved = false;
       try {
@@ -542,6 +542,28 @@ module.exports = async function handler(req, res) {
               admin_id: fallbackId,
               name: JSON.stringify(finalSourceConfig),
               slug: fallbackId,
+              display_order: 9998,
+              is_active: false,
+              locked: true,
+              is_deleted: true
+            });
+          }
+
+          const { data: targetExisting } = await sb.from('sections').select('id').eq('admin_id', targetFallbackId).maybeSingle();
+          if (targetExisting) {
+            await sb.from('sections').update({
+              name: JSON.stringify(updatedOtherConfig),
+              slug: targetFallbackId,
+              display_order: 9998,
+              is_active: false,
+              locked: true,
+              is_deleted: true
+            }).eq('admin_id', targetFallbackId);
+          } else {
+            await sb.from('sections').insert({
+              admin_id: targetFallbackId,
+              name: JSON.stringify(updatedOtherConfig),
+              slug: targetFallbackId,
               display_order: 9998,
               is_active: false,
               locked: true,
