@@ -261,8 +261,8 @@ body.menu-open .site-header {
 
 /* FOOTER BOTTOM & BRAND */
 .footer-bottom { border-top: 1px solid rgba(255,255,255,0.12); background: var(--bg-footer-bottom); padding: 24px 0 28px; }
-.footer-bottom-inner { display: flex; align-items: flex-start; justify-content: space-between; max-width: var(--max-width); margin: 0 auto; padding: 0 24px; gap: 32px; }
-.footer-brand { display: flex !important; flex-direction: column !important; align-items: flex-start !important; justify-content: flex-start !important; text-align: left; max-width: 580px; }
+.footer-bottom-inner { display: flex; align-items: flex-start; justify-content: space-between; max-width: var(--max-width); margin: 0 auto; padding: 0 24px; gap: 32px; flex-wrap: wrap; }
+.footer-brand { display: flex !important; flex-direction: column !important; align-items: flex-start !important; justify-content: flex-start !important; text-align: left; max-width: 680px; flex: 1 1 auto; min-width: 280px; }
 .footer-logo-wrap { display: block; margin-bottom: 10px; max-width: 100%; }
 .footer-logo-wrap svg { max-width: 100%; width: auto; display: block; }
 .footer-tagline { font-family: var(--font-sans); font-size: 12.5px; color: rgba(255,255,255,0.75); line-height: 1.45; margin-top: 2px; letter-spacing: 0.01em; }
