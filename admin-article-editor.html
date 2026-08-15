@@ -598,6 +598,7 @@ body{padding-bottom:34px}
   <button class="tb-btn tb-preview" onclick="previewArt()">Preview</button>
   <button class="tb-btn tb-save" id="tb-save-btn" onclick="saveArt()">Save Draft</button>
   <button class="tb-btn tb-pub" id="tb-pub-btn" onclick="pubArt()">Publish</button>
+  <button class="tb-btn tb-unpub" id="tb-unpub-btn" onclick="unpubArt()" style="display:none;" title="Unpublish this article from the live website">Unpublish</button>
 </div>
 
 <!-- ═══ FORMAT BAR ═══════════════════════════════════════════════ -->
@@ -1359,12 +1360,11 @@ async function saveArt(silent = false) {
   if (!silent) {
     btn.disabled = true;
     btn.textContent = 'Saving…';
-    STATUS = 'draft';
-    refreshStatus();
   }
   setSaveStatus('Saving…');
 
   const payload = buildPayload();
+  payload.status = STATUS || 'draft';
   let savedData = null;
 
   try {
@@ -1425,7 +1425,7 @@ async function saveArt(silent = false) {
     DIRTY = false;
     lsSave();
     setSaveStatus('Saved');
-    if (!silent) toast('Draft saved ✓', 'ok');
+    if (!silent) toast(STATUS === 'published' ? 'Changes saved as Draft ✓' : 'Draft saved ✓', 'ok');
   } else {
     setSaveStatus('Save failed');
     if (!silent) toast('Save failed. Please check network.', 'err');
@@ -1437,12 +1437,12 @@ async function saveArt(silent = false) {
 
 // ── PUBLISH / UNPUBLISH ──────────────────────────────────────
 async function pubArt() {
-  // If already published → unpublish immediately (no checklist needed)
   if (STATUS === 'published') {
+    // If already published -> publish latest edits directly to live site
     await doPublish();
     return;
   }
-  // Show pre-publish checklist first
+  // If draft -> show pre-publish checklist modal
   openPubModal();
 }
 
@@ -1488,18 +1488,128 @@ function closePubModal(e) {
 
 async function doPublish() {
   g('pub-overlay').classList.remove('show');
-  if (!ART_ID) { await saveArt(true); if (!ART_ID) { toast('Save failed', 'err'); return; } }
-  const btn = g('tb-pub-btn'); btn.disabled = true; btn.textContent = '…';
+  STATUS = 'published';
+  const btn = g('tb-pub-btn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Publishing…'; }
+  setSaveStatus('Publishing…');
+
+  const payload = buildPayload();
+  payload.status = 'published';
+
+  let savedData = null;
   try {
-    const r = await api('/api/articles?action=publish&id=' + ART_ID, { method:'POST' });
-    const d = await r.json();
-    if (!r.ok) throw new Error(d.error);
-    STATUS = d.status;
-    DIRTY = false; // Published = clean state
+    const r = await api('/api/articles?action=save', { method:'POST', body: JSON.stringify(payload) });
+    if (r.ok) {
+      savedData = await r.json();
+    }
+  } catch(e) {}
+
+  if (!savedData || !savedData.id) {
+    try {
+      const sb = window._sb || (window.initSupabaseClient && window.initSupabaseClient());
+      if (sb) {
+        const row = {
+          title: payload.title || 'Untitled',
+          deck: payload.deck || '',
+          content_html: payload.content_html || '',
+          section: payload.section || '',
+          author: payload.author || '',
+          author_bio: payload.author_bio || '',
+          author_role: payload.author_role || '',
+          author_photo_url: payload.author_photo_url || '',
+          hero_img_url: payload.hero_img_url || '',
+          hero_img_alt: payload.hero_img_alt || '',
+          hero_caption: payload.hero_caption || '',
+          hero_credit: payload.hero_credit || '',
+          slug: payload.slug || 'untitled',
+          seo_title: payload.seo_title || '',
+          meta_description: payload.meta_description || '',
+          tags: payload.tags || '',
+          status: 'published',
+          published_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        };
+        if (payload.id) {
+          row.id = payload.id;
+          const { data, error } = await sb.from('articles').update(row).eq('id', payload.id).select().single();
+          if (!error && data) savedData = data;
+        } else {
+          row.created_at = new Date().toISOString();
+          const { data, error } = await sb.from('articles').insert(row).select().single();
+          if (!error && data) savedData = data;
+        }
+      }
+    } catch(err) {}
+  }
+
+  if (savedData && savedData.id) {
+    if (!ART_ID) {
+      ART_ID = savedData.id;
+      const u = new URL(location.href); u.searchParams.set('id', ART_ID);
+      history.replaceState({}, '', u.toString());
+      if (g('tb-slug')) g('tb-slug').value = savedData.slug || '';
+    }
+    STATUS = 'published';
+    refreshArticleIdDisplay();
     refreshStatus();
-    toast(STATUS === 'published' ? '🎉 Article published!' : 'Moved to Draft', 'ok');
-  } catch(e) { toast(e.message, 'err'); }
-  finally { btn.disabled = false; refreshPubBtn(); }
+    _serverTS = Date.now();
+    DIRTY = false;
+    lsSave();
+    setSaveStatus('Published');
+    toast('🎉 Article published to live site!', 'ok');
+  } else {
+    setSaveStatus('Publish failed');
+    toast('Publish failed. Please check network.', 'err');
+  }
+
+  if (btn) { btn.disabled = false; refreshPubBtn(); }
+}
+
+async function unpubArt() {
+  if (!confirm('Are you sure you want to unpublish this article? It will be removed from the public website and moved to Draft.')) {
+    return;
+  }
+  const btn = g('tb-unpub-btn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Unpublishing…'; }
+  setSaveStatus('Unpublishing…');
+
+  STATUS = 'draft';
+  const payload = buildPayload();
+  payload.status = 'draft';
+
+  let savedData = null;
+  try {
+    const r = await api('/api/articles?action=save', { method:'POST', body: JSON.stringify(payload) });
+    if (r.ok) savedData = await r.json();
+  } catch(e) {}
+
+  if (!savedData || !savedData.id) {
+    try {
+      const sb = window._sb || (window.initSupabaseClient && window.initSupabaseClient());
+      if (sb && ART_ID) {
+        const { data, error } = await sb.from('articles').update({
+          status: 'draft',
+          published_at: null,
+          updated_at: new Date().toISOString()
+        }).eq('id', ART_ID).select().single();
+        if (!error && data) savedData = data;
+      }
+    } catch(err) {}
+  }
+
+  if (savedData) {
+    STATUS = 'draft';
+    refreshStatus();
+    _serverTS = Date.now();
+    DIRTY = false;
+    lsSave();
+    setSaveStatus('Moved to Draft');
+    toast('Article unpublished & moved to Draft', 'ok');
+  } else {
+    setSaveStatus('Unpublish failed');
+    toast('Unpublish failed. Please check network.', 'err');
+  }
+  if (btn) { btn.disabled = false; refreshPubBtn(); }
 }
 
 function buildPayload() {
@@ -2085,9 +2195,37 @@ function refreshStatus() {
   refreshPubBtn();
 }
 function refreshPubBtn() {
-  const btn = g('tb-pub-btn');
-  btn.textContent = STATUS === 'published' ? 'Unpublish' : 'Publish';
-  btn.className   = 'tb-btn ' + (STATUS === 'published' ? 'tb-unpub' : 'tb-pub');
+  const pubBtn = g('tb-pub-btn');
+  const unpubBtn = g('tb-unpub-btn');
+  const saveBtn = g('tb-save-btn');
+
+  if (STATUS === 'published') {
+    if (pubBtn) {
+      pubBtn.textContent = 'Publish Changes';
+      pubBtn.title = 'Publish latest editor changes directly to the live website';
+      pubBtn.className = 'tb-btn tb-pub';
+    }
+    if (unpubBtn) {
+      unpubBtn.style.display = 'inline-flex';
+    }
+    if (saveBtn) {
+      saveBtn.textContent = 'Save Draft';
+      saveBtn.title = 'Save your edits as draft without changing published status';
+    }
+  } else {
+    if (pubBtn) {
+      pubBtn.textContent = 'Publish';
+      pubBtn.title = 'Review and publish this article';
+      pubBtn.className = 'tb-btn tb-pub';
+    }
+    if (unpubBtn) {
+      unpubBtn.style.display = 'none';
+    }
+    if (saveBtn) {
+      saveBtn.textContent = 'Save Draft';
+      saveBtn.title = 'Save article as draft';
+    }
+  }
 }
 
 function updateEditorSyncStatus(state = 'synced', text = 'Synced with database') {

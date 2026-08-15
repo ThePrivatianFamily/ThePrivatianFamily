@@ -182,18 +182,30 @@ module.exports = async function handler(req, res) {
     }
   }
 
-  // ── PUBLISH (toggle) ────────────────────────────────────────────
+  // ── PUBLISH ──────────────────────────────────────────────────────
   if (action === 'publish' && req.method === 'POST') {
     const session = await requireAdmin(req, res);
     if (!session) return;
     if (!id) return res.status(400).json({ error: 'id required' });
     const client = sb();
-    const { data: article } = await client.from('articles').select('status').eq('id', id).single();
-    if (!article) return res.status(404).json({ error: 'Not found' });
-    const newStatus = article.status === 'published' ? 'draft' : 'published';
     const { data, error } = await client.from('articles').update({
-      status: newStatus,
-      published_at: newStatus === 'published' ? new Date().toISOString() : null,
+      status: 'published',
+      published_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    }).eq('id', id).select().single();
+    if (error) return res.status(500).json({ error: error.message });
+    return res.status(200).json(data);
+  }
+
+  // ── UNPUBLISH ────────────────────────────────────────────────────
+  if (action === 'unpublish' && req.method === 'POST') {
+    const session = await requireAdmin(req, res);
+    if (!session) return;
+    if (!id) return res.status(400).json({ error: 'id required' });
+    const client = sb();
+    const { data, error } = await client.from('articles').update({
+      status: 'draft',
+      published_at: null,
       updated_at: new Date().toISOString(),
     }).eq('id', id).select().single();
     if (error) return res.status(500).json({ error: error.message });
