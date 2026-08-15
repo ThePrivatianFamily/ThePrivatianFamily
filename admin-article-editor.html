@@ -834,11 +834,11 @@ kbd {
 .article-related,.article-right-aside{display:none!important}
 
 /* ═════════════════════════════════════════════════════════════════
-   MOBILE & RESPONSIVE ADAPTIVE ENGINE FOR ARTICLE EDITOR
-   Seamless fluid experience from 320px mobile to 4K desktop
+   100% UNIVERSAL RESPONSIVE ENGINE (320px MOBILE TO 4K DESKTOP)
+   Fluid touch-swipeable toolbars, scalable canvas & seamless UX
 ═════════════════════════════════════════════════════════════════ */
 
-/* Global Toolbar layout */
+/* Global Toolbar layout (Fluid Swipeable on All Screens) */
 #tb {
   position: fixed;
   top: 0;
@@ -847,26 +847,30 @@ kbd {
   height: var(--tb);
   z-index: 1000;
   background: var(--dark);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 16px;
   box-shadow: 0 2px 16px rgba(0,0,0,.3), 0 1px 0 rgba(255,255,255,.05);
   box-sizing: border-box;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+#tb::-webkit-scrollbar {
+  display: none;
 }
 
-.tb-left {
+.tb-scroll-strip {
   display: flex;
   align-items: center;
   gap: 8px;
-  flex-shrink: 0;
+  min-width: max-content;
+  height: 100%;
+  padding: 0 14px;
+  box-sizing: border-box;
 }
 
-.tb-right {
-  display: flex;
-  align-items: center;
-  gap: 6px;
+.tb-scroll-strip > * {
   flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .tb-btn {
@@ -886,81 +890,167 @@ kbd {
   box-sizing: border-box;
 }
 
-.tb-more-wrap {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-}
-
-.tb-more-btn {
-  padding: 0 8px !important;
-  background: rgba(255,255,255,0.08);
-  border: 1px solid rgba(255,255,255,0.15);
-  color: #fff;
-}
-.tb-more-btn:hover {
-  background: rgba(255,255,255,0.16);
-}
-
-.tb-more-dd {
-  display: none;
-  position: absolute;
-  top: calc(100% + 8px);
-  right: 0;
-  background: #ffffff;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.18);
-  min-width: 200px;
-  z-index: 1200;
-  overflow: hidden;
-  padding: 6px 0;
-}
-.tb-more-dd.open {
-  display: block;
-  animation: ddFadeIn 0.15s ease;
-}
-@keyframes ddFadeIn {
-  from { opacity: 0; transform: translateY(-4px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-.tb-more-item {
+.tb-back {
   display: flex;
   align-items: center;
-  gap: 10px;
-  width: 100%;
-  padding: 10px 14px;
-  border: none;
-  background: transparent;
-  font: 600 12.5px/1 var(--sans);
-  color: #334155;
-  cursor: pointer;
-  text-align: left;
-  transition: background 0.12s ease;
+  gap: 7px;
+  color: rgba(255,255,255,.65);
+  text-decoration: none;
+  font: 600 11.5px/1 var(--sans);
+  letter-spacing: .04em;
+  padding: 0 10px;
+  height: 32px;
+  border-radius: 6px;
+  transition: .15s;
+  flex-shrink: 0;
+  box-sizing: border-box;
 }
-.tb-more-item:hover {
-  background: #f1f5f9;
-  color: var(--navy);
+.tb-back:hover {
+  background: rgba(255,255,255,.09);
+  color: #fff;
 }
-.tb-more-item svg {
-  color: #64748b;
+
+.tb-vr {
+  width: 1px;
+  height: 22px;
+  background: rgba(255,255,255,.12);
+  flex-shrink: 0;
+  margin: 0 2px;
+}
+
+.tb-slug-g {
+  display: flex;
+  align-items: center;
+  gap: 7px;
   flex-shrink: 0;
 }
-
-/* Visibility classes */
-.tb-desktop-only { display: inline-flex !important; }
-.tb-mobile-only { display: none !important; }
-.tb-mobile-icon { display: none !important; }
-
-/* Smooth touch scrolling & scrollbar styling */
-#tb, #fmt, .sd-scroll, .toc-list, .pm-body {
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: thin;
-  scrollbar-color: rgba(0,0,0,0.15) transparent;
+.tb-lbl {
+  font: 700 9px/1 var(--sans);
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,.35);
+  flex-shrink: 0;
 }
-#tb::-webkit-scrollbar, #fmt::-webkit-scrollbar {
-  display: none;
+#tb-slug {
+  font: 400 12px/1 var(--sans);
+  color: rgba(255,255,255,.8);
+  background: rgba(255,255,255,.07);
+  border: 1px solid rgba(255,255,255,.14);
+  border-radius: 5px;
+  padding: 0 9px;
+  height: 30px;
+  outline: none;
+  width: 140px;
+  transition: .15s;
+  box-sizing: border-box;
+}
+#tb-slug:focus {
+  border-color: rgba(255,255,255,.35);
+  background: rgba(255,255,255,.12);
+  color: #fff;
+}
+
+.tb-badge {
+  font: 700 9px/1 var(--sans);
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  padding: 5px 9px;
+  border-radius: 20px;
+  flex-shrink: 0;
+}
+.tb-badge.draft {
+  background: rgba(251,191,36,.14);
+  color: #fbbf24;
+}
+.tb-badge.published {
+  background: rgba(52,211,153,.14);
+  color: #34d399;
+}
+
+.tb-id-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 6px;
+  padding: 0 8px;
+  height: 30px;
+  color: rgba(255, 255, 255, 0.85);
+  font: 600 11px/1 var(--sans);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+  flex-shrink: 0;
+  box-sizing: border-box;
+}
+.tb-id-pill:hover {
+  background: rgba(255, 255, 255, 0.16);
+  border-color: rgba(255, 255, 255, 0.3);
+  color: #fff;
+}
+
+.ed-sync-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6.5px;
+  padding: 0 10px;
+  height: 30px;
+  border-radius: 20px;
+  font: 600 11px/1 var(--sans);
+  letter-spacing: 0.02em;
+  user-select: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  flex-shrink: 0;
+  box-sizing: border-box;
+}
+
+.tb-preview {
+  background: rgba(255,255,255,.08);
+  color: rgba(255,255,255,.75);
+  border: 1px solid rgba(255,255,255,.14);
+}
+.tb-preview:hover {
+  background: rgba(255,255,255,.16);
+  color: #fff;
+}
+.tb-settings {
+  background: rgba(255,255,255,.1);
+  color: #fff;
+  border: 1px solid rgba(255,255,255,.2);
+}
+.tb-settings:hover {
+  background: rgba(255,255,255,.18);
+}
+.tb-settings.active {
+  background: var(--navy);
+  border-color: #38bdf8;
+  box-shadow: 0 0 10px rgba(56,189,248,.3);
+}
+.tb-save {
+  background: #0a528e;
+  color: #fff;
+  border: 1px solid rgba(255,255,255,.15);
+}
+.tb-save:hover {
+  background: #083d6b;
+}
+.tb-pub {
+  background: #1a7a4a;
+  color: #fff;
+  border: 1px solid rgba(255,255,255,.15);
+}
+.tb-pub:hover {
+  background: #158040;
+}
+.tb-unpub {
+  background: #dc2626;
+  color: #fff;
+}
+.tb-unpub:hover {
+  background: #b91c1c;
 }
 
 /* Base interactive ergonomics */
@@ -968,7 +1058,7 @@ button, input, select, textarea, [contenteditable] {
   touch-action: manipulation;
 }
 
-/* Formatting Bar standard height */
+/* ── FORMAT BAR (Fluid Swipeable on All Screens) ─────────────── */
 #fmt {
   position: fixed;
   top: var(--tb);
@@ -978,16 +1068,30 @@ button, input, select, textarea, [contenteditable] {
   z-index: 900;
   background: #fff;
   border-bottom: 1.5px solid var(--border);
+  box-shadow: 0 2px 8px rgba(0,0,0,.05);
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  box-sizing: border-box;
+}
+#fmt::-webkit-scrollbar {
+  display: none;
+}
+
+.fmt-scroll-strip {
   display: flex;
   align-items: center;
   gap: 3px;
-  padding: 0 14px;
-  box-shadow: 0 2px 8px rgba(0,0,0,.05);
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
+  min-width: max-content;
+  height: 100%;
+  padding: 0 12px;
+  box-sizing: border-box;
 }
-#fmt::-webkit-scrollbar { display: none; }
+.fmt-scroll-strip > * {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
 
 #fmt-block {
   font: 600 12px/1 var(--sans);
@@ -1002,6 +1106,17 @@ button, input, select, textarea, [contenteditable] {
   margin-right: 4px;
   transition: .12s;
   box-sizing: border-box;
+}
+#fmt-block:hover {
+  background: #eef2f7;
+}
+
+.fs {
+  width: 1px;
+  height: 20px;
+  background: #dde4ea;
+  margin: 0 4px;
+  flex-shrink: 0;
 }
 
 .fb {
@@ -1021,6 +1136,15 @@ button, input, select, textarea, [contenteditable] {
   transition: .12s;
   position: relative;
   box-sizing: border-box;
+  flex-shrink: 0;
+}
+.fb:hover {
+  background: #eef2f7;
+  color: var(--navy);
+}
+.fb.on {
+  background: #e8f1f9;
+  color: var(--navy);
 }
 
 .fmt-hist {
@@ -1033,6 +1157,7 @@ button, input, select, textarea, [contenteditable] {
   padding: 1px;
   margin-right: 4px;
   box-sizing: border-box;
+  flex-shrink: 0;
 }
 .fmt-hist .fb {
   width: 28px;
@@ -1041,24 +1166,101 @@ button, input, select, textarea, [contenteditable] {
   min-height: 28px;
 }
 
-/* ── TABLET BREAKPOINT (<= 1024px) ────────────────────────────── */
-@media (max-width: 1024px) {
-  :root {
-    --col: 92vw;
-  }
-  #canvas {
-    margin: 18px auto 60px;
-    border-radius: 10px;
-  }
-  #ed-hdr, #ed-body, #ed-bio {
-    padding: 32px 32px;
-  }
-  .ed-feat-card {
-    padding: 20px 32px;
-  }
+/* ── UNIVERSAL CONTINUOUS FLUID SCALING (ALL VIEWPORTS) ───────── */
+#canvas {
+  width: 100%;
+  max-width: var(--col);
+  margin: clamp(10px, 2.5vw, 24px) auto clamp(40px, 6vw, 80px);
+  border-radius: clamp(0px, 1.2vw, 12px);
+  box-shadow: 0 4px 24px rgba(0,0,0,.06);
+  overflow: hidden;
+  background: #fff;
+  box-sizing: border-box;
 }
 
-/* ── RESPONSIVE BREAKPOINT (<= 860px) ─────────────────────────── */
+#ed-hdr {
+  padding: clamp(20px, 4.5vw, 40px) clamp(16px, 4.5vw, 48px) clamp(16px, 3.5vw, 32px);
+  background: var(--card);
+  border-bottom: 1px solid #f0ece8;
+}
+
+#ed-body {
+  padding: clamp(20px, 4.5vw, 40px) clamp(16px, 4.5vw, 48px) clamp(28px, 5vw, 48px);
+  background: var(--card);
+}
+
+.ed-feat-card {
+  padding: clamp(16px, 3.5vw, 24px) clamp(16px, 4.5vw, 48px);
+  background: var(--card);
+  border-bottom: 1px solid #f0ece8;
+}
+
+#ed-bio {
+  padding: clamp(16px, 3.5vw, 28px) clamp(16px, 4.5vw, 48px) clamp(24px, 4.5vw, 40px);
+  background: var(--card);
+}
+
+.ed-h1 {
+  font-size: clamp(22px, 4.2vw, 38px);
+  line-height: 1.2;
+  margin-bottom: 12px;
+}
+
+.ed-deck {
+  font-size: clamp(14px, 2vw, 18px);
+  line-height: 1.5;
+  margin-bottom: 16px;
+}
+
+.bio-card {
+  display: grid;
+  grid-template-columns: clamp(48px, 7vw, 64px) 1fr;
+  gap: clamp(12px, 2.5vw, 20px);
+  padding: clamp(14px, 2.5vw, 20px);
+  background: #f8fafc;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+#author-photo-zone, #author-photo-svg, #author-photo-img {
+  width: clamp(48px, 7vw, 64px);
+  height: clamp(48px, 7vw, 64px);
+}
+
+/* Drawers across all screens */
+#sd {
+  top: 0;
+  bottom: 0;
+  right: 0;
+  width: min(340px, 90vw);
+  z-index: 1500;
+  border-left: none;
+  box-shadow: -8px 0 32px rgba(0,0,0,0.25);
+}
+
+#toc-drawer {
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: min(320px, 85vw);
+  z-index: 1500;
+  border-right: none;
+  box-shadow: 8px 0 32px rgba(0,0,0,0.25);
+}
+
+/* Popovers */
+#lp {
+  width: calc(100vw - 24px) !important;
+  max-width: 320px;
+  left: 12px !important;
+}
+.cp-popover {
+  width: calc(100vw - 24px) !important;
+  max-width: 280px;
+  left: 12px !important;
+}
+
+/* Safe area padding for mobile gesture navigation */
 @media (max-width: 860px) {
   :root {
     --tb: 48px;
@@ -1070,497 +1272,218 @@ button, input, select, textarea, [contenteditable] {
     padding-bottom: max(38px, env(safe-area-inset-bottom));
     overflow-x: hidden;
   }
-
-  /* Toggle desktop/mobile topbar elements */
-  .tb-desktop-only { display: none !important; }
-  .tb-mobile-only { display: inline-flex !important; }
-  .tb-btn-lbl { display: none !important; }
-  .tb-mobile-icon { display: inline-block !important; }
-
-  #tb {
-    padding: 0 10px;
-  }
-  .tb-back {
-    padding: 6px 8px;
-    font-size: 11px;
-    gap: 4px;
-  }
-  .tb-badge {
-    padding: 3px 7px;
-    font-size: 8.5px;
-  }
-  .ed-sync-badge {
-    padding: 4px 6px;
-  }
-  .ed-sync-badge #art-sync-status {
-    display: none;
-  }
-  .tb-btn {
-    padding: 0 8px;
-    height: 30px;
-    font-size: 11px;
-  }
-  .tb-btn.tb-settings, .tb-btn.tb-preview {
-    padding: 0 8px;
-  }
-  .tb-btn.tb-save {
-    padding: 0 10px;
-    background: #0a528e;
-  }
-  .tb-btn.tb-pub {
-    padding: 0 10px;
-    background: #1a7a4a;
-  }
-
-  /* Formatting Bar */
-  #fmt {
-    padding: 0 8px;
-    gap: 2px;
-  }
-  #fmt-block {
-    height: 30px;
-    font-size: 11px;
-    padding: 0 5px;
-  }
-  .fb {
-    width: 30px;
-    height: 30px;
-    min-width: 30px;
-    min-height: 30px;
-  }
-  .fmt-hist {
-    height: 30px;
-  }
-  .fmt-hist .fb {
-    width: 26px;
-    height: 26px;
-    min-width: 26px;
-    min-height: 26px;
-  }
-
-  /* Canvas on mobile */
-  #canvas {
-    margin: 8px 0 50px;
-    border-radius: 0;
-    box-shadow: none;
-    max-width: 100%;
-    width: 100%;
-  }
-  #ed-hdr {
-    padding: 20px 16px 16px;
-  }
-  .ed-h1 {
-    font-size: clamp(22px, 6.5vw, 30px);
-    line-height: 1.22;
-    margin-bottom: 10px;
-  }
-  .ed-deck {
-    font-size: clamp(14px, 4vw, 16px);
-    line-height: 1.5;
-    margin-bottom: 14px;
-  }
-  .ed-meta {
-    padding-top: 12px;
-    font-size: 11.5px;
-    gap: 2px 4px;
-  }
-
-  /* Inline featured image card */
-  .ed-feat-card {
-    padding: 16px 16px;
-  }
-  .ed-feat-dropzone {
-    padding: 16px 14px;
-    flex-direction: column;
-    text-align: center;
-    gap: 10px;
-  }
-  .ed-feat-drop-title {
-    justify-content: center;
-    flex-wrap: wrap;
-    font-size: 13.5px;
-  }
-  .ed-feat-drop-sub {
-    font-size: 11px;
-  }
-  .ed-feat-img-container {
-    max-height: 220px;
-  }
-  .ed-feat-img-container img {
-    max-height: 220px;
-  }
-  .ed-feat-row {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 6px;
-  }
-  .ed-feat-lbl {
-    min-width: unset;
-    font-size: 10px;
-  }
-  .ed-feat-pos-group {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 4px;
-  }
-  .ed-pos-btn {
-    text-align: center;
-    justify-content: center;
-    padding: 5px 6px;
-    font-size: 11px;
-  }
-  .ed-feat-inputs-row {
-    flex-direction: column;
-    gap: 6px;
-  }
-  .ed-feat-input {
-    font-size: 13px;
-    padding: 8px 10px;
-  }
-
-  /* Rich Text Body */
-  #ed-body {
-    padding: 20px 16px 36px;
-  }
-  #ed-rt {
-    font-size: 16.5px;
-    line-height: 1.7;
-    min-height: 260px;
-  }
-  #ed-rt h2 {
-    font-size: 22px;
-    line-height: 1.25;
-    margin: 1.6em 0 .4em;
-    padding-top: .8em;
-  }
-  #ed-rt h3 {
-    font-size: 18px;
-    line-height: 1.3;
-    margin: 1.4em 0 .4em;
-  }
-  #ed-rt h4 {
-    font-size: 13px;
-    margin: 1.2em 0 .4em;
-  }
-  #ed-rt blockquote {
-    margin: 1.6em 0;
-    padding: 18px 14px 18px 44px;
-  }
-  #ed-rt blockquote::before {
-    font-size: 54px;
-    left: 8px;
-    top: -6px;
-  }
-  #ed-rt blockquote::after {
-    font-size: 54px;
-    right: 8px;
-    bottom: -20px;
-  }
-  #ed-rt blockquote p {
-    font-size: 16px;
-    line-height: 1.55;
-  }
-  #ed-rt blockquote.featured {
-    padding: 18px 14px 18px 48px;
-  }
-  #ed-rt blockquote.featured::before {
-    font-size: 52px;
-    left: 8px;
-  }
-  #ed-rt blockquote.featured::after {
-    font-size: 52px;
-    right: 8px;
-  }
-  #ed-rt blockquote.featured p {
-    font-size: 16px;
-    line-height: 1.58;
-  }
-  .ed-callout {
-    padding: 12px 14px;
-    font-size: 13.5px;
-    margin: 1.3em 0;
-    gap: 8px;
-  }
-
-  /* Author bio */
-  #ed-bio {
-    padding: 16px 16px 28px;
-  }
-  .bio-card {
-    grid-template-columns: 48px 1fr;
-    gap: 12px;
-    padding: 14px 12px;
-  }
-  #author-photo-zone, #author-photo-svg, #author-photo-img {
-    width: 48px;
-    height: 48px;
-  }
-
-  /* Drawers on Mobile */
-  #sd {
-    top: 0;
-    bottom: 0;
-    right: 0;
-    width: min(340px, 100vw);
-    z-index: 1500;
-    border-left: none;
-    box-shadow: -8px 0 32px rgba(0,0,0,0.25);
-  }
-  #toc-drawer {
-    top: 0;
-    bottom: 0;
-    left: 0;
-    width: min(320px, 85vw);
-    z-index: 1500;
-    border-right: none;
-    box-shadow: 8px 0 32px rgba(0,0,0,0.25);
-  }
-
-  /* Popovers */
-  #lp {
-    width: calc(100vw - 24px) !important;
-    max-width: 320px;
-    left: 12px !important;
-  }
-  .cp-popover {
-    width: calc(100vw - 24px) !important;
-    max-width: 280px;
-    left: 12px !important;
-  }
-}
-
-/* ── SMALL MOBILE (<= 400px) ──────────────────────────────────── */
-@media (max-width: 400px) {
-  .tb-back-txt {
-    display: none;
-  }
-  .tb-back {
-    padding: 6px 6px;
-  }
-  .tb-badge {
-    display: none;
-  }
-  .bio-card {
-    grid-template-columns: 1fr;
-    text-align: center;
-    justify-items: center;
-  }
 }
   </style>
 </head>
 <body>
 
-<!-- ═══ ADMIN TOOLBAR ════════════════════════════════════════════ -->
+<!-- ═══ ADMIN TOOLBAR (FLUID HORIZONTALLY SCROLLABLE ON ALL SCREENS) ═══ -->
 <div id="tb">
-  <!-- Left: Navigation, Slug & Status -->
-  <div class="tb-left">
-    <a href="admin.html#articles" class="tb-back" title="Back to Articles">
+  <div class="tb-scroll-strip" id="tb-scroll-strip">
+    <!-- Back to Articles -->
+    <a href="admin.html#articles" class="tb-back" title="Back to Articles (Admin Panel)">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
-      <span class="tb-back-txt">Articles</span>
+      <span>Articles</span>
     </a>
-    <div class="tb-vr tb-desktop-only"></div>
-    <div class="tb-slug-g tb-desktop-only">
+    
+    <div class="tb-vr"></div>
+    
+    <!-- Slug / Permalink Input -->
+    <div class="tb-slug-g">
       <span class="tb-lbl">Slug</span>
-      <input type="text" id="tb-slug" placeholder="article-slug" oninput="syncSlug(this.value, 'tb'); DIRTY=true;" />
+      <input type="text" id="tb-slug" placeholder="article-slug" oninput="syncSlug(this.value, 'tb'); DIRTY=true;" title="Article URL Slug" />
     </div>
-    <div class="tb-vr tb-desktop-only"></div>
+    
+    <div class="tb-vr"></div>
+    
+    <!-- Status Badge -->
     <span class="tb-badge draft" id="tb-badge">● Draft</span>
-    <!-- ARTICLE UNIQUE ID PILL (Desktop) -->
-    <div id="tb-art-id-pill" class="tb-id-pill tb-desktop-only" onclick="copyArticleId()" title="Click to copy permanent Article Unique ID">
+    
+    <!-- Permanent Article Unique ID Pill -->
+    <div id="tb-art-id-pill" class="tb-id-pill" onclick="copyArticleId()" title="Click to copy permanent Article Unique ID">
       <span style="opacity:0.6;font-size:9.5px;text-transform:uppercase;">ID:</span>
       <span id="tb-art-id-txt" style="font-family:monospace;">...</span>
       <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
     </div>
-    <!-- DATABASE SYNC BADGE -->
+    
+    <!-- Live Database Sync Badge -->
     <div id="art-sync-status-wrap" class="ed-sync-badge synced" title="Click to test live database connection" onclick="verifyEditorDbSync(true)">
       <span class="ft-pulse-dot" id="art-status-dot"></span>
       <span id="art-sync-status">Saved</span>
     </div>
-  </div>
-
-  <!-- Right: Action Buttons -->
-  <div class="tb-right">
-    <!-- Desktop-only helper tools -->
-    <button class="tb-btn tb-preview tb-desktop-only" id="tb-zen-btn" onclick="toggleZenMode()" title="Distraction-Free Focus Mode (Ctrl+Shift+F)">
+    
+    <div class="tb-vr"></div>
+    
+    <!-- Focus Mode (Zen) -->
+    <button type="button" class="tb-btn tb-preview" id="tb-zen-btn" onclick="toggleZenMode()" title="Distraction-Free Focus Mode (Ctrl+Shift+F)">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
       <span>Focus</span>
     </button>
-    <button class="tb-btn tb-preview tb-desktop-only" id="tb-toc-btn" onclick="toggleTocDrawer()" title="Article Headings Outline">
+    
+    <!-- Headings Outline (TOC) -->
+    <button type="button" class="tb-btn tb-preview" id="tb-toc-btn" onclick="toggleTocDrawer()" title="Article Headings Outline">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
       <span>Outline</span>
     </button>
-    <button class="tb-btn tb-preview tb-desktop-only" onclick="openShortcutsModal()" title="Keyboard Shortcuts Cheat Sheet" style="padding:0 8px;">
+    
+    <!-- Shortcuts Cheat Sheet -->
+    <button type="button" class="tb-btn tb-preview" onclick="openShortcutsModal()" title="Keyboard Shortcuts Cheat Sheet" style="padding:0 9px;">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
     </button>
-    <div class="tb-vr tb-desktop-only"></div>
-
-    <!-- Common Actions (Mobile + Desktop) -->
-    <button class="tb-btn tb-settings" id="sd-toggle" onclick="toggleDrawer()" title="Article Settings">
+    
+    <div class="tb-vr"></div>
+    
+    <!-- Article Settings Drawer Toggle -->
+    <button type="button" class="tb-btn tb-settings" id="sd-toggle" onclick="toggleDrawer()" title="Article Settings Drawer">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-      <span class="tb-btn-lbl">Settings</span>
+      <span>Settings</span>
     </button>
-    <button class="tb-btn tb-preview" onclick="previewArt()" title="Preview Article">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="tb-mobile-icon"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-      <span class="tb-btn-lbl">Preview</span>
+    
+    <!-- Preview Article -->
+    <button type="button" class="tb-btn tb-preview" onclick="previewArt()" title="Preview Article">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+      <span>Preview</span>
     </button>
-    <button class="tb-btn tb-save" id="tb-save-btn" onclick="saveArt()" title="Save Draft">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" class="tb-mobile-icon"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
-      <span class="tb-btn-lbl-save">Save</span>
+    
+    <!-- Save Draft -->
+    <button type="button" class="tb-btn tb-save" id="tb-save-btn" onclick="saveArt()" title="Save Draft (Ctrl+S)">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+      <span>Save Draft</span>
     </button>
-    <button class="tb-btn tb-pub" id="tb-pub-btn" onclick="pubArt()" title="Publish Article">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" class="tb-mobile-icon"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-      <span class="tb-btn-lbl-pub">Publish</span>
+    
+    <!-- Publish Article -->
+    <button type="button" class="tb-btn tb-pub" id="tb-pub-btn" onclick="pubArt()" title="Publish Article">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+      <span>Publish</span>
     </button>
-    <button class="tb-btn tb-unpub" id="tb-unpub-btn" onclick="unpubArt()" style="display:none;" title="Unpublish this article">Unpublish</button>
-
-    <!-- Mobile More Menu (⋯) Dropdown Toggle -->
-    <div class="tb-more-wrap tb-mobile-only" id="tb-more-wrap">
-      <button type="button" class="tb-btn tb-more-btn" id="tb-more-btn" onclick="toggleMoreMenu(event)" title="More Actions">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/><circle cx="5" cy="12" r="1.5"/></svg>
-      </button>
-      <div class="tb-more-dd" id="tb-more-dd" onclick="event.stopPropagation()">
-        <button type="button" class="tb-more-item" onclick="toggleZenMode(); closeMoreMenu();">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
-          Focus / Zen Mode
-        </button>
-        <button type="button" class="tb-more-item" onclick="toggleTocDrawer(); closeMoreMenu();">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
-          Article Outline
-        </button>
-        <button type="button" class="tb-more-item" onclick="openShortcutsModal(); closeMoreMenu();">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-          Keyboard Shortcuts
-        </button>
-        <button type="button" class="tb-more-item" onclick="copyArticleId(); closeMoreMenu();">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-          Copy Article Unique ID
-        </button>
-      </div>
-    </div>
+    
+    <!-- Unpublish Article (hidden if draft) -->
+    <button type="button" class="tb-btn tb-unpub" id="tb-unpub-btn" onclick="unpubArt()" style="display:none;" title="Unpublish this article from live website">Unpublish</button>
   </div>
 </div>
 
-<!-- ═══ FORMAT BAR ═══════════════════════════════════════════════ -->
+<!-- ═══ FORMAT BAR (FLUID HORIZONTALLY SCROLLABLE ON ALL SCREENS) ════ -->
 <div id="fmt">
+  <div class="fmt-scroll-strip" id="fmt-scroll-strip">
+    <!-- Undo / Redo -->
+    <div class="fmt-hist" title="History (Undo / Redo)">
+      <button class="fb" id="fb-undo" onmousedown="f(event,'undo')" title="Undo (Ctrl+Z)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+      </button>
+      <div class="fmt-hist-sep"></div>
+      <button class="fb" id="fb-redo" onmousedown="f(event,'redo')" title="Redo (Ctrl+Y)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+      </button>
+    </div>
 
-  <!-- Undo / Redo — Clean Admin Circular-Arrow SVGs -->
-  <div class="fmt-hist" title="History (Undo / Redo)">
-    <button class="fb" id="fb-undo" onmousedown="f(event,'undo')" title="Undo (Ctrl+Z)">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+    <!-- Block format dropdown -->
+    <select id="fmt-block" title="Block format" onchange="setBlock(this.value)">
+      <option value="p">Paragraph</option>
+      <option value="h2">Heading 2</option>
+      <option value="h3">Heading 3</option>
+      <option value="h4">Heading 4</option>
+      <option value="blockquote">Pull Quote</option>
+      <option value="blockquote-classic">Classic Quote</option>
+      <option value="blockquote-featured">Featured Quote</option>
+      <option value="pre">Code Block</option>
+    </select>
+
+    <div class="fs"></div>
+
+    <button class="fb" id="fb-b" onmousedown="f(event,'bold')"          title="Bold (Ctrl+B)"><b>B</b></button>
+    <button class="fb" id="fb-i" onmousedown="f(event,'italic')"        title="Italic (Ctrl+I)"><i>I</i></button>
+    <button class="fb" id="fb-u" onmousedown="f(event,'underline')"     title="Underline (Ctrl+U)"><u>U</u></button>
+    <button class="fb" id="fb-s" onmousedown="f(event,'strikeThrough')" title="Strikethrough"><s>S</s></button>
+
+    <div class="fs"></div>
+
+    <!-- Text Alignment -->
+    <button class="fb" id="fb-al-left" onmousedown="f(event,'justifyLeft')" title="Align Left">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="17" y1="10" x2="3" y2="10"/><line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="14" x2="3" y2="14"/><line x1="17" y1="18" x2="3" y2="18"/></svg>
     </button>
-    <div class="fmt-hist-sep"></div>
-    <button class="fb" id="fb-redo" onmousedown="f(event,'redo')" title="Redo (Ctrl+Y)">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+    <button class="fb" id="fb-al-center" onmousedown="f(event,'justifyCenter')" title="Align Center">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="10" x2="6" y2="10"/><line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="14" x2="3" y2="14"/><line x1="18" y1="18" x2="6" y2="18"/></svg>
     </button>
+    <button class="fb" id="fb-al-right" onmousedown="f(event,'justifyRight')" title="Align Right">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="21" y1="10" x2="7" y2="10"/><line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="14" x2="3" y2="14"/><line x1="21" y1="18" x2="7" y2="18"/></svg>
+    </button>
+
+    <div class="fs"></div>
+
+    <!-- Text color -->
+    <button class="fb fc-btn" id="btn-fc-txt" onmousedown="openColorPopover(event,'text')" title="Text Color">
+      <div class="fc-ico">
+        <span style="font-size:13px;font-weight:700;font-family:var(--sans);">A</span>
+        <span class="fc-sw" id="sw-txt" style="background:#1a2d3e"></span>
+      </div>
+    </button>
+
+    <!-- Highlight color -->
+    <button class="fb fc-btn" id="btn-fc-hl" onmousedown="openColorPopover(event,'highlight')" title="Highlight Color">
+      <div class="fc-ico">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 11-6 6v3h3l6-6"/><path d="m22 7-4.5-4.5a2.12 2.12 0 0 0-3 0L10 7l7 7 4.5-4.5a2.12 2.12 0 0 0 0-3z"/></svg>
+        <span class="fc-sw" id="sw-hl" style="background:#fef08a"></span>
+      </div>
+    </button>
+
+    <div class="fs"></div>
+
+    <!-- Link / unlink -->
+    <button class="fb" onmousedown="insLink(event)" title="Insert link (Ctrl+K)">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+    </button>
+    <button class="fb" onmousedown="f(event,'unlink')" title="Remove link">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m18.84 12.25 1.72-1.71a4.5 4.5 0 0 0-6.37-6.37L12.5 5.86"/><path d="m5.17 11.75-1.72 1.71a4.5 4.5 0 0 0 6.37 6.37L11.5 18.14"/><line x1="2" y1="2" x2="22" y2="22"/></svg>
+    </button>
+
+    <div class="fs"></div>
+
+    <!-- Image insert -->
+    <button class="fb" onmousedown="trigImg(event)" title="Insert image at cursor">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5-4 4-2-2-5 5"/></svg>
+    </button>
+
+    <!-- Editorial Callout Box -->
+    <button class="fb" onmousedown="insCallout(event)" title="Insert Callout / Highlight Box">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/><circle cx="12" cy="12" r="4"/></svg>
+    </button>
+
+    <!-- Data Table -->
+    <button class="fb" onmousedown="insTable(event)" title="Insert Data Table">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/></svg>
+    </button>
+
+    <!-- HR -->
+    <button class="fb" onmousedown="insHR(event)" title="Divider">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    </button>
+
+    <div class="fs"></div>
+
+    <!-- Clear format -->
+    <button class="fb" onmousedown="f(event,'removeFormat')" title="Clear formatting">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m7 21 9-18M3 6h18M3 12h10M3 18h6"/></svg>
+    </button>
+
+    <div class="fs"></div>
+
+    <!-- Lists -->
+    <button class="fb" id="fb-ul" onmousedown="f(event,'insertUnorderedList')" title="Bullet list (Ctrl+Shift+8)">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="9" y1="6" x2="20" y2="6"/><line x1="9" y1="12" x2="20" y2="12"/><line x1="9" y1="18" x2="20" y2="18"/><circle cx="4" cy="6" r="1.5" fill="currentColor" stroke="none"/><circle cx="4" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="4" cy="18" r="1.5" fill="currentColor" stroke="none"/></svg>
+    </button>
+    <button class="fb" id="fb-ol" onmousedown="f(event,'insertOrderedList')" title="Numbered list (Ctrl+Shift+7)">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="10" y1="6" x2="21" y2="6"/><line x1="10" y1="12" x2="21" y2="12"/><line x1="10" y1="18" x2="21" y2="18"/><path d="M4 6h1v4" stroke-linecap="round"/><path d="M4 10h2" stroke-linecap="round"/><path d="M6 18H4c0-1 2-2 2-3s-1-1.5-2-1"/></svg>
+    </button>
+    <button class="fb" onmousedown="insChecklist(event)" title="Checklist">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+    </button>
+
+    <div class="fs"></div>
+
+    <!-- Superscript / Subscript -->
+    <button class="fb" onmousedown="f(event,'superscript')" title="Superscript">x²</button>
+    <button class="fb" onmousedown="f(event,'subscript')"   title="Subscript">x₂</button>
   </div>
-
-  <!-- Block format -->
-  <select id="fmt-block" title="Block format" onchange="setBlock(this.value)">
-    <option value="p">Paragraph</option>
-    <option value="h2">Heading 2</option>
-    <option value="h3">Heading 3</option>
-    <option value="h4">Heading 4</option>
-    <option value="blockquote">Pull Quote</option>
-    <option value="blockquote-classic">Classic Quote</option>
-    <option value="blockquote-featured">Featured Quote</option>
-    <option value="pre">Code Block</option>
-  </select>
-
-  <div class="fs"></div>
-
-  <button class="fb" id="fb-b" onmousedown="f(event,'bold')"          title="Bold (Ctrl+B)"><b>B</b></button>
-  <button class="fb" id="fb-i" onmousedown="f(event,'italic')"        title="Italic (Ctrl+I)"><i>I</i></button>
-  <button class="fb" id="fb-u" onmousedown="f(event,'underline')"     title="Underline (Ctrl+U)"><u>U</u></button>
-  <button class="fb" id="fb-s" onmousedown="f(event,'strikeThrough')" title="Strikethrough"><s>S</s></button>
-
-  <div class="fs"></div>
-
-  <!-- Text Alignment -->
-  <button class="fb" id="fb-al-left" onmousedown="f(event,'justifyLeft')" title="Align Left">
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="17" y1="10" x2="3" y2="10"/><line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="14" x2="3" y2="14"/><line x1="17" y1="18" x2="3" y2="18"/></svg>
-  </button>
-  <button class="fb" id="fb-al-center" onmousedown="f(event,'justifyCenter')" title="Align Center">
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="10" x2="6" y2="10"/><line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="14" x2="3" y2="14"/><line x1="18" y1="18" x2="6" y2="18"/></svg>
-  </button>
-  <button class="fb" id="fb-al-right" onmousedown="f(event,'justifyRight')" title="Align Right">
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="21" y1="10" x2="7" y2="10"/><line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="14" x2="3" y2="14"/><line x1="21" y1="18" x2="7" y2="18"/></svg>
-  </button>
-
-  <div class="fs"></div>
-
-  <!-- Text color -->
-  <button class="fb fc-btn" id="btn-fc-txt" onmousedown="openColorPopover(event,'text')" title="Text Color">
-    <div class="fc-ico">
-      <span style="font-size:13px;font-weight:700;font-family:var(--sans);">A</span>
-      <span class="fc-sw" id="sw-txt" style="background:#1a2d3e"></span>
-    </div>
-  </button>
-
-  <!-- Highlight color -->
-  <button class="fb fc-btn" id="btn-fc-hl" onmousedown="openColorPopover(event,'highlight')" title="Highlight Color">
-    <div class="fc-ico">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 11-6 6v3h3l6-6"/><path d="m22 7-4.5-4.5a2.12 2.12 0 0 0-3 0L10 7l7 7 4.5-4.5a2.12 2.12 0 0 0 0-3z"/></svg>
-      <span class="fc-sw" id="sw-hl" style="background:#fef08a"></span>
-    </div>
-  </button>
-
-  <div class="fs"></div>
-
-  <!-- Link / unlink -->
-  <button class="fb" onmousedown="insLink(event)" title="Insert link (Ctrl+K)">
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
-  </button>
-  <button class="fb" onmousedown="f(event,'unlink')" title="Remove link">
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m18.84 12.25 1.72-1.71a4.5 4.5 0 0 0-6.37-6.37L12.5 5.86"/><path d="m5.17 11.75-1.72 1.71a4.5 4.5 0 0 0 6.37 6.37L11.5 18.14"/><line x1="2" y1="2" x2="22" y2="22"/></svg>
-  </button>
-
-  <div class="fs"></div>
-
-  <!-- Image insert -->
-  <button class="fb" onmousedown="trigImg(event)" title="Insert image at cursor">
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5-4 4-2-2-5 5"/></svg>
-  </button>
-
-  <!-- Editorial Callout Box -->
-  <button class="fb" onmousedown="insCallout(event)" title="Insert Callout / Highlight Box">
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/><circle cx="12" cy="12" r="4"/></svg>
-  </button>
-
-  <!-- Data Table -->
-  <button class="fb" onmousedown="insTable(event)" title="Insert Data Table">
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/></svg>
-  </button>
-
-  <!-- HR -->
-  <button class="fb" onmousedown="insHR(event)" title="Divider">
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"/></svg>
-  </button>
-
-  <div class="fs"></div>
-
-  <!-- Clear format -->
-  <button class="fb" onmousedown="f(event,'removeFormat')" title="Clear formatting">
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m7 21 9-18M3 6h18M3 12h10M3 18h6"/></svg>
-  </button>
-
-  <div class="fs"></div>
-
-  <!-- Lists -->
-  <button class="fb" id="fb-ul" onmousedown="f(event,'insertUnorderedList')" title="Bullet list (Ctrl+Shift+8)">
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="9" y1="6" x2="20" y2="6"/><line x1="9" y1="12" x2="20" y2="12"/><line x1="9" y1="18" x2="20" y2="18"/><circle cx="4" cy="6" r="1.5" fill="currentColor" stroke="none"/><circle cx="4" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="4" cy="18" r="1.5" fill="currentColor" stroke="none"/></svg>
-  </button>
-  <button class="fb" id="fb-ol" onmousedown="f(event,'insertOrderedList')" title="Numbered list (Ctrl+Shift+7)">
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="10" y1="6" x2="21" y2="6"/><line x1="10" y1="12" x2="21" y2="12"/><line x1="10" y1="18" x2="21" y2="18"/><path d="M4 6h1v4" stroke-linecap="round"/><path d="M4 10h2" stroke-linecap="round"/><path d="M6 18H4c0-1 2-2 2-3s-1-1.5-2-1"/></svg>
-  </button>
-  <button class="fb" onmousedown="insChecklist(event)" title="Checklist">
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
-  </button>
-
-  <div class="fs"></div>
-
-  <!-- Superscript / Subscript -->
-  <button class="fb" onmousedown="f(event,'superscript')" title="Superscript">x²</button>
-  <button class="fb" onmousedown="f(event,'subscript')"   title="Subscript">x₂</button>
 </div>
 
 <!-- ═══ ZEN FOCUS MODE EXIT BUTTON ═══════════════════════════════ -->
