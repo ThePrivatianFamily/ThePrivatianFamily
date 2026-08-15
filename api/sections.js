@@ -27,6 +27,229 @@ function rowToAdminSection(row) {
   };
 }
 
+// ── BIDIRECTIONAL STRUCTURAL SYNCHRONIZATION HELPERS ──────────────────────
+// Synchronizes structural states (enabled, ordering, item IDs, URLs) across EN & BN
+function syncHomepageStructures(source, target, sourceIsBn) {
+  if (!source || typeof source !== 'object' || !target || typeof target !== 'object') return target;
+  const res = JSON.parse(JSON.stringify(target));
+
+  // 1. Hero Main
+  if (source.hero && source.hero.main) {
+    if (!res.hero) res.hero = {};
+    if (!res.hero.main) res.hero.main = {};
+    res.hero.main.enabled = source.hero.main.enabled !== false;
+    res.hero.main.imageUrl = source.hero.main.imageUrl || res.hero.main.imageUrl;
+    res.hero.main.href = sourceIsBn ? res.hero.main.href : (source.hero.main.href || res.hero.main.href);
+    res.hero.main.articleId = sourceIsBn ? res.hero.main.articleId : source.hero.main.articleId;
+  }
+
+  // 2. Hero Sidebar
+  if (source.hero && Array.isArray(source.hero.sidebar)) {
+    if (!res.hero) res.hero = {};
+    const tgtSide = Array.isArray(res.hero.sidebar) ? res.hero.sidebar : [];
+    res.hero.sidebar = source.hero.sidebar.map((srcItem, idx) => {
+      const match = tgtSide.find(t => t.id === srcItem.id) || tgtSide[idx] || {};
+      return {
+        id: srcItem.id || match.id || `h-side-${idx + 1}`,
+        articleId: sourceIsBn ? match.articleId : srcItem.articleId,
+        title: match.title || srcItem.title || '',
+        description: match.description || srcItem.description || '',
+        imageUrl: srcItem.imageUrl || match.imageUrl || 'img5.png',
+        tag: srcItem.tag !== undefined ? srcItem.tag : (match.tag || ''),
+        href: sourceIsBn ? (match.href || srcItem.href) : (srcItem.href || match.href),
+        enabled: srcItem.enabled !== false
+      };
+    });
+  }
+
+  // 3. Small Articles (3-Card Grid)
+  if (Array.isArray(source.smallArticles)) {
+    const tgtCards = Array.isArray(res.smallArticles) ? res.smallArticles : [];
+    res.smallArticles = source.smallArticles.map((srcItem, idx) => {
+      const match = tgtCards.find(t => t.id === srcItem.id) || tgtCards[idx] || {};
+      return {
+        id: srcItem.id || match.id || `sm-${idx + 1}`,
+        articleId: sourceIsBn ? match.articleId : srcItem.articleId,
+        title: match.title || srcItem.title || '',
+        imageUrl: srcItem.imageUrl || match.imageUrl || 'img2.png',
+        href: sourceIsBn ? (match.href || srcItem.href) : (srcItem.href || match.href),
+        enabled: srcItem.enabled !== false
+      };
+    });
+  }
+
+  // 4. Events Section & Featured Spotlight
+  if (source.eventsSection) {
+    if (!res.eventsSection) res.eventsSection = {};
+    if (source.eventsSection.featured) {
+      if (!res.eventsSection.featured) res.eventsSection.featured = {};
+      res.eventsSection.featured.enabled = source.eventsSection.featured.enabled !== false;
+      res.eventsSection.featured.imageUrl = source.eventsSection.featured.imageUrl || res.eventsSection.featured.imageUrl;
+      res.eventsSection.featured.href = sourceIsBn ? res.eventsSection.featured.href : (source.eventsSection.featured.href || res.eventsSection.featured.href);
+      res.eventsSection.featured.articleId = sourceIsBn ? res.eventsSection.featured.articleId : source.eventsSection.featured.articleId;
+    }
+    if (Array.isArray(source.eventsSection.events)) {
+      const tgtEvents = Array.isArray(res.eventsSection.events) ? res.eventsSection.events : [];
+      res.eventsSection.events = source.eventsSection.events.map((srcEv, idx) => {
+        const match = tgtEvents.find(t => t.id === srcEv.id) || tgtEvents[idx] || {};
+        return {
+          id: srcEv.id || match.id || `ev-${idx + 1}`,
+          date: srcEv.date || match.date || '',
+          title: match.title || srcEv.title || '',
+          meta: match.meta || srcEv.meta || '',
+          href: sourceIsBn ? (match.href || srcEv.href) : (srcEv.href || match.href),
+          enabled: srcEv.enabled !== false
+        };
+      });
+    }
+  }
+
+  // 5. All News 6 Columns & Sub-Articles
+  if (source.allNews && Array.isArray(source.allNews.columns)) {
+    if (!res.allNews) res.allNews = {};
+    const tgtCols = Array.isArray(res.allNews.columns) ? res.allNews.columns : [];
+    res.allNews.columns = source.allNews.columns.map((srcCol, cIdx) => {
+      const matchCol = tgtCols.find(t => t.id === srcCol.id) || tgtCols[cIdx] || {};
+      const colRes = {
+        id: srcCol.id || matchCol.id || `col-${cIdx + 1}`,
+        label: matchCol.label || srcCol.label || `COLUMN ${cIdx + 1}`,
+        sectionSlug: sourceIsBn ? (matchCol.sectionSlug || srcCol.sectionSlug) : (srcCol.sectionSlug || matchCol.sectionSlug),
+        lead: {
+          articleId: sourceIsBn ? (matchCol.lead?.articleId) : srcCol.lead?.articleId,
+          title: matchCol.lead?.title || srcCol.lead?.title || '',
+          imageUrl: srcCol.lead?.imageUrl || matchCol.lead?.imageUrl || 'img1.png',
+          href: sourceIsBn ? (matchCol.lead?.href || srcCol.lead?.href) : (srcCol.lead?.href || matchCol.lead?.href),
+          enabled: srcCol.lead ? srcCol.lead.enabled !== false : true
+        },
+        subArticles: []
+      };
+
+      if (Array.isArray(srcCol.subArticles)) {
+        const tgtSubs = Array.isArray(matchCol.subArticles) ? matchCol.subArticles : [];
+        colRes.subArticles = srcCol.subArticles.map((srcSub, sIdx) => {
+          const matchSub = tgtSubs.find(t => t.id === srcSub.id) || tgtSubs[sIdx] || {};
+          return {
+            id: srcSub.id || matchSub.id || `sub-${cIdx + 1}-${sIdx + 1}`,
+            title: matchSub.title || srcSub.title || '',
+            href: sourceIsBn ? (matchSub.href || srcSub.href) : (srcSub.href || matchSub.href),
+            enabled: srcSub.enabled !== false
+          };
+        });
+      }
+      return colRes;
+    });
+  }
+
+  return res;
+}
+
+function syncMenuStructures(source, target, sourceIsBn) {
+  if (!source || typeof source !== 'object' || !target || typeof target !== 'object') return target;
+  const res = JSON.parse(JSON.stringify(target));
+
+  if (Array.isArray(source.series)) {
+    const tgtSeries = Array.isArray(res.series) ? res.series : [];
+    res.series = source.series.map((srcItem, idx) => {
+      const match = tgtSeries.find(t => t.id === srcItem.id) || tgtSeries[idx] || {};
+      return {
+        id: srcItem.id || match.id || `series-${idx + 1}`,
+        title: match.title || srcItem.title || '',
+        href: sourceIsBn ? (match.href || srcItem.href) : (srcItem.href || match.href),
+        description: match.description || srcItem.description || '',
+        enabled: srcItem.enabled !== false
+      };
+    });
+  }
+
+  if (Array.isArray(source.explore)) {
+    const tgtExplore = Array.isArray(res.explore) ? res.explore : [];
+    res.explore = source.explore.map((srcItem, idx) => {
+      const match = tgtExplore.find(t => t.id === srcItem.id) || tgtExplore[idx] || {};
+      return {
+        id: srcItem.id || match.id || `exp-${idx + 1}`,
+        label: match.label || srcItem.label || '',
+        href: sourceIsBn ? (match.href || srcItem.href) : (srcItem.href || match.href),
+        target: sourceIsBn ? (match.target || srcItem.target) : (srcItem.target || match.target),
+        enabled: srcItem.enabled !== false
+      };
+    });
+  }
+
+  if (Array.isArray(source.latest)) {
+    const tgtLatest = Array.isArray(res.latest) ? res.latest : [];
+    res.latest = source.latest.map((srcItem, idx) => {
+      const match = tgtLatest.find(t => t.id === srcItem.id) || tgtLatest[idx] || {};
+      return {
+        id: srcItem.id || match.id || `latest-${idx + 1}`,
+        title: match.title || srcItem.title || '',
+        href: sourceIsBn ? (match.href || srcItem.href) : (srcItem.href || match.href),
+        imageUrl: srcItem.imageUrl || match.imageUrl || 'img1.png',
+        enabled: srcItem.enabled !== false
+      };
+    });
+  }
+
+  return res;
+}
+
+function syncHeaderStructures(source, target, sourceIsBn) {
+  if (!source || typeof source !== 'object' || !target || typeof target !== 'object') return target;
+  const res = JSON.parse(JSON.stringify(target));
+
+  if (source.enabledNavSections !== undefined) res.enabledNavSections = source.enabledNavSections;
+  if (source.logoHeight !== undefined) res.logoHeight = source.logoHeight;
+  if (source.logoSvg !== undefined) res.logoSvg = source.logoSvg;
+  if (source.faviconUrl !== undefined) res.faviconUrl = source.faviconUrl;
+
+  if (Array.isArray(source.subsections)) {
+    const tgtSubs = Array.isArray(res.subsections) ? res.subsections : [];
+    res.subsections = source.subsections.map((srcItem, idx) => {
+      const match = tgtSubs.find(t => t.id === srcItem.id) || tgtSubs[idx] || {};
+      return {
+        id: srcItem.id || match.id || `sub-${idx + 1}`,
+        label: match.label || srcItem.label || '',
+        href: sourceIsBn ? (match.href || srcItem.href) : (srcItem.href || match.href),
+        icon: srcItem.icon !== undefined ? srcItem.icon : match.icon,
+        enabled: srcItem.enabled !== false
+      };
+    });
+  }
+
+  return res;
+}
+
+function syncFooterStructures(source, target, sourceIsBn) {
+  if (!source || typeof source !== 'object' || !target || typeof target !== 'object') return target;
+  const res = JSON.parse(JSON.stringify(target));
+
+  if (Array.isArray(source.columns)) {
+    const tgtCols = Array.isArray(res.columns) ? res.columns : [];
+    res.columns = source.columns.map((srcCol, cIdx) => {
+      const matchCol = tgtCols.find(t => t.id === srcCol.id) || tgtCols[cIdx] || {};
+      const colRes = {
+        id: srcCol.id || matchCol.id || `col-${cIdx + 1}`,
+        title: matchCol.title || srcCol.title || '',
+        links: []
+      };
+      if (Array.isArray(srcCol.links)) {
+        const tgtLinks = Array.isArray(matchCol.links) ? matchCol.links : [];
+        colRes.links = srcCol.links.map((srcLink, lIdx) => {
+          const matchLink = tgtLinks.find(t => t.id === srcLink.id) || tgtLinks[lIdx] || {};
+          return {
+            id: srcLink.id || matchLink.id || `link-${cIdx + 1}-${lIdx + 1}`,
+            label: matchLink.label || srcLink.label || '',
+            href: sourceIsBn ? (matchLink.href || srcLink.href) : (srcLink.href || matchLink.href),
+            enabled: srcLink.enabled !== false
+          };
+        });
+      }
+      return colRes;
+    });
+  }
+
+  return res;
+}
+
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
@@ -107,49 +330,35 @@ module.exports = async function handler(req, res) {
       if (!session) return;
       const menuConfig = req.body || {};
 
-      // Enforce unified URL / ID architecture: Bengali menu inherits English URLs
-      if (isBn) {
-        try {
-          const { data: enData } = await sb.from('site_settings').select('value').eq('key', 'navigation_menu_config').maybeSingle();
-          if (enData && enData.value && typeof enData.value === 'object') {
-            const enCfg = enData.value;
-            if (Array.isArray(enCfg.series) && Array.isArray(menuConfig.series)) {
-              enCfg.series.forEach((s, idx) => {
-                if (menuConfig.series[idx]) {
-                  menuConfig.series[idx].href = s.href;
-                  menuConfig.series[idx].id = s.id;
-                }
-              });
-            }
-            if (Array.isArray(enCfg.explore) && Array.isArray(menuConfig.explore)) {
-              enCfg.explore.forEach((e, idx) => {
-                if (menuConfig.explore[idx]) {
-                  menuConfig.explore[idx].href = e.href;
-                  menuConfig.explore[idx].id = e.id;
-                  menuConfig.explore[idx].target = e.target;
-                }
-              });
-            }
-            if (Array.isArray(enCfg.latest) && Array.isArray(menuConfig.latest)) {
-              enCfg.latest.forEach((l, idx) => {
-                if (menuConfig.latest[idx]) {
-                  menuConfig.latest[idx].href = l.href;
-                  menuConfig.latest[idx].id = l.id;
-                }
-              });
-            }
-          }
-        } catch(e) {}
-      }
+      const targetKey = isBn ? 'navigation_menu_config' : 'navigation_menu_config_bn';
+      const targetFallbackId = isBn ? '__menu_config__' : '__menu_config_bn__';
+
+      let otherLangConfig = null;
+      try {
+        const { data: tData } = await sb.from('site_settings').select('value').eq('key', targetKey).maybeSingle();
+        if (tData && tData.value && typeof tData.value === 'object') otherLangConfig = tData.value;
+      } catch(e) {}
+      if (!otherLangConfig) otherLangConfig = isBn ? DEFAULT_MENU_CONFIG : DEFAULT_MENU_CONFIG;
+
+      // Bidirectional sync: enabled (on/off), ordering (up/down), IDs, URLs
+      const updatedOtherConfig = syncMenuStructures(menuConfig, otherLangConfig, isBn);
+      const finalSourceConfig = isBn ? syncMenuStructures(otherLangConfig, menuConfig, false) : menuConfig;
 
       let saved = false;
       try {
-        const { error } = await sb.from('site_settings').upsert({
+        const { error: err1 } = await sb.from('site_settings').upsert({
           key: settingsKey,
-          value: menuConfig,
+          value: finalSourceConfig,
           updated_at: new Date().toISOString()
         }, { onConflict: 'key' });
-        if (!error) saved = true;
+
+        const { error: err2 } = await sb.from('site_settings').upsert({
+          key: targetKey,
+          value: updatedOtherConfig,
+          updated_at: new Date().toISOString()
+        }, { onConflict: 'key' });
+
+        if (!err1) saved = true;
       } catch(err) {}
 
       if (!saved) {
@@ -158,7 +367,7 @@ module.exports = async function handler(req, res) {
           const { data: existing } = await sb.from('sections').select('id').eq('admin_id', fallbackId).maybeSingle();
           if (existing) {
             await sb.from('sections').update({
-              name: JSON.stringify(menuConfig),
+              name: JSON.stringify(finalSourceConfig),
               slug: fallbackId,
               display_order: 9999,
               is_active: false,
@@ -168,7 +377,7 @@ module.exports = async function handler(req, res) {
           } else {
             await sb.from('sections').insert({
               admin_id: fallbackId,
-              name: JSON.stringify(menuConfig),
+              name: JSON.stringify(finalSourceConfig),
               slug: fallbackId,
               display_order: 9999,
               is_active: false,
@@ -191,7 +400,7 @@ module.exports = async function handler(req, res) {
         req
       }).catch(() => {});
 
-      return res.status(200).json({ ok: true, data: menuConfig });
+      return res.status(200).json({ ok: true, data: finalSourceConfig });
     }
   }
 
@@ -248,14 +457,35 @@ module.exports = async function handler(req, res) {
       if (!session) return;
       const headerConfig = req.body || {};
 
+      const targetKey = isBn ? 'site_header_config' : 'site_header_config_bn';
+      const targetFallbackId = isBn ? '__header_config__' : '__header_config_bn__';
+
+      let otherLangConfig = null;
+      try {
+        const { data: tData } = await sb.from('site_settings').select('value').eq('key', targetKey).maybeSingle();
+        if (tData && tData.value && typeof tData.value === 'object') otherLangConfig = tData.value;
+      } catch(e) {}
+      if (!otherLangConfig) otherLangConfig = DEFAULT_HEADER_CONFIG;
+
+      // Bidirectional sync: enabledNavSections, subsections order, IDs, enabled (on/off), URLs
+      const updatedOtherConfig = syncHeaderStructures(headerConfig, otherLangConfig, isBn);
+      const finalSourceConfig = isBn ? syncHeaderStructures(otherLangConfig, headerConfig, false) : headerConfig;
+
       let saved = false;
       try {
-        const { error } = await sb.from('site_settings').upsert({
+        const { error: err1 } = await sb.from('site_settings').upsert({
           key: settingsKey,
-          value: headerConfig,
+          value: finalSourceConfig,
           updated_at: new Date().toISOString()
         }, { onConflict: 'key' });
-        if (!error) saved = true;
+
+        const { error: err2 } = await sb.from('site_settings').upsert({
+          key: targetKey,
+          value: updatedOtherConfig,
+          updated_at: new Date().toISOString()
+        }, { onConflict: 'key' });
+
+        if (!err1) saved = true;
       } catch(err) {}
 
       if (!saved) {
@@ -264,7 +494,7 @@ module.exports = async function handler(req, res) {
           const { data: existing } = await sb.from('sections').select('id').eq('admin_id', fallbackId).maybeSingle();
           if (existing) {
             await sb.from('sections').update({
-              name: JSON.stringify(headerConfig),
+              name: JSON.stringify(finalSourceConfig),
               slug: fallbackId,
               display_order: 9998,
               is_active: false,
@@ -274,7 +504,7 @@ module.exports = async function handler(req, res) {
           } else {
             await sb.from('sections').insert({
               admin_id: fallbackId,
-              name: JSON.stringify(headerConfig),
+              name: JSON.stringify(finalSourceConfig),
               slug: fallbackId,
               display_order: 9998,
               is_active: false,
@@ -298,7 +528,7 @@ module.exports = async function handler(req, res) {
         req
       }).catch(() => {});
 
-      return res.status(200).json({ ok: true, data: headerConfig });
+      return res.status(200).json({ ok: true, data: finalSourceConfig });
     }
   }
 
@@ -761,80 +991,35 @@ module.exports = async function handler(req, res) {
       if (!session) return;
       const homepageConfig = req.body || {};
 
-      // Enforce unified URL / ID architecture: Bengali homepage inherits all English URLs, slugs, IDs
-      if (isBn) {
-        try {
-          let enCfg = null;
-          const { data: enData } = await sb.from('site_settings').select('value').eq('key', 'site_homepage_config').maybeSingle();
-          if (enData && enData.value && typeof enData.value === 'object') enCfg = enData.value;
-          if (enCfg) {
-            if (enCfg.hero && homepageConfig.hero) {
-              if (enCfg.hero.main && homepageConfig.hero.main) {
-                homepageConfig.hero.main.href = enCfg.hero.main.href;
-                homepageConfig.hero.main.articleId = enCfg.hero.main.articleId;
-              }
-              if (Array.isArray(enCfg.hero.sidebar) && Array.isArray(homepageConfig.hero.sidebar)) {
-                enCfg.hero.sidebar.forEach((s, idx) => {
-                  if (homepageConfig.hero.sidebar[idx]) {
-                    homepageConfig.hero.sidebar[idx].href = s.href;
-                    homepageConfig.hero.sidebar[idx].articleId = s.articleId;
-                  }
-                });
-              }
-            }
-            if (Array.isArray(enCfg.smallArticles) && Array.isArray(homepageConfig.smallArticles)) {
-              enCfg.smallArticles.forEach((c, idx) => {
-                if (homepageConfig.smallArticles[idx]) {
-                  homepageConfig.smallArticles[idx].href = c.href;
-                  homepageConfig.smallArticles[idx].articleId = c.articleId;
-                }
-              });
-            }
-            if (enCfg.eventsSection && homepageConfig.eventsSection) {
-              if (enCfg.eventsSection.featured && homepageConfig.eventsSection.featured) {
-                homepageConfig.eventsSection.featured.href = enCfg.eventsSection.featured.href;
-                homepageConfig.eventsSection.featured.articleId = enCfg.eventsSection.featured.articleId;
-              }
-              if (Array.isArray(enCfg.eventsSection.events) && Array.isArray(homepageConfig.eventsSection.events)) {
-                enCfg.eventsSection.events.forEach((ev, idx) => {
-                  if (homepageConfig.eventsSection.events[idx]) {
-                    homepageConfig.eventsSection.events[idx].href = ev.href;
-                    homepageConfig.eventsSection.events[idx].id = ev.id;
-                  }
-                });
-              }
-            }
-            if (enCfg.allNews && enCfg.allNews.columns && homepageConfig.allNews && homepageConfig.allNews.columns) {
-              enCfg.allNews.columns.forEach((col, idx) => {
-                if (homepageConfig.allNews.columns[idx]) {
-                  homepageConfig.allNews.columns[idx].sectionSlug = col.sectionSlug;
-                  if (col.lead && homepageConfig.allNews.columns[idx].lead) {
-                    homepageConfig.allNews.columns[idx].lead.href = col.lead.href;
-                    homepageConfig.allNews.columns[idx].lead.articleId = col.lead.articleId;
-                  }
-                  if (Array.isArray(col.subArticles) && Array.isArray(homepageConfig.allNews.columns[idx].subArticles)) {
-                    col.subArticles.forEach((sub, sIdx) => {
-                      if (homepageConfig.allNews.columns[idx].subArticles[sIdx]) {
-                        homepageConfig.allNews.columns[idx].subArticles[sIdx].href = sub.href;
-                        homepageConfig.allNews.columns[idx].subArticles[sIdx].id = sub.id;
-                      }
-                    });
-                  }
-                }
-              });
-            }
-          }
-        } catch(e) {}
-      }
+      const targetKey = isBn ? 'site_homepage_config' : 'site_homepage_config_bn';
+      const targetFallbackId = isBn ? '__homepage_config__' : '__homepage_config_bn__';
+
+      let otherLangConfig = null;
+      try {
+        const { data: tData } = await sb.from('site_settings').select('value').eq('key', targetKey).maybeSingle();
+        if (tData && tData.value && typeof tData.value === 'object') otherLangConfig = tData.value;
+      } catch(e) {}
+      if (!otherLangConfig) otherLangConfig = isBn ? DEFAULT_HOMEPAGE_CONFIG : DEFAULT_HOMEPAGE_CONFIG_BN;
+
+      // Bidirectional sync: enabled (on/off, show/hide), ordering (up/down, move), item IDs, URLs
+      const updatedOtherConfig = syncHomepageStructures(homepageConfig, otherLangConfig, isBn);
+      const finalSourceConfig = isBn ? syncHomepageStructures(otherLangConfig, homepageConfig, false) : homepageConfig;
 
       let saved = false;
       try {
-        const { error } = await sb.from('site_settings').upsert({
+        const { error: err1 } = await sb.from('site_settings').upsert({
           key: settingsKey,
-          value: homepageConfig,
+          value: finalSourceConfig,
           updated_at: new Date().toISOString()
         }, { onConflict: 'key' });
-        if (!error) saved = true;
+
+        const { error: err2 } = await sb.from('site_settings').upsert({
+          key: targetKey,
+          value: updatedOtherConfig,
+          updated_at: new Date().toISOString()
+        }, { onConflict: 'key' });
+
+        if (!err1) saved = true;
       } catch(err) {}
 
       if (!saved) {
@@ -843,7 +1028,7 @@ module.exports = async function handler(req, res) {
           const { data: existing } = await sb.from('sections').select('id').eq('admin_id', fallbackId).maybeSingle();
           if (existing) {
             await sb.from('sections').update({
-              name: JSON.stringify(homepageConfig),
+              name: JSON.stringify(finalSourceConfig),
               slug: fallbackId,
               display_order: 9997,
               is_active: false,
@@ -853,7 +1038,7 @@ module.exports = async function handler(req, res) {
           } else {
             await sb.from('sections').insert({
               admin_id: fallbackId,
-              name: JSON.stringify(homepageConfig),
+              name: JSON.stringify(finalSourceConfig),
               slug: fallbackId,
               display_order: 9997,
               is_active: false,
@@ -879,7 +1064,7 @@ module.exports = async function handler(req, res) {
         });
       } catch(e) {}
 
-      return res.status(200).json({ ok: true, data: homepageConfig });
+      return res.status(200).json({ ok: true, data: finalSourceConfig });
     }
   }
 
@@ -962,14 +1147,35 @@ module.exports = async function handler(req, res) {
       if (!session) return;
       const footerConfig = req.body || {};
 
+      const targetKey = isBn ? 'site_footer_config' : 'site_footer_config_bn';
+      const targetFallbackId = isBn ? '__footer_config__' : '__footer_config_bn__';
+
+      let otherLangConfig = null;
+      try {
+        const { data: tData } = await sb.from('site_settings').select('value').eq('key', targetKey).maybeSingle();
+        if (tData && tData.value && typeof tData.value === 'object') otherLangConfig = tData.value;
+      } catch(e) {}
+      if (!otherLangConfig) otherLangConfig = DEFAULT_FOOTER_CONFIG;
+
+      // Bidirectional sync: columns link structure, order, IDs, enabled (on/off), URLs
+      const updatedOtherConfig = syncFooterStructures(footerConfig, otherLangConfig, isBn);
+      const finalSourceConfig = isBn ? syncFooterStructures(otherLangConfig, footerConfig, false) : footerConfig;
+
       let saved = false;
       try {
-        const { error } = await sb.from('site_settings').upsert({
+        const { error: err1 } = await sb.from('site_settings').upsert({
           key: settingsKey,
-          value: footerConfig,
+          value: finalSourceConfig,
           updated_at: new Date().toISOString()
         }, { onConflict: 'key' });
-        if (!error) saved = true;
+
+        const { error: err2 } = await sb.from('site_settings').upsert({
+          key: targetKey,
+          value: updatedOtherConfig,
+          updated_at: new Date().toISOString()
+        }, { onConflict: 'key' });
+
+        if (!err1) saved = true;
       } catch(err) {}
 
       if (!saved) {
@@ -978,7 +1184,7 @@ module.exports = async function handler(req, res) {
           const { data: existing } = await sb.from('sections').select('id').eq('admin_id', fallbackId).maybeSingle();
           if (existing) {
             await sb.from('sections').update({
-              name: JSON.stringify(footerConfig),
+              name: JSON.stringify(finalSourceConfig),
               slug: fallbackId,
               display_order: 9996,
               is_active: false,
@@ -988,7 +1194,7 @@ module.exports = async function handler(req, res) {
           } else {
             await sb.from('sections').insert({
               admin_id: fallbackId,
-              name: JSON.stringify(footerConfig),
+              name: JSON.stringify(finalSourceConfig),
               slug: fallbackId,
               display_order: 9996,
               is_active: false,
@@ -1014,7 +1220,7 @@ module.exports = async function handler(req, res) {
         });
       } catch(e) {}
 
-      return res.status(200).json({ ok: true, data: footerConfig });
+      return res.status(200).json({ ok: true, data: finalSourceConfig });
     }
   }
 
@@ -1060,40 +1266,49 @@ module.exports = async function handler(req, res) {
       if (!session) return;
 
       const payload = req.body || {};
+      const targetKey = isBn ? 'sections_custom_configs' : 'sections_custom_configs_bn';
+      const targetFallbackId = isBn ? '__section_configs__' : '__section_configs_bn__';
+
       let allConfigs = {};
       try {
         const { data } = await sb.from('site_settings').select('value').eq('key', settingsKey).maybeSingle();
-        if (data && data.value && typeof data.value === 'object') {
-          allConfigs = data.value;
-        }
+        if (data && data.value && typeof data.value === 'object') allConfigs = data.value;
       } catch(e) {}
 
-      if (Object.keys(allConfigs).length === 0) {
-        try {
-          const { data: sData } = await sb.from('sections').select('name').eq('admin_id', fallbackId).maybeSingle();
-          if (sData && sData.name) {
-            const parsed = JSON.parse(sData.name);
-            if (parsed && typeof parsed === 'object') allConfigs = parsed;
-          }
-        } catch(e) {}
-      }
+      let targetConfigs = {};
+      try {
+        const { data: tData } = await sb.from('site_settings').select('value').eq('key', targetKey).maybeSingle();
+        if (tData && tData.value && typeof tData.value === 'object') targetConfigs = tData.value;
+      } catch(e) {}
+
+      const sharedFeatured = payload.featuredArticleId || null;
+      const sharedSelected = Array.isArray(payload.selectedArticleIds) ? payload.selectedArticleIds.slice(0, 4) : [];
 
       allConfigs[slug] = {
-        featuredArticleId: payload.featuredArticleId || null,
-        selectedArticleIds: Array.isArray(payload.selectedArticleIds) ? payload.selectedArticleIds.slice(0, 4) : [],
-        customTitle: payload.customTitle || '',
-        description: payload.description || '',
+        featuredArticleId: sharedFeatured,
+        selectedArticleIds: sharedSelected,
+        customTitle: payload.customTitle || (allConfigs[slug]?.customTitle || ''),
+        description: payload.description || (allConfigs[slug]?.description || ''),
         updatedAt: new Date().toISOString()
       };
 
-      let saved = false;
+      if (!targetConfigs[slug]) targetConfigs[slug] = {};
+      targetConfigs[slug].featuredArticleId = sharedFeatured;
+      targetConfigs[slug].selectedArticleIds = sharedSelected;
+      targetConfigs[slug].updatedAt = new Date().toISOString();
+
       try {
-        const { error } = await sb.from('site_settings').upsert({
+        await sb.from('site_settings').upsert({
           key: settingsKey,
           value: allConfigs,
           updated_at: new Date().toISOString()
         }, { onConflict: 'key' });
-        if (!error) saved = true;
+
+        await sb.from('site_settings').upsert({
+          key: targetKey,
+          value: targetConfigs,
+          updated_at: new Date().toISOString()
+        }, { onConflict: 'key' });
       } catch(err) {
         console.warn('[Sections config save error]:', err.message);
       }
