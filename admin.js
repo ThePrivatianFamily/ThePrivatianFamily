@@ -4542,6 +4542,19 @@ function switchHpTab(tab) {
 }
 
 function renderActiveHpTab() {
+  const isBn = _adminContentLang === 'bn';
+  const saveBtn = document.getElementById('hp-save-btn');
+  if (saveBtn) {
+    saveBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" width="14" height="14"><polyline points="20 6 9 17 4 12"/></svg> ${isBn ? 'Apply Changes (বাংলা)' : 'Apply Homepage Changes'}`;
+  }
+  const langPill = document.getElementById('hp-canvas-lang-pill');
+  if (langPill) {
+    langPill.textContent = isBn ? 'বাংলা এডিটর (BN)' : 'English Editor (EN)';
+    langPill.style.background = isBn ? '#f0fdf4' : '#e0f2fe';
+    langPill.style.color = isBn ? '#15803d' : '#0369a1';
+    langPill.style.borderColor = isBn ? '#bbf7d0' : '#bae6fd';
+  }
+
   if (activeHpTab === 'canvas') renderHomepageVisualCanvas();
   else if (activeHpTab === 'hero') renderHeroEditor();
   else if (activeHpTab === 'cards') renderCardsEditor();
@@ -5485,13 +5498,14 @@ function deleteHpSubArticle(colIdx, subIdx) {
 // ── SAVE HOMEPAGE SETTINGS TO SUPABASE DATABASE ──────────────────
 async function saveHomepageSettings() {
   const saveBtn = document.getElementById('hp-save-btn');
+  const isBn = _adminContentLang === 'bn';
 
   if (saveBtn) saveBtn.disabled = true;
   updateGlobalSyncStatus('syncing', 'Saving to database...');
 
   try {
     homepageDraftConfig.lang = _adminContentLang;
-    const res = await _apiPost('/api/sections?action=homepage' + (_adminContentLang === 'bn' ? '&lang=bn' : ''), homepageDraftConfig);
+    const res = await _apiPost('/api/sections?action=homepage' + (isBn ? '&lang=bn' : ''), homepageDraftConfig);
     appliedHomepageConfig = JSON.parse(JSON.stringify(homepageDraftConfig));
     try {
       localStorage.setItem('privatian_homepage_settings_' + _adminContentLang, JSON.stringify(homepageDraftConfig));
@@ -5500,15 +5514,16 @@ async function saveHomepageSettings() {
     homepageRedoStack = [];
     updateHomepageUndoRedoBtns();
     updateGlobalSyncStatus('synced', 'Synced with database');
-    showToast('success', 'Homepage changes published and synced with database!');
+    showToast('success', isBn ? 'বাংলা হোমপেজের পরিবর্তন সফলভাবে সংরক্ষিত ও প্রকাশিত হয়েছে!' : 'English Homepage changes published and synced with database!');
 
     recordActivityLog({
       action: 'layout.homepage_save',
       category: 'layout',
-      summary: `Published Homepage Builder layout & curation updates to database`,
-      target_id: 'site_homepage_config',
-      target_name: 'Homepage Builder',
+      summary: `Published Homepage Builder layout & curation updates (${isBn ? 'Bengali' : 'English'}) to database`,
+      target_id: isBn ? 'site_homepage_config_bn' : 'site_homepage_config',
+      target_name: isBn ? 'বাংলা হোমপেজ কনফিগারেশন' : 'Homepage Builder',
       details: {
+        lang: _adminContentLang,
         heroTitle: homepageDraftConfig.hero?.main?.title,
         eventsCount: (homepageDraftConfig.eventsSection?.events || []).length,
         columnsCount: (homepageDraftConfig.allNews?.columns || []).length
@@ -5517,22 +5532,22 @@ async function saveHomepageSettings() {
   } catch(err) {
     console.warn('[Admin] saveHomepageSettings server error:', err.message);
     try {
-      localStorage.setItem('privatian_homepage_settings', JSON.stringify(homepageDraftConfig));
+      localStorage.setItem('privatian_homepage_settings_' + _adminContentLang, JSON.stringify(homepageDraftConfig));
     } catch(e) {}
     appliedHomepageConfig = JSON.parse(JSON.stringify(homepageDraftConfig));
     homepageUndoStack = [];
     homepageRedoStack = [];
     updateHomepageUndoRedoBtns();
     updateGlobalSyncStatus('synced', 'Synced with database');
-    showToast('success', 'Homepage changes applied to local cache');
+    showToast('success', isBn ? 'বাংলা হোমপেজের পরিবর্তন লোকাল ক্যাশে সংরক্ষিত হয়েছে' : 'Homepage changes applied to local cache');
 
     recordActivityLog({
       action: 'layout.homepage_save',
       category: 'layout',
-      summary: `Saved Homepage Builder configuration (local cache fallback)`,
-      target_id: 'site_homepage_config',
+      summary: `Saved Homepage Builder configuration (${isBn ? 'Bengali' : 'English'}, local cache fallback)`,
+      target_id: isBn ? 'site_homepage_config_bn' : 'site_homepage_config',
       target_name: 'Homepage Builder',
-      details: { offlineFallback: true }
+      details: { lang: _adminContentLang, offlineFallback: true }
     });
   } finally {
     if (saveBtn) saveBtn.disabled = false;

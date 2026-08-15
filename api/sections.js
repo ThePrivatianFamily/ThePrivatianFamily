@@ -484,6 +484,221 @@ module.exports = async function handler(req, res) {
       }
     };
 
+    const DEFAULT_HOMEPAGE_CONFIG_BN = {
+      hero: {
+        main: {
+          articleId: null,
+          title: 'ব্যক্তিগত প্রজ্ঞার শিল্প: কীভাবে প্রাইভেসিয়ান পরিবারগুলো সংস্কৃতি ও ঐতিহ্য গড়ে তোলে।',
+          subtitle: 'পারিবারিক ঐতিহ্য, বুদ্ধিবৃত্তিক পরম্পরা এবং নিজস্ব জ্ঞানের চিরস্থায়ী ক্ষমতার এক অনন্য অনুসন্ধান।',
+          imageUrl: 'img1.png',
+          href: '/section/findings',
+          enabled: true
+        },
+        sidebar: [
+          {
+            id: 'h-side-1',
+            articleId: null,
+            title: 'অর্ধেক ঐতিহ্য, অর্ধেক পর্যবেক্ষণ: প্রজন্ম থেকে প্রজন্মে প্রাইভেসিয়ানদের পথচলা',
+            description: 'পারিবারিক সংরক্ষণাগার থেকে, প্রাইভেসিয়ান ঐতিহ্য ব্যক্তিগত প্রচেষ্টার মাধ্যমে নতুন পথ তৈরি করে',
+            imageUrl: 'img5.png',
+            tag: 'ঐতিহ্য সংরক্ষণাগার',
+            href: '/section/community-heritage',
+            enabled: true
+          },
+          {
+            id: 'h-side-2',
+            articleId: null,
+            title: 'কীভাবে প্রাইভেসিয়ান ঐতিহ্য ব্যক্তিগত উৎকর্ষের এক নতুন যুগকে সংজ্ঞায়িত করেছে',
+            description: 'সংস্কৃতি, শিল্পকলা এবং বুদ্ধিবৃত্তিক চিন্তাধারায় পরিবারের প্রভাব সাধারণ ধারণার চেয়েও গভীর',
+            imageUrl: 'img6.png',
+            tag: '',
+            href: '/section/culture',
+            enabled: true
+          }
+        ]
+      },
+      smallArticles: [
+        {
+          id: 'sm-1',
+          articleId: null,
+          title: 'যখন প্রাইভেসিয়ানরা মিলিত হয়: সম্প্রদায়ের নিভৃত শক্তি',
+          imageUrl: 'img2.png',
+          href: '/section/community-heritage',
+          enabled: true
+        },
+        {
+          id: 'sm-2',
+          articleId: null,
+          title: 'কেন হাতে লেখা চিঠিপত্র আবার ব্যক্তিগত জগতে ফিরে আসছে',
+          imageUrl: 'img3.png',
+          href: '/section/culture',
+          enabled: true
+        },
+        {
+          id: 'sm-3',
+          articleId: null,
+          title: 'কেমব্রিজের পাঠাগারের অন্তরালে: সংরক্ষণ, স্মৃতি ও মনন',
+          imageUrl: 'img4.png',
+          href: '/section/privacy-values',
+          enabled: true
+        }
+      ],
+      eventsSection: {
+        eventsHeading: 'আসন্ন অনুষ্ঠানসমূহ',
+        seeAllText: 'সকল অনুষ্ঠান দেখুন',
+        seeAllHref: '/events',
+        events: [
+          {
+            id: 'ev-1',
+            date: '২৮ মার্চ, ২০২৬',
+            title: 'বসন্তকালীন সম্মেলন: পারিবারিক সংরক্ষণাগারের ভবিষ্যৎ ও সুরক্ষা',
+            meta: 'সন্ধ্যা ৬:০০ ■ কেমব্রিজ, এমএ; সরাসরি সম্প্রচার',
+            href: '/events',
+            enabled: true
+          },
+          {
+            id: 'ev-2',
+            date: '১৪ এপ্রিল, ২০২৬',
+            title: 'বার্ষিক ঐতিহ্য বক্তৃতা ও মুক্ত আলোচনা সভা',
+            meta: 'বিকাল ৪:৩০ ■ বোস্টন, এমএ; প্রাইভেসিয়ান সেন্টার',
+            href: '/events',
+            enabled: true
+          },
+          {
+            id: 'ev-3',
+            date: '১২ নভেম্বর, ২০২৬',
+            title: 'বার্ষিক মিলনমেলা: প্রাইভেসিয়ান ফেলোশিপের ১২০ বছর উদযাপন',
+            meta: 'দুপুর ২:০০ ■ কেমব্রিজ হেরিটেজ লাইব্রেরি',
+            href: '/events',
+            enabled: true
+          },
+          {
+            id: 'ev-4',
+            date: '০৪ ডিসেম্বর, ২০২৬',
+            title: 'বার্ষিক প্রাইভেসিয়ান সাহিত্য সম্মাননা ও ফেলোশিপ অ্যাওয়ার্ড প্রদান',
+            meta: 'সন্ধ্যা ৬:০০ ■ গ্র্যান্ড বলরুম, দ্য প্রাইভেসিয়ান সোসাইটি',
+            href: '/events',
+            enabled: true
+          }
+        ],
+        featured: {
+          articleId: null,
+          title: "রুবির রহস্য উন্মোচন: 'ঐতিহ্য হলো সামগ্রিক পরিচয়ের একটি অংশ'",
+          description: 'নতুন প্রাইভেসিয়ান প্রদর্শনীতে দুর্লভ পারিবারিক স্মারক ও ঐতিহাসিক উত্তরাধিকার',
+          imageUrl: 'img5.png',
+          href: '/section/community-heritage',
+          enabled: true
+        }
+      },
+      allNews: {
+        heading: 'সকল খবর',
+        columns: [
+          {
+            id: 'col-1',
+            label: 'সমাজ ও ঐতিহ্য',
+            sectionSlug: 'community-heritage',
+            lead: {
+              articleId: null,
+              title: "পারিবারিক সংরক্ষণাগার থেকে গবেষকদের নতুন দৃষ্টিভঙ্গি ও সাফল্য",
+              imageUrl: 'img2.png',
+              href: '/section/community-heritage',
+              enabled: true
+            },
+            subArticles: [
+              { id: 'sub-1-1', title: 'পারিবারিক ঐতিহ্যের অলিখিত নিয়মাবলী: সংরক্ষণাগার আমাদের কী বার্তা দেয়', href: '/section/community-heritage', enabled: true },
+              { id: 'sub-1-2', title: 'আত্মানুসন্ধান: পরিচয়ের ওপর নতুন গবেষণা ও অনুসন্ধান', href: '/section/community-heritage', enabled: true },
+              { id: 'sub-1-3', title: '১৯ শতকের হিসাবের খাতা বিশ্বাস সম্পর্কে কী প্রকাশ করে', href: '/section/community-heritage', enabled: true },
+              { id: 'sub-1-4', title: 'ব্যক্তিগত প্রতিষ্ঠান এবং সত্যের সুরক্ষা', href: '/section/community-heritage', enabled: true }
+            ]
+          },
+          {
+            id: 'col-2',
+            label: 'সংস্কৃতি',
+            sectionSlug: 'culture',
+            lead: {
+              articleId: null,
+              title: "নীরব উৎকর্ষের সংস্কৃতি: কেন সংযত পারদর্শিতা মূল্যবান",
+              imageUrl: 'img1.png',
+              href: '/section/culture',
+              enabled: true
+            },
+            subArticles: [
+              { id: 'sub-2-1', title: 'তরুণ প্রাইভেসিয়ান সদস্যদের মাঝে সৃজনশীল লেখায় কৃত্রিম বুদ্ধিমত্তার বিস্তার', href: '/section/culture', enabled: true },
+              { id: 'sub-2-2', title: 'কলমের কালি রিফিল? এগিয়ে চলুন, বলছে ক্যালিগ্রাফি সোসাইটি', href: '/section/culture', enabled: true },
+              { id: 'sub-2-3', title: 'সঙ্গীত রেসিডেন্সি মূলত আন্তরিক সংযোগের মাধ্যম', href: '/section/culture', enabled: true }
+            ]
+          },
+          {
+            id: 'col-3',
+            label: 'গোপনীয়তা ও মূল্যবোধ',
+            sectionSlug: 'privacy-values',
+            lead: {
+              articleId: null,
+              title: 'আপনার কি কোনো ব্যক্তিগত এআই গোপন তথ্য আছে?',
+              imageUrl: 'img4.png',
+              href: '/section/privacy-values',
+              enabled: true
+            },
+            subArticles: [
+              { id: 'sub-3-1', title: 'পরিবার একা হতে পারে, তবে সমাজকে পর্যবেক্ষণ করা ভিন্ন বিষয়', href: '/section/privacy-values', enabled: true },
+              { id: 'sub-3-2', title: 'তিনি কি আসলেই পরিবারের সদস্য—এবং এই নিয়ম কারা নির্ধারণ করে?', href: '/section/privacy-values', enabled: true },
+              { id: 'sub-3-3', title: 'একাকী কাটানো সময় নয়, বরং পরিবার এখনও নিয়মিত মিলিত হয়', href: '/section/privacy-values', enabled: true }
+            ]
+          },
+          {
+            id: 'col-4',
+            label: 'দেশ ও বিশ্ব',
+            sectionSlug: 'nation-world',
+            lead: {
+              articleId: null,
+              title: 'বিশ্বায়নের যুগে কীভাবে প্রাইভেসিয়ান প্রবাসী সম্প্রদায় ঐতিহ্য বাঁচিয়ে রেখেছে',
+              imageUrl: 'img6.png',
+              href: '/section/nation-world',
+              enabled: true
+            },
+            subArticles: [
+              { id: 'sub-4-1', title: 'গোপনীয়তার বৈশ্বিক পাঠ: প্রাইভেসিয়ান মডেল আমাদের কী শেখায়', href: '/section/nation-world', enabled: true },
+              { id: 'sub-4-2', title: 'বিশ্বাসের ভিত্তি: যেভাবে গড়ে উঠেছে আন্তর্জাতিক নেটওয়ার্ক', href: '/section/nation-world', enabled: true }
+            ]
+          },
+          {
+            id: 'col-5',
+            label: 'শিল্প ও উত্তরাধিকার',
+            sectionSlug: 'arts-legacy',
+            lead: {
+              articleId: null,
+              title: 'নতুন গবেষণায় দেখা গেছে: হাতে লেখার অভ্যাস স্মৃতিশক্তি ও বুদ্ধি প্রখর করে',
+              imageUrl: 'img3.png',
+              href: '/section/arts-legacy',
+              enabled: true
+            },
+            subArticles: [
+              { id: 'sub-5-1', title: 'খেলাধুলা ও শিল্পকলার পাশাপাশি কলমের গুরুত্ব অনন্য', href: '/section/arts-legacy', enabled: true },
+              { id: 'sub-5-2', title: 'ঔপন্যাসিকদের মতে বিশ্বের আরও সুচিন্তিত চিঠিপত্র প্রয়োজন', href: '/section/arts-legacy', enabled: true },
+              { id: 'sub-5-3', title: 'সোসাইটির প্রতিটি পর্যায়ে সাংস্কৃতিক উত্তরাধিকার বজায় রাখা জরুরি', href: '/section/arts-legacy', enabled: true }
+            ]
+          },
+          {
+            id: 'col-6',
+            label: 'কর্ম ও অর্থনীতি',
+            sectionSlug: 'work-economy',
+            lead: {
+              articleId: null,
+              title: 'আধুনিক অর্থনীতিতে শীর্ষ পেশাজীবীরা নতুন মাত্রা যোগ করছেন',
+              imageUrl: 'img5.png',
+              href: '/section/work-economy',
+              enabled: true
+            },
+            subArticles: [
+              { id: 'sub-6-1', title: "গ্রামীণ অর্থনীতি: ব্যক্তিগত জমিতে পরিবারের যুগান্তকারী বিনিয়োগ", href: '/section/work-economy', enabled: true },
+              { id: 'sub-6-2', title: 'অর্থনৈতিক উপদেষ্টার সঙ্গে পারিবারিক সম্পদের বর্তমান অবস্থা নিয়ে আলোচনা', href: '/section/work-economy', enabled: true },
+              { id: 'sub-6-3', title: 'আইনের ধারা: পরিবারের নীতিমালা সংস্কারে আইনজ্ঞদের ভূমিকা', href: '/section/work-economy', enabled: true }
+            ]
+          }
+        ]
+      }
+    };
+
     const isBn = (req.query && req.query.lang === 'bn') || (req.body && req.body.lang === 'bn');
     const settingsKey = isBn ? 'site_homepage_config_bn' : 'site_homepage_config';
     const fallbackId = isBn ? '__homepage_config_bn__' : '__homepage_config__';
@@ -503,7 +718,7 @@ module.exports = async function handler(req, res) {
         }
       } catch(e) {}
 
-      return res.status(200).json(DEFAULT_HOMEPAGE_CONFIG);
+      return res.status(200).json(isBn ? DEFAULT_HOMEPAGE_CONFIG_BN : DEFAULT_HOMEPAGE_CONFIG);
     }
 
     if (req.method === 'POST') {

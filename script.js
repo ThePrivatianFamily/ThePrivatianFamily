@@ -14,7 +14,7 @@ document.addEventListener('DOMContentLoaded', function () {
   (function applyImmediateCache() {
     try {
       var isBn = window.PrivatianLang && window.PrivatianLang.getLang() === 'bn';
-      var cached = localStorage.getItem(isBn ? 'privatian_homepage_settings_bn' : 'privatian_homepage_settings') || localStorage.getItem('privatian_homepage_settings');
+      var cached = localStorage.getItem(isBn ? 'privatian_homepage_settings_bn' : 'privatian_homepage_settings');
       if (cached) {
         var cfg = JSON.parse(cached);
         if (cfg && typeof cfg === 'object') {
