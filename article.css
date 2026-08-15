@@ -596,3 +596,68 @@
 .related-card-section:hover { opacity: 0.75; }
 .site-footer { width: 100%; display: block; }
 .footer-main { width: 100%; max-width: 100%; }
+
+/* ── Editorial Callout Box ── */
+.ed-callout {
+  border-left: 4px solid var(--brand-navy, #0a528e);
+  background: #f0f7ff;
+  border-radius: 0 8px 8px 0;
+  padding: 18px 22px;
+  margin: 2em 0;
+  font-family: var(--font-sans);
+  font-size: 15.5px;
+  line-height: 1.6;
+  color: #1e293b;
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+}
+.ed-callout.warning {
+  border-left-color: #f59e0b;
+  background: #fffbeb;
+  color: #78350f;
+}
+.ed-callout.success {
+  border-left-color: #10b981;
+  background: #ecfdf5;
+  color: #065f46;
+}
+.ed-callout.tip {
+  border-left-color: #8b5cf6;
+  background: #f5f3ff;
+  color: #5b21b6;
+}
+.ed-callout-icon {
+  font-size: 19px;
+  flex-shrink: 0;
+  line-height: 1.2;
+}
+.ed-callout-content {
+  flex: 1;
+}
+
+/* ── Responsive Data Table ── */
+.ed-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+  margin: 2em 0;
+}
+.ed-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--font-sans);
+  font-size: 14.5px;
+  text-align: left;
+}
+.ed-table th, .ed-table td {
+  border: 1px solid #e2e8f0;
+  padding: 10px 14px;
+}
+.ed-table th {
+  background: #f8fafc;
+  font-weight: 700;
+  color: #0d1f35;
+}
+.ed-table tr:nth-child(even) td {
+  background: #fcfdfe;
+}

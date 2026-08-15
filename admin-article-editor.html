@@ -581,11 +581,249 @@ body{padding-bottom:34px}
 .sp-desc{font:400 12px/1.5 var(--sans);color:#545454;
   display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 
-.tb-settings{background:rgba(255,255,255,.07);color:rgba(255,255,255,.55);
-  border:1px solid rgba(255,255,255,.1)}
-.tb-settings:hover{background:rgba(255,255,255,.13);color:#fff}
-.tb-settings.active{background:rgba(10,82,142,.55);color:#fff;
-  border-color:rgba(10,82,142,.7)}
+/* ── ZEN / FOCUS WRITING MODE ────────────────── */
+body.zen-mode {
+  padding-top: 0 !important;
+  background: #fafaf9 !important;
+}
+body.zen-mode #tb,
+body.zen-mode #fmt,
+body.zen-mode #sd,
+body.zen-mode #metrics-bar,
+body.zen-mode #restore-banner,
+body.zen-mode #toc-drawer {
+  display: none !important;
+}
+body.zen-mode #canvas {
+  margin: 60px auto 140px !important;
+  box-shadow: none !important;
+  max-width: 780px !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+}
+body.zen-mode #ed-hdr,
+body.zen-mode #ed-body,
+body.zen-mode #ed-feat-wrap,
+body.zen-mode #ed-bio {
+  background: transparent !important;
+  border-color: #e7e5e4 !important;
+}
+#zen-exit-btn {
+  display: none;
+  position: fixed;
+  top: 24px;
+  right: 24px;
+  z-index: 9999;
+  background: rgba(15, 23, 42, 0.88);
+  backdrop-filter: blur(10px);
+  color: #fff;
+  border: 1px solid rgba(255,255,255,0.22);
+  border-radius: 24px;
+  padding: 8px 16px;
+  font: 600 12px/1 var(--sans);
+  cursor: pointer;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.25);
+  align-items: center;
+  gap: 7px;
+  transition: all 0.18s ease;
+}
+#zen-exit-btn:hover {
+  background: rgba(15, 23, 42, 1);
+  transform: translateY(-1px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.35);
+}
+body.zen-mode #zen-exit-btn {
+  display: flex !important;
+}
+
+/* ── ARTICLE OUTLINE / TOC DRAWER ───────────── */
+#toc-drawer {
+  position: fixed;
+  top: calc(var(--tb) + var(--fmt));
+  left: -300px;
+  width: 300px;
+  bottom: 0;
+  background: #ffffff;
+  border-right: 1.5px solid var(--border);
+  box-shadow: 6px 0 28px rgba(0,0,0,0.08);
+  z-index: 850;
+  transition: left 0.26s cubic-bezier(0.16, 1, 0.3, 1);
+  display: flex;
+  flex-direction: column;
+}
+#toc-drawer.open {
+  left: 0;
+}
+.toc-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border);
+  font: 700 11.5px/1 var(--sans);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  background: #f8fafc;
+}
+.toc-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.toc-item {
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-family: var(--sans);
+  font-size: 13px;
+  color: var(--text);
+  text-decoration: none;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: all 0.12s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.toc-item:hover {
+  background: #f0f5fa;
+  color: var(--navy);
+}
+.toc-item.h2 { font-weight: 600; padding-left: 10px; color: var(--dark); }
+.toc-item.h3 { padding-left: 22px; font-size: 12.5px; color: #475569; }
+.toc-item.h4 { padding-left: 34px; font-size: 12px; color: #64748b; font-style: italic; }
+
+/* ── EDITORIAL CALLOUT BOXES ─────────────────── */
+.ed-callout {
+  border-left: 4px solid var(--navy);
+  background: #f0f7ff;
+  border-radius: 0 8px 8px 0;
+  padding: 16px 20px;
+  margin: 1.8em 0;
+  font-family: var(--sans);
+  font-size: 15.5px;
+  line-height: 1.6;
+  color: #1e293b;
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+.ed-callout.warning {
+  border-left-color: #f59e0b;
+  background: #fffbeb;
+  color: #78350f;
+}
+.ed-callout.success {
+  border-left-color: #10b981;
+  background: #ecfdf5;
+  color: #065f46;
+}
+.ed-callout.tip {
+  border-left-color: #8b5cf6;
+  background: #f5f3ff;
+  color: #5b21b6;
+}
+.ed-callout-icon {
+  font-size: 18px;
+  flex-shrink: 0;
+  line-height: 1.2;
+}
+.ed-callout-content {
+  flex: 1;
+  outline: none;
+}
+
+/* ── RESPONSIVE DATA TABLE ───────────────────── */
+.ed-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+  margin: 1.8em 0;
+}
+.ed-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--sans);
+  font-size: 14px;
+  text-align: left;
+}
+.ed-table th, .ed-table td {
+  border: 1px solid #e2e8f0;
+  padding: 10px 14px;
+}
+.ed-table th {
+  background: #f8fafc;
+  font-weight: 700;
+  color: var(--dark);
+}
+.ed-table tr:nth-child(even) td {
+  background: #fcfdfe;
+}
+
+/* ── SHORTCUTS MODAL ─────────────────────────── */
+.shortcuts-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.shortcuts-modal-box {
+  background: #fff;
+  border-radius: 14px;
+  max-width: 580px;
+  width: 100%;
+  box-shadow: 0 20px 48px rgba(0,0,0,0.22);
+  overflow: hidden;
+  animation: pmPop 0.2s ease;
+}
+.shortcuts-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  padding: 22px 24px;
+  background: #f8fafc;
+}
+@media (max-width: 600px) {
+  .shortcuts-grid { grid-template-columns: 1fr; }
+}
+.sc-group-title {
+  font: 700 11px/1 var(--sans);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  margin-bottom: 12px;
+}
+.sc-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 7px 0;
+  font: 500 13px/1.3 var(--sans);
+  color: var(--text);
+  border-bottom: 1px dashed #e2e8f0;
+}
+.sc-row:last-child { border-bottom: none; }
+kbd {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-bottom-width: 2px;
+  border-radius: 5px;
+  padding: 3px 6px;
+  font-family: monospace;
+  font-size: 11px;
+  font-weight: 600;
+  color: #334155;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
 
 /* Hide public elements */
 #site-header-mount,#site-footer-mount,.article-share-sidebar,
@@ -619,6 +857,21 @@ body{padding-bottom:34px}
     <span id="art-sync-status">Synced with database</span>
   </div>
   <div class="tb-vr"></div>
+  <!-- ZEN FOCUS MODE BUTTON -->
+  <button class="tb-btn tb-preview" id="tb-zen-btn" onclick="toggleZenMode()" title="Distraction-Free Focus Mode (Ctrl+Shift+F)" style="display:flex;align-items:center;gap:5px;">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
+    Focus
+  </button>
+  <!-- OUTLINE / TOC BUTTON -->
+  <button class="tb-btn tb-preview" id="tb-toc-btn" onclick="toggleTocDrawer()" title="Article Headings Outline" style="display:flex;align-items:center;gap:5px;">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+    Outline
+  </button>
+  <!-- SHORTCUTS HELPER BUTTON -->
+  <button class="tb-btn tb-preview" onclick="openShortcutsModal()" title="Keyboard Shortcuts Cheat Sheet" style="padding:7px 10px;">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+  </button>
+  <div class="tb-vr"></div>
   <button class="tb-btn tb-settings" id="sd-toggle" onclick="toggleDrawer()" title="Article Settings">
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
     Settings
@@ -632,14 +885,14 @@ body{padding-bottom:34px}
 <!-- ═══ FORMAT BAR ═══════════════════════════════════════════════ -->
 <div id="fmt">
 
-  <!-- Undo / Redo — Sleek segmented pair -->
+  <!-- Undo / Redo — Clean Admin Circular-Arrow SVGs -->
   <div class="fmt-hist" title="History (Undo / Redo)">
-    <button class="fb" onmousedown="f(event,'undo')" title="Undo (Ctrl+Z)">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7v6h6"/><path d="M3 13A9 9 0 1 0 6 6.7L3 9"/></svg>
+    <button class="fb" id="fb-undo" onmousedown="f(event,'undo')" title="Undo (Ctrl+Z)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
     </button>
     <div class="fmt-hist-sep"></div>
-    <button class="fb" onmousedown="f(event,'redo')" title="Redo (Ctrl+Y)">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M21 7v6h-6"/><path d="M21 13A9 9 0 1 1 18 6.7L21 9"/></svg>
+    <button class="fb" id="fb-redo" onmousedown="f(event,'redo')" title="Redo (Ctrl+Y)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
     </button>
   </div>
 
@@ -659,8 +912,21 @@ body{padding-bottom:34px}
 
   <button class="fb" id="fb-b" onmousedown="f(event,'bold')"          title="Bold (Ctrl+B)"><b>B</b></button>
   <button class="fb" id="fb-i" onmousedown="f(event,'italic')"        title="Italic (Ctrl+I)"><i>I</i></button>
-  <button class="fb" id="fb-u" onmousedown="f(event,'underline')"     title="Underline"><u>U</u></button>
+  <button class="fb" id="fb-u" onmousedown="f(event,'underline')"     title="Underline (Ctrl+U)"><u>U</u></button>
   <button class="fb" id="fb-s" onmousedown="f(event,'strikeThrough')" title="Strikethrough"><s>S</s></button>
+
+  <div class="fs"></div>
+
+  <!-- Text Alignment -->
+  <button class="fb" id="fb-al-left" onmousedown="f(event,'justifyLeft')" title="Align Left">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="17" y1="10" x2="3" y2="10"/><line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="14" x2="3" y2="14"/><line x1="17" y1="18" x2="3" y2="18"/></svg>
+  </button>
+  <button class="fb" id="fb-al-center" onmousedown="f(event,'justifyCenter')" title="Align Center">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="10" x2="6" y2="10"/><line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="14" x2="3" y2="14"/><line x1="18" y1="18" x2="6" y2="18"/></svg>
+  </button>
+  <button class="fb" id="fb-al-right" onmousedown="f(event,'justifyRight')" title="Align Right">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="21" y1="10" x2="7" y2="10"/><line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="14" x2="3" y2="14"/><line x1="21" y1="18" x2="7" y2="18"/></svg>
+  </button>
 
   <div class="fs"></div>
 
@@ -697,6 +963,16 @@ body{padding-bottom:34px}
     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5-4 4-2-2-5 5"/></svg>
   </button>
 
+  <!-- Editorial Callout Box -->
+  <button class="fb" onmousedown="insCallout(event)" title="Insert Callout / Highlight Box">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/><circle cx="12" cy="12" r="4"/></svg>
+  </button>
+
+  <!-- Data Table -->
+  <button class="fb" onmousedown="insTable(event)" title="Insert Data Table">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/></svg>
+  </button>
+
   <!-- HR -->
   <button class="fb" onmousedown="insHR(event)" title="Divider">
     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"/></svg>
@@ -712,10 +988,10 @@ body{padding-bottom:34px}
   <div class="fs"></div>
 
   <!-- Lists -->
-  <button class="fb" id="fb-ul" onmousedown="f(event,'insertUnorderedList')" title="Bullet list">
+  <button class="fb" id="fb-ul" onmousedown="f(event,'insertUnorderedList')" title="Bullet list (Ctrl+Shift+8)">
     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="9" y1="6" x2="20" y2="6"/><line x1="9" y1="12" x2="20" y2="12"/><line x1="9" y1="18" x2="20" y2="18"/><circle cx="4" cy="6" r="1.5" fill="currentColor" stroke="none"/><circle cx="4" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="4" cy="18" r="1.5" fill="currentColor" stroke="none"/></svg>
   </button>
-  <button class="fb" id="fb-ol" onmousedown="f(event,'insertOrderedList')" title="Numbered list">
+  <button class="fb" id="fb-ol" onmousedown="f(event,'insertOrderedList')" title="Numbered list (Ctrl+Shift+7)">
     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="10" y1="6" x2="21" y2="6"/><line x1="10" y1="12" x2="21" y2="12"/><line x1="10" y1="18" x2="21" y2="18"/><path d="M4 6h1v4" stroke-linecap="round"/><path d="M4 10h2" stroke-linecap="round"/><path d="M6 18H4c0-1 2-2 2-3s-1-1.5-2-1"/></svg>
   </button>
   <button class="fb" onmousedown="insChecklist(event)" title="Checklist">
@@ -727,6 +1003,59 @@ body{padding-bottom:34px}
   <!-- Superscript / Subscript -->
   <button class="fb" onmousedown="f(event,'superscript')" title="Superscript">x²</button>
   <button class="fb" onmousedown="f(event,'subscript')"   title="Subscript">x₂</button>
+</div>
+
+<!-- ═══ ZEN FOCUS MODE EXIT BUTTON ═══════════════════════════════ -->
+<button type="button" id="zen-exit-btn" onclick="toggleZenMode()" title="Exit Focus Mode (Esc or Ctrl+Shift+F)">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+  Exit Focus Mode
+</button>
+
+<!-- ═══ ARTICLE OUTLINE / TOC DRAWER ═════════════════════════════ -->
+<div id="toc-drawer">
+  <div class="toc-head">
+    <span style="display:flex;align-items:center;gap:6px;">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+      Article Outline
+    </span>
+    <button type="button" onclick="toggleTocDrawer()" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:16px;">×</button>
+  </div>
+  <div class="toc-list" id="toc-list">
+    <!-- Populated dynamically from H2, H3, H4 in editor -->
+    <div style="padding:16px;font-size:12.5px;color:var(--muted);text-align:center;">Add headings (H2, H3) to see the outline structure.</div>
+  </div>
+</div>
+
+<!-- ═══ KEYBOARD SHORTCUTS MODAL ═════════════════════════════════ -->
+<div id="shortcuts-modal-overlay" class="shortcuts-modal-overlay" style="display:none;" onclick="closeShortcutsModal(event)">
+  <div class="shortcuts-modal-box">
+    <div class="pm-head" style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid #e2e8f0;background:#f8fafc;">
+      <span class="pm-title" style="font-weight:700;font-size:15px;color:#0f172a;display:flex;align-items:center;gap:8px;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0a528e" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M6 8h.01M10 8h.01M14 8h.01M18 8h.01M6 12h.01M10 12h.01M14 12h.01M18 12h.01M8 16h8"/></svg>
+        Editor Keyboard Shortcuts
+      </span>
+      <button type="button" class="pm-close" onclick="closeShortcutsModal()" style="border:none;background:none;font-size:20px;cursor:pointer;color:#64748b;">×</button>
+    </div>
+    <div class="shortcuts-grid">
+      <div class="sc-group">
+        <div class="sc-group-title">Editor Actions</div>
+        <div class="sc-row"><span>Save Draft</span><span><kbd>Ctrl</kbd> + <kbd>S</kbd></span></div>
+        <div class="sc-row"><span>Preview Article</span><span><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>P</kbd></span></div>
+        <div class="sc-row"><span>Undo</span><span><kbd>Ctrl</kbd> + <kbd>Z</kbd></span></div>
+        <div class="sc-row"><span>Redo</span><span><kbd>Ctrl</kbd> + <kbd>Y</kbd></span></div>
+        <div class="sc-row"><span>Focus / Zen Mode</span><span><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>F</kbd></span></div>
+      </div>
+      <div class="sc-group">
+        <div class="sc-group-title">Formatting</div>
+        <div class="sc-row"><span>Bold</span><span><kbd>Ctrl</kbd> + <kbd>B</kbd></span></div>
+        <div class="sc-row"><span>Italic</span><span><kbd>Ctrl</kbd> + <kbd>I</kbd></span></div>
+        <div class="sc-row"><span>Underline</span><span><kbd>Ctrl</kbd> + <kbd>U</kbd></span></div>
+        <div class="sc-row"><span>Insert Link</span><span><kbd>Ctrl</kbd> + <kbd>K</kbd></span></div>
+        <div class="sc-row"><span>Bullet List</span><span><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>8</kbd></span></div>
+        <div class="sc-row"><span>Numbered List</span><span><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>7</kbd></span></div>
+      </div>
+    </div>
+  </div>
 </div>
 
 <!-- Hidden inputs -->
@@ -2036,7 +2365,102 @@ function insChecklist(ev) {
       DIRTY = true;
     });
   });
+// ── EDITORIAL CALLOUT INSERT ─────────────────────────────────
+function insCallout(ev) {
+  if (ev) ev.preventDefault();
+  g('ed-rt').focus();
+  const html = `<div class="ed-callout" contenteditable="false"><span class="ed-callout-icon">💡</span><div class="ed-callout-content" contenteditable="true"><strong>Key Takeaway:</strong> Add your important insight, context, or summary note here…</div></div><p><br></p>`;
+  document.execCommand('insertHTML', false, html);
+  DIRTY = true;
+  setSaveStatus('Unsaved changes');
 }
+
+// ── DATA TABLE INSERT ─────────────────────────────────────────
+function insTable(ev) {
+  if (ev) ev.preventDefault();
+  g('ed-rt').focus();
+  const html = `<div class="ed-table-wrap"><table class="ed-table"><thead><tr><th>Header 1</th><th>Header 2</th><th>Header 3</th></tr></thead><tbody><tr><td>Data 1</td><td>Data 2</td><td>Data 3</td></tr><tr><td>Data 4</td><td>Data 5</td><td>Data 6</td></tr></tbody></table></div><p><br></p>`;
+  document.execCommand('insertHTML', false, html);
+  DIRTY = true;
+  setSaveStatus('Unsaved changes');
+}
+
+// ── ZEN / FOCUS WRITING MODE ─────────────────────────────────
+function toggleZenMode() {
+  document.body.classList.toggle('zen-mode');
+  const isZen = document.body.classList.contains('zen-mode');
+  const zenBtn = g('tb-zen-btn');
+  if (zenBtn) zenBtn.classList.toggle('active', isZen);
+  if (isZen) {
+    toast('Focus Mode enabled. Press Esc or click Exit to return.', 'info');
+  }
+}
+
+// ── ARTICLE OUTLINE / TOC ─────────────────────────────────────
+function toggleTocDrawer() {
+  const drawer = g('toc-drawer');
+  if (!drawer) return;
+  drawer.classList.toggle('open');
+  if (drawer.classList.contains('open')) {
+    renderToc();
+  }
+}
+function renderToc() {
+  const list = g('toc-list');
+  if (!list) return;
+  const headings = g('ed-rt')?.querySelectorAll('h2, h3, h4') || [];
+  if (!headings.length) {
+    list.innerHTML = `<div style="padding:16px;font-size:12.5px;color:var(--muted);text-align:center;">No headings (H2, H3) found yet.<br>Format text as Heading 2 or Heading 3 to see the outline here.</div>`;
+    return;
+  }
+  list.innerHTML = Array.from(headings).map((h, i) => {
+    const text = h.textContent.trim() || 'Untitled Heading';
+    const tag = h.tagName.toLowerCase();
+    h.id = h.id || `toc-heading-${i}`;
+    return `<a class="toc-item ${tag}" href="#${h.id}" onclick="event.preventDefault(); document.getElementById('${h.id}').scrollIntoView({behavior:'smooth', block:'center'});">${tag.toUpperCase()}: ${escH(text)}</a>`;
+  }).join('');
+}
+
+// ── SHORTCUTS MODAL ───────────────────────────────────────────
+function openShortcutsModal() {
+  const modal = g('shortcuts-modal-overlay');
+  if (modal) modal.style.display = 'flex';
+}
+function closeShortcutsModal(ev) {
+  if (ev && ev.target && ev.target.id !== 'shortcuts-modal-overlay' && !ev.target.classList.contains('pm-close')) return;
+  const modal = g('shortcuts-modal-overlay');
+  if (modal) modal.style.display = 'none';
+}
+
+// ── GLOBAL KEYBOARD SHORTCUTS ─────────────────────────────────
+document.addEventListener('keydown', e => {
+  // Esc exits Zen Mode & Modals
+  if (e.key === 'Escape') {
+    if (document.body.classList.contains('zen-mode')) toggleZenMode();
+    closeShortcutsModal();
+    const pub = g('pub-overlay'); if (pub && pub.classList.contains('show')) pub.classList.remove('show');
+  }
+  // Ctrl/Cmd + S -> Save Draft
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
+    e.preventDefault();
+    saveArt();
+  }
+  // Ctrl/Cmd + Shift + P -> Preview
+  if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'p') {
+    e.preventDefault();
+    previewArt();
+  }
+  // Ctrl/Cmd + Shift + F -> Focus / Zen Mode
+  if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'f') {
+    e.preventDefault();
+    toggleZenMode();
+  }
+  // Ctrl/Cmd + K -> Insert Link
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+    e.preventDefault();
+    insLink(e);
+  }
+});
 
 // ── FORMAT BAR SYNC ──────────────────────────────────────────
 function bindFmtSync() {
@@ -2044,7 +2468,8 @@ function bindFmtSync() {
 }
 function syncFmt() {
   [['bold','fb-b'],['italic','fb-i'],['underline','fb-u'],['strikeThrough','fb-s'],
-   ['insertUnorderedList','fb-ul'],['insertOrderedList','fb-ol']].forEach(([c,id]) => {
+   ['insertUnorderedList','fb-ul'],['insertOrderedList','fb-ol'],
+   ['justifyLeft','fb-al-left'],['justifyCenter','fb-al-center'],['justifyRight','fb-al-right']].forEach(([c,id]) => {
     const el = g(id); if (el) el.classList.toggle('on', document.queryCommandState(c));
   });
   try {
