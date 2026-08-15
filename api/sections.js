@@ -738,6 +738,10 @@ module.exports = async function handler(req, res) {
     const mode = req.query && req.query.mode;
     if (!id) return res.status(400).json({ error: 'id (admin_id) is required' });
 
+    if (id === 'all' || id.toLowerCase() === 'all') {
+      return res.status(400).json({ error: 'The "All" section is a permanent core section and cannot be deleted.' });
+    }
+
     if (mode === 'permanent') {
       // Hard delete — STRICTLY Admin only with live DB check
       const session = await requireAdmin(req, res);

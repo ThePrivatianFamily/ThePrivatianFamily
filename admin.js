@@ -78,9 +78,9 @@ async function _apiDelete(url) {
   return r.json();
 }
 
-// -- Locked "All" pseudo-section (UI-only, never stored in DB) --
+// -- Core "All" section (always available, editable, permanent/cannot be deleted) --
 const ALL_SECTION = {
-  id: 'all', name: 'All', slug: '', locked: true,
+  id: 'all', name: 'All', slug: '', locked: false, isPermanent: true,
   deleted: false, createdAt: '2024-01-01T00:00:00Z'
 };
 
@@ -88,6 +88,13 @@ const ALL_SECTION = {
 async function loadSectionsFromAPI() {
   updateGlobalSyncStatus('syncing', 'Loading sections from database...');
   let loaded = null;
+
+  try {
+    const savedAllName = localStorage.getItem('pf_all_section_name');
+    const savedAllSlug = localStorage.getItem('pf_all_section_slug');
+    if (savedAllName) ALL_SECTION.name = savedAllName;
+    if (savedAllSlug !== null && savedAllSlug !== undefined) ALL_SECTION.slug = savedAllSlug;
+  } catch(e){}
 
   try {
     const data = await _apiGet('/api/sections?status=all');
@@ -259,43 +266,42 @@ function renderActive(active) {
 
   // Pin "All" first
   const sorted = [
-    ...active.filter(s => s.locked),
-    ...active.filter(s => !s.locked),
+    ...active.filter(s => s.id === 'all'),
+    ...active.filter(s => s.id !== 'all'),
   ];
 
   sorted.forEach(s => {
+    const isPermanent = s.id === 'all' || s.isPermanent;
     const tr = document.createElement('tr');
-    if (s.locked) tr.classList.add('row--locked');
 
     tr.innerHTML = `
       <td>
-        <div class="section-name-cell ${s.locked ? 'section-name-locked' : ''}">
-          ${s.locked ? `<span class="lock-icon">${ICONS.lock}</span>` : ''}
+        <div class="section-name-cell">
           <span class="section-name-text">${escapeHtml(s.name)}</span>
         </div>
       </td>
       <td class="col-slug">
-        ${s.locked
-          ? '<span class="section-slug-cell--empty">—</span>'
-          : (s.slug
-              ? `<span class="section-slug-cell" title="/section/${escapeHtml(s.slug)}">${escapeHtml(s.slug)}</span>`
-              : '<span class="section-slug-cell--empty">not set</span>'
-            )
+        ${s.slug
+            ? `<span class="section-slug-cell" title="/section/${escapeHtml(s.slug)}">${escapeHtml(s.slug)}</span>`
+            : (isPermanent
+                ? '<span class="section-slug-cell" title="/">(all articles)</span>'
+                : '<span class="section-slug-cell--empty">not set</span>'
+              )
         }
       </td>
       <td class="articles-count articles-count--dash col-articles">—</td>
       <td class="created-date">${formatDate(s.createdAt)}</td>
       <td>
-        ${s.locked
-          ? `<span class="badge badge--locked">${ICONS.lock} Locked</span>`
-          : `<span class="badge badge--active">Active</span>`}
+        <span class="badge badge--active">Active</span>
       </td>
       <td>
         <div class="action-group">
-          ${!s.locked ? `
-            <button class="action-btn action-btn--edit" data-id="${s.id}" title="Edit section" aria-label="Edit ${escapeHtml(s.name)}">${ICONS.pencil}</button>
+          <button class="action-btn action-btn--edit" data-id="${s.id}" title="Edit section" aria-label="Edit ${escapeHtml(s.name)}">${ICONS.pencil}</button>
+          ${!isPermanent ? `
             <button class="action-btn action-btn--delete" data-id="${s.id}" title="Move to trash" aria-label="Delete ${escapeHtml(s.name)}">${ICONS.trash}</button>
-          ` : ''}
+          ` : `
+            <button class="action-btn" disabled style="opacity:0.25;cursor:not-allowed;" title="Permanent core section (cannot be deleted)" aria-label="Cannot delete">${ICONS.trash}</button>
+          `}
         </div>
       </td>
     `;
@@ -352,14 +358,14 @@ function renderTrash(trash) {
   });
 }
 
-// â”€â”€ Actions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Actions ──────────────────────────────────────────────────
 async function addSection(name, slug) {
   const trimmed = name.trim();
   const slugVal = slug.trim();
   // Optimistic duplicate check (in-memory, fast)
-  if (sections.some(s => !s.deleted && !s.locked && s.name.toLowerCase() === trimmed.toLowerCase()))
+  if (sections.some(s => !s.deleted && s.name.toLowerCase() === trimmed.toLowerCase()))
     return 'A section with that name already exists.';
-  if (slugVal && sections.some(s => !s.deleted && !s.locked && s.slug === slugVal))
+  if (slugVal && sections.some(s => !s.deleted && s.slug === slugVal))
     return 'A section with that URL slug already exists.';
   
   updateGlobalSyncStatus('syncing', 'Saving to database...');
@@ -382,11 +388,26 @@ async function renameSection(id, name, slug) {
   const trimmed = name.trim();
   const slugVal = slug.trim();
   // Optimistic duplicate check
-  if (sections.some(s => s.id !== id && !s.deleted && !s.locked && s.name.toLowerCase() === trimmed.toLowerCase()))
+  if (sections.some(s => s.id !== id && !s.deleted && s.name.toLowerCase() === trimmed.toLowerCase()))
     return 'A section with that name already exists.';
-  if (slugVal && sections.some(s => s.id !== id && !s.deleted && !s.locked && s.slug === slugVal))
+  if (slugVal && sections.some(s => s.id !== id && !s.deleted && s.slug === slugVal))
     return 'A section with that URL slug already exists.';
   
+  if (id === 'all') {
+    ALL_SECTION.name = trimmed;
+    ALL_SECTION.slug = slugVal;
+    const local = sections.find(s => s.id === 'all');
+    if (local) { local.name = trimmed; local.slug = slugVal; }
+    try {
+      localStorage.setItem('pf_all_section_name', trimmed);
+      localStorage.setItem('pf_all_section_slug', slugVal);
+    } catch(e){}
+    render();
+    updateGlobalSyncStatus('synced', 'Synced with database');
+    showToast('success', `Renamed to "${trimmed}".`);
+    return null;
+  }
+
   updateGlobalSyncStatus('syncing', 'Saving to database...');
   try {
     const updated = await _apiPut(`/api/sections?id=${encodeURIComponent(id)}`, { name: trimmed, slug: slugVal });
@@ -404,7 +425,10 @@ async function renameSection(id, name, slug) {
 
 async function deleteSection(id) {
   const s = sections.find(s => s.id === id);
-  if (!s || s.locked) return;
+  if (!s || s.id === 'all' || s.isPermanent) {
+    showToast('error', 'The "All" section is a permanent core section and cannot be deleted.');
+    return;
+  }
   const name = s.name;
   // Optimistic UI update
   s.deleted = true;
@@ -1608,7 +1632,7 @@ function renderHsNavSections(hs) {
   const container = document.getElementById('hs-nav-sections-list');
   if (!container) return;
 
-  const allSecs = sections.filter(s => !s.deleted && !s.locked);
+  const allSecs = sections.filter(s => !s.deleted);
   const enabledIds = hs.enabledNavSections; // null = all enabled
 
   if (!allSecs.length) {
@@ -3009,7 +3033,7 @@ function renderMenuSectionsList() {
   const container = document.getElementById('menu-sections-list-container');
   if (!container) return;
 
-  const validSecs = (sections || []).filter(s => s.id !== 'all' && !s.deleted && !s.locked);
+  const validSecs = (sections || []).filter(s => !s.deleted);
   const enabledSlugs = (menuDraftConfig && menuDraftConfig.enabledMenuSections) || [];
 
   if (validSecs.length === 0) {
@@ -3024,7 +3048,7 @@ function renderMenuSectionsList() {
       <div class="hs-section-row">
         <div class="hs-section-info">
           <span class="hs-section-name">${escapeHtml(s.name)}</span>
-          <span class="hs-slug-chip">/section/${escapeHtml(slug)}</span>
+          <span class="hs-slug-chip">${s.slug ? '/section/' + escapeHtml(s.slug) : '/ (all)'}</span>
         </div>
         <label class="hs-toggle">
           <input type="checkbox" data-menu-section-slug="${escapeHtml(slug)}" ${isChecked ? 'checked' : ''} onchange="onMenuSectionToggle()" />
@@ -3059,7 +3083,7 @@ function renderMenuPreview() {
   const latTitle = (document.getElementById('menu-latest-title-input') || {}).value || menuDraftConfig.latestTitle || 'Read the latest';
 
   // Sections
-  const validSecs = (sections || []).filter(s => s.id !== 'all' && !s.deleted && !s.locked);
+  const validSecs = (sections || []).filter(s => !s.deleted);
   const enabledSlugs = menuDraftConfig.enabledMenuSections || [];
   const activeSecs = (enabledSlugs.length === 0)
     ? validSecs
@@ -3078,7 +3102,10 @@ function renderMenuPreview() {
       <div class="menu-preview-col">
         <div class="menu-preview-col-title">${escapeHtml(secTitle)}</div>
         <ul class="menu-preview-list">
-          ${activeSecs.map(s => `<li><a href="/section/${s.slug}">${escapeHtml(s.name)}</a></li>`).join('')}
+          ${activeSecs.map(s => {
+            const href = s.slug ? `/section/${escapeHtml(s.slug)}` : '/';
+            return `<li><a href="${href}">${escapeHtml(s.name)}</a></li>`;
+          }).join('')}
         </ul>
       </div>
 
@@ -4761,9 +4788,9 @@ function renderFooterPreview() {
   if (!box || !footerDraftConfig) return;
 
   const cfg = footerDraftConfig;
-  const activeSecs = sections.filter(s => !s.deleted && !s.locked);
+  const activeSecs = sections.filter(s => !s.deleted);
   const enabledSet = Array.isArray(cfg.enabledSections) ? cfg.enabledSections : null;
-  const displaySecs = activeSecs.filter(s => enabledSet ? enabledSet.includes(s.slug) : true);
+  const displaySecs = activeSecs.filter(s => enabledSet ? enabledSet.includes(s.slug || s.id) : true);
 
   const exploreList = cfg.explore || [];
   const seriesList = cfg.series || [];
@@ -4782,12 +4809,15 @@ function renderFooterPreview() {
         </div>
         <div style="display:flex;flex-direction:column;gap:5px;">
           ${displaySecs.length === 0 ? '<span style="font-size:12px;color:#64748b;font-style:italic;">No sections enabled.</span>' : ''}
-          ${displaySecs.map(s => `
-            <div class="ft-visual-item" onclick="switchFooterTab('sections')" title="Manage section visibility">
-              <span style="font-size:12.5px;color:#e2e8f0;">${escapeHtml(s.name)}</span>
-              <span style="font-size:10px;color:#38bdf8;">/section/${escapeHtml(s.slug)}</span>
-            </div>
-          `).join('')}
+          ${displaySecs.map(s => {
+            const secSlug = s.slug || s.id;
+            return `
+              <div class="ft-visual-item" onclick="switchFooterTab('sections')" title="Manage section visibility">
+                <span style="font-size:12.5px;color:#e2e8f0;">${escapeHtml(s.name)}</span>
+                <span style="font-size:10px;color:#38bdf8;">${s.slug ? '/section/' + escapeHtml(s.slug) : '/ (all)'}</span>
+              </div>
+            `;
+          }).join('')}
         </div>
       </div>
 
@@ -5025,7 +5055,7 @@ function renderFooterSections() {
   if (titleInput && footerDraftConfig) titleInput.value = footerDraftConfig.sectionsTitle || 'Sections';
   if (!container || !footerDraftConfig) return;
 
-  const activeSecs = sections.filter(s => !s.deleted && !s.locked);
+  const activeSecs = sections.filter(s => !s.deleted);
   const enabledSet = Array.isArray(footerDraftConfig.enabledSections) ? footerDraftConfig.enabledSections : null;
 
   if (activeSecs.length === 0) {
@@ -5036,13 +5066,14 @@ function renderFooterSections() {
   container.innerHTML = `
     <div class="ft-section-pill-grid">
       ${activeSecs.map(s => {
-        const isChecked = enabledSet === null ? true : enabledSet.includes(s.slug);
+        const secSlug = s.slug || s.id;
+        const isChecked = enabledSet === null ? true : enabledSet.includes(secSlug);
         return `
-          <div class="ft-section-pill-card ${isChecked ? 'selected' : ''}" onclick="toggleFooterSectionCard('${s.slug}')">
-            <input type="checkbox" value="${s.slug}" ${isChecked ? 'checked' : ''} style="width:16px;height:16px;accent-color:#0a528e;cursor:pointer;" onclick="event.stopPropagation(); onFooterSectionToggle('${s.slug}', this.checked);" />
+          <div class="ft-section-pill-card ${isChecked ? 'selected' : ''}" onclick="toggleFooterSectionCard('${secSlug}')">
+            <input type="checkbox" value="${secSlug}" ${isChecked ? 'checked' : ''} style="width:16px;height:16px;accent-color:#0a528e;cursor:pointer;" onclick="event.stopPropagation(); onFooterSectionToggle('${secSlug}', this.checked);" />
             <div style="flex:1;min-width:0;">
               <div style="font-weight:700;font-size:13.5px;color:#0f172a;">${escapeHtml(s.name)}</div>
-              <div style="font-size:11px;color:#64748b;">/section/${escapeHtml(s.slug)}</div>
+              <div style="font-size:11px;color:#64748b;">${s.slug ? '/section/' + escapeHtml(s.slug) : '/ (all)'}</div>
             </div>
             <span style="font-size:11px;font-weight:700;color:${isChecked ? '#0a528e' : '#94a3b8'};display:flex;align-items:center;gap:3px;">
               ${isChecked ? '<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Active' : 'Hidden'}
@@ -5057,9 +5088,9 @@ function renderFooterSections() {
 function onFooterSectionToggle(slug, checked) {
   if (!footerDraftConfig) return;
   recordFooterState('Toggle Footer Section');
-  const activeSecs = sections.filter(s => !s.deleted && !s.locked);
+  const activeSecs = sections.filter(s => !s.deleted);
   if (!Array.isArray(footerDraftConfig.enabledSections)) {
-    footerDraftConfig.enabledSections = activeSecs.map(s => s.slug);
+    footerDraftConfig.enabledSections = activeSecs.map(s => s.slug || s.id);
   }
   if (checked) {
     if (!footerDraftConfig.enabledSections.includes(slug)) footerDraftConfig.enabledSections.push(slug);
@@ -5071,9 +5102,9 @@ function onFooterSectionToggle(slug, checked) {
 
 function toggleFooterSectionCard(slug) {
   if (!footerDraftConfig) return;
-  const activeSecs = sections.filter(s => !s.deleted && !s.locked);
+  const activeSecs = sections.filter(s => !s.deleted);
   if (!Array.isArray(footerDraftConfig.enabledSections)) {
-    footerDraftConfig.enabledSections = activeSecs.map(s => s.slug);
+    footerDraftConfig.enabledSections = activeSecs.map(s => s.slug || s.id);
   }
   const isSelected = footerDraftConfig.enabledSections.includes(slug);
   onFooterSectionToggle(slug, !isSelected);
@@ -5083,8 +5114,8 @@ function toggleFooterSectionCard(slug) {
 function selectAllFooterSections(enableAll) {
   if (!footerDraftConfig) return;
   recordFooterState(enableAll ? 'Select All Sections' : 'Deselect All Sections');
-  const activeSecs = sections.filter(s => !s.deleted && !s.locked);
-  footerDraftConfig.enabledSections = enableAll ? activeSecs.map(s => s.slug) : [];
+  const activeSecs = sections.filter(s => !s.deleted);
+  footerDraftConfig.enabledSections = enableAll ? activeSecs.map(s => s.slug || s.id) : [];
   updateGlobalSyncStatus();
   renderFooterSections();
   showToast('success', enableAll ? 'All sections enabled for footer.' : 'All sections hidden from footer.');
