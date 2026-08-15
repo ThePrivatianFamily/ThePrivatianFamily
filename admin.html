@@ -1134,16 +1134,40 @@
       <div class="modal-body">
         <input type="hidden" id="hp-slot-path" value="" />
 
-        <!-- 1-Click Database Article Picker -->
-        <div class="form-group" style="background:#f1f5f9;border:1px solid #cbd5e1;border-radius:8px;padding:12px;margin-bottom:16px;">
-          <label class="form-label" for="hp-slot-article-select" style="font-weight:700;color:#0f172a;display:flex;align-items:center;gap:6px;">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
-            Choose from Published Articles
+        <!-- Article Unique ID Search & Picker -->
+        <div class="form-group" style="background:#f8fafc;border:1.5px solid #cbd5e1;border-radius:10px;padding:14px;margin-bottom:18px;">
+          <label class="form-label" style="font-weight:700;color:#0f172a;display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+            <span style="display:flex;align-items:center;gap:6px;">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+              Article Unique ID / Title Lookup
+            </span>
+            <span style="font-size:11px;color:#64748b;font-weight:500;">Enter ID to instant auto-fill</span>
           </label>
-          <select id="hp-slot-article-select" class="form-input" onchange="onHpArticleSelected(this.value)" style="background:#fff;border-color:#94a3b8;">
-            <option value="">— Or manually configure below —</option>
-          </select>
-          <div style="font-size:11px;color:#64748b;margin-top:4px;">Selecting an article will automatically fill headline, subtitle, hero image, and link URL.</div>
+          
+          <div style="display:flex;gap:8px;">
+            <div style="position:relative;flex:1;">
+              <input type="text" id="hp-slot-id-search" class="form-input" placeholder="Paste Article Unique ID or search title..." oninput="onHpArticleIdInput(this.value)" autocomplete="off" style="font-family:monospace;font-size:12.5px;background:#fff;padding-left:32px;border-color:#94a3b8;" />
+              <svg viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" width="14" height="14" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);pointer-events:none;"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            </div>
+            <button type="button" class="btn btn--secondary btn--sm" onclick="fetchArticleByIdForHpSlot(document.getElementById('hp-slot-id-search').value)" style="white-space:nowrap;padding:0 14px;font-size:12px;">Fetch Article</button>
+          </div>
+
+          <!-- Matched Article Chip -->
+          <div id="hp-slot-matched-article" style="display:none;margin-top:10px;padding:8px 12px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:6px;font-size:12px;color:#166534;align-items:center;justify-content:space-between;">
+            <div style="display:flex;align-items:center;gap:8px;overflow:hidden;">
+              <span class="ft-pulse-dot" style="width:6px;height:6px;flex-shrink:0;"></span>
+              <span id="hp-slot-matched-title" style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></span>
+              <span id="hp-slot-matched-id" style="font-family:monospace;font-size:11px;color:#15803d;background:rgba(22,101,52,0.1);padding:2px 6px;border-radius:4px;"></span>
+            </div>
+            <button type="button" onclick="clearHpSlotArticleSelection()" style="background:none;border:none;color:#dc2626;cursor:pointer;font-size:14px;line-height:1;padding:2px 4px;" title="Clear">✕</button>
+          </div>
+
+          <!-- Quick Dropdown list for reference -->
+          <div style="margin-top:8px;">
+            <select id="hp-slot-article-select" class="form-input" onchange="onHpArticleSelected(this.value)" style="font-size:12px;color:#475569;background:#fff;border-color:#cbd5e1;">
+              <option value="">— Or pick from recent database articles list —</option>
+            </select>
+          </div>
         </div>
 
         <div class="form-group">

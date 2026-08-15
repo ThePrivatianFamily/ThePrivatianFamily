@@ -42,6 +42,26 @@ body{font-family:var(--sans);background:var(--bg);padding-top:calc(var(--tb) + v
   padding:4px 10px;border-radius:20px;flex-shrink:0}
 .tb-badge.draft{background:rgba(251,191,36,.12);color:#fbbf24}
 .tb-badge.published{background:rgba(52,211,153,.12);color:#34d399}
+.tb-id-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 6px;
+  padding: 4px 8px;
+  color: rgba(255, 255, 255, 0.8);
+  font: 600 11px/1 var(--sans);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+  flex-shrink: 0;
+}
+.tb-id-pill:hover {
+  background: rgba(255, 255, 255, 0.16);
+  border-color: rgba(255, 255, 255, 0.3);
+  color: #fff;
+}
 .ed-sync-badge {
   display: inline-flex;
   align-items: center;
@@ -559,6 +579,12 @@ body{padding-bottom:34px}
   </div>
   <div class="tb-vr"></div>
   <span class="tb-badge draft" id="tb-badge">● Draft</span>
+  <!-- ARTICLE UNIQUE ID PILL -->
+  <div id="tb-art-id-pill" class="tb-id-pill" onclick="copyArticleId()" title="Click to copy permanent Article Unique ID">
+    <span style="opacity:0.6;font-size:9.5px;text-transform:uppercase;">ID:</span>
+    <span id="tb-art-id-txt" style="font-family:monospace;">...</span>
+    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+  </div>
   <!-- DATABASE SYNC BADGE IN ARTICLE EDITOR -->
   <div id="art-sync-status-wrap" class="ed-sync-badge synced" title="Click to test live database connection" onclick="verifyEditorDbSync(true)">
     <span class="ft-pulse-dot" id="art-status-dot"></span>
@@ -873,6 +899,26 @@ body{padding-bottom:34px}
 <div id="sd">
   <div class="sd-scroll">
 
+    <!-- ── Article Unique ID ─── -->
+    <div class="sd-sec" id="sds-id">
+      <button class="sd-sec-hd" onclick="toggleSdSec('sds-id')">
+        Article Unique ID
+        <svg class="sd-chevron" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      <div class="sd-sec-body">
+        <div class="sd-field">
+          <label class="sd-lbl">Permanent Database ID</label>
+          <div style="display:flex;align-items:center;gap:6px;">
+            <input type="text" class="sd-inp" id="sd-id-input" readonly style="font-family:monospace;font-size:11px;background:#f1f5f9;color:#334155;cursor:default;" />
+            <button type="button" class="feat-act-btn" onclick="copyArticleId()" style="white-space:nowrap;padding:7px 10px;font-size:11px;" title="Copy Unique ID">Copy</button>
+          </div>
+          <div style="font:400 11px/1.4 var(--sans);color:#64748b;margin-top:5px;">
+            This permanent ID never changes across edits, draft, publish, or trash states.
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- ── URL & Permalink (Slug) ─── -->
     <div class="sd-sec" id="sds-slug">
       <button class="sd-sec-hd" onclick="toggleSdSec('sds-slug')">
@@ -1032,7 +1078,42 @@ window.addEventListener('privatian:ready', () => {
 });
 
 function initEmpty() {
+  if (!ART_ID) {
+    ART_ID = (typeof crypto !== 'undefined' && crypto.randomUUID)
+      ? crypto.randomUUID()
+      : 'art_' + Date.now().toString(36) + '_' + Math.random().toString(36).substr(2, 9);
+    const u = new URL(location.href);
+    u.searchParams.set('id', ART_ID);
+    history.replaceState({}, '', u.toString());
+  }
+  refreshArticleIdDisplay();
   checkLocalDraft();
+}
+
+function refreshArticleIdDisplay() {
+  const shortId = ART_ID ? (ART_ID.length > 12 ? ART_ID.slice(0, 8) + '…' : ART_ID) : 'New Draft';
+  const txt = g('tb-art-id-txt');
+  if (txt) txt.textContent = shortId;
+  const pill = g('tb-art-id-pill');
+  if (pill) pill.title = `Click to copy permanent Article Unique ID: ${ART_ID || ''}`;
+  const inp = g('sd-id-input');
+  if (inp) inp.value = ART_ID || '';
+}
+
+function copyArticleId() {
+  if (!ART_ID) {
+    toast('No article ID generated yet', 'info');
+    return;
+  }
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(ART_ID).then(() => {
+      toast('Article Unique ID copied: ' + ART_ID, 'ok');
+    }).catch(() => {
+      prompt('Copy Article ID:', ART_ID);
+    });
+  } else {
+    prompt('Copy Article ID:', ART_ID);
+  }
 }
 
 // ── LOAD ARTICLE ─────────────────────────────────────────────
@@ -1083,6 +1164,7 @@ async function loadArticle(id) {
 
 function fill(a) {
   ART_ID = a.id; STATUS = a.status || 'draft';
+  refreshArticleIdDisplay();
   tx('ed-headline', a.title || '');
   tx('ed-deck',     a.deck  || '');
   tx('ed-author',   a.author      || '');
@@ -1331,6 +1413,7 @@ async function saveArt(silent = false) {
       history.replaceState({}, '', u.toString());
       if (g('tb-slug')) g('tb-slug').value = savedData.slug || '';
     }
+    refreshArticleIdDisplay();
     _serverTS = Date.now();
     DIRTY = false;
     lsSave();

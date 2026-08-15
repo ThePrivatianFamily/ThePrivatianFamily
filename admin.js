@@ -1831,6 +1831,34 @@ function _populateSectionFilter() {
   }
 }
 
+function copyTextToClipboard(text, msg = 'Copied to clipboard!') {
+  if (!text) return;
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(() => {
+      showToast('success', msg);
+    }).catch(() => {
+      _fallbackCopy(text, msg);
+    });
+  } else {
+    _fallbackCopy(text, msg);
+  }
+}
+function _fallbackCopy(text, msg) {
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.position = 'fixed';
+  ta.style.opacity = '0';
+  document.body.appendChild(ta);
+  ta.select();
+  try {
+    document.execCommand('copy');
+    showToast('success', msg);
+  } catch(e) {
+    showToast('info', 'Copy text: ' + text);
+  }
+  document.body.removeChild(ta);
+}
+
 function renderArticlesTable(articles) {
   const tbody = document.getElementById('articles-tbody');
   const table = document.getElementById('articles-table');
@@ -1862,13 +1890,19 @@ function renderArticlesTable(articles) {
       ? `<span class="art-badge-sec">${escapeHtml(a.section)}</span>`
       : `<span style="color:#94a3b8;font-size:12px;">—</span>`;
 
+    const shortId = a.id ? (a.id.length > 12 ? a.id.slice(0, 8) + '…' : a.id) : '—';
+    const idBadge = a.id ? `<span class="art-id-badge" onclick="copyTextToClipboard('${escapeHtml(a.id)}', 'Article Unique ID copied!')" title="Click to copy permanent Article Unique ID: ${escapeHtml(a.id)}"><span style="opacity:.6;font-size:9.5px;">ID:</span>${escapeHtml(shortId)}<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></span>` : '';
+
     return `<tr>
       <td>
         <div class="art-media-wrap">
           ${thumb}
           <div class="art-title-meta">
             <div class="art-row-title" title="${escapeHtml(a.title || 'Untitled')}">${escapeHtml(a.title || 'Untitled')}</div>
-            <div class="art-row-slug" title="/article/${escapeHtml(a.slug || a.id)}">${escapeHtml(a.slug || a.id)}</div>
+            <div style="display:flex;align-items:center;gap:6px;margin-top:3px;flex-wrap:wrap;">
+              ${idBadge}
+              <span class="art-row-slug" title="/article/${escapeHtml(a.slug || a.id)}">/${escapeHtml(a.slug || a.id)}</span>
+            </div>
           </div>
         </div>
       </td>
@@ -1905,7 +1939,8 @@ function filterArticles() {
       (a.title   || '').toLowerCase().includes(q) ||
       (a.author  || '').toLowerCase().includes(q) ||
       (a.slug    || '').toLowerCase().includes(q) ||
-      (a.section || '').toLowerCase().includes(q);
+      (a.section || '').toLowerCase().includes(q) ||
+      (a.id      || '').toLowerCase().includes(q);
     const matchStatus  = !status  || a.status === status;
     const matchSection = !section || a.section === section;
     return matchQ && matchStatus && matchSection;
@@ -3850,6 +3885,8 @@ function openHpSlotModal(path, roleName) {
   const tagGroup = document.getElementById('hp-slot-tag-group');
   const enabledInput = document.getElementById('hp-slot-enabled-input');
   const articleSelect = document.getElementById('hp-slot-article-select');
+  const idSearchInput = document.getElementById('hp-slot-id-search');
+  const matchedChip = document.getElementById('hp-slot-matched-article');
 
   if (!modal) return;
 
@@ -3857,10 +3894,16 @@ function openHpSlotModal(path, roleName) {
   titleEl.textContent = 'Edit Homepage Slot';
   badgeEl.textContent = roleName || path;
 
-  // Populate Published Article Selector dropdown
+  if (idSearchInput) idSearchInput.value = '';
+  if (matchedChip) matchedChip.style.display = 'none';
+
+  // Populate Published Article Selector dropdown with [ID] prefix
   if (articleSelect) {
-    articleSelect.innerHTML = `<option value="">— Pick from published database articles —</option>` +
-      homepageArticlesList.map(a => `<option value="${escapeHtml(a.id || a.slug)}">${escapeHtml(a.title)} (${escapeHtml(a.section || 'General')})</option>`).join('');
+    articleSelect.innerHTML = `<option value="">— Or pick from recent database articles list —</option>` +
+      homepageArticlesList.map(a => {
+        const sid = a.id ? a.id.slice(0, 8) : '';
+        return `<option value="${escapeHtml(a.id || a.slug)}">${sid ? `[${sid}] ` : ''}${escapeHtml(a.title)} (${escapeHtml(a.section || 'General')})</option>`;
+      }).join('');
   }
 
   const slotData = getHpObjectByPath(path) || {};
@@ -3871,6 +3914,16 @@ function openHpSlotModal(path, roleName) {
   if (imageInput) imageInput.value = slotData.imageUrl || '';
   if (tagInput) tagInput.value = slotData.tag || '';
   if (enabledInput) enabledInput.checked = slotData.enabled !== false;
+
+  // Auto detect if current slot link corresponds to an existing article
+  if (slotData.href) {
+    const rawHref = slotData.href.replace('/article/', '').replace('/article.html?id=', '').trim();
+    const existingArt = homepageArticlesList.find(a => a.id === rawHref || a.slug === rawHref) ||
+                        _allArticles.find(a => a.id === rawHref || a.slug === rawHref);
+    if (existingArt) {
+      showHpSlotMatchedArticle(existingArt);
+    }
+  }
 
   // Show / hide fields depending on whether slot needs image/subtitle/tag
   const isSubArticle = path.includes('subArticles');
@@ -3883,11 +3936,109 @@ function openHpSlotModal(path, roleName) {
   headlineInput.focus();
 }
 
-function onHpArticleSelected(articleIdOrSlug) {
-  if (!articleIdOrSlug) return;
-  const article = homepageArticlesList.find(a => a.id === articleIdOrSlug || a.slug === articleIdOrSlug);
-  if (!article) return;
+function showHpSlotMatchedArticle(article) {
+  const matchedChip = document.getElementById('hp-slot-matched-article');
+  const matchedTitle = document.getElementById('hp-slot-matched-title');
+  const matchedId = document.getElementById('hp-slot-matched-id');
+  const idSearchInput = document.getElementById('hp-slot-id-search');
+  const articleSelect = document.getElementById('hp-slot-article-select');
 
+  if (matchedChip && matchedTitle && matchedId) {
+    matchedTitle.textContent = article.title || 'Untitled Article';
+    matchedId.textContent = article.id ? `ID: ${article.id.slice(0, 8)}...` : '';
+    matchedId.title = `Full Unique ID: ${article.id || ''}`;
+    matchedChip.style.display = 'flex';
+  }
+  if (idSearchInput && article.id) {
+    idSearchInput.value = article.id;
+  }
+  if (articleSelect) {
+    articleSelect.value = article.id || article.slug || '';
+  }
+}
+
+function clearHpSlotArticleSelection() {
+  const matchedChip = document.getElementById('hp-slot-matched-article');
+  const idSearchInput = document.getElementById('hp-slot-id-search');
+  const articleSelect = document.getElementById('hp-slot-article-select');
+  if (matchedChip) matchedChip.style.display = 'none';
+  if (idSearchInput) idSearchInput.value = '';
+  if (articleSelect) articleSelect.value = '';
+}
+
+function onHpArticleIdInput(value) {
+  const q = (value || '').trim();
+  if (!q) {
+    clearHpSlotArticleSelection();
+    return;
+  }
+  // Fast match in memory if typed/pasted 8+ chars of ID or exact slug
+  const directMatch = homepageArticlesList.find(a =>
+    a.id === q ||
+    (a.id && a.id.toLowerCase().startsWith(q.toLowerCase()) && q.length >= 8) ||
+    a.slug === q
+  ) || _allArticles.find(a =>
+    a.id === q ||
+    (a.id && a.id.toLowerCase().startsWith(q.toLowerCase()) && q.length >= 8) ||
+    a.slug === q
+  );
+
+  if (directMatch) {
+    applyHpArticleToSlot(directMatch);
+  }
+}
+
+async function fetchArticleByIdForHpSlot(searchQuery) {
+  const q = (searchQuery || '').trim();
+  if (!q) {
+    showToast('info', 'Please enter an Article Unique ID or Title to search');
+    return;
+  }
+
+  // 1. Search locally in homepageArticlesList and _allArticles
+  let match = homepageArticlesList.find(a =>
+    a.id === q ||
+    (a.id && a.id.toLowerCase().includes(q.toLowerCase())) ||
+    (a.slug && a.slug.toLowerCase().includes(q.toLowerCase())) ||
+    (a.title && a.title.toLowerCase().includes(q.toLowerCase()))
+  ) || _allArticles.find(a =>
+    a.id === q ||
+    (a.id && a.id.toLowerCase().includes(q.toLowerCase())) ||
+    (a.slug && a.slug.toLowerCase().includes(q.toLowerCase())) ||
+    (a.title && a.title.toLowerCase().includes(q.toLowerCase()))
+  );
+
+  // 2. If not found in memory, query live Supabase database
+  if (!match) {
+    try {
+      const sb = window._sb || (window.initSupabaseClient && window.initSupabaseClient());
+      if (sb) {
+        // Try exact ID match first
+        const { data: byId } = await sb.from('articles').select('*').eq('id', q).single();
+        if (byId) {
+          match = byId;
+        } else {
+          // Try search by slug or title
+          const { data: byText } = await sb.from('articles')
+            .select('*')
+            .or(`slug.eq.${q},title.ilike.%${q}%`)
+            .limit(1);
+          if (byText && byText[0]) match = byText[0];
+        }
+      }
+    } catch(e) {}
+  }
+
+  if (match) {
+    applyHpArticleToSlot(match);
+    showToast('success', `Found article: "${match.title}" ✓`);
+  } else {
+    showToast('error', `No article found matching ID or query "${q}"`);
+  }
+}
+
+function applyHpArticleToSlot(article) {
+  if (!article) return;
   const headlineInput = document.getElementById('hp-slot-headline-input');
   const subtitleInput = document.getElementById('hp-slot-subtitle-input');
   const linkInput = document.getElementById('hp-slot-link-input');
@@ -3895,12 +4046,25 @@ function onHpArticleSelected(articleIdOrSlug) {
   const tagInput = document.getElementById('hp-slot-tag-input');
 
   if (headlineInput) headlineInput.value = article.title || '';
-  if (subtitleInput && (article.deck || article.subtitle)) subtitleInput.value = article.deck || article.subtitle || '';
+  if (subtitleInput) subtitleInput.value = article.deck || article.subtitle || '';
   if (linkInput) linkInput.value = article.slug ? `/article/${article.slug}` : `/article/${article.id}`;
   if (imageInput && article.hero_img_url) imageInput.value = article.hero_img_url;
   if (tagInput && article.section) tagInput.value = article.section.toUpperCase();
 
+  showHpSlotMatchedArticle(article);
   updateHpSlotImagePreview();
+}
+
+function onHpArticleSelected(articleIdOrSlug) {
+  if (!articleIdOrSlug) {
+    clearHpSlotArticleSelection();
+    return;
+  }
+  const article = homepageArticlesList.find(a => a.id === articleIdOrSlug || a.slug === articleIdOrSlug) ||
+                  _allArticles.find(a => a.id === articleIdOrSlug || a.slug === articleIdOrSlug);
+  if (article) {
+    applyHpArticleToSlot(article);
+  }
 }
 
 function updateHpSlotImagePreview() {
