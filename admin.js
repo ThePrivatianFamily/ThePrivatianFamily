@@ -270,6 +270,13 @@ function renderActive(active) {
     ...active.filter(s => s.id !== 'all'),
   ];
 
+  // Populate Section Quick Studio Picker
+  const quickPicker = document.getElementById('section-quick-picker');
+  if (quickPicker) {
+    quickPicker.innerHTML = '<option value="">Choose a section to edit…</option>' +
+      sorted.map(s => `<option value="${s.id}">${escapeHtml(s.name)} (${s.slug ? '/section/' + s.slug : '/'})</option>`).join('');
+  }
+
   sorted.forEach(s => {
     const isPermanent = s.id === 'all' || s.isPermanent;
     const tr = document.createElement('tr');
@@ -296,10 +303,10 @@ function renderActive(active) {
       </td>
       <td>
         <div class="action-group">
-          <button class="action-btn action-btn--customize" data-id="${s.id}" title="Customize Section Theme (Hero & Selected Stories)" aria-label="Customize ${escapeHtml(s.name)}" style="color:var(--brand-navy,#0a528e);">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+          <button class="action-btn action-btn--studio" data-id="${s.id}" title="Open Section Studio (Edit Info, Hero, &amp; Articles)" aria-label="Studio for ${escapeHtml(s.name)}" style="color:var(--brand-navy,#0a528e);">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
           </button>
-          <button class="action-btn action-btn--edit" data-id="${s.id}" title="Edit section" aria-label="Edit ${escapeHtml(s.name)}">${ICONS.pencil}</button>
+          <button class="action-btn action-btn--edit" data-id="${s.id}" title="Edit Section" aria-label="Edit ${escapeHtml(s.name)}">${ICONS.pencil}</button>
           ${!isPermanent ? `
             <button class="action-btn action-btn--delete" data-id="${s.id}" title="Move to trash" aria-label="Delete ${escapeHtml(s.name)}">${ICONS.trash}</button>
           ` : `
@@ -312,11 +319,8 @@ function renderActive(active) {
   });
 
   // Bind row actions
-  sectionsTable.querySelectorAll('.action-btn--customize').forEach(btn => {
-    btn.addEventListener('click', () => openSectionCustomizer(btn.dataset.id));
-  });
-  sectionsTable.querySelectorAll('.action-btn--edit').forEach(btn => {
-    btn.addEventListener('click', () => openEditModal(btn.dataset.id));
+  sectionsTable.querySelectorAll('.action-btn--studio, .action-btn--edit').forEach(btn => {
+    btn.addEventListener('click', () => openSectionStudio(btn.dataset.id));
   });
   sectionsTable.querySelectorAll('.action-btn--delete').forEach(btn => {
     btn.addEventListener('click', () => deleteSection(btn.dataset.id));
@@ -556,109 +560,184 @@ function closeModal() {
   hideModalError();
 }
 
-// ── SECTION CUSTOMIZER (HERO FEATURED & 4 SELECTED ARTICLES) ─────────────
-var _sectionCustomizerArticles = [];
-var _currentCustomizingSection = null;
+// ── UNIFIED SECTION STUDIO (METADATA, LIVE LAYOUT & ALL ARTICLES) ─────────
+var _studioAllArticles = [];
+var _studioSectionArticles = [];
+var _studioCurrentSection = null;
+var _studioActiveTab = 'general';
 
-async function openSectionCustomizer(id) {
+async function openSectionStudio(id) {
   const s = sections.find(sec => sec.id === id);
   if (!s) return;
-  _currentCustomizingSection = s;
+  _studioCurrentSection = s;
 
-  const modal = document.getElementById('modal-section-customizer');
+  const modal = document.getElementById('modal-section-studio');
   if (!modal) return;
 
-  const titleEl = document.getElementById('sc-modal-title');
-  const subEl = document.getElementById('sc-modal-subtitle');
-  const idEl = document.getElementById('sc-section-id');
-  const slugEl = document.getElementById('sc-section-slug');
-  const descEl = document.getElementById('sc-desc-input');
+  const titleEl = document.getElementById('studio-sec-name-title');
+  const switcherEl = document.getElementById('studio-sec-switcher');
+  const liveLinkEl = document.getElementById('studio-live-link');
+  const idEl = document.getElementById('studio-sec-id');
+  const slugEl = document.getElementById('studio-sec-slug');
+  const nameInput = document.getElementById('studio-name-input');
+  const slugInput = document.getElementById('studio-slug-input');
+  const descInput = document.getElementById('studio-desc-input');
+  const writeArtBtn = document.getElementById('studio-write-art-btn');
 
-  if (titleEl) titleEl.textContent = `Customize Section Theme: ${s.name}`;
-  if (subEl) subEl.textContent = `Configure Hero Featured Article and Curated Stories for ${s.name} (${s.slug ? '/section/' + s.slug : '/section/all'})`;
+  if (titleEl) titleEl.textContent = s.name;
   if (idEl) idEl.value = s.id;
   if (slugEl) slugEl.value = s.slug || 'all';
+  if (nameInput) nameInput.value = s.name;
+  if (slugInput) slugInput.value = s.slug || '';
 
-  // Load published articles
-  await loadArticlesForSectionCustomizer();
+  // Set Section Switcher dropdown options
+  if (switcherEl) {
+    switcherEl.innerHTML = sections
+      .filter(sec => !sec.deleted)
+      .map(sec => `<option value="${sec.id}" ${sec.id === s.id ? 'selected' : ''}>${escapeHtml(sec.name)}</option>`)
+      .join('');
+  }
 
-  // Filter articles relevant for this section (or all if slug is 'all')
-  const secSlug = s.slug || 'all';
+  // Set Live Link
+  if (liveLinkEl) {
+    liveLinkEl.href = s.slug ? `/section/${s.slug}` : '/section/all';
+  }
+
+  // Set Write Article Link pre-selected for this section
+  if (writeArtBtn) {
+    writeArtBtn.href = `admin-article-editor.html?section=${encodeURIComponent(s.name)}`;
+  }
+
+  updateStudioSlugPreview();
+
+  // Load all published & draft articles
+  await loadAllArticlesForStudio();
+
+  // Filter articles for this section
+  const secSlug = (s.slug || 'all').toLowerCase();
   const secNameLower = s.name.toLowerCase();
-  const relevantArticles = (secSlug === 'all' || s.id === 'all')
-    ? _sectionCustomizerArticles
-    : _sectionCustomizerArticles.filter(a => {
+  const isAll = s.id === 'all' || secSlug === 'all';
+
+  _studioSectionArticles = isAll
+    ? _studioAllArticles
+    : _studioAllArticles.filter(a => {
         const aSec = (a.section || '').toLowerCase();
-        return aSec.includes(secNameLower) || aSec.includes(secSlug.replace(/-/g, ' '));
+        return aSec === secNameLower || aSec.includes(secNameLower) || aSec.includes(secSlug.replace(/-/g, ' '));
       });
 
-  // If none matched strictly, offer all published articles
-  const availableArticles = (relevantArticles.length > 0) ? relevantArticles : _sectionCustomizerArticles;
+  // Update Article Count Badge
+  const countBadge = document.getElementById('studio-art-count-badge');
+  if (countBadge) countBadge.textContent = _studioSectionArticles.length;
 
   // Load existing configuration for this section
   let existingConfig = { featuredArticleId: null, selectedArticleIds: [], customTitle: '', description: '' };
   try {
-    const res = await _apiGet(`/api/sections?action=section-config&slug=${encodeURIComponent(secSlug)}`);
+    const res = await _apiGet(`/api/sections?action=section-config&slug=${encodeURIComponent(s.slug || 'all')}`);
     if (res && typeof res === 'object') existingConfig = res;
   } catch(e) {}
 
-  if (descEl) descEl.value = existingConfig.description || '';
+  if (descInput) descInput.value = existingConfig.description || '';
 
-  // Populate Hero Featured Select
-  const heroSelect = document.getElementById('sc-hero-article-select');
+  // Populate Hero Featured Select (using published articles)
+  const publishedSecArts = _studioSectionArticles.filter(a => a.status === 'published' || !a.status);
+  const heroSelect = document.getElementById('studio-hero-select');
   if (heroSelect) {
-    heroSelect.innerHTML = `<option value="">(Auto-Latest Article with Image)</option>` +
-      availableArticles.map(a => `<option value="${a.id}" ${existingConfig.featuredArticleId === a.id ? 'selected' : ''}>${escapeHtml(a.title || 'Untitled')} (${a.author || 'Author'} • ${formatDate(a.published_at || a.created_at)})</option>`).join('');
-    updateHeroArticlePreview(heroSelect.value);
+    heroSelect.innerHTML = `<option value="">(Auto-Latest Published Article with Image)</option>` +
+      publishedSecArts.map(a => `<option value="${a.id}" ${existingConfig.featuredArticleId === a.id ? 'selected' : ''}>${escapeHtml(a.title || 'Untitled')} (${a.author || 'Author'} • ${formatDate(a.published_at || a.created_at)})</option>`).join('');
+    updateStudioHeroPreview(heroSelect.value);
   }
 
-  // Populate 4 Selected Article Selects
+  // Populate 4 Selected Article Slots
   const selIds = Array.isArray(existingConfig.selectedArticleIds) ? existingConfig.selectedArticleIds : [];
   for (let slot = 1; slot <= 4; slot++) {
-    const slotSelect = document.getElementById(`sc-slot-${slot}-select`);
+    const slotSelect = document.getElementById(`studio-slot-${slot}-select`);
     const currentVal = selIds[slot - 1] || '';
     if (slotSelect) {
       slotSelect.innerHTML = `<option value="">(Auto: Top Story ${slot})</option>` +
-        availableArticles.map(a => `<option value="${a.id}" ${currentVal === a.id ? 'selected' : ''}>${escapeHtml(a.title || 'Untitled')} (${a.author || 'Author'})</option>`).join('');
-      updateSlotPreview(slot, slotSelect.value);
+        publishedSecArts.map(a => `<option value="${a.id}" ${currentVal === a.id ? 'selected' : ''}>${escapeHtml(a.title || 'Untitled')} (${a.author || 'Author'})</option>`).join('');
+      updateStudioSlotPreview(slot, slotSelect.value);
     }
   }
+
+  // Render Section Articles Table
+  renderStudioArticlesTable(_studioSectionArticles);
+
+  // Switch to active tab
+  switchStudioTab(_studioActiveTab || 'general');
 
   modal.hidden = false;
 }
 
-function closeSectionCustomizer() {
-  const modal = document.getElementById('modal-section-customizer');
+function closeSectionStudio() {
+  const modal = document.getElementById('modal-section-studio');
   if (modal) modal.hidden = true;
-  _currentCustomizingSection = null;
+  _studioCurrentSection = null;
 }
 
-async function loadArticlesForSectionCustomizer() {
-  if (_sectionCustomizerArticles.length > 0) return;
+function switchStudioTab(tabName) {
+  _studioActiveTab = tabName;
+  ['general', 'layout', 'articles'].forEach(t => {
+    const btn = document.getElementById(`studio-tab-${t}`);
+    const pane = document.getElementById(`studio-pane-${t}`);
+    if (btn) {
+      const isActive = t === tabName;
+      btn.style.borderBottomColor = isActive ? 'var(--brand-navy, #0a528e)' : 'transparent';
+      btn.style.color = isActive ? 'var(--brand-navy, #0a528e)' : 'var(--text-muted)';
+      btn.classList.toggle('active', isActive);
+    }
+    if (pane) {
+      pane.style.display = t === tabName ? 'block' : 'none';
+    }
+  });
+}
+
+function updateStudioSlugPreview() {
+  const nameInput = document.getElementById('studio-name-input');
+  const slugInput = document.getElementById('studio-slug-input');
+  const previewText = document.getElementById('studio-slug-preview-text');
+  if (!slugInput || !previewText) return;
+
+  const val = slugInput.value.trim() || genSlug(nameInput?.value || '');
+  if (_studioCurrentSection && _studioCurrentSection.id === 'all') {
+    previewText.textContent = 'Primary Core Section URL: /section/all (or root /)';
+    previewText.style.color = 'var(--text-muted)';
+  } else if (val) {
+    previewText.textContent = `Live Section URL: https://theprivatianfamily.vercel.app/section/${val}`;
+    previewText.style.color = 'var(--text-muted)';
+  } else {
+    previewText.textContent = 'URL slug will be generated automatically.';
+    previewText.style.color = 'var(--text-muted)';
+  }
+}
+
+async function loadAllArticlesForStudio() {
+  if (_studioAllArticles.length > 0) return;
   try {
     const list = await _apiGet('/api/articles?action=list');
-    if (Array.isArray(list)) _sectionCustomizerArticles = list.filter(a => a.status === 'published' || !a.status);
+    if (Array.isArray(list)) _studioAllArticles = list;
   } catch(e) {}
-  if (_sectionCustomizerArticles.length === 0) {
+
+  if (_studioAllArticles.length === 0) {
     try {
       const pubList = await _apiGet('/api/articles?action=public');
-      if (Array.isArray(pubList)) _sectionCustomizerArticles = pubList;
+      if (Array.isArray(pubList)) _studioAllArticles = pubList;
     } catch(err) {}
   }
 }
 
-function updateHeroArticlePreview(articleId) {
-  const prevBox = document.getElementById('sc-hero-preview');
-  const prevImg = document.getElementById('sc-hero-prev-img');
-  const prevTitle = document.getElementById('sc-hero-prev-title');
-  const prevMeta = document.getElementById('sc-hero-prev-meta');
+function updateStudioHeroPreview(articleId) {
+  const prevBox = document.getElementById('studio-hero-preview');
+  const prevImg = document.getElementById('studio-hero-prev-img');
+  const prevTitle = document.getElementById('studio-hero-prev-title');
+  const prevMeta = document.getElementById('studio-hero-prev-meta');
+  const editLink = document.getElementById('studio-hero-edit-link');
   if (!prevBox) return;
 
   if (!articleId) {
     prevBox.style.display = 'none';
     return;
   }
-  const art = _sectionCustomizerArticles.find(a => a.id === articleId);
+  const art = _studioAllArticles.find(a => a.id === articleId);
   if (!art) {
     prevBox.style.display = 'none';
     return;
@@ -667,60 +746,180 @@ function updateHeroArticlePreview(articleId) {
   if (prevImg) prevImg.src = art.hero_img_url || '/img1.png';
   if (prevTitle) prevTitle.textContent = art.title || 'Untitled';
   if (prevMeta) prevMeta.textContent = `${art.section || 'General'} • ${art.author || 'Author'} • ${formatDate(art.published_at || art.created_at)}`;
+  if (editLink) editLink.href = `admin-article-editor.html?id=${art.id}`;
 }
 
-function updateSlotPreview(slotIndex, articleId) {
-  const prevEl = document.getElementById(`sc-slot-${slotIndex}-prev`);
+function updateStudioSlotPreview(slotIndex, articleId) {
+  const prevEl = document.getElementById(`studio-slot-${slotIndex}-prev`);
+  const editLink = document.getElementById(`studio-slot-${slotIndex}-edit`);
   if (!prevEl) return;
+
   if (!articleId) {
     prevEl.style.display = 'none';
     prevEl.textContent = '';
+    if (editLink) editLink.style.display = 'none';
     return;
   }
-  const art = _sectionCustomizerArticles.find(a => a.id === articleId);
+  const art = _studioAllArticles.find(a => a.id === articleId);
   if (art) {
     prevEl.style.display = 'block';
     prevEl.textContent = `Selected: "${art.title}" (${art.author || 'Author'})`;
+    if (editLink) {
+      editLink.style.display = 'inline';
+      editLink.href = `admin-article-editor.html?id=${art.id}`;
+    }
   } else {
     prevEl.style.display = 'none';
+    if (editLink) editLink.style.display = 'none';
   }
 }
 
-async function saveSectionCustomizer() {
-  if (!_currentCustomizingSection) return;
-  const saveBtn = document.getElementById('sc-save-btn');
-  if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = 'Saving…'; }
+function renderStudioArticlesTable(articlesList) {
+  const tbody = document.getElementById('studio-articles-tbody');
+  const emptyEl = document.getElementById('studio-articles-empty');
+  if (!tbody) return;
 
-  const slug = _currentCustomizingSection.slug || 'all';
-  const desc = (document.getElementById('sc-desc-input')?.value || '').trim();
-  const heroArtId = document.getElementById('sc-hero-article-select')?.value || null;
+  if (!articlesList || articlesList.length === 0) {
+    tbody.innerHTML = '';
+    if (emptyEl) emptyEl.style.display = 'block';
+    return;
+  }
+  if (emptyEl) emptyEl.style.display = 'none';
+
+  tbody.innerHTML = articlesList.map(a => {
+    const isPub = a.status === 'published' || !a.status;
+    const thumb = a.hero_img_url
+      ? `<img src="${a.hero_img_url}" style="width:52px;height:34px;object-fit:cover;border-radius:4px;border:1px solid #e2e8f0;" />`
+      : `<div style="width:52px;height:34px;background:#e2e8f0;border-radius:4px;"></div>`;
+    const artUrl = a.slug ? `/article/${a.slug}` : `/article/${a.id}`;
+    return `
+      <tr>
+        <td style="padding:10px 12px;vertical-align:middle;">${thumb}</td>
+        <td style="padding:10px 12px;vertical-align:middle;">
+          <div style="font-weight:600;color:var(--text-primary);line-height:1.3;margin-bottom:2px;">
+            <a href="admin-article-editor.html?id=${a.id}" target="_blank" style="color:inherit;text-decoration:none;">${escapeHtml(a.title || 'Untitled')}</a>
+          </div>
+          ${a.deck ? `<div style="font-size:11.5px;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:320px;">${escapeHtml(a.deck)}</div>` : ''}
+        </td>
+        <td style="padding:10px 12px;vertical-align:middle;font-size:12px;color:var(--text-secondary);">${escapeHtml(a.author || '—')}</td>
+        <td style="padding:10px 12px;vertical-align:middle;">
+          <span class="badge ${isPub ? 'badge--active' : 'badge--inactive'}" style="font-size:10.5px;padding:2px 7px;">
+            ${isPub ? 'Published' : 'Draft'}
+          </span>
+        </td>
+        <td style="padding:10px 12px;vertical-align:middle;font-size:12px;color:var(--text-muted);">${formatDate(a.published_at || a.created_at)}</td>
+        <td style="padding:10px 12px;vertical-align:middle;text-align:right;">
+          <div style="display:inline-flex;align-items:center;gap:5px;justify-content:flex-end;">
+            <a href="admin-article-editor.html?id=${a.id}" target="_blank" class="action-btn" title="Edit Article in Editor" style="font-size:12px;text-decoration:none;display:inline-flex;align-items:center;padding:4px 6px;">
+              ${ICONS.pencil}
+            </a>
+            <a href="${artUrl}" target="_blank" class="action-btn" title="View Public Article" style="font-size:12px;text-decoration:none;display:inline-flex;align-items:center;padding:4px 6px;">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            </a>
+            <button type="button" class="action-btn" title="Set as Hero Story" onclick="makeStudioHero('${a.id}')" style="color:#d97706;padding:4px 6px;">
+              ★
+            </button>
+            <button type="button" class="action-btn" title="Pin to Slot 1" onclick="pinStudioSlot('${a.id}', 1)" style="font-size:10.5px;font-weight:700;padding:3px 6px;border:1px solid #cbd5e1;border-radius:4px;">
+              +Slot 1
+            </button>
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function filterStudioArticlesList(query) {
+  const q = (query || '').toLowerCase().trim();
+  if (!q) {
+    renderStudioArticlesTable(_studioSectionArticles);
+    return;
+  }
+  const filtered = _studioSectionArticles.filter(a =>
+    (a.title || '').toLowerCase().includes(q) ||
+    (a.author || '').toLowerCase().includes(q) ||
+    (a.deck || '').toLowerCase().includes(q)
+  );
+  renderStudioArticlesTable(filtered);
+}
+
+function makeStudioHero(articleId) {
+  const heroSelect = document.getElementById('studio-hero-select');
+  if (heroSelect) {
+    heroSelect.value = articleId;
+    updateStudioHeroPreview(articleId);
+  }
+  switchStudioTab('layout');
+  showToast('success', 'Article selected as Hero Featured Story for this section.');
+}
+
+function pinStudioSlot(articleId, slotNum) {
+  const slotSelect = document.getElementById(`studio-slot-${slotNum}-select`);
+  if (slotSelect) {
+    slotSelect.value = articleId;
+    updateStudioSlotPreview(slotNum, articleId);
+  }
+  switchStudioTab('layout');
+  showToast('success', `Article pinned to Slot ${slotNum}.`);
+}
+
+async function saveSectionStudio() {
+  if (!_studioCurrentSection) return;
+  const saveBtn = document.getElementById('studio-save-btn');
+  if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = 'Saving Changes…'; }
+
+  const id = _studioCurrentSection.id;
+  const newName = (document.getElementById('studio-name-input')?.value || '').trim();
+  const newSlug = (document.getElementById('studio-slug-input')?.value || '').trim();
+  const desc = (document.getElementById('studio-desc-input')?.value || '').trim();
+  const heroArtId = document.getElementById('studio-hero-select')?.value || null;
 
   const selIds = [];
   for (let slot = 1; slot <= 4; slot++) {
-    const val = document.getElementById(`sc-slot-${slot}-select`)?.value;
+    const val = document.getElementById(`studio-slot-${slot}-select`)?.value;
     if (val) selIds.push(val);
   }
 
-  const payload = {
-    slug: slug,
-    featuredArticleId: heroArtId,
-    selectedArticleIds: selIds,
-    description: desc
-  };
+  if (!newName) {
+    showToast('error', 'Section name cannot be empty.');
+    if (saveBtn) { saveBtn.disabled = false; saveBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" width="15" height="15"><polyline points="20 6 9 17 4 12"/></svg> Save Section Changes`; }
+    return;
+  }
 
-  updateGlobalSyncStatus('syncing', 'Saving section theme settings...');
+  updateGlobalSyncStatus('syncing', 'Saving section changes...');
+
   try {
-    await _apiPost(`/api/sections?action=section-config&slug=${encodeURIComponent(slug)}`, payload);
+    // 1. If name or slug changed and not core all:
+    if (id !== 'all' && (newName !== _studioCurrentSection.name || newSlug !== _studioCurrentSection.slug)) {
+      await _apiPut(`/api/sections?id=${encodeURIComponent(id)}`, {
+        name: newName,
+        slug: newSlug || genSlug(newName)
+      });
+      _studioCurrentSection.name = newName;
+      _studioCurrentSection.slug = newSlug || genSlug(newName);
+    }
+
+    // 2. Save section custom configuration (hero, selected slots, description)
+    const configSlug = _studioCurrentSection.slug || 'all';
+    await _apiPost(`/api/sections?action=section-config&slug=${encodeURIComponent(configSlug)}`, {
+      slug: configSlug,
+      featuredArticleId: heroArtId,
+      selectedArticleIds: selIds,
+      description: desc
+    });
+
     updateGlobalSyncStatus('synced', 'Synced with database');
-    showToast('success', `Theme customized for "${_currentCustomizingSection.name}".`);
-    closeSectionCustomizer();
+    showToast('success', `Section "${newName}" and website layout saved successfully.`);
+
+    // Refresh sections list
+    await loadSections();
   } catch(e) {
     updateGlobalSyncStatus('error', 'Sync error');
-    showToast('error', 'Failed to save section theme: ' + e.message);
+    showToast('error', 'Failed to save section changes: ' + e.message);
   } finally {
     if (saveBtn) {
       saveBtn.disabled = false;
-      saveBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" width="14" height="14"><polyline points="20 6 9 17 4 12"/></svg> Save Section Theme`;
+      saveBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" width="15" height="15"><polyline points="20 6 9 17 4 12"/></svg> Save Section Changes`;
     }
   }
 }

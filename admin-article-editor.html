@@ -1680,6 +1680,14 @@ async function loadSections() {
     dd.innerHTML = ['Findings','Culture','Heritage','Community &amp; Heritage','Privacy &amp; Values','Nation &amp; World','Arts &amp; Legacy','Work &amp; Economy','Students']
       .map(n => `<div class="sec-opt" onclick="setSec('${n}')">${n}</div>`).join('');
   }
+
+  // Pre-select section if passed via URL parameter (?section=...)
+  try {
+    const qSec = new URLSearchParams(location.search).get('section');
+    if (qSec && (!CURRENT_ARTICLE || !CURRENT_ARTICLE.section)) {
+      setSec(qSec);
+    }
+  } catch(e) {}
 }
 
 function toggleSecDd(ev) {
