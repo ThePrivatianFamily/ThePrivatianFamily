@@ -42,8 +42,92 @@ body{font-family:var(--sans);background:var(--bg);padding-top:calc(var(--tb) + v
   padding:4px 10px;border-radius:20px;flex-shrink:0}
 .tb-badge.draft{background:rgba(251,191,36,.12);color:#fbbf24}
 .tb-badge.published{background:rgba(52,211,153,.12);color:#34d399}
-#tb-save-st{font:400 10px/1 var(--sans);color:rgba(255,255,255,.22);
-  min-width:90px;flex-shrink:0;white-space:nowrap}
+.ed-sync-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6.5px;
+  padding: 4.5px 10px;
+  border-radius: 20px;
+  font: 600 11px/1 var(--sans);
+  letter-spacing: 0.02em;
+  user-select: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.ed-sync-badge.synced {
+  background: rgba(34, 197, 94, 0.14);
+  color: #86efac;
+  border: 1px solid rgba(34, 197, 94, 0.35);
+}
+.ed-sync-badge.synced:hover {
+  background: rgba(34, 197, 94, 0.22);
+  border-color: rgba(34, 197, 94, 0.55);
+}
+.ed-sync-badge.unsaved {
+  background: rgba(234, 179, 8, 0.16);
+  color: #fde047;
+  border: 1px solid rgba(234, 179, 8, 0.4);
+}
+.ed-sync-badge.unsaved:hover {
+  background: rgba(234, 179, 8, 0.25);
+  border-color: rgba(234, 179, 8, 0.6);
+}
+.ed-sync-badge.syncing {
+  background: rgba(14, 165, 233, 0.16);
+  color: #7dd3fc;
+  border: 1px solid rgba(14, 165, 233, 0.4);
+}
+.ed-sync-badge.error {
+  background: rgba(239, 68, 68, 0.16);
+  color: #fca5a5;
+  border: 1px solid rgba(239, 68, 68, 0.4);
+}
+.ed-sync-badge .ft-pulse-dot {
+  width: 6.5px;
+  height: 6.5px;
+  border-radius: 50%;
+  background: #22c55e;
+  box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7);
+  animation: edPulse 2s infinite;
+  flex-shrink: 0;
+}
+.ed-sync-badge .ft-pulse-dot.unsaved {
+  background: #eab308;
+  box-shadow: 0 0 0 0 rgba(234, 179, 8, 0.7);
+  animation: edPulseUnsaved 2s infinite;
+}
+.ed-sync-badge .ft-pulse-dot.syncing {
+  background: #0ea5e9;
+  box-shadow: 0 0 0 0 rgba(14, 165, 233, 0.7);
+  animation: edPulseSyncing 1.5s infinite;
+}
+.ed-sync-badge .ft-pulse-dot.error {
+  background: #ef4444;
+  box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+  animation: edPulseError 2s infinite;
+}
+@keyframes edPulse {
+  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7); }
+  70% { transform: scale(1); box-shadow: 0 0 0 5px rgba(34, 197, 94, 0); }
+  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+}
+@keyframes edPulseUnsaved {
+  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(234, 179, 8, 0.7); }
+  70% { transform: scale(1); box-shadow: 0 0 0 5px rgba(234, 179, 8, 0); }
+  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(234, 179, 8, 0); }
+}
+@keyframes edPulseSyncing {
+  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(14, 165, 233, 0.7); }
+  70% { transform: scale(1); box-shadow: 0 0 0 5px rgba(14, 165, 233, 0); }
+  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(14, 165, 233, 0); }
+}
+@keyframes edPulseError {
+  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+  70% { transform: scale(1); box-shadow: 0 0 0 5px rgba(239, 68, 68, 0); }
+  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+}
 .tb-btn{font:600 12px/1 var(--sans);border:none;border-radius:6px;
   padding:7px 14px;cursor:pointer;flex-shrink:0;transition:.15s;white-space:nowrap}
 .tb-preview{background:rgba(255,255,255,.07);color:rgba(255,255,255,.6);border:1px solid rgba(255,255,255,.12)}
@@ -475,7 +559,11 @@ body{padding-bottom:34px}
   </div>
   <div class="tb-vr"></div>
   <span class="tb-badge draft" id="tb-badge">● Draft</span>
-  <span id="tb-save-st"></span>
+  <!-- DATABASE SYNC BADGE IN ARTICLE EDITOR -->
+  <div id="art-sync-status-wrap" class="ed-sync-badge synced" title="Click to test live database connection" onclick="verifyEditorDbSync(true)">
+    <span class="ft-pulse-dot" id="art-status-dot"></span>
+    <span id="art-sync-status">Synced with database</span>
+  </div>
   <div class="tb-vr"></div>
   <button class="tb-btn tb-settings" id="sd-toggle" onclick="toggleDrawer()" title="Article Settings">
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
@@ -1910,8 +1998,85 @@ function refreshPubBtn() {
   btn.textContent = STATUS === 'published' ? 'Unpublish' : 'Publish';
   btn.className   = 'tb-btn ' + (STATUS === 'published' ? 'tb-unpub' : 'tb-pub');
 }
-function setSaveStatus(msg) { g('tb-save-st').textContent = msg; }
-function updateMetrics() {
+
+function updateEditorSyncStatus(state = 'synced', text = 'Synced with database') {
+  const wrap = g('art-sync-status-wrap');
+  const dot  = g('art-status-dot');
+  const txt  = g('art-sync-status');
+  if (wrap) wrap.className = 'ed-sync-badge ' + state;
+  if (dot)  dot.className  = 'ft-pulse-dot' + (state !== 'synced' ? ' ' + state : '');
+  if (txt)  txt.textContent = text;
+}
+
+function setSaveStatus(msg) {
+  if (!msg) {
+    updateEditorSyncStatus(DIRTY ? 'unsaved' : 'synced', DIRTY ? 'Unsaved changes' : 'Synced with database');
+    return;
+  }
+  const low = msg.toLowerCase();
+  if (low.includes('saving')) {
+    updateEditorSyncStatus('syncing', 'Saving to database...');
+  } else if (low.includes('unsaved')) {
+    updateEditorSyncStatus('unsaved', 'Unsaved changes');
+  } else if (low.includes('saved') || low.includes('synced')) {
+    updateEditorSyncStatus('synced', 'Synced with database');
+  } else if (low.includes('error') || low.includes('failed')) {
+    updateEditorSyncStatus('error', 'Sync error (offline/cache)');
+  } else {
+    updateEditorSyncStatus('synced', msg);
+  }
+}
+
+var _isVerifyingEditorDb = false;
+async function verifyEditorDbSync(shouldToast = false) {
+  if (_isVerifyingEditorDb) return;
+  _isVerifyingEditorDb = true;
+
+  if (shouldToast) {
+    updateEditorSyncStatus('syncing', 'Testing database...');
+  }
+
+  let dbOk = false;
+  try {
+    const sb = window._sb || (window.initSupabaseClient && window.initSupabaseClient());
+    if (sb) {
+      const { data, error } = await sb.from('articles').select('id').limit(1);
+      if (!error && Array.isArray(data)) dbOk = true;
+    }
+  } catch(e) {}
+
+  if (!dbOk) {
+    try {
+      if (typeof PRIVATIAN_SUPABASE_URL !== 'undefined' && typeof PRIVATIAN_SUPABASE_KEY !== 'undefined') {
+        const res = await fetch(`${PRIVATIAN_SUPABASE_URL}/rest/v1/articles?select=id&limit=1`, {
+          headers: {
+            'apikey': PRIVATIAN_SUPABASE_KEY,
+            'Authorization': 'Bearer ' + PRIVATIAN_SUPABASE_KEY
+          }
+        });
+        if (res.ok) dbOk = true;
+      }
+    } catch(e) {}
+  }
+
+  _isVerifyingEditorDb = false;
+
+  if (dbOk) {
+    if (DIRTY) {
+      updateEditorSyncStatus('unsaved', 'Unsaved changes');
+    } else {
+      updateEditorSyncStatus('synced', 'Synced with database');
+    }
+    if (shouldToast) {
+      toast('Database connection verified & synchronized ✓', 'ok');
+    }
+  } else {
+    updateEditorSyncStatus('error', 'Sync error (offline/cache)');
+    if (shouldToast) {
+      toast('Database connection error. Working with local cache.', 'err');
+    }
+  }
+}
   const text = (g('ed-rt')?.innerText || '').replace(/\s+/g,' ').trim();
   const words = text ? text.split(' ').filter(Boolean).length : 0;
   const chars = text.length;

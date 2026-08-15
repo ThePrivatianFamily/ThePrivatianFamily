@@ -158,6 +158,20 @@
     <!-- PAGE: SECTIONS -->
     <section class="page active" id="page-sections">
 
+      <!-- Sections Header & Status -->
+      <div class="menu-mgr-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:12px;">
+        <div class="menu-mgr-title-wrap">
+          <h1 class="page-title" style="font-size:22px;font-weight:700;color:var(--text-primary);margin:0 0 4px;">Sections Manager</h1>
+          <p class="page-subtitle" style="font-size:13px;color:var(--text-muted);margin:0;">Organize and manage active publication sections and categories</p>
+        </div>
+        <div class="menu-mgr-actions" style="display:flex;align-items:center;gap:10px;">
+          <div id="sections-save-status-wrap" class="ft-header-badge synced" title="Sections database status">
+            <span class="ft-pulse-dot" id="sections-status-dot"></span>
+            <span id="sections-save-status">Synced with database</span>
+          </div>
+        </div>
+      </div>
+
       <!-- Tab Switcher -->
       <div class="tab-bar">
         <button class="tab-btn active" id="tab-active" data-tab="active">
@@ -958,8 +972,18 @@
   <!-- â•â• TOAST CONTAINER â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
   <!-- == PAGE: MANAGE ACCESS == -->
   <section class="page" id="page-access">
-    <div style="padding:0 0 20px;">
-      <p style="color:#6b7280;font-size:14px;">Manage who can access the Admin Panel. Only admins can see this page.</p>
+    <!-- Manage Access Header & Status -->
+    <div class="menu-mgr-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:12px;">
+      <div class="menu-mgr-title-wrap">
+        <h1 class="page-title" style="font-size:22px;font-weight:700;color:var(--text-primary);margin:0 0 4px;">Manage Access</h1>
+        <p class="page-subtitle" style="font-size:13px;color:var(--text-muted);margin:0;">Manage who can access the Admin Panel. Only authorized admins can manage permissions.</p>
+      </div>
+      <div class="menu-mgr-actions" style="display:flex;align-items:center;gap:10px;">
+        <div id="access-save-status-wrap" class="ft-header-badge synced" title="Access whitelist database status">
+          <span class="ft-pulse-dot" id="access-status-dot"></span>
+          <span id="access-save-status">Synced with database</span>
+        </div>
+      </div>
     </div>
     <div class="card" style="margin-bottom:24px;border-radius:12px;border:1px solid #e5e7eb;overflow:hidden;">
       <div style="padding:16px 20px;background:#f9fafb;border-bottom:1px solid #e5e7eb;font-weight:600;font-size:14px;">Add Whitelisted Email</div>

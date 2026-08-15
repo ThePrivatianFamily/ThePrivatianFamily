@@ -704,6 +704,8 @@ function updateGlobalSyncStatus(forcedState, forcedText) {
 
   // 2. Update In-Page Badges for all pages (strictly isolated to their own section)
   const inPageBadges = [
+    { wrap: 'sections-save-status-wrap', dot: 'sections-status-dot', text: 'sections-save-status', page: 'sections' },
+    { wrap: 'access-save-status-wrap', dot: 'access-status-dot', text: 'access-save-status', page: 'access' },
     { wrap: 'ft-save-status-wrap', dot: 'ft-status-dot', text: 'ft-save-status', page: 'footer' },
     { wrap: 'menu-save-status-wrap', dot: 'menu-status-dot', text: 'menu-save-status', page: 'menu' },
     { wrap: 'hp-save-status-wrap', dot: 'hp-status-dot', text: 'hp-save-status', page: 'homepage' },
@@ -735,6 +737,9 @@ function updateGlobalSyncStatus(forcedState, forcedText) {
       } else if (b.page === 'header') {
         pageState = typeof isHeaderModified === 'function' && isHeaderModified() ? 'unsaved' : 'synced';
         pageText = pageState === 'unsaved' ? 'Unsaved changes' : 'Synced with database';
+      } else {
+        pageState = 'synced';
+        pageText = 'Synced with database';
       }
     }
 
