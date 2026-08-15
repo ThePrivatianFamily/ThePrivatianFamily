@@ -8,7 +8,7 @@
  * DELETE ?action=delete&id=<id>      Auth — Delete file from R2 and remove metadata
  */
 
-const { S3Client, PutObjectCommand, DeleteObjectCommand } = require('@aws-sdk/client-s3');
+const { S3Client, ListObjectsV2Command, PutObjectCommand, DeleteObjectCommand } = require('@aws-sdk/client-s3');
 const { createClient } = require('@supabase/supabase-js');
 const { requireAuth } = require('./_lib/auth');
 const { logActivity } = require('./_lib/activity');
