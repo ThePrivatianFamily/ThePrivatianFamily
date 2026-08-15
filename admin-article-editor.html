@@ -1802,6 +1802,50 @@ function restoreLocal() {
 function discardLocal() {
   localStorage.removeItem(lsKey());
   g('restore-banner').classList.remove('show');
+// ── AUDIT LOGGING HELPER ─────────────────────────────────────────
+function recordActivityLog({ action, category, summary, target_id, target_name, details = {} }) {
+  const user = window.PRIVATIAN_USER || (window.getPrivatianSession && window.getPrivatianSession()) || {};
+  const payload = {
+    action: action || 'articles.update',
+    category: category || 'articles',
+    summary: summary || 'Article modified in Editor',
+    target_id: target_id || null,
+    target_name: target_name || null,
+    details: {
+      ...details,
+      client_timestamp: new Date().toISOString()
+    }
+  };
+
+  // 1. Send to server API if available
+  const tok = _getTok();
+  fetch('/api/activity-log', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(tok ? { 'Authorization': 'Bearer ' + tok } : {})
+    },
+    body: JSON.stringify(payload)
+  }).catch(() => {});
+
+  // 2. Direct fallback to Supabase table
+  try {
+    const sb = window._sb || (window.initSupabaseClient && window.initSupabaseClient());
+    if (sb) {
+      sb.from('activity_logs').insert({
+        actor_email: user.email || 'admin@privatian.org',
+        actor_name: user.name || user.email || 'Admin',
+        actor_role: user.role || 'Admin',
+        action: payload.action,
+        category: payload.category,
+        summary: payload.summary,
+        target_id: payload.target_id,
+        target_name: payload.target_name,
+        details: payload.details,
+        created_at: new Date().toISOString()
+      }).then(() => {}).catch(() => {});
+    }
+  } catch(e) {}
 }
 
 // ── SAVE DRAFT ───────────────────────────────────────────────
@@ -1924,7 +1968,17 @@ async function saveArt(silent = false) {
     DIRTY = false;
     lsSave();
     setSaveStatus('Saved');
-    if (!silent) toast(STATUS === 'published' ? 'Changes saved as draft (Live article unchanged)' : 'Draft saved', 'ok');
+    if (!silent) {
+      toast(STATUS === 'published' ? 'Changes saved as draft (Live article unchanged)' : 'Draft saved', 'ok');
+      recordActivityLog({
+        action: 'articles.draft_save',
+        category: 'articles',
+        summary: `Saved working draft for "${savedData.title || 'Untitled'}"`,
+        target_id: savedData.id,
+        target_name: savedData.title || 'Untitled',
+        details: { id: savedData.id, status: STATUS, section: savedData.section }
+      });
+    }
   } else {
     setSaveStatus('Save failed');
     if (!silent) toast('Save failed. Please check network.', 'err');
@@ -2063,6 +2117,15 @@ async function doPublish() {
     lsSave();
     setSaveStatus('Published');
     toast('Article published to live site', 'ok');
+
+    recordActivityLog({
+      action: 'articles.publish',
+      category: 'articles',
+      summary: `Published article "${savedData.title || 'Untitled'}" to live website`,
+      target_id: savedData.id,
+      target_name: savedData.title || 'Untitled',
+      details: { id: savedData.id, section: savedData.section, slug: savedData.slug }
+    });
   } else {
     setSaveStatus('Publish failed');
     toast('Publish failed. Please check network.', 'err');
@@ -2112,6 +2175,15 @@ async function unpubArt() {
     lsSave();
     setSaveStatus('Moved to Draft');
     toast('Article unpublished & moved to draft', 'ok');
+
+    recordActivityLog({
+      action: 'articles.unpublish',
+      category: 'articles',
+      summary: `Unpublished article "${savedData.title || 'Untitled'}" to draft`,
+      target_id: ART_ID,
+      target_name: savedData.title || 'Untitled',
+      details: { id: ART_ID }
+    });
   } else {
     setSaveStatus('Unpublish failed');
     toast('Unpublish failed. Please check network.', 'err');

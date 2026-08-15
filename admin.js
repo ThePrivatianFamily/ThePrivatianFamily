@@ -78,6 +78,27 @@ async function _apiDelete(url) {
   return r.json();
 }
 
+// ── Universal Micro-Activity Logger ──────────────────────────────────────
+async function recordActivityLog({ action, category = 'general', summary, target_id = null, target_name = null, details = {} }) {
+  if (!action || !summary) return;
+  try {
+    const payload = {
+      action,
+      category,
+      summary,
+      target_id: target_id ? String(target_id) : null,
+      target_name: target_name ? String(target_name) : null,
+      details: {
+        ...details,
+        url: window.location.href,
+        clientTime: new Date().toISOString()
+      }
+    };
+    await _apiPost('/api/activity-log?action=log', payload).catch(() => {});
+  } catch(e) {}
+}
+window.recordActivityLog = recordActivityLog;
+
 // -- Core "All" section (always available, editable, permanent/cannot be deleted) --
 const ALL_SECTION = {
   id: 'all', name: 'All', slug: '', locked: false, isPermanent: true,
@@ -384,6 +405,14 @@ async function addSection(name, slug) {
     render();
     updateGlobalSyncStatus('synced', 'Synced with database');
     showToast('success', `Section "${trimmed}" created.`);
+    recordActivityLog({
+      action: 'section.create',
+      category: 'sections',
+      summary: `Created section "${trimmed}" (/section/${slugVal || genSlug(trimmed)})`,
+      target_id: created?.id || slugVal,
+      target_name: trimmed,
+      details: { name: trimmed, slug: slugVal }
+    });
     return null;
   } catch(e) {
     updateGlobalSyncStatus('error', 'Sync error');
@@ -412,6 +441,14 @@ async function renameSection(id, name, slug) {
     render();
     updateGlobalSyncStatus('synced', 'Synced with database');
     showToast('success', `Renamed to "${trimmed}".`);
+    recordActivityLog({
+      action: 'section.rename',
+      category: 'sections',
+      summary: `Renamed core section to "${trimmed}"`,
+      target_id: 'all',
+      target_name: trimmed,
+      details: { name: trimmed, slug: slugVal }
+    });
     return null;
   }
 
@@ -423,6 +460,14 @@ async function renameSection(id, name, slug) {
     render();
     updateGlobalSyncStatus('synced', 'Synced with database');
     showToast('success', `Renamed to "${trimmed}".`);
+    recordActivityLog({
+      action: 'section.rename',
+      category: 'sections',
+      summary: `Renamed section to "${trimmed}" (/section/${slugVal || genSlug(trimmed)})`,
+      target_id: id,
+      target_name: trimmed,
+      details: { name: trimmed, slug: slugVal }
+    });
     return null;
   } catch(e) {
     updateGlobalSyncStatus('error', 'Sync error');
@@ -451,6 +496,14 @@ async function deleteSection(id) {
       render();
       updateGlobalSyncStatus('synced', 'Synced with database');
       showToast('success', `"${name}" restored.`);
+      recordActivityLog({
+        action: 'section.restore',
+        category: 'sections',
+        summary: `Restored section "${name}" from Trash`,
+        target_id: id,
+        target_name: name,
+        details: { id }
+      });
     } catch(e) {
       showToast('error', 'Undo failed: ' + e.message);
       await loadSectionsFromAPI();
@@ -460,6 +513,14 @@ async function deleteSection(id) {
   try {
     await _apiDelete(`/api/sections?id=${encodeURIComponent(id)}`);
     updateGlobalSyncStatus('synced', 'Synced with database');
+    recordActivityLog({
+      action: 'section.trash',
+      category: 'sections',
+      summary: `Moved section "${name}" to Trash`,
+      target_id: id,
+      target_name: name,
+      details: { id }
+    });
   } catch(e) {
     // Rollback optimistic update on failure
     s.deleted = false; delete s.deletedAt;
@@ -479,6 +540,14 @@ async function restoreSection(id) {
     render();
     updateGlobalSyncStatus('synced', 'Synced with database');
     showToast('success', `"${s.name}" restored to Active.`);
+    recordActivityLog({
+      action: 'section.restore',
+      category: 'sections',
+      summary: `Restored section "${s.name}" to Active list`,
+      target_id: id,
+      target_name: s.name,
+      details: { id }
+    });
   } catch(e) {
     showToast('error', 'Restore failed: ' + e.message);
     await loadSectionsFromAPI();
@@ -496,6 +565,14 @@ async function permanentlyDelete(id) {
     await _apiDelete(`/api/sections?id=${encodeURIComponent(id)}&mode=permanent`);
     updateGlobalSyncStatus('synced', 'Synced with database');
     showToast('error', `"${name}" permanently deleted.`);
+    recordActivityLog({
+      action: 'section.delete_permanent',
+      category: 'sections',
+      summary: `Permanently deleted section "${name}" from database`,
+      target_id: id,
+      target_name: name,
+      details: { id, permanent: true }
+    });
   } catch(e) {
     showToast('error', 'Permanent delete failed: ' + e.message);
     await loadSectionsFromAPI();
@@ -848,6 +925,14 @@ function makeStudioHero(articleId) {
   }
   switchStudioTab('layout');
   showToast('success', 'Article selected as Hero Featured Story for this section.');
+  recordActivityLog({
+    action: 'sections.hero_select',
+    category: 'sections',
+    summary: `Selected article "${articleId}" as Hero Featured Story for section "${_studioCurrentSection?.name || ''}"`,
+    target_id: articleId,
+    target_name: _studioCurrentSection?.name || 'Section Hero',
+    details: { sectionId: _studioCurrentSection?.id, articleId }
+  });
 }
 
 function pinStudioSlot(articleId, slotNum) {
@@ -858,6 +943,14 @@ function pinStudioSlot(articleId, slotNum) {
   }
   switchStudioTab('layout');
   showToast('success', `Article pinned to Slot ${slotNum}.`);
+  recordActivityLog({
+    action: 'sections.slot_pin',
+    category: 'sections',
+    summary: `Pinned article "${articleId}" to Slot ${slotNum} for section "${_studioCurrentSection?.name || ''}"`,
+    target_id: articleId,
+    target_name: `Slot ${slotNum}`,
+    details: { sectionId: _studioCurrentSection?.id, slotNum, articleId }
+  });
 }
 
 async function lookupHeroArticleById(rawInput) {
@@ -898,6 +991,14 @@ async function lookupHeroArticleById(rawInput) {
     updateStudioHeroPreview(art.id);
   }
   showToast('success', `Applied Hero Featured Story: "${art.title || art.id}".`);
+  recordActivityLog({
+    action: 'sections.hero_lookup',
+    category: 'sections',
+    summary: `Looked up and set article "${art.title || art.id}" as Hero Story for section "${_studioCurrentSection?.name || ''}"`,
+    target_id: art.id,
+    target_name: art.title || art.id,
+    details: { sectionId: _studioCurrentSection?.id, articleId: art.id, title: art.title }
+  });
 }
 
 async function saveSectionStudio() {
@@ -947,6 +1048,15 @@ async function saveSectionStudio() {
 
     updateGlobalSyncStatus('synced', 'Synced with database');
     showToast('success', `Section "${newName}" and website layout saved successfully.`);
+
+    recordActivityLog({
+      action: 'sections.studio_save',
+      category: 'sections',
+      summary: `Saved Section Studio configuration for "${newName}" (Hero: ${heroArtId || 'Auto'}, ${selIds.length} Pinned Slots)`,
+      target_id: id,
+      target_name: newName,
+      details: { name: newName, slug: newSlug, heroArticleId: heroArtId, slotArticleIds: selIds, description: desc }
+    });
 
     // Refresh sections list
     await loadSectionsFromAPI();
@@ -1636,6 +1746,14 @@ async function addAdminEmail() {
     emailInput.value = '';
     showToast('success', email + ' added as ' + role + '.');
     loadAccessList();
+    recordActivityLog({
+      action: 'access.add_whitelist',
+      category: 'access',
+      summary: `Added "${email}" to Access Whitelist as ${role}`,
+      target_id: email,
+      target_name: email,
+      details: { email, role }
+    });
   } catch(e) { showToast('error', e.message || 'Failed to add.'); }
 }
 
@@ -1659,6 +1777,14 @@ function changeAdminRole(id, email, newRole) {
         }
         showToast('success', email + ' is now ' + newRole + '.');
         loadAccessList();
+        recordActivityLog({
+          action: 'access.change_role',
+          category: 'access',
+          summary: `Changed role for "${email}" to ${newRole}`,
+          target_id: id,
+          target_name: email,
+          details: { id, email, newRole }
+        });
       } catch(e) { showToast('error', e.message || 'Failed to change role.'); }
     }
   });
@@ -1689,6 +1815,14 @@ function toggleAdminStatus(id, newStatus, email) {
         }
         showToast('success', 'Status updated to ' + newStatus + '.');
         loadAccessList();
+        recordActivityLog({
+          action: newStatus === 'suspended' ? 'access.suspend' : 'access.unsuspend',
+          category: 'access',
+          summary: `${label}ed admin access for "${email}"`,
+          target_id: id,
+          target_name: email,
+          details: { id, email, status: newStatus }
+        });
       } catch(e) { showToast('error', e.message || 'Failed.'); }
     }
   });
@@ -1714,6 +1848,14 @@ function removeAdmin(id, email) {
         }
         showToast('success', email + ' moved to Recycle.');
         loadAccessList();
+        recordActivityLog({
+          action: 'access.recycle',
+          category: 'access',
+          summary: `Moved admin "${email}" to Recycle Bin`,
+          target_id: id,
+          target_name: email,
+          details: { id, email }
+        });
       } catch(e) { showToast('error', e.message || 'Failed.'); }
     }
   });
@@ -1737,6 +1879,14 @@ function restoreAdmin(id, email) {
         showToast('success', email + ' restored to Active.');
         _setAccessTab('active');
         loadAccessList();
+        recordActivityLog({
+          action: 'access.restore',
+          category: 'access',
+          summary: `Restored admin "${email}" to Active status`,
+          target_id: id,
+          target_name: email,
+          details: { id, email }
+        });
       } catch(e) { showToast('error', e.message || 'Failed.'); }
     }
   });
@@ -1756,6 +1906,14 @@ function purgeAdmin(id, email) {
         if (!res.ok) throw new Error(data.error || 'Failed');
         showToast('success', email + ' permanently deleted.');
         loadAccessList();
+        recordActivityLog({
+          action: 'access.purge',
+          category: 'access',
+          summary: `Permanently purged admin account "${email}" from the database`,
+          target_id: id,
+          target_name: email,
+          details: { id, email }
+        });
       } catch(e) { showToast('error', e.message || 'Failed.'); }
     }
   });
@@ -2024,6 +2182,14 @@ function renderHsLogoCard(hs) {
       refreshPreview();
       updateGlobalSyncStatus('synced', 'Synced with database');
       showToast('success', 'Logo saved to database & applied!');
+      recordActivityLog({
+        action: 'layout.header_logo_apply',
+        category: 'layout',
+        summary: `Applied custom logo (height: ${h}px) in Header Settings`,
+        target_id: 'site_logo',
+        target_name: 'Site Logo',
+        details: { logoHeight: h }
+      });
     });
   }
 
@@ -2040,6 +2206,14 @@ function renderHsLogoCard(hs) {
       refreshPreview('', 80);
       updateGlobalSyncStatus('synced', 'Synced with database');
       showToast('success', 'Logo reset to default.');
+      recordActivityLog({
+        action: 'layout.header_logo_reset',
+        category: 'layout',
+        summary: `Reset site logo to default in Header Settings`,
+        target_id: 'site_logo',
+        target_name: 'Site Logo',
+        details: {}
+      });
     });
   }
 }
@@ -2073,9 +2247,17 @@ function renderHsNavSections(hs) {
         <span class="hs-toggle-track"><span class="hs-toggle-thumb"></span></span>
       </label>
     `;
-    row.querySelector('input[type="checkbox"]').addEventListener('change', () => {
+    row.querySelector('input[type="checkbox"]').addEventListener('change', (e) => {
       hs.enabledNavSections = getEnabledNavSections();
       updateGlobalSyncStatus();
+      recordActivityLog({
+        action: 'layout.header_toggle_section',
+        category: 'layout',
+        summary: `${e.target.checked ? 'Enabled' : 'Disabled'} section "${s.name}" in Header Navigation Bar`,
+        target_id: sectionId,
+        target_name: s.name,
+        details: { sectionId, enabled: e.target.checked }
+      });
     });
     container.appendChild(row);
   });
@@ -2109,6 +2291,14 @@ function moveHsSubRow(id, dir, hs) {
   items[newIdx] = temp;
   renderHsSubsections(hs);
   updateGlobalSyncStatus();
+  recordActivityLog({
+    action: 'layout.header_reorder_tab',
+    category: 'layout',
+    summary: `Reordered sub-header tab "${temp.label || id}" (${dir < 0 ? 'Moved Up' : 'Moved Down'}) in Header`,
+    target_id: id,
+    target_name: temp.label || id,
+    details: { id, dir }
+  });
 }
 
 function buildHsSubRow(container, sub, hs, idx, total) {
@@ -2176,6 +2366,14 @@ function buildHsSubRow(container, sub, hs, idx, total) {
     sub.enabled = e.target.checked;
     row.classList.toggle('hs-sub-row--off', !sub.enabled);
     updateGlobalSyncStatus();
+    recordActivityLog({
+      action: 'layout.header_toggle_tab',
+      category: 'layout',
+      summary: `${sub.enabled ? 'Enabled' : 'Disabled'} sub-header tab "${sub.label}" in Header`,
+      target_id: sub.id,
+      target_name: sub.label,
+      details: { id: sub.id, enabled: sub.enabled, href: sub.href }
+    });
   });
 
   // Edit toggle
@@ -2204,6 +2402,14 @@ function buildHsSubRow(container, sub, hs, idx, total) {
     } else if (badgeEl) { badgeEl.remove(); }
     editForm.hidden = true;
     updateGlobalSyncStatus();
+    recordActivityLog({
+      action: 'layout.header_edit_tab',
+      category: 'layout',
+      summary: `Updated sub-header tab "${sub.label}" (${sub.href}) in Header`,
+      target_id: sub.id,
+      target_name: sub.label,
+      details: { id: sub.id, label: sub.label, href: sub.href, icon: sub.icon }
+    });
   });
 
   // Cancel edit
@@ -2213,9 +2419,19 @@ function buildHsSubRow(container, sub, hs, idx, total) {
   row.querySelector('.hs-del-sub-btn').addEventListener('click', () => {
     if (!confirm('Delete tab "' + sub.label + '"? This cannot be undone.')) return;
     const idx = hs.subsections.findIndex(s => s.id === sub.id);
-    if (idx !== -1) hs.subsections.splice(idx, 1);
-    renderHsSubsections(hs);
-    updateGlobalSyncStatus();
+    if (idx !== -1) {
+      const removed = hs.subsections.splice(idx, 1)[0];
+      renderHsSubsections(hs);
+      updateGlobalSyncStatus();
+      recordActivityLog({
+        action: 'layout.header_delete_tab',
+        category: 'layout',
+        summary: `Deleted sub-header tab "${removed?.label || sub.label}" from Header`,
+        target_id: sub.id,
+        target_name: removed?.label || sub.label,
+        details: { id: sub.id }
+      });
+    }
   });
 
   container.appendChild(row);
@@ -2249,6 +2465,14 @@ function bindHsAddForm(hs) {
       if (addBtn) addBtn.style.display = '';
       updateGlobalSyncStatus();
       showToast('success', 'Tab added! Click "Apply Header Changes" to save.');
+      recordActivityLog({
+        action: 'layout.header_add_tab',
+        category: 'layout',
+        summary: `Added sub-header tab "${newSub.label}" (${newSub.href}) in Header`,
+        target_id: newSub.id,
+        target_name: newSub.label,
+        details: newSub
+      });
     });
   }
 }
@@ -2291,6 +2515,14 @@ function bindHsSaveBtn(hs) {
       saveBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" width="15" height="15"><polyline points="20 6 9 17 4 12"/></svg> Changes Applied!`;
       saveBtn.style.background = 'var(--success, #1a7a4a)';
       showToast('success', 'Header & Browser Tab settings saved to database & applied!');
+      recordActivityLog({
+        action: 'layout.header_save',
+        category: 'layout',
+        summary: `Applied Header Settings (Site Title: "${hs.siteTitle}", Tagline: "${hs.tabTagline}", Logo: ${hs.logoHeight}px, ${hs.subsections.length} Tabs)`,
+        target_id: 'site_header_config',
+        target_name: 'Header Settings',
+        details: { siteTitle: hs.siteTitle, tabTagline: hs.tabTagline, metaDescription: hs.metaDescription, logoHeight: hs.logoHeight, tabsCount: hs.subsections.length }
+      });
     } catch(err) {
       updateGlobalSyncStatus('error', 'Sync error (offline/cache)');
       showToast('error', 'Failed to save header settings.');
@@ -2542,6 +2774,7 @@ function deleteArticleConfirm(id, title) {
 }
 
 async function _doDeleteArticle(id) {
+  const art = _allArticles.find(a => a.id === id);
   try {
     let ok = false;
     try {
@@ -2563,6 +2796,15 @@ async function _doDeleteArticle(id) {
     filterArticles();
     _loadArticleTrash();
     _showAdminToast('Article moved to Trash', 'success');
+
+    recordActivityLog({
+      action: 'articles.trash',
+      category: 'articles',
+      summary: `Moved article "${art?.title || id}" to Recycle Bin`,
+      target_id: id,
+      target_name: art?.title || id,
+      details: { id, title: art?.title, slug: art?.slug }
+    });
   } catch(e) { _showAdminToast(e.message, 'error'); }
 }
 
@@ -2572,11 +2814,11 @@ function restoreArticleConfirm(id, title) {
     body: `Restore "<strong>${escapeHtml(title)}</strong>"? It will be moved back to your active articles list.`,
     confirmText: 'Restore Article',
     variant: 'success',
-    onConfirm: () => _doRestoreArticle(id)
+    onConfirm: () => _doRestoreArticle(id, title)
   });
 }
 
-async function _doRestoreArticle(id) {
+async function _doRestoreArticle(id, title) {
   // Instant optimistic UI removal from trash table
   const tbody = document.getElementById('art-trash-tbody');
   const countEl = document.getElementById('art-trash-count');
@@ -2613,6 +2855,16 @@ async function _doRestoreArticle(id) {
     }
 
     _showAdminToast('Article restored to active list', 'success');
+
+    recordActivityLog({
+      action: 'articles.restore',
+      category: 'articles',
+      summary: `Restored article "${title || id}" from Recycle Bin`,
+      target_id: id,
+      target_name: title || id,
+      details: { id }
+    });
+
     await initArticlesPage();
   } catch(e) {
     _showAdminToast(e.message, 'error');
@@ -2626,11 +2878,11 @@ function permanentDeleteArticleConfirm(id, title) {
     body: `Warning: This action <strong>cannot be undone</strong>. "<strong>${escapeHtml(title)}</strong>" will be permanently deleted from the database.`,
     confirmText: 'Delete Forever',
     variant: 'danger',
-    onConfirm: () => _doPermanentDeleteArticle(id)
+    onConfirm: () => _doPermanentDeleteArticle(id, title)
   });
 }
 
-async function _doPermanentDeleteArticle(id) {
+async function _doPermanentDeleteArticle(id, title) {
   // Instant optimistic UI removal from trash table
   const tbody = document.getElementById('art-trash-tbody');
   const countEl = document.getElementById('art-trash-count');
@@ -2652,7 +2904,7 @@ async function _doPermanentDeleteArticle(id) {
   try {
     let ok = false;
     try {
-      const res = await fetch('/api/articles?action=delete&id=' + id + '&mode=permanent', {
+      const res  = await fetch('/api/articles?action=delete&id=' + id + '&mode=permanent', {
         method: 'DELETE', headers: _authHeaders()
       });
       if (res.ok) ok = true;
@@ -2667,6 +2919,16 @@ async function _doPermanentDeleteArticle(id) {
     }
 
     _showAdminToast('Article permanently deleted', 'success');
+
+    recordActivityLog({
+      action: 'articles.permanent_delete',
+      category: 'articles',
+      summary: `Permanently deleted article "${title || id}" from database`,
+      target_id: id,
+      target_name: title || id,
+      details: { id }
+    });
+
     await _loadArticleTrash();
   } catch(e) {
     _showAdminToast(e.message, 'error');
@@ -3102,13 +3364,33 @@ function saveSeriesItem() {
   closeSeriesModal();
   renderSeriesList();
   renderMenuPreview();
+
+  recordActivityLog({
+    action: editId ? 'layout.menu_edit_series' : 'layout.menu_add_series',
+    category: 'layout',
+    summary: `${editId ? 'Updated' : 'Added'} featured series "${title}" in Navigation Menu`,
+    target_id: editId || 'series-new',
+    target_name: title,
+    details: { title, href, description: desc, enabled }
+  });
 }
 
 function deleteSeriesItem(id) {
+  const item = (menuDraftConfig.series || []).find(s => s.id === id);
   pushMenuHistory();
   menuDraftConfig.series = (menuDraftConfig.series || []).filter(s => s.id !== id);
   renderSeriesList();
   renderMenuPreview();
+  if (item) {
+    recordActivityLog({
+      action: 'layout.menu_delete_series',
+      category: 'layout',
+      summary: `Deleted featured series "${item.title || id}" from Navigation Menu`,
+      target_id: id,
+      target_name: item.title || id,
+      details: { id }
+    });
+  }
 }
 
 function toggleSeriesItem(id) {
@@ -3118,6 +3400,14 @@ function toggleSeriesItem(id) {
     item.enabled = (item.enabled === false ? true : false);
     renderSeriesList();
     renderMenuPreview();
+    recordActivityLog({
+      action: 'layout.menu_toggle_series',
+      category: 'layout',
+      summary: `${item.enabled ? 'Enabled' : 'Disabled'} featured series "${item.title || id}" in Navigation Menu`,
+      target_id: item.id,
+      target_name: item.title,
+      details: { seriesId: item.id, enabled: item.enabled, href: item.href }
+    });
   }
 }
 
@@ -3133,6 +3423,14 @@ function moveSeriesItem(id, dir) {
   items[newIdx] = temp;
   renderSeriesList();
   renderMenuPreview();
+  recordActivityLog({
+    action: 'layout.menu_reorder_series',
+    category: 'layout',
+    summary: `Reordered series "${temp.title || id}" (${dir < 0 ? 'Moved Up' : 'Moved Down'}) in Navigation Menu`,
+    target_id: id,
+    target_name: temp.title || id,
+    details: { id, dir }
+  });
 }
 
 // ── EXPLORE LINKS CRUD ───────────────────────────────────────────
@@ -3252,13 +3550,33 @@ function saveExploreItem() {
   closeExploreModal();
   renderExploreList();
   renderMenuPreview();
+
+  recordActivityLog({
+    action: editId ? 'layout.menu_edit_explore' : 'layout.menu_add_explore',
+    category: 'layout',
+    summary: `${editId ? 'Updated' : 'Added'} explore link "${label}" in Navigation Menu`,
+    target_id: editId || 'explore-new',
+    target_name: label,
+    details: { label, href, target, enabled }
+  });
 }
 
 function deleteExploreItem(id) {
+  const item = (menuDraftConfig.explore || []).find(e => e.id === id);
   pushMenuHistory();
   menuDraftConfig.explore = (menuDraftConfig.explore || []).filter(e => e.id !== id);
   renderExploreList();
   renderMenuPreview();
+  if (item) {
+    recordActivityLog({
+      action: 'layout.menu_delete_explore',
+      category: 'layout',
+      summary: `Deleted explore link "${item.label || id}" from Navigation Menu`,
+      target_id: id,
+      target_name: item.label || id,
+      details: { id }
+    });
+  }
 }
 
 function toggleExploreItem(id) {
@@ -3268,6 +3586,14 @@ function toggleExploreItem(id) {
     item.enabled = (item.enabled === false ? true : false);
     renderExploreList();
     renderMenuPreview();
+    recordActivityLog({
+      action: 'layout.menu_toggle_explore',
+      category: 'layout',
+      summary: `${item.enabled ? 'Enabled' : 'Disabled'} explore link "${item.label || id}" in Navigation Menu`,
+      target_id: item.id,
+      target_name: item.label,
+      details: { id: item.id, enabled: item.enabled, href: item.href }
+    });
   }
 }
 
@@ -3283,6 +3609,14 @@ function moveExploreItem(id, dir) {
   items[newIdx] = temp;
   renderExploreList();
   renderMenuPreview();
+  recordActivityLog({
+    action: 'layout.menu_reorder_explore',
+    category: 'layout',
+    summary: `Reordered explore link "${temp.label || id}" (${dir < 0 ? 'Moved Up' : 'Moved Down'}) in Navigation Menu`,
+    target_id: id,
+    target_name: temp.label || id,
+    details: { id, dir }
+  });
 }
 
 // ── READ THE LATEST CRUD ─────────────────────────────────────────
@@ -3411,13 +3745,33 @@ function saveLatestItem() {
   closeLatestModal();
   renderLatestList();
   renderMenuPreview();
+
+  recordActivityLog({
+    action: editId ? 'layout.menu_edit_latest' : 'layout.menu_add_latest',
+    category: 'layout',
+    summary: `${editId ? 'Updated' : 'Added'} story highlight "${title}" in Navigation Menu`,
+    target_id: editId || 'latest-new',
+    target_name: title,
+    details: { title, href, imageUrl, enabled }
+  });
 }
 
 function deleteLatestItem(id) {
+  const item = (menuDraftConfig.latest || []).find(l => l.id === id);
   pushMenuHistory();
   menuDraftConfig.latest = (menuDraftConfig.latest || []).filter(l => l.id !== id);
   renderLatestList();
   renderMenuPreview();
+  if (item) {
+    recordActivityLog({
+      action: 'layout.menu_delete_latest',
+      category: 'layout',
+      summary: `Deleted story highlight "${item.title || id}" from Navigation Menu`,
+      target_id: id,
+      target_name: item.title || id,
+      details: { id }
+    });
+  }
 }
 
 function toggleLatestItem(id) {
@@ -3427,6 +3781,14 @@ function toggleLatestItem(id) {
     item.enabled = (item.enabled === false ? true : false);
     renderLatestList();
     renderMenuPreview();
+    recordActivityLog({
+      action: 'layout.menu_toggle_latest',
+      category: 'layout',
+      summary: `${item.enabled ? 'Enabled' : 'Disabled'} story highlight "${item.title || id}" in Navigation Menu`,
+      target_id: item.id,
+      target_name: item.title,
+      details: { id: item.id, enabled: item.enabled }
+    });
   }
 }
 
@@ -3442,6 +3804,14 @@ function moveLatestItem(id, dir) {
   items[newIdx] = temp;
   renderLatestList();
   renderMenuPreview();
+  recordActivityLog({
+    action: 'layout.menu_reorder_latest',
+    category: 'layout',
+    summary: `Reordered story highlight "${temp.title || id}" (${dir < 0 ? 'Moved Up' : 'Moved Down'}) in Navigation Menu`,
+    target_id: id,
+    target_name: temp.title || id,
+    details: { id, dir }
+  });
 }
 
 // ── SECTIONS COLUMN IN MENU ──────────────────────────────────────
@@ -3485,6 +3855,15 @@ function onMenuSectionToggle() {
   pushMenuHistory();
   menuDraftConfig.enabledMenuSections = selected;
   renderMenuPreview();
+
+  recordActivityLog({
+    action: 'layout.menu_toggle_section',
+    category: 'layout',
+    summary: `Updated visible sections in Navigation Menu column (${selected.join(', ') || 'None'})`,
+    target_id: 'menu_sections',
+    target_name: 'Navigation Menu Sections',
+    details: { enabledSections: selected }
+  });
 }
 
 // ── LIVE PREVIEW IN ADMIN ────────────────────────────────────────
@@ -3589,6 +3968,24 @@ async function saveMenuSettings() {
     updateUndoRedoButtons();
     updateGlobalSyncStatus('synced', 'Synced with database');
     showToast('success', 'Navigation Menu changes applied and published!');
+
+    recordActivityLog({
+      action: 'layout.menu_save',
+      category: 'layout',
+      summary: `Published Navigation Menu layout (${(menuDraftConfig.series || []).length} Series, ${(menuDraftConfig.explore || []).length} Links, ${(menuDraftConfig.latest || []).length} Stories)`,
+      target_id: 'navigation_menu_config',
+      target_name: 'Navigation Menu',
+      details: {
+        sectionsTitle: menuDraftConfig.sectionsTitle,
+        seriesTitle: menuDraftConfig.seriesTitle,
+        exploreTitle: menuDraftConfig.exploreTitle,
+        latestTitle: menuDraftConfig.latestTitle,
+        series: (menuDraftConfig.series || []).map(s => ({ title: s.title, enabled: s.enabled !== false })),
+        explore: (menuDraftConfig.explore || []).map(e => ({ label: e.label, enabled: e.enabled !== false })),
+        latest: (menuDraftConfig.latest || []).map(l => ({ title: l.title, enabled: l.enabled !== false })),
+        enabledMenuSections: menuDraftConfig.enabledMenuSections
+      }
+    });
   } catch(err) {
     console.warn('[Admin] saveMenuSettings server error:', err.message);
     try {
@@ -3600,6 +3997,15 @@ async function saveMenuSettings() {
     updateUndoRedoButtons();
     updateGlobalSyncStatus('synced', 'Synced with database');
     showToast('success', 'Changes applied to local cache');
+
+    recordActivityLog({
+      action: 'layout.menu_save',
+      category: 'layout',
+      summary: `Saved Navigation Menu configuration (local cache fallback)`,
+      target_id: 'navigation_menu_config',
+      target_name: 'Navigation Menu',
+      details: { offlineFallback: true }
+    });
   } finally {
     if (saveBtn) saveBtn.disabled = false;
   }
@@ -4695,6 +5101,15 @@ function saveHpSlotModal() {
   closeHpSlotModal();
   renderActiveHpTab();
   showToast('success', 'Homepage slot updated');
+
+  recordActivityLog({
+    action: 'layout.homepage_slot_update',
+    category: 'layout',
+    summary: `Updated Homepage slot "${path}" ("${headline}")`,
+    target_id: path,
+    target_name: headline,
+    details: { path, title: headline, subtitle, link, enabled }
+  });
 }
 
 function closeHpSlotModal() {
@@ -4782,14 +5197,33 @@ function saveHpEventModal() {
   closeHpEventModal();
   renderActiveHpTab();
   showToast('success', editId ? 'Event updated' : 'Event added');
+
+  recordActivityLog({
+    action: editId ? 'layout.homepage_edit_event' : 'layout.homepage_add_event',
+    category: 'layout',
+    summary: `${editId ? 'Updated' : 'Added'} event "${title}" on Homepage Events`,
+    target_id: editId || 'event-new',
+    target_name: title,
+    details: { date, title, meta, href: link, enabled }
+  });
 }
 
 function deleteHpEvent(id) {
   if (!homepageDraftConfig || !homepageDraftConfig.eventsSection || !homepageDraftConfig.eventsSection.events) return;
+  const ev = homepageDraftConfig.eventsSection.events.find(e => e.id === id);
   pushHomepageHistory();
   homepageDraftConfig.eventsSection.events = homepageDraftConfig.eventsSection.events.filter(e => e.id !== id);
   renderActiveHpTab();
   showToast('info', 'Event removed');
+
+  recordActivityLog({
+    action: 'layout.homepage_delete_event',
+    category: 'layout',
+    summary: `Deleted event "${ev?.title || id}" from Homepage Events`,
+    target_id: id,
+    target_name: ev?.title || id,
+    details: { id }
+  });
 }
 
 function moveHpEvent(id, dir) {
@@ -4805,6 +5239,15 @@ function moveHpEvent(id, dir) {
   items[newIdx] = temp;
   renderActiveHpTab();
   showToast('info', 'Event reordered');
+
+  recordActivityLog({
+    action: 'layout.homepage_reorder_event',
+    category: 'layout',
+    summary: `Reordered event "${temp.title || id}" (${dir < 0 ? 'Moved Up' : 'Moved Down'}) in Homepage Events list`,
+    target_id: id,
+    target_name: temp.title || id,
+    details: { id, dir }
+  });
 }
 
 function toggleHpEvent(id) {
@@ -4815,6 +5258,15 @@ function toggleHpEvent(id) {
   ev.enabled = ev.enabled === false ? true : false;
   renderActiveHpTab();
   showToast('info', ev.enabled ? 'Event enabled' : 'Event disabled');
+
+  recordActivityLog({
+    action: 'layout.homepage_toggle_event',
+    category: 'layout',
+    summary: `${ev.enabled ? 'Enabled' : 'Disabled'} event "${ev.title || id}" on Homepage`,
+    target_id: id,
+    target_name: ev.title || id,
+    details: { id, enabled: ev.enabled }
+  });
 }
 
 function closeHpEventModal() {
@@ -4868,6 +5320,15 @@ function addHpSubArticle(colIdx) {
   });
   renderActiveHpTab();
   showToast('success', 'Sub-article headline added');
+
+  recordActivityLog({
+    action: 'layout.homepage_add_sub_article',
+    category: 'layout',
+    summary: `Added sub-article headline in Column ${colIdx + 1} (${col.label || 'Section'})`,
+    target_id: `col-${colIdx}`,
+    target_name: col.label || `Column ${colIdx + 1}`,
+    details: { colIdx }
+  });
 }
 
 function deleteHpSubArticle(colIdx, subIdx) {
@@ -4876,9 +5337,18 @@ function deleteHpSubArticle(colIdx, subIdx) {
   if (!col || !Array.isArray(col.subArticles)) return;
 
   pushHomepageHistory();
-  col.subArticles.splice(subIdx, 1);
+  const removed = col.subArticles.splice(subIdx, 1)[0];
   renderActiveHpTab();
   showToast('info', 'Sub-article headline removed');
+
+  recordActivityLog({
+    action: 'layout.homepage_delete_sub_article',
+    category: 'layout',
+    summary: `Removed sub-article headline "${removed?.title || ''}" from Column ${colIdx + 1} (${col.label || 'Section'})`,
+    target_id: `col-${colIdx}`,
+    target_name: col.label || `Column ${colIdx + 1}`,
+    details: { colIdx, subIdx }
+  });
 }
 
 // ── SAVE HOMEPAGE SETTINGS TO SUPABASE DATABASE ──────────────────
@@ -4899,6 +5369,19 @@ async function saveHomepageSettings() {
     updateHomepageUndoRedoBtns();
     updateGlobalSyncStatus('synced', 'Synced with database');
     showToast('success', 'Homepage changes published and synced with database!');
+
+    recordActivityLog({
+      action: 'layout.homepage_save',
+      category: 'layout',
+      summary: `Published Homepage Builder layout & curation updates to database`,
+      target_id: 'site_homepage_config',
+      target_name: 'Homepage Builder',
+      details: {
+        heroTitle: homepageDraftConfig.hero?.main?.title,
+        eventsCount: (homepageDraftConfig.eventsSection?.events || []).length,
+        columnsCount: (homepageDraftConfig.allNews?.columns || []).length
+      }
+    });
   } catch(err) {
     console.warn('[Admin] saveHomepageSettings server error:', err.message);
     try {
@@ -4910,6 +5393,15 @@ async function saveHomepageSettings() {
     updateHomepageUndoRedoBtns();
     updateGlobalSyncStatus('synced', 'Synced with database');
     showToast('success', 'Homepage changes applied to local cache');
+
+    recordActivityLog({
+      action: 'layout.homepage_save',
+      category: 'layout',
+      summary: `Saved Homepage Builder configuration (local cache fallback)`,
+      target_id: 'site_homepage_config',
+      target_name: 'Homepage Builder',
+      details: { offlineFallback: true }
+    });
   } finally {
     if (saveBtn) saveBtn.disabled = false;
   }
@@ -5515,6 +6007,14 @@ function onFooterSectionToggle(slug, checked) {
     footerDraftConfig.enabledSections = footerDraftConfig.enabledSections.filter(x => x !== slug);
   }
   updateGlobalSyncStatus();
+  recordActivityLog({
+    action: 'layout.footer_toggle_section',
+    category: 'layout',
+    summary: `${checked ? 'Enabled' : 'Disabled'} section "${slug}" in Footer column`,
+    target_id: slug,
+    target_name: slug,
+    details: { slug, enabled: checked }
+  });
 }
 
 function toggleFooterSectionCard(slug) {
@@ -5536,6 +6036,14 @@ function selectAllFooterSections(enableAll) {
   updateGlobalSyncStatus();
   renderFooterSections();
   showToast('success', enableAll ? 'All sections enabled for footer.' : 'All sections hidden from footer.');
+  recordActivityLog({
+    action: 'layout.footer_toggle_all_sections',
+    category: 'layout',
+    summary: `${enableAll ? 'Enabled all' : 'Disabled all'} sections in Footer column`,
+    target_id: 'footer_sections_all',
+    target_name: 'Footer Sections',
+    details: { enableAll }
+  });
 }
 
 // ── TAB: BRAND & LEGAL LINKS ──────────────────────────────────────
@@ -5624,6 +6132,14 @@ function onFooterLogoSvgInput(svgCode) {
   footerDraftConfig.logoSvg = svgCode ? svgCode.trim() : '';
   updateGlobalSyncStatus();
   updateFooterLogoPreview();
+  recordActivityLog({
+    action: 'layout.footer_logo_update',
+    category: 'layout',
+    summary: `Updated Footer logo SVG in Footer Settings`,
+    target_id: 'footer_logo',
+    target_name: 'Footer Logo',
+    details: {}
+  });
 }
 
 function onFooterLogoHeightInput(heightVal) {
@@ -5635,6 +6151,14 @@ function onFooterLogoHeightInput(heightVal) {
   if (label) label.textContent = h;
   updateGlobalSyncStatus();
   updateFooterLogoPreview();
+  recordActivityLog({
+    action: 'layout.footer_logo_resize',
+    category: 'layout',
+    summary: `Resized Footer logo to ${h}px`,
+    target_id: 'footer_logo',
+    target_name: 'Footer Logo',
+    details: { height: h }
+  });
 }
 
 function resetFooterLogoToDefault() {
@@ -5651,6 +6175,14 @@ function resetFooterLogoToDefault() {
   updateGlobalSyncStatus();
   updateFooterLogoPreview();
   showToast('info', 'Footer logo reset to default.');
+  recordActivityLog({
+    action: 'layout.footer_logo_reset',
+    category: 'layout',
+    summary: `Reset Footer logo to default in Footer Settings`,
+    target_id: 'footer_logo',
+    target_name: 'Footer Logo',
+    details: {}
+  });
 }
 
 function updateFooterLogoPreview() {
@@ -5685,6 +6217,14 @@ function moveFooterItem(type, index, dir) {
   arr[index] = arr[targetIndex];
   arr[targetIndex] = temp;
   refreshActiveFooterTab();
+  recordActivityLog({
+    action: `layout.footer_reorder_${type}`,
+    category: 'layout',
+    summary: `Reordered item in Footer ${type} (${dir < 0 ? 'Moved Up' : 'Moved Down'})`,
+    target_id: temp?.id || type,
+    target_name: temp?.label || temp?.title || type,
+    details: { type, dir }
+  });
 }
 
 // ── MODALS: EXPLORE ───────────────────────────────────────────────
@@ -5744,6 +6284,15 @@ function saveFooterExploreModal() {
   closeFooterExploreModal();
   renderFooterExplore();
   showToast('success', 'Explore link updated.');
+
+  recordActivityLog({
+    action: editId ? 'layout.footer_edit_explore' : 'layout.footer_add_explore',
+    category: 'layout',
+    summary: `${editId ? 'Updated' : 'Added'} explore link "${label}" in Footer`,
+    target_id: editId || 'footer-exp-new',
+    target_name: label,
+    details: { label, href, target }
+  });
 }
 
 function toggleFooterExplore(id) {
@@ -5753,14 +6302,33 @@ function toggleFooterExplore(id) {
   recordFooterState('Toggle Explore Link');
   item.enabled = (item.enabled === false ? true : false);
   renderFooterExplore();
+
+  recordActivityLog({
+    action: 'layout.footer_toggle_explore',
+    category: 'layout',
+    summary: `${item.enabled ? 'Enabled' : 'Disabled'} explore link "${item.label || id}" in Footer`,
+    target_id: item.id,
+    target_name: item.label,
+    details: { id: item.id, enabled: item.enabled }
+  });
 }
 
 function deleteFooterExplore(id) {
   if (!footerDraftConfig) return;
+  const item = (footerDraftConfig.explore || []).find(e => e.id === id);
   recordFooterState('Delete Explore Link');
   footerDraftConfig.explore = (footerDraftConfig.explore || []).filter(e => e.id !== id);
   renderFooterExplore();
   showToast('warning', 'Explore link removed.');
+
+  recordActivityLog({
+    action: 'layout.footer_delete_explore',
+    category: 'layout',
+    summary: `Deleted explore link "${item?.label || id}" from Footer`,
+    target_id: id,
+    target_name: item?.label || id,
+    details: { id }
+  });
 }
 
 // ── MODALS: SERIES ────────────────────────────────────────────────
@@ -5820,6 +6388,15 @@ function saveFooterSeriesModal() {
   closeFooterSeriesModal();
   renderFooterSeries();
   showToast('success', 'Series highlight updated.');
+
+  recordActivityLog({
+    action: editId ? 'layout.footer_edit_series' : 'layout.footer_add_series',
+    category: 'layout',
+    summary: `${editId ? 'Updated' : 'Added'} series highlight "${title}" in Footer`,
+    target_id: editId || 'footer-ser-new',
+    target_name: title,
+    details: { title, href, description: desc }
+  });
 }
 
 function toggleFooterSeries(id) {
@@ -5829,14 +6406,33 @@ function toggleFooterSeries(id) {
   recordFooterState('Toggle Series');
   item.enabled = (item.enabled === false ? true : false);
   renderFooterSeries();
+
+  recordActivityLog({
+    action: 'layout.footer_toggle_series',
+    category: 'layout',
+    summary: `${item.enabled ? 'Enabled' : 'Disabled'} series highlight "${item.title || id}" in Footer`,
+    target_id: item.id,
+    target_name: item.title,
+    details: { id: item.id, enabled: item.enabled }
+  });
 }
 
 function deleteFooterSeries(id) {
   if (!footerDraftConfig) return;
+  const item = (footerDraftConfig.series || []).find(s => s.id === id);
   recordFooterState('Delete Series');
   footerDraftConfig.series = (footerDraftConfig.series || []).filter(s => s.id !== id);
   renderFooterSeries();
   showToast('warning', 'Series highlight removed.');
+
+  recordActivityLog({
+    action: 'layout.footer_delete_series',
+    category: 'layout',
+    summary: `Deleted series highlight "${item?.title || id}" from Footer`,
+    target_id: id,
+    target_name: item?.title || id,
+    details: { id }
+  });
 }
 
 // ── MODALS: SOCIAL ────────────────────────────────────────────────
@@ -5915,6 +6511,15 @@ function saveFooterSocialModal() {
   closeFooterSocialModal();
   renderFooterSocial();
   showToast('success', 'Social channel updated.');
+
+  recordActivityLog({
+    action: editId ? 'layout.footer_edit_social' : 'layout.footer_add_social',
+    category: 'layout',
+    summary: `${editId ? 'Updated' : 'Added'} social channel "${label}" (${platform}) in Footer`,
+    target_id: editId || 'footer-soc-new',
+    target_name: label,
+    details: { platform, label, href }
+  });
 }
 
 function toggleFooterSocial(id) {
@@ -5924,14 +6529,33 @@ function toggleFooterSocial(id) {
   recordFooterState('Toggle Social Channel');
   item.enabled = (item.enabled === false ? true : false);
   renderFooterSocial();
+
+  recordActivityLog({
+    action: 'layout.footer_toggle_social',
+    category: 'layout',
+    summary: `${item.enabled ? 'Enabled' : 'Disabled'} social channel "${item.label || id}" in Footer`,
+    target_id: item.id,
+    target_name: item.label,
+    details: { id: item.id, enabled: item.enabled }
+  });
 }
 
 function deleteFooterSocial(id) {
   if (!footerDraftConfig) return;
+  const item = (footerDraftConfig.social || []).find(sc => sc.id === id);
   recordFooterState('Delete Social Channel');
   footerDraftConfig.social = (footerDraftConfig.social || []).filter(sc => sc.id !== id);
   renderFooterSocial();
   showToast('warning', 'Social channel removed.');
+
+  recordActivityLog({
+    action: 'layout.footer_delete_social',
+    category: 'layout',
+    summary: `Deleted social channel "${item?.label || id}" from Footer`,
+    target_id: id,
+    target_name: item?.label || id,
+    details: { id }
+  });
 }
 
 // ── MODALS: BOTTOM LEGAL LINKS ────────────────────────────────────
@@ -5991,6 +6615,15 @@ function saveFooterBottomLinkModal() {
   closeFooterBottomLinkModal();
   renderFooterBrand();
   showToast('success', 'Legal link updated.');
+
+  recordActivityLog({
+    action: editId ? 'layout.footer_edit_bottom_link' : 'layout.footer_add_bottom_link',
+    category: 'layout',
+    summary: `${editId ? 'Updated' : 'Added'} legal link "${label}" in Footer`,
+    target_id: editId || 'footer-bot-new',
+    target_name: label,
+    details: { label, href, target }
+  });
 }
 
 function toggleFooterBottomLink(id) {
@@ -6000,14 +6633,33 @@ function toggleFooterBottomLink(id) {
   recordFooterState('Toggle Legal Link');
   item.enabled = (item.enabled === false ? true : false);
   renderFooterBrand();
+
+  recordActivityLog({
+    action: 'layout.footer_toggle_bottom_link',
+    category: 'layout',
+    summary: `${item.enabled ? 'Enabled' : 'Disabled'} legal link "${item.label || id}" in Footer`,
+    target_id: item.id,
+    target_name: item.label,
+    details: { id: item.id, enabled: item.enabled }
+  });
 }
 
 function deleteFooterBottomLink(id) {
   if (!footerDraftConfig) return;
+  const item = (footerDraftConfig.bottomLinks || []).find(b => b.id === id);
   recordFooterState('Delete Legal Link');
   footerDraftConfig.bottomLinks = (footerDraftConfig.bottomLinks || []).filter(b => b.id !== id);
   renderFooterBrand();
   showToast('warning', 'Legal link removed.');
+
+  recordActivityLog({
+    action: 'layout.footer_delete_bottom_link',
+    category: 'layout',
+    summary: `Deleted legal link "${item?.label || id}" from Footer`,
+    target_id: id,
+    target_name: item?.label || id,
+    details: { id }
+  });
 }
 
 // ── SAVE FOOTER TO DATABASE ───────────────────────────────────────
@@ -6068,6 +6720,20 @@ async function saveFooterSettings() {
   updateGlobalSyncStatus('synced', 'Synced with database');
   refreshActiveFooterTab();
   showToast('success', 'Footer settings successfully saved & synchronized!');
+
+  recordActivityLog({
+    action: 'layout.footer_save',
+    category: 'layout',
+    summary: `Published Footer layout (${(footerDraftConfig.explore || []).length} Links, ${(footerDraftConfig.series || []).length} Series, ${(footerDraftConfig.social || []).length} Social, ${(footerDraftConfig.bottomLinks || []).length} Legal)`,
+    target_id: 'site_footer_config',
+    target_name: 'Footer Settings',
+    details: {
+      exploreCount: (footerDraftConfig.explore || []).length,
+      seriesCount: (footerDraftConfig.series || []).length,
+      socialCount: (footerDraftConfig.social || []).length,
+      bottomLinksCount: (footerDraftConfig.bottomLinks || []).length
+    }
+  });
 
   if (saveBtn) saveBtn.disabled = false;
 }
