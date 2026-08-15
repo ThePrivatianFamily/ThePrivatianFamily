@@ -8402,7 +8402,7 @@ async function loadGalleryAssets() {
   }
 }
 
-// ── 2. Update Badge & Category Counts ────────────────────────────
+// ── 2. Update Badge, Analytics & Storage Quota Dashboard ────────
 function _updateGalleryCounts() {
   const badge = document.getElementById('gallery-count-badge');
   const countAll = document.getElementById('gallery-filter-count-all');
@@ -8410,10 +8410,38 @@ function _updateGalleryCounts() {
   const countSvg = document.getElementById('gallery-filter-count-svg');
   const footerText = document.getElementById('gallery-total-count-text');
 
+  // KPI elements
+  const statTotalCount = document.getElementById('gallery-stat-total-count');
+  const statBreakdown = document.getElementById('gallery-stat-files-breakdown');
+  const statStorageUsed = document.getElementById('gallery-stat-storage-used');
+  const statUsedPct = document.getElementById('gallery-stat-used-pct');
+  const statStorageFree = document.getElementById('gallery-stat-storage-free');
+  const statFreePct = document.getElementById('gallery-stat-free-pct');
+  const statAvgSize = document.getElementById('gallery-stat-avg-size');
+  const statLargest = document.getElementById('gallery-stat-largest-file');
+
+  // Quota bar elements
+  const quotaUsedText = document.getElementById('gallery-quota-used-text');
+  const quotaFreeText = document.getElementById('gallery-quota-free-text');
+  const quotaFill = document.getElementById('gallery-quota-fill');
+  const quotaPercentText = document.getElementById('gallery-quota-percent-text');
+
+  // Calculations
   const total = _rawGalleryList.length;
   const photos = _rawGalleryList.filter(x => !x.mime_type?.includes('svg') && !x.filename?.toLowerCase().endsWith('.svg')).length;
   const svgs = _rawGalleryList.filter(x => x.mime_type?.includes('svg') || x.filename?.toLowerCase().endsWith('.svg')).length;
+  const totalBytes = _rawGalleryList.reduce((acc, cur) => acc + (cur.file_size || 0), 0);
 
+  // Cloudflare R2 standard free tier capacity: 10 GB (10,737,418,240 bytes)
+  const R2_CAPACITY_BYTES = 10 * 1024 * 1024 * 1024;
+  const freeBytes = Math.max(0, R2_CAPACITY_BYTES - totalBytes);
+  const usedPct = (totalBytes / R2_CAPACITY_BYTES) * 100;
+  const freePct = Math.max(0, 100 - usedPct);
+
+  const avgBytes = total > 0 ? Math.round(totalBytes / total) : 0;
+  const largestBytes = _rawGalleryList.reduce((max, cur) => Math.max(max, cur.file_size || 0), 0);
+
+  // 1. Sidebar Badge & Filter Tabs
   if (badge) {
     badge.textContent = total;
     badge.style.display = total > 0 ? '' : 'none';
@@ -8421,9 +8449,35 @@ function _updateGalleryCounts() {
   if (countAll) countAll.textContent = total;
   if (countPhotos) countPhotos.textContent = photos;
   if (countSvg) countSvg.textContent = svgs;
+
+  // 2. KPI Cards
+  if (statTotalCount) statTotalCount.textContent = total;
+  if (statBreakdown) statBreakdown.textContent = `${photos} ${photos === 1 ? 'Photo' : 'Photos'} • ${svgs} ${svgs === 1 ? 'SVG / Vector' : 'SVGs'}`;
+  if (statStorageUsed) statStorageUsed.textContent = _formatFileSize(totalBytes);
+  if (statUsedPct) {
+    const pctStr = usedPct < 0.01 && totalBytes > 0 ? '< 0.01%' : (usedPct.toFixed(2) + '%');
+    statUsedPct.textContent = `${pctStr} of 10 GB Free Tier`;
+  }
+  if (statStorageFree) statStorageFree.textContent = _formatFileSize(freeBytes);
+  if (statFreePct) statFreePct.textContent = `${freePct.toFixed(1)}% capacity available`;
+  if (statAvgSize) statAvgSize.textContent = total > 0 ? _formatFileSize(avgBytes) : '0 B';
+  if (statLargest) statLargest.textContent = largestBytes > 0 ? (`Max: ${_formatFileSize(largestBytes)}`) : 'Max: 0 B';
+
+  // 3. Visual Quota Bar
+  if (quotaUsedText) quotaUsedText.textContent = `${_formatFileSize(totalBytes)} / 10.00 GB`;
+  if (quotaFreeText) quotaFreeText.textContent = `${_formatFileSize(freeBytes)} Free`;
+  if (quotaFill) {
+    const fillWidth = Math.min(100, Math.max(totalBytes > 0 ? 0.8 : 0.2, usedPct));
+    quotaFill.style.width = fillWidth.toFixed(2) + '%';
+  }
+  if (quotaPercentText) {
+    const pctDisplay = usedPct < 0.01 && totalBytes > 0 ? '< 0.01%' : (usedPct.toFixed(2) + '%');
+    quotaPercentText.textContent = `${pctDisplay} capacity used`;
+  }
+
+  // 4. Footer Bar Summary
   if (footerText) {
-    const totalBytes = _rawGalleryList.reduce((acc, cur) => acc + (cur.file_size || 0), 0);
-    footerText.textContent = `${total} ${total === 1 ? 'item' : 'items'} (${_formatFileSize(totalBytes)}) stored in Cloudflare R2`;
+    footerText.textContent = `${total} ${total === 1 ? 'item' : 'items'} (${_formatFileSize(totalBytes)}) stored in Cloudflare R2 • ${_formatFileSize(freeBytes)} free capacity remaining`;
   }
 }
 
@@ -8948,11 +9002,12 @@ async function _handlePickerQuickUpload(e) {
 
 // ── 9. Formatting Helpers ─────────────────────────────────────────
 function _formatFileSize(bytes) {
-  if (!bytes || bytes === 0) return '0 B';
+  if (!bytes || bytes <= 0) return '0 B';
   const k = 1024;
-  const sizes = ['B', 'KB', 'MB', 'GB'];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+  const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+  const i = Math.min(sizes.length - 1, Math.floor(Math.log(bytes) / Math.log(k)));
+  const val = bytes / Math.pow(k, i);
+  return (val >= 100 || i === 0 ? val.toFixed(0) : val.toFixed(2)) + ' ' + sizes[i];
 }
 
 function _formatShortDate(isoString) {

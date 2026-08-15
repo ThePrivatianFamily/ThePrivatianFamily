@@ -1488,6 +1488,82 @@
         </div>
       </div>
 
+      <!-- ══ STORAGE ANALYTICS & QUOTA DASHBOARD ══ -->
+      <div class="gallery-analytics-wrap">
+        <!-- 4 KPI Stat Cards -->
+        <div class="gallery-kpi-grid">
+          <!-- KPI 1: Total Uploaded Files -->
+          <div class="gallery-kpi-card">
+            <div class="gallery-kpi-icon-wrap" style="background:#e0e7ff;color:#4338ca;">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+            </div>
+            <div class="gallery-kpi-data">
+              <span class="gallery-kpi-label">Uploaded Files</span>
+              <div class="gallery-kpi-val" id="gallery-stat-total-count">0</div>
+              <div class="gallery-kpi-sub" id="gallery-stat-files-breakdown">0 Photos • 0 SVGs</div>
+            </div>
+          </div>
+
+          <!-- KPI 2: Storage Used -->
+          <div class="gallery-kpi-card">
+            <div class="gallery-kpi-icon-wrap" style="background:#e0f2fe;color:#0284c7;">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+            </div>
+            <div class="gallery-kpi-data">
+              <span class="gallery-kpi-label">Storage Used</span>
+              <div class="gallery-kpi-val" id="gallery-stat-storage-used">0 B</div>
+              <div class="gallery-kpi-sub" id="gallery-stat-used-pct">0.00% of 10 GB Free Tier</div>
+            </div>
+          </div>
+
+          <!-- KPI 3: Storage Free / Available -->
+          <div class="gallery-kpi-card">
+            <div class="gallery-kpi-icon-wrap" style="background:#dcfce7;color:#16a34a;">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/><polyline points="9 13 12 10 15 13"/><line x1="12" y1="10" x2="12" y2="16"/></svg>
+            </div>
+            <div class="gallery-kpi-data">
+              <span class="gallery-kpi-label">Storage Free (R2)</span>
+              <div class="gallery-kpi-val" id="gallery-stat-storage-free" style="color:#15803d;">10.00 GB</div>
+              <div class="gallery-kpi-sub" id="gallery-stat-free-pct">100% capacity remaining</div>
+            </div>
+          </div>
+
+          <!-- KPI 4: Average & Largest File -->
+          <div class="gallery-kpi-card">
+            <div class="gallery-kpi-icon-wrap" style="background:#fef3c7;color:#d97706;">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></svg>
+            </div>
+            <div class="gallery-kpi-data">
+              <span class="gallery-kpi-label">Average File Size</span>
+              <div class="gallery-kpi-val" id="gallery-stat-avg-size">0 KB</div>
+              <div class="gallery-kpi-sub" id="gallery-stat-largest-file">Largest: 0 KB</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Visual Quota & Capacity Bar -->
+        <div class="gallery-quota-card">
+          <div class="gallery-quota-header">
+            <div class="gallery-quota-title-wrap">
+              <span class="gallery-quota-title">Cloudflare R2 Storage Quota</span>
+              <span class="gallery-quota-badge">10 GB Standard Free Tier</span>
+            </div>
+            <div class="gallery-quota-numbers">
+              <span id="gallery-quota-used-text">0 B / 10 GB</span>
+              <span class="gallery-quota-sep">•</span>
+              <span id="gallery-quota-free-text" style="color:#16a34a;font-weight:600;">10 GB Available</span>
+            </div>
+          </div>
+          <div class="gallery-quota-track">
+            <div class="gallery-quota-fill" id="gallery-quota-fill" style="width: 0.2%;"></div>
+          </div>
+          <div class="gallery-quota-footer">
+            <span>🚀 High-speed global edge CDN distribution with <strong>Zero Egress Bandwidth Fees</strong>.</span>
+            <span id="gallery-quota-percent-text">0.00% capacity used</span>
+          </div>
+        </div>
+      </div>
+
       <!-- Upload Dropzone Card -->
       <div class="card gallery-upload-card" id="gallery-upload-zone-wrap">
         <div class="gallery-dropzone" id="gallery-dropzone" onclick="document.getElementById('gallery-file-input').click()">
