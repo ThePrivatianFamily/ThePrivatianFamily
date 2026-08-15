@@ -1824,10 +1824,20 @@ function tagKey(e) {
   if (e.key === 'Enter' || e.key === ',') {
     e.preventDefault();
     const val = e.target.value.trim().replace(/,/g,'');
-    if (val && !_TAGS.includes(val)) { _TAGS.push(val); renderTags(); DIRTY = true; }
+    if (val && !_TAGS.includes(val)) {
+      _TAGS.push(val);
+      renderTags();
+      DIRTY = true;
+      setSaveStatus('Unsaved changes');
+      clearTimeout(_lsTimer); _lsTimer = setTimeout(lsSave, 300);
+    }
     e.target.value = '';
   } else if (e.key === 'Backspace' && !e.target.value && _TAGS.length) {
-    _TAGS.pop(); renderTags(); DIRTY = true;
+    _TAGS.pop();
+    renderTags();
+    DIRTY = true;
+    setSaveStatus('Unsaved changes');
+    clearTimeout(_lsTimer); _lsTimer = setTimeout(lsSave, 300);
   }
 }
 function renderTags() {
@@ -1845,6 +1855,8 @@ function removeTag(i) {
   }
   renderTags();
   DIRTY = true;
+  setSaveStatus('Unsaved changes');
+  clearTimeout(_lsTimer); _lsTimer = setTimeout(lsSave, 300);
 }
 
 // ── SEO CHAR COUNTER ──────────────────────────────────────
@@ -1864,6 +1876,8 @@ function setFeatPosition(pos) {
     b.classList.toggle('active', b.getAttribute('data-pos') === pos);
   });
   DIRTY = true;
+  setSaveStatus('Unsaved changes');
+  clearTimeout(_lsTimer); _lsTimer = setTimeout(lsSave, 300);
   const labels = {
     top: 'Top (Header Hero)',
     middle: 'Middle (Inside Body)',
@@ -1884,6 +1898,8 @@ function syncFeatMeta(src, val) {
     if (g('ed-feat-credit-inline')) g('ed-feat-credit-inline').value = val;
   }
   DIRTY = true;
+  setSaveStatus('Unsaved changes');
+  clearTimeout(_lsTimer); _lsTimer = setTimeout(lsSave, 300);
 }
 
 function trigFeatImg() {
@@ -1900,7 +1916,9 @@ async function handleFeatImgFile(input) {
     await fetch(d.uploadUrl, { method: 'PUT', headers: { 'Content-Type': file.type }, body: file });
     _featImgUrl = d.publicUrl;
     showFeatPreview(d.publicUrl);
-    DIRTY = true; lsSave();
+    DIRTY = true;
+    setSaveStatus('Unsaved changes');
+    lsSave();
     toast('Featured image uploaded', 'ok');
   } catch(e) { toast('Featured image upload failed: ' + e.message, 'err'); }
 }
@@ -1946,6 +1964,8 @@ function removeFeatImg() {
   if (drawerImg) drawerImg.src = '';
 
   DIRTY = true;
+  setSaveStatus('Unsaved changes');
+  clearTimeout(_lsTimer); _lsTimer = setTimeout(lsSave, 300);
 }
 
 // ── FORMATTING ────────────────────────────────────────────

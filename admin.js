@@ -1653,10 +1653,24 @@ function renderHsSubsections(hs) {
   const container = document.getElementById('hs-subsections-list');
   if (!container) return;
   container.innerHTML = '';
-  hs.subsections.forEach((sub, idx) => buildHsSubRow(container, sub, hs));
+  hs.subsections.forEach((sub, idx) => buildHsSubRow(container, sub, hs, idx, hs.subsections.length));
+  updateGlobalSyncStatus();
 }
 
-function buildHsSubRow(container, sub, hs) {
+function moveHsSubRow(id, dir, hs) {
+  const items = hs.subsections || [];
+  const idx = items.findIndex(s => s.id === id);
+  if (idx === -1) return;
+  const newIdx = idx + dir;
+  if (newIdx < 0 || newIdx >= items.length) return;
+  const temp = items[idx];
+  items[idx] = items[newIdx];
+  items[newIdx] = temp;
+  renderHsSubsections(hs);
+  updateGlobalSyncStatus();
+}
+
+function buildHsSubRow(container, sub, hs, idx, total) {
   const row = document.createElement('div');
   row.className = 'hs-sub-row' + (sub.enabled !== false ? '' : ' hs-sub-row--off');
   row.dataset.subId = sub.id;
@@ -1665,13 +1679,21 @@ function buildHsSubRow(container, sub, hs) {
 
   row.innerHTML = `
     <div class="hs-sub-main">
+      <div style="display:flex;align-items:center;gap:4px;margin-right:8px;">
+        <button type="button" class="menu-reorder-btn" title="Move Up" ${idx === 0 ? 'disabled style="opacity:0.3;"' : ''} onclick="moveHsSubRow('${sub.id}', -1, _hsInstance)">
+          <svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="18 15 12 9 6 15"/></svg>
+        </button>
+        <button type="button" class="menu-reorder-btn" title="Move Down" ${idx === total - 1 ? 'disabled style="opacity:0.3;"' : ''} onclick="moveHsSubRow('${sub.id}', 1, _hsInstance)">
+          <svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+      </div>
       <div class="hs-sub-info">
         <span class="hs-sub-lbl">${escapeHtml(sub.label)}</span>
         ${calBadge}
         <span class="hs-sub-url">${escapeHtml(sub.href)}</span>
       </div>
       <div class="hs-sub-actions">
-        <label class="hs-toggle hs-toggle--sm">
+        <label class="hs-toggle hs-toggle--sm" title="Toggle visibility">
           <input type="checkbox" ${sub.enabled !== false ? 'checked' : ''} class="hs-sub-toggle-cb">
           <span class="hs-toggle-track"><span class="hs-toggle-thumb"></span></span>
         </label>
@@ -1751,7 +1773,7 @@ function buildHsSubRow(container, sub, hs) {
     if (!confirm('Delete tab "' + sub.label + '"? This cannot be undone.')) return;
     const idx = hs.subsections.findIndex(s => s.id === sub.id);
     if (idx !== -1) hs.subsections.splice(idx, 1);
-    row.remove();
+    renderHsSubsections(hs);
     updateGlobalSyncStatus();
   });
 
@@ -2412,7 +2434,6 @@ function pushMenuHistory() {
   if (menuUndoStack.length > 50) menuUndoStack.shift();
   menuRedoStack = [];
   updateUndoRedoButtons();
-  markMenuDirty();
 }
 
 function updateUndoRedoButtons() {
@@ -2428,7 +2449,7 @@ function undoMenuAction() {
   menuDraftConfig = JSON.parse(menuUndoStack.pop());
   syncMenuDraftToUI();
   updateUndoRedoButtons();
-  markMenuDirty();
+  updateGlobalSyncStatus();
   showToast('info', 'Undone last menu change');
 }
 
@@ -2438,7 +2459,7 @@ function redoMenuAction() {
   menuDraftConfig = JSON.parse(menuRedoStack.pop());
   syncMenuDraftToUI();
   updateUndoRedoButtons();
-  markMenuDirty();
+  updateGlobalSyncStatus();
   showToast('info', 'Redone menu change');
 }
 
@@ -2461,25 +2482,27 @@ async function initMenuPage() {
 }
 
 async function loadMenuSettings() {
+  let loaded = null;
   try {
     const data = await _apiGet('/api/sections?action=menu');
     if (data && typeof data === 'object') {
-      appliedMenuConfig = Object.assign({}, DEFAULT_MENU_CONFIG, data);
-    } else {
-      appliedMenuConfig = Object.assign({}, DEFAULT_MENU_CONFIG);
+      loaded = Object.assign({}, JSON.parse(JSON.stringify(DEFAULT_MENU_CONFIG)), data);
     }
-  } catch(err) {
+  } catch(err) {}
+
+  if (!loaded) {
     try {
       const cached = localStorage.getItem('privatian_menu_settings');
-      if (cached) appliedMenuConfig = Object.assign({}, DEFAULT_MENU_CONFIG, JSON.parse(cached));
-      else appliedMenuConfig = Object.assign({}, DEFAULT_MENU_CONFIG);
+      if (cached) loaded = Object.assign({}, JSON.parse(JSON.stringify(DEFAULT_MENU_CONFIG)), JSON.parse(cached));
+      else loaded = JSON.parse(JSON.stringify(DEFAULT_MENU_CONFIG));
     } catch(e) {
-      appliedMenuConfig = Object.assign({}, DEFAULT_MENU_CONFIG);
+      loaded = JSON.parse(JSON.stringify(DEFAULT_MENU_CONFIG));
     }
   }
 
-  // Set working draft copy
-  menuDraftConfig = JSON.parse(JSON.stringify(appliedMenuConfig));
+  // Set distinct working baseline and draft copies
+  appliedMenuConfig = JSON.parse(JSON.stringify(loaded));
+  menuDraftConfig = JSON.parse(JSON.stringify(loaded));
   menuUndoStack = [];
   menuRedoStack = [];
   updateUndoRedoButtons();
@@ -3087,6 +3110,7 @@ function renderMenuPreview() {
       </div>
     </div>
   `;
+  updateGlobalSyncStatus();
 }
 
 // ── SAVE & APPLY MENU SETTINGS (DATABASE FIRST) ──────────────────
@@ -3493,7 +3517,6 @@ function pushHomepageHistory() {
   if (homepageUndoStack.length > 50) homepageUndoStack.shift();
   homepageRedoStack = [];
   updateHomepageUndoRedoBtns();
-  updateGlobalSyncStatus();
 }
 
 function undoHomepageAction() {
@@ -3543,6 +3566,7 @@ function renderActiveHpTab() {
   else if (activeHpTab === 'cards') renderCardsEditor();
   else if (activeHpTab === 'events') renderEventsEditor();
   else if (activeHpTab === 'news') renderNewsEditor();
+  updateGlobalSyncStatus();
 }
 
 // ── RENDER VISUAL CANVAS (WYSIWYG Replica) ───────────────────────
@@ -4657,7 +4681,6 @@ function recordFooterState(desc) {
   if (footerUndoStack.length > 50) footerUndoStack.shift();
   footerRedoStack = [];
   updateFooterUndoRedoButtons();
-  updateGlobalSyncStatus();
 }
 
 function undoFooterAction() {
@@ -4719,6 +4742,7 @@ function refreshActiveFooterTab() {
   if (_activeFooterTab === 'social')   renderFooterSocial();
   if (_activeFooterTab === 'sections') renderFooterSections();
   if (_activeFooterTab === 'brand')    renderFooterBrand();
+  updateGlobalSyncStatus();
 }
 
 function onFooterTitleInput(key, value) {
