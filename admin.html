@@ -1665,32 +1665,44 @@
           <!-- Mode A: Visual Builder Fields -->
           <div id="email-visual-builder-panel" style="display:flex;flex-direction:column;gap:14px;">
             <!-- Brand Logo Selection & Scale -->
-            <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:9px;padding:14px;">
-              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:6px;">
-                <label style="font-size:11.5px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.04em;margin:0;">Header Brand Logo (Image / SVG)</label>
-                <div style="display:flex;gap:6px;">
-                  <button type="button" class="btn btn--ghost btn--sm" onclick="openEmailLogoPicker({ defaultTab: 'gallery' })" style="color:var(--brand-navy,#0a528e);border-color:#cbd5e1;padding:3px 9px;font-size:11.5px;display:flex;align-items:center;gap:4px;">
-                    <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-                    Pick from Gallery
+            <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:16px;">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
+                <label style="font-size:11.5px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.04em;margin:0;">Header Brand Logo (SVG / Image)</label>
+                <div style="display:flex;gap:6px;align-items:center;">
+                  <button type="button" class="btn btn--ghost btn--sm" onclick="resetEmailLogoToDefault()" title="Reset to default white SVG logo" style="font-size:11.5px;padding:5px 10px;border:1px solid #cbd5e1;border-radius:6px;">
+                    <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+                    Reset Default
                   </button>
-                  <button type="button" class="btn btn--ghost btn--sm" onclick="openEmailLogoPicker({ defaultTab: 'upload' })" style="color:var(--brand-navy,#0a528e);border-color:#cbd5e1;padding:3px 9px;font-size:11.5px;display:flex;align-items:center;gap:4px;">
-                    <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-                    Upload Logo
+                  <button type="button" class="btn btn--primary btn--sm" onclick="openEmailLogoPicker()" style="font-size:12px;padding:6px 14px;display:inline-flex;align-items:center;gap:6px;font-weight:600;border-radius:6px;">
+                    <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                    Upload / Change Logo
                   </button>
                 </div>
               </div>
-              <div style="display:flex;gap:10px;align-items:center;margin-bottom:10px;">
-                <input type="text" id="ev-logo-url" class="form-input" style="flex:1;font-size:12.5px;padding:7px 10px;border:1px solid #cbd5e1;border-radius:6px;background:#fff;" placeholder="Image URL or Media ID (e.g. img_zqfa3rwk)" value="img_zqfa3rwk" oninput="syncVisualToHtml()">
-                <button type="button" class="btn btn--ghost btn--sm" onclick="resetEmailLogoToDefault()" title="Reset to default white logo" style="font-size:11.5px;padding:6px 10px;">Reset</button>
+
+              <!-- Hidden input to store active logo URL/ID -->
+              <input type="hidden" id="ev-logo-url" value="img_jms7zxw4">
+
+              <!-- Active Logo Display Banner -->
+              <div style="background:#0a2540;border:1px solid #1e3a8a;border-radius:8px;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px;">
+                <div style="display:flex;align-items:center;gap:12px;min-width:0;">
+                  <div style="background:rgba(255,255,255,0.08);border-radius:6px;padding:4px 10px;display:flex;align-items:center;justify-content:center;height:44px;min-width:80px;">
+                    <img id="ev-logo-thumb-img" src="https://pub-1e6b79ea34c74adfa8dc145a3b5a4e5a.r2.dev/gallery/2026/08/img_jms7zxw4_the-privatian-family-cover-svg-white.svg" alt="Logo Preview" style="max-height:36px;max-width:130px;object-fit:contain;" />
+                  </div>
+                  <div style="min-width:0;">
+                    <div id="ev-logo-name-display" style="color:#ffffff;font-size:12.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">The Privatian Family Cover SVG</div>
+                    <div style="color:#93c5fd;font-size:11px;">Active Header Brand Logo (SVG)</div>
+                  </div>
+                </div>
               </div>
 
               <!-- Logo Scale Slider -->
-              <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;background:#fff;border:1px solid #e2e8f0;border-radius:6px;padding:8px 12px;">
-                <span style="font-size:12px;font-weight:600;color:var(--text-secondary);">Logo Height: <strong id="ev-logo-height-val" style="color:var(--brand-navy,#0a528e);">54</strong>px</span>
-                <div style="display:flex;align-items:center;gap:8px;flex:1;max-width:220px;">
-                  <span style="font-size:11px;color:#94a3b8;">30</span>
-                  <input type="range" id="ev-logo-height" min="30" max="120" value="54" step="2" class="hs-range" style="flex:1;" oninput="onEmailLogoHeightInput(this.value)">
-                  <span style="font-size:11px;color:#94a3b8;">120</span>
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:14px;background:#fff;border:1px solid #e2e8f0;border-radius:7px;padding:10px 14px;">
+                <span style="font-size:12px;font-weight:600;color:var(--text-secondary);">Logo Height: <strong id="ev-logo-height-val" style="color:var(--brand-navy,#0a528e);font-size:13px;">72</strong>px</span>
+                <div style="display:flex;align-items:center;gap:10px;flex:1;max-width:240px;">
+                  <span style="font-size:11px;color:#94a3b8;font-weight:600;">30px</span>
+                  <input type="range" id="ev-logo-height" min="30" max="140" value="72" step="2" class="hs-range" style="flex:1;cursor:pointer;" oninput="onEmailLogoHeightInput(this.value)">
+                  <span style="font-size:11px;color:#94a3b8;font-weight:600;">140px</span>
                 </div>
               </div>
             </div>

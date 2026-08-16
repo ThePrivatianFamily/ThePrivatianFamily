@@ -10967,16 +10967,19 @@ let _emailSettings = {
 
 let _currentEmailMode = 'visual';
 
-const DEFAULT_EMAIL_LOGO_URL = 'https://pub-1e6b79ea34c74adfa8dc145a3b5a4e5a.r2.dev/gallery/2026/08/img_zqfa3rwk_the-privatian-family-5125-x-2888-px-white.png';
+const DEFAULT_EMAIL_LOGO_URL = 'https://pub-1e6b79ea34c74adfa8dc145a3b5a4e5a.r2.dev/gallery/2026/08/img_jms7zxw4_the-privatian-family-cover-svg-white.svg';
 
 function resolveEmailLogoUrl(val) {
   if (!val) return DEFAULT_EMAIL_LOGO_URL;
   const str = String(val).trim();
-  if (str.startsWith('http://') || str.startsWith('https://') || str.startsWith('data:')) {
-    return str;
+  if (str === 'img_jms7zxw4' || str.includes('jms7zxw4')) {
+    return DEFAULT_EMAIL_LOGO_URL;
   }
   if (str === 'img_zqfa3rwk' || str.includes('zqfa3rwk')) {
-    return DEFAULT_EMAIL_LOGO_URL;
+    return 'https://pub-1e6b79ea34c74adfa8dc145a3b5a4e5a.r2.dev/gallery/2026/08/img_zqfa3rwk_the-privatian-family-5125-x-2888-px-white.png';
+  }
+  if (str.startsWith('http://') || str.startsWith('https://') || str.startsWith('data:')) {
+    return str;
   }
   if (Array.isArray(window._rawGalleryList) && window._rawGalleryList.length > 0) {
     const found = window._rawGalleryList.find(x => x.id === str || x.unique_id === str);
@@ -10985,22 +10988,41 @@ function resolveEmailLogoUrl(val) {
   return str;
 }
 
+function updateLogoThumbnail(logoUrl, name) {
+  const thumb = document.getElementById('ev-logo-thumb-img');
+  if (thumb && logoUrl) thumb.src = logoUrl;
+  const nameEl = document.getElementById('ev-logo-name-display');
+  if (nameEl) {
+    if (name) {
+      nameEl.textContent = name;
+    } else if (logoUrl.includes('jms7zxw4')) {
+      nameEl.textContent = 'The Privatian Family Cover SVG';
+    } else if (logoUrl.includes('zqfa3rwk')) {
+      nameEl.textContent = 'The Privatian Family White Logo (PNG)';
+    } else {
+      const parts = logoUrl.split('/');
+      nameEl.textContent = parts[parts.length - 1] || 'Custom Brand Logo';
+    }
+  }
+}
+
 window.openEmailLogoPicker = function(options = {}) {
   if (typeof window.openUniversalMediaModal === 'function') {
     window.openUniversalMediaModal({
-      title: 'Choose Brand Logo for Verification Email',
-      subtitle: 'Select white or transparent logo from Cloudflare R2 or upload a new image',
-      defaultTab: options.defaultTab || 'gallery',
+      title: 'Upload or Select Brand Logo',
+      subtitle: 'Upload your SVG / PNG logo from device or select from Cloudflare R2 library',
+      defaultTab: options.defaultTab || 'upload',
       allowIdInput: true,
       targetFolder: 'Logos & Icons',
       onSelect: item => {
+        const logoUrl = (item && item.url) || '';
         const logoVal = (item && (item.unique_id || item.id || item.url)) || '';
-        if (!logoVal) return;
+        if (!logoVal && !logoUrl) return;
         const inp = document.getElementById('ev-logo-url');
-        if (inp) {
-          inp.value = logoVal;
-          syncVisualToHtml();
-        }
+        if (inp) inp.value = logoVal;
+        updateLogoThumbnail(logoUrl || resolveEmailLogoUrl(logoVal), item.title || item.filename);
+        syncVisualToHtml();
+        showToast('success', 'Brand logo updated in template preview.');
       }
     });
   } else {
@@ -11009,7 +11031,7 @@ window.openEmailLogoPicker = function(options = {}) {
 };
 
 window.onEmailLogoHeightInput = function(val) {
-  const num = parseInt(val, 10) || 54;
+  const num = parseInt(val, 10) || 72;
   const valEl = document.getElementById('ev-logo-height-val');
   if (valEl) valEl.textContent = num;
   syncVisualToHtml();
@@ -11017,12 +11039,14 @@ window.onEmailLogoHeightInput = function(val) {
 
 window.resetEmailLogoToDefault = function() {
   const inp = document.getElementById('ev-logo-url');
-  if (inp) inp.value = 'img_zqfa3rwk';
+  if (inp) inp.value = 'img_jms7zxw4';
   const slider = document.getElementById('ev-logo-height');
-  if (slider) slider.value = 54;
+  if (slider) slider.value = 72;
   const valEl = document.getElementById('ev-logo-height-val');
-  if (valEl) valEl.textContent = 54;
+  if (valEl) valEl.textContent = 72;
+  updateLogoThumbnail(DEFAULT_EMAIL_LOGO_URL, 'The Privatian Family Cover SVG');
   syncVisualToHtml();
+  showToast('info', 'Reset brand logo to default SVG.');
 };
 
 const DEFAULT_MAGIC_LINK_HTML = `<!DOCTYPE html>
@@ -11041,12 +11065,12 @@ const DEFAULT_MAGIC_LINK_HTML = `<!DOCTYPE html>
           
           <!-- Top Brand Header Banner (Deep Royal Navy Blue) -->
           <tr>
-            <td align="center" style="background-color:#0a2540;padding:32px 28px 26px;border-bottom:3px solid #1e3a8a;">
+            <td align="center" style="background-color:#0a2540;padding:34px 28px 26px;border-bottom:3px solid #1e3a8a;">
               <table border="0" cellpadding="0" cellspacing="0">
                 <tr>
                   <td align="center">
-                    <img src="${DEFAULT_EMAIL_LOGO_URL}" alt="The Privatian Family" height="54" style="display:block;height:54px;max-height:54px;width:auto;margin:0 auto;border:0;outline:none;text-decoration:none;" />
-                    <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:11.5px;letter-spacing:0.08em;text-transform:uppercase;color:#93c5fd;margin-top:10px;font-weight:600;">
+                    <img src="${DEFAULT_EMAIL_LOGO_URL}" alt="The Privatian Family" height="72" style="display:block;height:72px;max-height:72px;width:auto;margin:0 auto;border:0;outline:none;text-decoration:none;" />
+                    <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:11.5px;letter-spacing:0.08em;text-transform:uppercase;color:#93c5fd;margin-top:12px;font-weight:600;">
                       Administrative Portal &bull; Verification
                     </div>
                   </td>
@@ -11150,14 +11174,19 @@ function parseHtmlToVisualFields(html) {
     
     // Logo & Height
     const imgEl = doc.querySelector('td[style*="background-color:#0a2540"] img') || doc.querySelector('img[alt*="Privatian"]');
-    if (imgEl && document.getElementById('ev-logo-url')) {
+    if (imgEl) {
       const src = imgEl.getAttribute('src') || '';
-      document.getElementById('ev-logo-url').value = src.includes('img_zqfa3rwk') ? 'img_zqfa3rwk' : src;
-      const h = parseInt(imgEl.getAttribute('height') || (imgEl.style && imgEl.style.height), 10);
+      if (document.getElementById('ev-logo-url')) {
+        document.getElementById('ev-logo-url').value = src.includes('jms7zxw4') ? 'img_jms7zxw4' : (src.includes('zqfa3rwk') ? 'img_zqfa3rwk' : src);
+      }
+      const hAttr = imgEl.getAttribute('height');
+      const hStyle = imgEl.style && imgEl.style.height;
+      const h = parseInt(hAttr || hStyle || 72, 10);
       if (h && document.getElementById('ev-logo-height')) {
         document.getElementById('ev-logo-height').value = h;
         if (document.getElementById('ev-logo-height-val')) document.getElementById('ev-logo-height-val').textContent = h;
       }
+      updateLogoThumbnail(src);
     }
 
     const allDivs = Array.from(doc.querySelectorAll('div'));
@@ -11215,9 +11244,9 @@ function switchEmailEditorMode(mode) {
 }
 
 function syncVisualToHtml() {
-  const rawLogo    = document.getElementById('ev-logo-url')?.value || 'img_zqfa3rwk';
+  const rawLogo    = document.getElementById('ev-logo-url')?.value || 'img_jms7zxw4';
   const logoUrl    = resolveEmailLogoUrl(rawLogo);
-  const logoHeight = parseInt(document.getElementById('ev-logo-height')?.value, 10) || 54;
+  const logoHeight = parseInt(document.getElementById('ev-logo-height')?.value, 10) || 72;
   const brandSub   = document.getElementById('ev-brand-sub')?.value || 'Administrative Portal • Verification';
   const heading    = document.getElementById('ev-main-heading')?.value || 'Your Login Verification Code';
   const intro      = document.getElementById('ev-intro-text')?.value || 'Enter the single-use 6-digit verification code below in the administrator sign-in form to authenticate your session:';
@@ -11245,12 +11274,12 @@ function syncVisualToHtml() {
           
           <!-- Top Brand Header Banner (Deep Royal Navy Blue) -->
           <tr>
-            <td align="center" style="background-color:#0a2540;padding:32px 28px 26px;border-bottom:3px solid #1e3a8a;">
+            <td align="center" style="background-color:#0a2540;padding:34px 28px 26px;border-bottom:3px solid #1e3a8a;">
               <table border="0" cellpadding="0" cellspacing="0">
                 <tr>
                   <td align="center">
                     ${logoHtml}
-                    <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:11.5px;letter-spacing:0.08em;text-transform:uppercase;color:#93c5fd;margin-top:10px;font-weight:600;">
+                    <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:11.5px;letter-spacing:0.08em;text-transform:uppercase;color:#93c5fd;margin-top:12px;font-weight:600;">
                       ${escapeHtml(brandSub)}
                     </div>
                   </td>
@@ -11418,9 +11447,10 @@ function resetEmailTemplateToDefault() {
       document.getElementById('email-subject-input').value = 'Your 6-Digit Admin Verification Code (OTP) — The Privatian Family';
       document.getElementById('email-sender-name-input').value = 'The Privatian Family';
       document.getElementById('email-otp-exp-input').value = '3600';
-      if (document.getElementById('ev-logo-url')) document.getElementById('ev-logo-url').value = 'img_zqfa3rwk';
-      if (document.getElementById('ev-logo-height')) document.getElementById('ev-logo-height').value = 54;
-      if (document.getElementById('ev-logo-height-val')) document.getElementById('ev-logo-height-val').textContent = 54;
+      if (document.getElementById('ev-logo-url')) document.getElementById('ev-logo-url').value = 'img_jms7zxw4';
+      if (document.getElementById('ev-logo-height')) document.getElementById('ev-logo-height').value = 72;
+      if (document.getElementById('ev-logo-height-val')) document.getElementById('ev-logo-height-val').textContent = 72;
+      updateLogoThumbnail(DEFAULT_EMAIL_LOGO_URL, 'The Privatian Family Cover SVG');
       if (document.getElementById('ev-brand-sub')) document.getElementById('ev-brand-sub').value = 'Administrative Portal • Verification';
       if (document.getElementById('ev-main-heading')) document.getElementById('ev-main-heading').value = 'Your Login Verification Code';
       if (document.getElementById('ev-intro-text')) document.getElementById('ev-intro-text').value = 'Enter the single-use 6-digit verification code below in the administrator sign-in form to authenticate your session:';
@@ -11443,3 +11473,4 @@ window.onEmailFieldChange = onEmailFieldChange;
 window.updateEmailPreview = updateEmailPreview;
 window.saveEmailSettings = saveEmailSettings;
 window.resetEmailTemplateToDefault = resetEmailTemplateToDefault;
+
