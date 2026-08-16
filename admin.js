@@ -10967,7 +10967,7 @@ let _emailSettings = {
 
 let _currentEmailMode = 'visual';
 
-const DEFAULT_EMAIL_LOGO_URL = 'https://pub-1e6b79ea34c74adfa8dc145a3b5a4e5a.r2.dev/gallery/2026/08/img_jms7zxw4_the-privatian-family-cover-svg-white.svg';
+const DEFAULT_EMAIL_LOGO_URL = 'https://pub-1e6b79ea34c74adfa8dc145a3b5a4e5a.r2.dev/gallery/2026/08/img_jms7zxw4_the-privatian-family-logo-white-cropped.svg';
 
 function resolveEmailLogoUrl(val) {
   if (!val) return DEFAULT_EMAIL_LOGO_URL;
@@ -10996,7 +10996,7 @@ function updateLogoThumbnail(logoUrl, name) {
     if (name) {
       nameEl.textContent = name;
     } else if (logoUrl.includes('jms7zxw4')) {
-      nameEl.textContent = 'The Privatian Family Cover SVG';
+      nameEl.textContent = 'The Privatian Family Logo (SVG)';
     } else if (logoUrl.includes('zqfa3rwk')) {
       nameEl.textContent = 'The Privatian Family White Logo (PNG)';
     } else {
@@ -11031,7 +11031,7 @@ window.openEmailLogoPicker = function(options = {}) {
 };
 
 window.onEmailLogoHeightInput = function(val) {
-  const num = parseInt(val, 10) || 72;
+  const num = parseInt(val, 10) || 50;
   const valEl = document.getElementById('ev-logo-height-val');
   if (valEl) valEl.textContent = num;
   syncVisualToHtml();
@@ -11041,10 +11041,10 @@ window.resetEmailLogoToDefault = function() {
   const inp = document.getElementById('ev-logo-url');
   if (inp) inp.value = 'img_jms7zxw4';
   const slider = document.getElementById('ev-logo-height');
-  if (slider) slider.value = 72;
+  if (slider) slider.value = 50;
   const valEl = document.getElementById('ev-logo-height-val');
-  if (valEl) valEl.textContent = 72;
-  updateLogoThumbnail(DEFAULT_EMAIL_LOGO_URL, 'The Privatian Family Cover SVG');
+  if (valEl) valEl.textContent = 50;
+  updateLogoThumbnail(DEFAULT_EMAIL_LOGO_URL, 'The Privatian Family Logo (SVG)');
   syncVisualToHtml();
   showToast('info', 'Reset brand logo to default SVG.');
 };
@@ -11065,12 +11065,12 @@ const DEFAULT_MAGIC_LINK_HTML = `<!DOCTYPE html>
           
           <!-- Top Brand Header Banner (Deep Royal Navy Blue) -->
           <tr>
-            <td align="center" style="background-color:#0a2540;padding:34px 28px 26px;border-bottom:3px solid #1e3a8a;">
-              <table border="0" cellpadding="0" cellspacing="0">
+            <td align="center" style="background-color:#0a2540;padding:28px 24px 20px;border-bottom:3px solid #1e3a8a;">
+              <table border="0" cellpadding="0" cellspacing="0" style="margin:0 auto;">
                 <tr>
                   <td align="center">
-                    <img src="${DEFAULT_EMAIL_LOGO_URL}" alt="The Privatian Family" height="72" style="display:block;height:72px;max-height:72px;width:auto;margin:0 auto;border:0;outline:none;text-decoration:none;" />
-                    <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:11.5px;letter-spacing:0.08em;text-transform:uppercase;color:#93c5fd;margin-top:12px;font-weight:600;">
+                    <img src="${DEFAULT_EMAIL_LOGO_URL}" alt="The Privatian Family" height="50" style="display:block;height:50px;max-height:50px;width:auto;margin:0 auto;border:0;outline:none;text-decoration:none;" />
+                    <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:11px;letter-spacing:0.09em;text-transform:uppercase;color:#93c5fd;margin-top:8px;font-weight:600;line-height:1.2;">
                       Administrative Portal &bull; Verification
                     </div>
                   </td>
@@ -11081,7 +11081,7 @@ const DEFAULT_MAGIC_LINK_HTML = `<!DOCTYPE html>
 
           <!-- Main Body Content -->
           <tr>
-            <td style="padding:36px 32px 28px;background-color:#ffffff;">
+            <td style="padding:34px 32px 28px;background-color:#ffffff;">
               <div style="font-family:Georgia,'Times New Roman',serif;font-size:20px;font-weight:700;color:#0a2540;line-height:1.3;margin-bottom:12px;">
                 Your Login Verification Code
               </div>
@@ -11181,7 +11181,7 @@ function parseHtmlToVisualFields(html) {
       }
       const hAttr = imgEl.getAttribute('height');
       const hStyle = imgEl.style && imgEl.style.height;
-      const h = parseInt(hAttr || hStyle || 72, 10);
+      const h = parseInt(hAttr || hStyle || 50, 10);
       if (h && document.getElementById('ev-logo-height')) {
         document.getElementById('ev-logo-height').value = h;
         if (document.getElementById('ev-logo-height-val')) document.getElementById('ev-logo-height-val').textContent = h;
@@ -11246,7 +11246,7 @@ function switchEmailEditorMode(mode) {
 function syncVisualToHtml() {
   const rawLogo    = document.getElementById('ev-logo-url')?.value || 'img_jms7zxw4';
   const logoUrl    = resolveEmailLogoUrl(rawLogo);
-  const logoHeight = parseInt(document.getElementById('ev-logo-height')?.value, 10) || 72;
+  const logoHeight = parseInt(document.getElementById('ev-logo-height')?.value, 10) || 50;
   const brandSub   = document.getElementById('ev-brand-sub')?.value || 'Administrative Portal • Verification';
   const heading    = document.getElementById('ev-main-heading')?.value || 'Your Login Verification Code';
   const intro      = document.getElementById('ev-intro-text')?.value || 'Enter the single-use 6-digit verification code below in the administrator sign-in form to authenticate your session:';
@@ -11274,12 +11274,12 @@ function syncVisualToHtml() {
           
           <!-- Top Brand Header Banner (Deep Royal Navy Blue) -->
           <tr>
-            <td align="center" style="background-color:#0a2540;padding:34px 28px 26px;border-bottom:3px solid #1e3a8a;">
-              <table border="0" cellpadding="0" cellspacing="0">
+            <td align="center" style="background-color:#0a2540;padding:28px 24px 20px;border-bottom:3px solid #1e3a8a;">
+              <table border="0" cellpadding="0" cellspacing="0" style="margin:0 auto;">
                 <tr>
                   <td align="center">
                     ${logoHtml}
-                    <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:11.5px;letter-spacing:0.08em;text-transform:uppercase;color:#93c5fd;margin-top:12px;font-weight:600;">
+                    <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:11px;letter-spacing:0.09em;text-transform:uppercase;color:#93c5fd;margin-top:8px;font-weight:600;line-height:1.2;">
                       ${escapeHtml(brandSub)}
                     </div>
                   </td>
@@ -11290,7 +11290,7 @@ function syncVisualToHtml() {
 
           <!-- Main Body Content -->
           <tr>
-            <td style="padding:36px 32px 28px;background-color:#ffffff;">
+            <td style="padding:34px 32px 28px;background-color:#ffffff;">
               <div style="font-family:Georgia,'Times New Roman',serif;font-size:20px;font-weight:700;color:#0a2540;line-height:1.3;margin-bottom:12px;">
                 ${escapeHtml(heading)}
               </div>
@@ -11448,9 +11448,9 @@ function resetEmailTemplateToDefault() {
       document.getElementById('email-sender-name-input').value = 'The Privatian Family';
       document.getElementById('email-otp-exp-input').value = '3600';
       if (document.getElementById('ev-logo-url')) document.getElementById('ev-logo-url').value = 'img_jms7zxw4';
-      if (document.getElementById('ev-logo-height')) document.getElementById('ev-logo-height').value = 72;
-      if (document.getElementById('ev-logo-height-val')) document.getElementById('ev-logo-height-val').textContent = 72;
-      updateLogoThumbnail(DEFAULT_EMAIL_LOGO_URL, 'The Privatian Family Cover SVG');
+      if (document.getElementById('ev-logo-height')) document.getElementById('ev-logo-height').value = 50;
+      if (document.getElementById('ev-logo-height-val')) document.getElementById('ev-logo-height-val').textContent = 50;
+      updateLogoThumbnail(DEFAULT_EMAIL_LOGO_URL, 'The Privatian Family Logo (SVG)');
       if (document.getElementById('ev-brand-sub')) document.getElementById('ev-brand-sub').value = 'Administrative Portal • Verification';
       if (document.getElementById('ev-main-heading')) document.getElementById('ev-main-heading').value = 'Your Login Verification Code';
       if (document.getElementById('ev-intro-text')) document.getElementById('ev-intro-text').value = 'Enter the single-use 6-digit verification code below in the administrator sign-in form to authenticate your session:';
@@ -11473,4 +11473,5 @@ window.onEmailFieldChange = onEmailFieldChange;
 window.updateEmailPreview = updateEmailPreview;
 window.saveEmailSettings = saveEmailSettings;
 window.resetEmailTemplateToDefault = resetEmailTemplateToDefault;
+
 
