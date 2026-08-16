@@ -435,24 +435,24 @@
         <span>or sign in with Email Code (OTP)</span>
       </div>
 
-      <!-- OTP / Magic Link Form -->
-      <form id="magic-link-form" class="magic-form" onsubmit="handleMagicLinkSubmit(event)" novalidate>
+      <!-- Email OTP Request Form -->
+      <form id="otp-form" class="magic-form" onsubmit="handleOtpSubmit(event)" novalidate>
         <div class="input-group">
-          <label for="magic-email" class="input-label">Authorized Email Address</label>
+          <label for="otp-email" class="input-label">Authorized Email Address</label>
           <div class="input-wrap">
             <svg class="input-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
               <polyline points="22,6 12,13 2,6"/>
             </svg>
-            <input type="email" id="magic-email" class="magic-input" placeholder="admin@domain.com" required autocomplete="email" />
+            <input type="email" id="otp-email" class="magic-input" placeholder="admin@domain.com" required autocomplete="email" />
           </div>
         </div>
-        <button type="submit" id="magic-submit-btn" class="magic-submit-btn">
+        <button type="submit" id="otp-submit-btn" class="magic-submit-btn">
           <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
             <line x1="22" y1="2" x2="11" y2="13"/>
             <polygon points="22 2 15 22 11 13 2 9 22 2"/>
           </svg>
-          <span>Send Login Code (OTP)</span>
+          <span>Send 6-Digit Code (OTP)</span>
         </button>
       </form>
 
@@ -461,7 +461,7 @@
       </p>
     </div>
 
-    <!-- Email Sent Confirmation View -->
+    <!-- Email Sent & 6-Digit OTP Verification View -->
     <div id="email-sent-wrap" class="email-sent-card" style="display:none;">
       <div class="sent-icon-wrap">
         <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -469,12 +469,12 @@
           <path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/>
         </svg>
       </div>
-      <h2 class="sent-title">Check Your Inbox</h2>
-      <p class="sent-desc">We sent a 6-digit verification code to <strong id="sent-email-target"></strong>. Enter the code below to log in immediately.</p>
+      <h2 class="sent-title">Enter Verification Code</h2>
+      <p class="sent-desc">We sent a 6-digit OTP code to <strong id="sent-email-target"></strong>. Enter the code below to log in immediately.</p>
       
       <!-- Direct 6-Digit OTP Code Verification -->
       <div style="margin: 18px 0 20px; padding: 18px 16px; background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 12px; text-align: left;">
-        <label for="otp-code-input" style="display:block; font-size:12px; font-weight:700; color:#334155; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:8px;">Enter 6-Digit Email Code</label>
+        <label for="otp-code-input" style="display:block; font-size:12px; font-weight:700; color:#334155; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:8px;">6-Digit OTP Code</label>
         <div style="display:flex; gap:8px;">
           <input type="text" id="otp-code-input" maxlength="6" inputmode="numeric" pattern="[0-9]*" placeholder="••••••" style="flex:1; height:44px; text-align:center; font-size:22px; font-weight:700; letter-spacing:8px; border:1.5px solid #cbd5e1; border-radius:10px; font-family:monospace; background:#fff; outline:none; color:#0f172a; transition:border-color .2s;" onfocus="this.style.borderColor='var(--blue)'" onblur="this.style.borderColor='#cbd5e1'" oninput="this.value = this.value.replace(/[^0-9]/g, ''); if(this.value.length === 6) verifyOtpCode();" onkeyup="if(event.key === 'Enter') verifyOtpCode()" />
           <button type="button" id="btn-verify-otp" onclick="verifyOtpCode()" style="height:44px; padding:0 20px; background:var(--blue); color:#fff; border:none; border-radius:10px; font-size:13.5px; font-weight:600; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; gap:6px; transition:all .2s; font-family:inherit;">
@@ -485,11 +485,11 @@
 
       <div class="sent-info-box">
         <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-        <span>The 6-digit code is valid for 1 hour. If you do not see the email, please check your spam/junk folder.</span>
+        <span>The 6-digit code is valid for 1 hour. Check your inbox or spam folder for an email from <strong>theprivatianfamilybd@gmail.com</strong>.</span>
       </div>
 
       <div class="sent-actions">
-        <button type="button" class="btn-resend" id="resend-btn" onclick="resendMagicLink()">Resend Code</button>
+        <button type="button" class="btn-resend" id="resend-btn" onclick="resendOtpCode()">Resend Code</button>
         <button type="button" class="btn-back" onclick="resetToLoginForm()">Use a different email or Google</button>
       </div>
     </div>
@@ -554,7 +554,7 @@
       document.getElementById('auth-main-wrap').style.display = 'block';
       document.getElementById('email-sent-wrap').style.display = 'none';
       hideMsg();
-      const emailInput = document.getElementById('magic-email');
+      const emailInput = document.getElementById('otp-email');
       if (emailInput) emailInput.focus();
     }
 
@@ -587,13 +587,13 @@
       }
     }
 
-    // ── MAGIC LINK FORM SUBMIT HANDLER ────────────────────────────────
-    async function handleMagicLinkSubmit(e) {
+    // ── EMAIL OTP SUBMIT HANDLER ──────────────────────────────────────
+    async function handleOtpSubmit(e) {
       if (e) e.preventDefault();
       hideMsg();
 
-      const emailInput = document.getElementById('magic-email');
-      const submitBtn = document.getElementById('magic-submit-btn');
+      const emailInput = document.getElementById('otp-email');
+      const submitBtn = document.getElementById('otp-submit-btn');
       const email = (emailInput.value || '').trim();
 
       if (!email) {
@@ -624,44 +624,41 @@
 
         if (!checkRes.ok || !checkData.allowed) {
           submitBtn.disabled = false;
-          submitBtn.innerHTML = '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg><span>Send Magic Link</span>';
+          submitBtn.innerHTML = '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg><span>Send 6-Digit Code (OTP)</span>';
           showMsg('error', checkData.error || 'This email is not authorized on the access whitelist.');
           return;
         }
 
-        // Step 2: Trigger Supabase Magic Link OTP
-        submitBtn.innerHTML = '<span class="spinner visible" style="width:16px;height:16px;margin:0;display:inline-block;vertical-align:middle;border-width:2px;"></span> <span>Sending Magic Link...</span>';
+        // Step 2: Trigger Supabase 6-Digit OTP Email
+        submitBtn.innerHTML = '<span class="spinner visible" style="width:16px;height:16px;margin:0;display:inline-block;vertical-align:middle;border-width:2px;"></span> <span>Sending 6-Digit Code...</span>';
 
         const sb = getSupabaseClient();
         if (!sb) {
           throw new Error('Supabase client failed to initialize.');
         }
 
-        const redirectUrl = window.location.origin + '/admin-login.html';
         const { data: otpData, error: otpError } = await sb.auth.signInWithOtp({
           email: checkData.email || email,
           options: {
-            emailRedirectTo: redirectUrl,
             shouldCreateUser: true
           }
         });
 
         if (otpError) {
           submitBtn.disabled = false;
-          submitBtn.innerHTML = '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg><span>Send Login Code (OTP)</span>';
+          submitBtn.innerHTML = '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg><span>Send 6-Digit Code (OTP)</span>';
           showMsg('error', otpError.message || 'Unable to send code. Please try again.');
           return;
         }
 
-        // Step 3: Success! Switch to confirmation view
+        // Step 3: Success! Switch to 6-digit OTP confirmation view
         _lastSentEmail = checkData.email || email;
         document.getElementById('sent-email-target').textContent = _lastSentEmail;
         document.getElementById('auth-main-wrap').style.display = 'none';
         document.getElementById('email-sent-wrap').style.display = 'block';
 
-        // Reset submit button state for future
         submitBtn.disabled = false;
-        submitBtn.innerHTML = '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg><span>Send Login Code (OTP)</span>';
+        submitBtn.innerHTML = '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg><span>Send 6-Digit Code (OTP)</span>';
 
         const otpInp = document.getElementById('otp-code-input');
         if (otpInp) {
@@ -673,7 +670,7 @@
 
       } catch(err) {
         submitBtn.disabled = false;
-        submitBtn.innerHTML = '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg><span>Send Login Code (OTP)</span>';
+        submitBtn.innerHTML = '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg><span>Send 6-Digit Code (OTP)</span>';
         showMsg('error', 'An unexpected error occurred. Please check your internet connection.');
       }
     }
@@ -697,7 +694,7 @@
       }, 1000);
     }
 
-    async function resendMagicLink() {
+    async function resendOtpCode() {
       if (!_lastSentEmail) return;
       const resendBtn = document.getElementById('resend-btn');
       resendBtn.disabled = true;
@@ -710,7 +707,6 @@
         const { error } = await sb.auth.signInWithOtp({
           email: _lastSentEmail,
           options: {
-            emailRedirectTo: window.location.origin + '/admin-login.html',
             shouldCreateUser: true
           }
         });
@@ -729,6 +725,7 @@
       }
     }
 
+    // ── 6-DIGIT OTP VERIFY HANDLER ────────────────────────────────────
     async function verifyOtpCode() {
       const otpInput = document.getElementById('otp-code-input');
       const verifyBtn = document.getElementById('btn-verify-otp');
@@ -741,7 +738,7 @@
       }
 
       if (!_lastSentEmail) {
-        showMsg('error', 'Email address missing. Please request a new link.');
+        showMsg('error', 'Email address missing. Please request a new code.');
         return;
       }
 
@@ -755,25 +752,12 @@
         const sb = getSupabaseClient();
         if (!sb) throw new Error('Supabase client unavailable');
 
-        // Attempt verify as email OTP
+        // Verify with Supabase Email OTP
         let { data, error } = await sb.auth.verifyOtp({
           email: _lastSentEmail,
           token: code,
           type: 'email'
         });
-
-        // Fallback attempt as magiclink type if needed
-        if (error || !data || !data.session) {
-          const res2 = await sb.auth.verifyOtp({
-            email: _lastSentEmail,
-            token: code,
-            type: 'magiclink'
-          });
-          if (!res2.error && res2.data && res2.data.session) {
-            data = res2.data;
-            error = null;
-          }
-        }
 
         if (error || !data || !data.session || !data.session.access_token) {
           if (verifyBtn) {
@@ -786,7 +770,7 @@
 
         // Backend Whitelist Verification & 24h JWT issuance
         showMsg('info', 'Code verified! Logging you in...');
-        const verifyRes = await fetch('/api/auth?action=verify-magic-link', {
+        const verifyRes = await fetch('/api/auth?action=verify-otp', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ access_token: data.session.access_token })
@@ -813,92 +797,6 @@
         showMsg('error', 'Error verifying code: ' + (e.message || 'Please try again.'));
       }
     }
-
-    // ── MAGIC LINK CALLBACK & SESSION DETECTION ───────────────────────
-    (async function checkMagicLinkCallback() {
-      const hash = window.location.hash || '';
-      const search = window.location.search || '';
-
-      // 1. Check for error in hash (e.g. otp_expired, access_denied)
-      if (hash.includes('error=')) {
-        const params = new URLSearchParams(hash.replace(/^#/, ''));
-        const errDesc = params.get('error_description') || params.get('error') || 'The login link is invalid or has expired.';
-        showMsg('error', decodeURIComponent(errDesc.replace(/\+/g, ' ')) + ' Please request a new magic link.');
-        window.history.replaceState(null, '', window.location.pathname);
-        return;
-      }
-
-      // 2. Check for session tokens in hash or PKCE code in query
-      if (hash.includes('access_token=') || search.includes('code=')) {
-        setLoading(true);
-        showMsg('info', 'Verifying magic link session...');
-
-        try {
-          const sb = getSupabaseClient();
-          if (!sb) throw new Error('Supabase client failed to load.');
-
-          // Give Supabase client a moment to parse the hash/code
-          let session = null;
-          const { data: sessionData } = await sb.auth.getSession();
-          session = sessionData ? sessionData.session : null;
-
-          if (!session && hash.includes('access_token=')) {
-            // Direct extraction from hash if getSession was async-delayed
-            const hashParams = new URLSearchParams(hash.replace(/^#/, ''));
-            const directAccessToken = hashParams.get('access_token');
-            if (directAccessToken) {
-              session = { access_token: directAccessToken };
-            }
-          }
-
-          if (!session || !session.access_token) {
-            // Listen for auth state change event
-            const sessionPromise = new Promise((resolve) => {
-              const { data: authListener } = sb.auth.onAuthStateChange((event, s) => {
-                if (s && s.access_token) {
-                  if (authListener && authListener.subscription) authListener.subscription.unsubscribe();
-                  resolve(s);
-                }
-              });
-              setTimeout(() => resolve(null), 3500);
-            });
-            session = await sessionPromise;
-          }
-
-          if (!session || !session.access_token) {
-            setLoading(false);
-            showMsg('error', 'Failed to retrieve session from login link. Please try sending a new magic link.');
-            window.history.replaceState(null, '', window.location.pathname);
-            return;
-          }
-
-          // Step 3: Verify with our backend and issue 24h admin JWT
-          const verifyRes = await fetch('/api/auth?action=verify-magic-link', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ access_token: session.access_token })
-          });
-
-          const verifyData = await verifyRes.json();
-          setLoading(false);
-
-          if (verifyRes.ok && verifyData.success && verifyData.token) {
-            localStorage.setItem(TOKEN_KEY, verifyData.token);
-            showMsg('success', 'Access granted! Welcome to the Admin Panel. Redirecting...');
-            window.history.replaceState(null, '', window.location.pathname);
-            setTimeout(function() { window.location.replace('/admin.html'); }, 600);
-          } else {
-            showMsg('error', verifyData.error || 'Authorization failed. This account may not be on the active whitelist.');
-            window.history.replaceState(null, '', window.location.pathname);
-          }
-
-        } catch(err) {
-          setLoading(false);
-          showMsg('error', 'Error authenticating with magic link: ' + (err.message || 'Please try again.'));
-          window.history.replaceState(null, '', window.location.pathname);
-        }
-      }
-    })();
   </script>
 </body>
 </html>

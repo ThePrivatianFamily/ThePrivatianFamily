@@ -163,8 +163,8 @@ module.exports = async function handler(req, res) {
     }
   }
 
-  // ── VERIFY MAGIC LINK (Supabase OTP Callback) ───────────────────
-  if (action === 'verify-magic-link' && req.method === 'POST') {
+  // ── VERIFY EMAIL OTP (Supabase OTP) ───────────────────────────
+  if ((action === 'verify-otp' || action === 'verify-magic-link') && req.method === 'POST') {
     const { access_token } = req.body || {};
     if (!access_token || typeof access_token !== 'string') {
       return res.status(400).json({ error: 'No access token provided.' });
@@ -176,7 +176,7 @@ module.exports = async function handler(req, res) {
 
       if (userErr || !user || !user.email) {
         return res.status(401).json({
-          error: 'The login link is invalid, expired, or has already been used. Please request a new magic link.'
+          error: 'The verification code is invalid, expired, or has already been used. Please request a new code.'
         });
       }
 
@@ -210,20 +210,20 @@ module.exports = async function handler(req, res) {
         `privatian_session=${token}; HttpOnly; Secure; SameSite=Strict; Max-Age=86400; Path=/`
       );
 
-      // Record Activity Log for Magic Link login
+      // Record Activity Log for OTP login
       try {
         await logActivity({
           actor: { email: admin.email, name, role: admin.role },
           action: 'auth.login',
           category: 'auth',
-          summary: `${name} (${admin.email}) logged in successfully via Magic Link`,
+          summary: `${name} (${admin.email}) logged in successfully via Email Verification Code (OTP)`,
           target_id: admin.id || admin.email,
           target_name: admin.email,
-          details: { method: 'Magic Link (Supabase Auth)', role: admin.role },
+          details: { method: 'Email OTP (Supabase)', role: admin.role },
           req
         });
       } catch(logErr) {
-        console.warn('[auth/verify-magic-link log error]:', logErr.message);
+        console.warn('[auth/verify-otp log error]:', logErr.message);
       }
 
       return res.status(200).json({
@@ -233,7 +233,7 @@ module.exports = async function handler(req, res) {
       });
 
     } catch(e) {
-      console.error('[auth/verify-magic-link]', e.message);
+      console.error('[auth/verify-otp]', e.message);
       return res.status(500).json({ error: 'Authentication failed. Please try again.' });
     }
   }
