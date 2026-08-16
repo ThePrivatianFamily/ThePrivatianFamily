@@ -149,19 +149,28 @@ window.recordActivityLog = recordActivityLog;
 // ── Admin Content Language Toggle (EN / BN) ──────────────────────────────
 var _adminContentLang = localStorage.getItem('privatian_admin_content_lang') || 'en';
 
+function updateAllAdminLangButtons(lang) {
+  const switchers = [
+    ['sec-lang-en', 'sec-lang-bn'],
+    ['hd-lang-en', 'hd-lang-bn'],
+    ['menu-lang-en', 'menu-lang-bn'],
+    ['hp-lang-en', 'hp-lang-bn'],
+    ['ft-lang-en', 'ft-lang-bn'],
+    ['admin-lang-en', 'admin-lang-bn']
+  ];
+  switchers.forEach(([enId, bnId]) => {
+    const enEl = document.getElementById(enId);
+    const bnEl = document.getElementById(bnId);
+    if (enEl) enEl.classList.toggle('active', lang === 'en');
+    if (bnEl) bnEl.classList.toggle('active', lang === 'bn');
+  });
+}
+
 window.setAdminContentLang = function(lang) {
   _adminContentLang = lang || 'en';
   try { localStorage.setItem('privatian_admin_content_lang', _adminContentLang); } catch(e) {}
 
-  const btnEn = document.getElementById('admin-lang-en');
-  const btnBn = document.getElementById('admin-lang-bn');
-  if (btnEn) btnEn.classList.toggle('active', _adminContentLang === 'en');
-  if (btnBn) btnBn.classList.toggle('active', _adminContentLang === 'bn');
-
-  const ftEn = document.getElementById('ft-lang-en');
-  const ftBn = document.getElementById('ft-lang-bn');
-  if (ftEn) ftEn.classList.toggle('active', _adminContentLang === 'en');
-  if (ftBn) ftBn.classList.toggle('active', _adminContentLang === 'bn');
+  updateAllAdminLangButtons(_adminContentLang);
 
   if (typeof showToast === 'function') {
     showToast('info', _adminContentLang === 'bn' ? 'Switched editor to Bengali (বাংলা) configuration' : 'Switched editor to English configuration');
@@ -188,10 +197,7 @@ window.setAdminContentLang = function(lang) {
 };
 
 document.addEventListener('DOMContentLoaded', () => {
-  const btnEn = document.getElementById('admin-lang-en');
-  const btnBn = document.getElementById('admin-lang-bn');
-  if (btnEn) btnEn.classList.toggle('active', _adminContentLang === 'en');
-  if (btnBn) btnBn.classList.toggle('active', _adminContentLang === 'bn');
+  updateAllAdminLangButtons(_adminContentLang);
 });
 
 // -- Core "All" section (always available, editable, permanent/cannot be deleted) --
@@ -1598,29 +1604,10 @@ function navigateTo(page) {
   if (_currentAdminPage === 'settings')  { initSettingsPage(); }
   if (_currentAdminPage === 'gallery')   {
     loadGalleryAssets();
-    const btn = document.createElement('button');
-    btn.className = 'btn btn--primary';
-    btn.innerHTML = `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg> Upload Media`;
-    btn.onclick = () => openGalleryUniversalUpload();
-    topbarActions.appendChild(btn);
   }
   if (_currentAdminPage === 'sections') {
     render();
     loadSectionsFromAPI();
-    // New Section button
-    const btn = document.createElement('button');
-    btn.className = 'btn btn--primary';
-    btn.id = 'add-section-btn';
-    btn.innerHTML = `${ICONS.plus} New Section`;
-    btn.addEventListener('click', openAddModal);
-    topbarActions.appendChild(btn);
-  }
-
-  // Show/Hide topbar content language switcher (only relevant for content editors: sections, homepage, menu, header, footer)
-  const langSwitcher = document.getElementById('admin-lang-switcher');
-  if (langSwitcher) {
-    const showLangSwitcher = ['sections', 'homepage', 'menu', 'header', 'footer'].includes(_currentAdminPage);
-    langSwitcher.style.display = showLangSwitcher ? 'flex' : 'none';
   }
 
   // Update Global Sync status immediately

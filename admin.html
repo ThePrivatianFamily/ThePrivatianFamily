@@ -167,17 +167,6 @@
         </nav>
       </div>
       <div class="topbar-right" style="display:flex;align-items:center;gap:14px;">
-        <!-- Content Language Selector for Admin Settings -->
-        <div class="admin-lang-switcher" id="admin-lang-switcher" role="tablist" aria-label="Content Language">
-          <span style="font-size:11px;font-weight:700;color:var(--text-muted);margin:0 4px 0 2px;letter-spacing:0.02em;">CONTENT:</span>
-          <button type="button" class="admin-lang-btn active" id="admin-lang-en" onclick="setAdminContentLang('en')" title="Switch to English content editor">
-            <span class="ed-lang-flag">EN</span> English
-          </button>
-          <button type="button" class="admin-lang-btn" id="admin-lang-bn" onclick="setAdminContentLang('bn')" title="Switch to বাংলা (Bengali) content editor">
-            <span class="ed-lang-flag">BN</span> বাংলা
-          </button>
-        </div>
-
         <div id="topbar-actions" style="display:flex;align-items:center;gap:10px;">
           <!-- injected per page -->
         </div>
@@ -523,6 +512,10 @@
           <p class="page-subtitle" style="font-size:13px;color:var(--text-muted);margin:0;">Organize and manage active publication sections and categories</p>
         </div>
         <div class="menu-mgr-actions" style="display:flex;align-items:center;gap:10px;">
+          <div class="admin-lang-switcher" role="tablist" aria-label="Sections Language" style="display:inline-flex;">
+            <button type="button" class="admin-lang-btn active" id="sec-lang-en" onclick="setAdminContentLang('en')" title="Switch to English Sections">EN</button>
+            <button type="button" class="admin-lang-btn" id="sec-lang-bn" onclick="setAdminContentLang('bn')" title="Switch to বাংলা (Bengali) Sections">বাং</button>
+          </div>
           <div id="sections-save-status-wrap" class="ft-header-badge synced" title="Sections database status">
             <span class="ft-pulse-dot" id="sections-status-dot"></span>
             <span id="sections-save-status">Synced with database</span>
@@ -610,6 +603,10 @@
           <p class="page-subtitle" style="font-size:13px;color:var(--text-muted);margin:0;">Organize site branding, luxury favicon studio, header logo scaling, navigation visibility, and sub-header tabs</p>
         </div>
         <div class="menu-mgr-actions" style="display:flex;align-items:center;gap:10px;">
+          <div class="admin-lang-switcher" role="tablist" aria-label="Header Language" style="display:inline-flex;">
+            <button type="button" class="admin-lang-btn active" id="hd-lang-en" onclick="setAdminContentLang('en')" title="Switch to English Header">EN</button>
+            <button type="button" class="admin-lang-btn" id="hd-lang-bn" onclick="setAdminContentLang('bn')" title="Switch to বাংলা (Bengali) Header">বাং</button>
+          </div>
           <div id="header-save-status-wrap" class="ft-header-badge synced">
             <span class="ft-pulse-dot" id="header-status-dot"></span>
             <span id="header-save-status">Synced with database</span>
@@ -951,6 +948,10 @@
           <p class="page-subtitle" style="font-size:13px;color:var(--text-muted);margin:0;">Customize the 4 columns and all items inside the Header Menu Overlay</p>
         </div>
         <div class="menu-mgr-actions" style="display:flex;align-items:center;gap:10px;">
+          <div class="admin-lang-switcher" role="tablist" aria-label="Menu Language" style="display:inline-flex;">
+            <button type="button" class="admin-lang-btn active" id="menu-lang-en" onclick="setAdminContentLang('en')" title="Switch to English Menu">EN</button>
+            <button type="button" class="admin-lang-btn" id="menu-lang-bn" onclick="setAdminContentLang('bn')" title="Switch to বাংলা (Bengali) Menu">বাং</button>
+          </div>
           <div id="menu-save-status-wrap" class="ft-header-badge synced">
             <span class="ft-pulse-dot" id="menu-status-dot"></span>
             <span id="menu-save-status">Synced with database</span>
@@ -1421,6 +1422,10 @@
           <p class="page-subtitle" style="font-size:13px;color:var(--text-muted);margin:0;">Fully customize articles, headlines, sections, and events displayed on the main homepage</p>
         </div>
         <div class="menu-mgr-actions" style="display:flex;align-items:center;gap:10px;">
+          <div class="admin-lang-switcher" role="tablist" aria-label="Homepage Language" style="display:inline-flex;">
+            <button type="button" class="admin-lang-btn active" id="hp-lang-en" onclick="setAdminContentLang('en')" title="Switch to English Homepage">EN</button>
+            <button type="button" class="admin-lang-btn" id="hp-lang-bn" onclick="setAdminContentLang('bn')" title="Switch to বাংলা (Bengali) Homepage">বাং</button>
+          </div>
           <div id="hp-save-status-wrap" class="ft-header-badge synced">
             <span class="ft-pulse-dot" id="hp-status-dot"></span>
             <span id="hp-save-status">Synced with database</span>
