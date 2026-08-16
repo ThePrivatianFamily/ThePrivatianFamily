@@ -428,21 +428,5 @@ module.exports = async function handler(req, res) {
     });
   }
 
-  // ──────────────────────────────────────────────────────────────────────────
-  // 3. RESET: Zero-Out Fake Data & Start Authentic Tracking (Admin Only)
-  // ──────────────────────────────────────────────────────────────────────────
-  if (action === 'reset' && req.method === 'POST') {
-    const admin = await requireAdmin(req, res);
-    if (!admin) return;
-
-    const freshStore = createEmptyAnalyticsStore();
-    await saveAnalyticsStore(client, freshStore);
-
-    return res.status(200).json({
-      ok: true,
-      message: 'Analytics store has been reset to authentic 0. Real traffic tracking is now active.'
-    });
-  }
-
   return res.status(400).json({ error: 'Invalid action or method' });
 };

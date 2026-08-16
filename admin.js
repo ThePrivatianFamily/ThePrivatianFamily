@@ -1784,13 +1784,6 @@ function renderDashboardUI(stats) {
   if (elMediaSvgs) elMediaSvgs.textContent = formatNumber(media.svgs || 0);
   if (elMediaSize) elMediaSize.textContent = formatBytes(media.totalBytes || 0);
 
-  const elMediaBadge = document.getElementById('gallery-count-badge');
-  if (elMediaBadge) {
-    const cnt = media.totalFiles || 0;
-    elMediaBadge.textContent = formatNumber(cnt);
-    elMediaBadge.style.display = cnt > 0 ? 'inline-block' : 'none';
-  }
-
   // 5. 7-Day Chart Visualizer
   render7DayChart(views.last7Days || []);
 
@@ -1845,27 +1838,6 @@ function render7DayChart(daysArray) {
   }).join('');
 }
 
-async function resetAnalyticsStoreToZero() {
-  if (!confirm('Are you sure you want to reset all analytics and traffic history to 0? This will clear old mock/test counts and start fresh real-time tracking.')) {
-    return;
-  }
-  try {
-    const res = await fetch('/api/analytics?action=reset', {
-      method: 'POST',
-      headers: _authHeaders()
-    });
-    const data = await res.json();
-    if (res.ok && data.ok) {
-      showToast('success', 'Analytics store reset to authentic 0');
-      initDashboardPage(true);
-    } else {
-      showToast('error', data.error || 'Failed to reset analytics');
-    }
-  } catch (e) {
-    showToast('error', 'Network error while resetting analytics');
-  }
-}
-window.resetAnalyticsStoreToZero = resetAnalyticsStoreToZero;
 
 function renderRecentArticlesTable(recentList) {
   const tbody = document.getElementById('db-recent-articles-tbody');
@@ -10036,11 +10008,7 @@ function _updateGalleryCounts(apiStorage = null, syncStatus = null) {
     dbSyncText.textContent = `Synced with Database (${_galleryFolders.length} Folders)`;
   }
 
-  // 2. Sidebar Badge & Filter Tabs
-  if (badge) {
-    badge.textContent = activeCount;
-    badge.style.display = activeCount > 0 ? '' : 'none';
-  }
+  // 2. Filter Tabs
   if (countAll) countAll.textContent = activeCount;
   if (countPhotos) countPhotos.textContent = photos;
   if (countSvg) countSvg.textContent = svgs;
