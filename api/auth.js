@@ -114,7 +114,7 @@ module.exports = async function handler(req, res) {
       const displayPic  = admin.profile_pic || gp.picture || '';
 
       const token = jwt.sign(
-        { email: admin.email, role: admin.role, name: displayName, picture: displayPic },
+        { email: admin.email, role: admin.role, name: displayName, full_name: admin.full_name || gp.name || '', picture: displayPic, profile_pic: displayPic },
         process.env.SESSION_SECRET,
         { expiresIn: '24h' }
       );
@@ -353,7 +353,7 @@ module.exports = async function handler(req, res) {
       const displayPic  = admin.profile_pic || user.user_metadata?.avatar_url || user.user_metadata?.picture || '';
 
       const token = jwt.sign(
-        { email: admin.email, role: admin.role, name: displayName, picture: displayPic },
+        { email: admin.email, role: admin.role, name: displayName, full_name: admin.full_name || '', picture: displayPic, profile_pic: displayPic },
         process.env.SESSION_SECRET,
         { expiresIn: '24h' }
       );

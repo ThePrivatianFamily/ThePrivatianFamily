@@ -2503,7 +2503,7 @@ function openAdminProfileModal(id) {
 
   const modal = document.createElement('div');
   modal.id = 'admin-profile-modal-overlay';
-  modal.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,0.65);backdrop-filter:blur(5px);z-index:99999;display:flex;align-items:center;justify-content:center;padding:16px;box-sizing:border-box;animation:fadeIn .2s ease;';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,0.65);backdrop-filter:blur(5px);z-index:99990;display:flex;align-items:center;justify-content:center;padding:16px;box-sizing:border-box;animation:fadeIn .2s ease;';
 
   modal.innerHTML = `
     <div style="background:#ffffff;border-radius:20px;max-width:540px;width:100%;padding:26px 28px;box-shadow:0 25px 60px rgba(0,0,0,0.25);border:1px solid #e2e8f0;position:relative;box-sizing:border-box;max-height:92vh;overflow-y:auto;">
@@ -2539,14 +2539,14 @@ function openAdminProfileModal(id) {
         <div style="grid-column:1 / -1;">
           <label style="display:block;font-size:12px;font-weight:700;color:#334155;margin-bottom:6px;">Profile Picture (Circle Avatar, Optional)</label>
           <div style="display:flex;gap:8px;">
-            <input type="url" id="prof-input-pic-url" value="${escapeHtml(admin.profile_pic || '')}" placeholder="https://... or upload photo" oninput="updateProfileModalAvatarLive(this.value, '${escapeHtml(admin.email)}')" style="flex:1;height:40px;padding:0 12px;border:1.5px solid #cbd5e1;border-radius:10px;font-size:13.5px;box-sizing:border-box;outline:none;font-family:inherit;" onfocus="this.style.borderColor='#0a528e'" onblur="this.style.borderColor='#cbd5e1'" />
-            <button type="button" onclick="document.getElementById('prof-pic-file-input').click()" style="padding:0 14px;background:#f8fafc;border:1.5px solid #cbd5e1;border-radius:10px;font-size:12.5px;font-weight:600;color:#334155;cursor:pointer;white-space:nowrap;display:flex;align-items:center;gap:5px;transition:all .2s;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='#f8fafc'">
-              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-              Upload
+            <input type="url" id="prof-input-pic-url" value="${escapeHtml(admin.profile_pic || '')}" placeholder="https://... or choose from Media Gallery" oninput="updateProfileModalAvatarLive(this.value, '${escapeHtml(admin.email)}')" style="flex:1;height:40px;padding:0 12px;border:1.5px solid #cbd5e1;border-radius:10px;font-size:13.5px;box-sizing:border-box;outline:none;font-family:inherit;" onfocus="this.style.borderColor='#0a528e'" onblur="this.style.borderColor='#cbd5e1'" />
+            <button type="button" onclick="openProfileMediaPicker('${escapeHtml(admin.email)}')" style="padding:0 14px;background:linear-gradient(135deg, #0a528e, #0284c7);border:none;border-radius:10px;font-size:12.5px;font-weight:600;color:#ffffff;cursor:pointer;white-space:nowrap;display:flex;align-items:center;gap:6px;transition:all .2s;box-shadow:0 2px 8px rgba(10,82,142,0.25);" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+              Media Gallery &amp; Upload
             </button>
             <input type="file" id="prof-pic-file-input" accept="image/*" style="display:none;" onchange="handleProfileModalFileUpload(event, '${escapeHtml(admin.email)}')" />
           </div>
-          <div style="font-size:11px;color:#94a3b8;margin-top:4px;">Paste an image URL or choose a local photo (auto-compressed to circle avatar).</div>
+          <div style="font-size:11px;color:#94a3b8;margin-top:4px;">Upload from your computer or choose an existing photo from Cloudflare R2 Media Gallery.</div>
         </div>
 
         <div>
@@ -2582,6 +2582,29 @@ function openAdminProfileModal(id) {
   `;
 
   document.body.appendChild(modal);
+}
+
+function openProfileMediaPicker(email) {
+  if (typeof window.openUniversalMediaModal === 'function') {
+    window.openUniversalMediaModal({
+      title: 'Choose or Upload Profile Picture',
+      subtitle: 'Upload a photo from PC, paste URL, or select from Cloudflare R2 Media Gallery',
+      defaultTab: 'upload',
+      allowIdInput: true,
+      targetFolder: 'Avatars & Profiles',
+      onSelect: item => {
+        const picUrl = (item && item.url) || '';
+        if (!picUrl) return;
+        const inp = document.getElementById('prof-input-pic-url');
+        if (inp) inp.value = picUrl;
+        updateProfileModalAvatarLive(picUrl, email);
+        showToast('success', `Profile picture selected from Media Gallery: ${item.title || item.uniqueId || 'Asset'}`);
+      }
+    });
+  } else {
+    const directFileInp = document.getElementById('prof-pic-file-input');
+    if (directFileInp) directFileInp.click();
+  }
 }
 
 function closeAdminProfileModal() {
