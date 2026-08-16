@@ -116,24 +116,21 @@ window.setAdminContentLang = function(lang) {
   }
 
   // Refresh currently active page
-  if (_currentAdminPage === 'sections') {
+  const isHeaderActive = (_currentAdminPage === 'header') || (document.getElementById('page-header') && document.getElementById('page-header').classList.contains('active'));
+  const isSectionsActive = (_currentAdminPage === 'sections') || (document.getElementById('page-sections') && document.getElementById('page-sections').classList.contains('active'));
+  const isMenuActive = (_currentAdminPage === 'menu') || (document.getElementById('page-menu') && document.getElementById('page-menu').classList.contains('active'));
+  const isHomepageActive = (_currentAdminPage === 'homepage') || (document.getElementById('page-homepage') && document.getElementById('page-homepage').classList.contains('active'));
+  const isFooterActive = (_currentAdminPage === 'footer') || (document.getElementById('page-footer') && document.getElementById('page-footer').classList.contains('active'));
+
+  if (isHeaderActive) {
+    if (typeof initHeaderPage === 'function') initHeaderPage();
+  } else if (isSectionsActive) {
     if (typeof loadSectionsFromAPI === 'function') loadSectionsFromAPI();
-  } else if (_currentAdminPage === 'header') {
-    if (typeof loadHeaderSettings === 'function') {
-      loadHeaderSettings().then(hs => {
-        _hsInstance = hs;
-        window._appliedHeaderConfig = JSON.parse(JSON.stringify(hs));
-        renderHsTabCard(hs);
-        renderHsLogoCard(hs);
-        renderHsNavSections(hs);
-        renderHsSubsections(hs);
-      });
-    }
-  } else if (_currentAdminPage === 'menu') {
+  } else if (isMenuActive) {
     if (typeof initMenuPage === 'function') initMenuPage();
-  } else if (_currentAdminPage === 'homepage') {
+  } else if (isHomepageActive) {
     if (typeof initHomepagePage === 'function') initHomepagePage();
-  } else if (_currentAdminPage === 'footer') {
+  } else if (isFooterActive) {
     if (typeof initFooterPage === 'function') initFooterPage();
   }
 };
@@ -2360,14 +2357,21 @@ window.addEventListener('privatian:ready', () => { initAccessPage(); checkMyAcce
 
 const HEADER_SETTINGS_KEY = 'privatian_header_settings';
 
-const DEFAULT_HEADER_SUBSECTIONS = [
+const DEFAULT_HEADER_SUBSECTIONS_EN = [
   { id: 'sub-1', label: 'FAMILY LEGACY', href: '/section/community-heritage', icon: null, enabled: true },
   { id: 'sub-2', label: 'EXPERIENCE', href: '/section/culture', icon: null, enabled: true },
   { id: 'sub-3', label: 'THE PRIVATIAN READS', href: '/section/findings', icon: null, enabled: true },
   { id: 'sub-4', label: 'EVENTS', href: '/events', icon: 'calendar', enabled: true }
 ];
 
-const DEFAULT_HEADER_SETTINGS = {
+const DEFAULT_HEADER_SUBSECTIONS_BN = [
+  { id: 'sub-1', label: 'পারিবারিক ঐতিহ্য', href: '/section/community-heritage', icon: null, enabled: true },
+  { id: 'sub-2', label: 'অভিজ্ঞতা', href: '/section/culture', icon: null, enabled: true },
+  { id: 'sub-3', label: 'প্রাইভেটিয়ান পাঠ', href: '/section/findings', icon: null, enabled: true },
+  { id: 'sub-4', label: 'ইভেন্ট ও আয়োজন', href: '/events', icon: 'calendar', enabled: true }
+];
+
+const DEFAULT_HEADER_SETTINGS_EN = {
   siteTitle: 'The Privatian Family',
   tabTagline: 'Insights, Stories & Heritage',
   browserTabTitle: 'The Privatian Family — Insights, Stories & Heritage',
@@ -2376,48 +2380,117 @@ const DEFAULT_HEADER_SETTINGS = {
   logoSvg: null,
   logoHeight: 80,
   enabledNavSections: null,
-  subsections: DEFAULT_HEADER_SUBSECTIONS.map(s => ({...s}))
+  subsections: DEFAULT_HEADER_SUBSECTIONS_EN.map(s => ({...s}))
 };
 
+const DEFAULT_HEADER_SETTINGS_BN = {
+  siteTitle: 'দ্য প্রাইভেটিয়ান ফ্যামিলি',
+  tabTagline: 'জ্ঞান, ঐতিহ্য ও জীবনের কথা',
+  browserTabTitle: 'দ্য প্রাইভেটিয়ান ফ্যামিলি — জ্ঞান, ঐতিহ্য ও জীবনের কথা',
+  metaDescription: 'দ্য প্রাইভেটিয়ান সোসাইটির অফিশিয়াল প্রকাশনা — ক্যামব্রিজ, ম্যাসাচুসেটস।',
+  faviconUrl: '',
+  logoSvg: null,
+  logoHeight: 80,
+  enabledNavSections: null,
+  subsections: DEFAULT_HEADER_SUBSECTIONS_BN.map(s => ({...s}))
+};
+
+function getHeaderDefaultSettings(lang) {
+  const isBn = (lang === 'bn');
+  return JSON.parse(JSON.stringify(isBn ? DEFAULT_HEADER_SETTINGS_BN : DEFAULT_HEADER_SETTINGS_EN));
+}
+
+function sanitizeLoadedHeaderData(data, lang) {
+  const isBn = (lang === 'bn');
+  const defaults = getHeaderDefaultSettings(lang);
+  const res = Object.assign({}, defaults, data || {});
+
+  if (isBn) {
+    if (!res.siteTitle || !/[\u0980-\u09FF]/.test(res.siteTitle)) {
+      res.siteTitle = 'দ্য প্রাইভেটিয়ান ফ্যামিলি';
+    }
+    if (!res.tabTagline || !/[\u0980-\u09FF]/.test(res.tabTagline)) {
+      res.tabTagline = 'জ্ঞান, ঐতিহ্য ও জীবনের কথা';
+    }
+    if (!res.browserTabTitle || !/[\u0980-\u09FF]/.test(res.browserTabTitle)) {
+      res.browserTabTitle = res.siteTitle + ' — ' + res.tabTagline;
+    }
+    if (Array.isArray(res.subsections)) {
+      const BN_LABEL_MAP = { 'sub-1': 'পারিবারিক ঐতিহ্য', 'sub-2': 'অভিজ্ঞতা', 'sub-3': 'প্রাইভেটিয়ান পাঠ', 'sub-4': 'ইভেন্ট ও আয়োজন' };
+      res.subsections = res.subsections.map(s => {
+        if (!s.label || !/[\u0980-\u09FF]/.test(s.label)) {
+          return { ...s, label: BN_LABEL_MAP[s.id] || s.label || 'বিভাগ' };
+        }
+        return s;
+      });
+    }
+  } else {
+    if (res.siteTitle && /[\u0980-\u09FF]/.test(res.siteTitle)) {
+      res.siteTitle = 'The Privatian Family';
+    }
+    if (res.tabTagline && /[\u0980-\u09FF]/.test(res.tabTagline)) {
+      res.tabTagline = 'Insights, Stories & Heritage';
+    }
+    if (res.browserTabTitle && /[\u0980-\u09FF]/.test(res.browserTabTitle)) {
+      res.browserTabTitle = 'The Privatian Family — Insights, Stories & Heritage';
+    }
+    if (Array.isArray(res.subsections)) {
+      const EN_LABEL_MAP = { 'sub-1': 'FAMILY LEGACY', 'sub-2': 'EXPERIENCE', 'sub-3': 'THE PRIVATIAN READS', 'sub-4': 'EVENTS' };
+      res.subsections = res.subsections.map(s => {
+        if (s.label && /[\u0980-\u09FF]/.test(s.label)) {
+          return { ...s, label: EN_LABEL_MAP[s.id] || 'SECTION' };
+        }
+        return s;
+      });
+    }
+  }
+
+  if (!res.subsections || !res.subsections.length) {
+    res.subsections = defaults.subsections;
+  }
+  return res;
+}
+
 async function loadHeaderSettings() {
+  const currentLang = _adminContentLang || 'en';
+  const defaults = getHeaderDefaultSettings(currentLang);
+
   try {
-    const data = await _apiGet('/api/sections?action=header' + (_adminContentLang === 'bn' ? '&lang=bn' : ''));
+    const data = await _apiGet('/api/sections?action=header' + (currentLang === 'bn' ? '&lang=bn' : ''));
     if (data && typeof data === 'object') {
-      const merged = Object.assign({}, DEFAULT_HEADER_SETTINGS, data);
-      if (!merged.subsections) merged.subsections = DEFAULT_HEADER_SUBSECTIONS.map(s => ({...s}));
-      try { localStorage.setItem(HEADER_SETTINGS_KEY + '_' + _adminContentLang, JSON.stringify(merged)); } catch(e) {}
-      return merged;
+      const sanitized = sanitizeLoadedHeaderData(data, currentLang);
+      try { localStorage.setItem(HEADER_SETTINGS_KEY + '_' + currentLang, JSON.stringify(sanitized)); } catch(e) {}
+      return sanitized;
     }
   } catch(err) {
-    console.warn('[Admin] loadHeaderSettings API failed (using cache):', err.message);
+    console.warn('[Admin] loadHeaderSettings API failed (trying fallback):', err.message);
   }
-  try {
-    const raw = localStorage.getItem(HEADER_SETTINGS_KEY + '_' + _adminContentLang) || localStorage.getItem(HEADER_SETTINGS_KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      const merged = Object.assign({}, DEFAULT_HEADER_SETTINGS, parsed);
-      if (!merged.subsections) merged.subsections = DEFAULT_HEADER_SUBSECTIONS.map(s => ({...s}));
-      return merged;
-    }
-  } catch(e) {}
 
   try {
     const sb = window._sb || (window.initSupabaseClient && window.initSupabaseClient());
     if (sb) {
-      const targetAdminId = _adminContentLang === 'bn' ? '__header_config_bn__' : '__header_config__';
+      const targetAdminId = (currentLang === 'bn') ? '__header_config_bn__' : '__header_config__';
       const { data: sData } = await sb.from('sections').select('name').eq('admin_id', targetAdminId).maybeSingle();
       if (sData && sData.name) {
         const parsed = JSON.parse(sData.name);
         if (parsed && typeof parsed === 'object') {
-          const merged = Object.assign({}, DEFAULT_HEADER_SETTINGS, parsed);
-          if (!merged.subsections) merged.subsections = DEFAULT_HEADER_SUBSECTIONS.map(s => ({...s}));
-          return merged;
+          const sanitized = sanitizeLoadedHeaderData(parsed, currentLang);
+          try { localStorage.setItem(HEADER_SETTINGS_KEY + '_' + currentLang, JSON.stringify(sanitized)); } catch(e) {}
+          return sanitized;
         }
       }
     }
   } catch(e) {}
 
-  return Object.assign({}, DEFAULT_HEADER_SETTINGS);
+  try {
+    const raw = localStorage.getItem(HEADER_SETTINGS_KEY + '_' + currentLang);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      return sanitizeLoadedHeaderData(parsed, currentLang);
+    }
+  } catch(e) {}
+
+  return defaults;
 }
 
 // ── Header Settings Tab Switcher (Matches Navigation Menu standard) ──
@@ -2586,163 +2659,187 @@ function selectAllHeaderSections(selectBool) {
   showToast('info', selectBool ? 'All sections enabled in header navigation' : 'All sections disabled in header navigation');
 }
 
+// ── Interactive Header Preview Controls ───────────────────────────
+var _headerPreviewViewport = 'desktop';
+var _headerPreviewLang = null; // null => follow _adminContentLang
+
+function setHeaderPreviewViewport(vp) {
+  _headerPreviewViewport = vp || 'desktop';
+  const wrap = document.getElementById('hs-preview-viewport-wrapper');
+  if (wrap) {
+    if (vp === 'mobile') {
+      wrap.style.maxWidth = '390px';
+    } else if (vp === 'tablet') {
+      wrap.style.maxWidth = '768px';
+    } else {
+      wrap.style.maxWidth = '100%';
+    }
+  }
+  ['desktop', 'tablet', 'mobile'].forEach(m => {
+    const b = document.getElementById(`hs-vp-${m}`);
+    if (b) {
+      const active = (m === _headerPreviewViewport);
+      b.classList.toggle('active', active);
+      b.style.background = active ? '#38bdf8' : 'transparent';
+      b.style.color = active ? '#0f172a' : '#94a3b8';
+      b.style.fontWeight = active ? '700' : '500';
+    }
+  });
+  renderHeaderPreviewCanvas();
+}
+
+function setHeaderPreviewLang(lang) {
+  _headerPreviewLang = lang;
+  ['en', 'bn'].forEach(l => {
+    const b = document.getElementById(`hs-prevlang-${l}`);
+    if (b) {
+      const active = (l === (_headerPreviewLang || _adminContentLang));
+      b.classList.toggle('active', active);
+      b.style.background = active ? '#38bdf8' : 'transparent';
+      b.style.color = active ? '#0f172a' : '#94a3b8';
+      b.style.fontWeight = active ? '700' : '500';
+    }
+  });
+  renderHeaderPreviewCanvas();
+}
+
 function renderHeaderPreviewCanvas() {
   const box = document.getElementById('hs-live-preview-box');
   if (!box || !_hsInstance) return;
 
-  const isBn = (_adminContentLang === 'bn');
+  const previewLang = _headerPreviewLang || _adminContentLang || 'en';
+  const isBn = (previewLang === 'bn');
+
+  // Update preview language toggle buttons state
+  ['en', 'bn'].forEach(l => {
+    const b = document.getElementById(`hs-prevlang-${l}`);
+    if (b) {
+      const active = (l === previewLang);
+      b.classList.toggle('active', active);
+      b.style.background = active ? '#38bdf8' : 'transparent';
+      b.style.color = active ? '#0f172a' : '#94a3b8';
+      b.style.fontWeight = active ? '700' : '500';
+    }
+  });
+
   const allSecs = (sections || []).filter(s => !s.deleted);
   const enabledIds = Array.isArray(_hsInstance.enabledNavSections) ? _hsInstance.enabledNavSections : allSecs.map(s => s.slug || s.id);
-  const navList = allSecs.filter(s => enabledIds.includes(s.slug || s.id)).slice(0, 8);
-  const subList = (_hsInstance.subsections || []).filter(s => s.enabled !== false);
+  const orderedNavList = allSecs.filter(s => enabledIds.includes(s.slug || s.id));
+  
+  // Sort in the exact order specified by enabledIds
+  orderedNavList.sort((a, b) => {
+    const idA = a.slug || a.id;
+    const idB = b.slug || b.id;
+    return enabledIds.indexOf(idA) - enabledIds.indexOf(idB);
+  });
 
+  const subList = (_hsInstance.subsections || []).filter(s => s.enabled !== false);
   const logoH = _hsInstance.logoHeight || 80;
-  const renderedLogo = formatSvgWithSize(_hsInstance.logoSvg, Math.min(logoH, 50));
+  const scaledH = Math.min(Math.max(logoH * 0.55, 32), 52);
+  const renderedLogo = formatSvgWithSize(_hsInstance.logoSvg, scaledH);
+
+  // Active titles & descriptions
+  const siteTitle = _hsInstance.siteTitle || (isBn ? 'দ্য প্রাইভেটিয়ান ফ্যামিলি' : 'The Privatian Family');
+  const tagline = _hsInstance.tabTagline || (isBn ? 'জ্ঞান, ঐতিহ্য ও জীবনের কথা' : 'Insights, Stories & Heritage');
+  const browserTitle = _hsInstance.browserTabTitle || (siteTitle + (tagline ? ' — ' + tagline : ''));
+  const faviconUrl = _hsInstance.faviconUrl || '';
+
+  const faviconHtml = faviconUrl
+    ? `<img src="${escapeHtml(faviconUrl)}" style="width:14px;height:14px;object-fit:cover;border-radius:2px;display:block;" onerror="this.outerHTML='<span style=\\'display:inline-block;width:14px;height:14px;background:#0a528e;color:#fff;border-radius:2px;font-size:9px;font-weight:900;text-align:center;line-height:14px;\\'>P</span>';">`
+    : `<span style="display:inline-block;width:14px;height:14px;background:#0a528e;color:#fff;border-radius:2px;font-size:9px;font-weight:900;text-align:center;line-height:14px;">P</span>`;
 
   box.innerHTML = `
-    <div style="background:#ffffff;border-bottom:1px solid #e2e8f0;padding:12px 24px;display:flex;align-items:center;justify-content:space-between;gap:16px;">
-      <div style="display:flex;align-items:center;gap:20px;flex-shrink:0;">
-        <div style="height:46px;display:flex;align-items:center;">
+    <!-- Browser Mockup Window Chrome -->
+    <div style="background:#1e293b;padding:9px 14px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #334155;user-select:none;">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <!-- Window dots -->
+        <div style="display:flex;align-items:center;gap:6px;">
+          <span style="width:11px;height:11px;border-radius:50%;background:#ef4444;display:inline-block;"></span>
+          <span style="width:11px;height:11px;border-radius:50%;background:#f59e0b;display:inline-block;"></span>
+          <span style="width:11px;height:11px;border-radius:50%;background:#10b981;display:inline-block;"></span>
+        </div>
+        <!-- Active Browser Tab -->
+        <div style="display:flex;align-items:center;gap:7px;background:#0f172a;padding:5px 14px;border-radius:6px 6px 0 0;border:1px solid #334155;border-bottom:none;max-width:280px;">
+          ${faviconHtml}
+          <span style="font-size:11.5px;color:#f8fafc;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(browserTitle)}</span>
+        </div>
+      </div>
+
+      <!-- Address bar -->
+      <div style="background:#0f172a;border:1px solid #334155;padding:4px 16px;border-radius:20px;display:flex;align-items:center;gap:6px;font-size:11px;color:#94a3b8;flex:1;max-width:320px;margin:0 14px;">
+        <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="#10b981" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        <span style="color:#e2e8f0;font-weight:500;">theprivatianfamily.vercel.app</span>
+      </div>
+
+      <div style="font-size:10px;font-weight:700;color:#64748b;letter-spacing:0.05em;text-transform:uppercase;">
+        ${_headerPreviewViewport.toUpperCase()} PREVIEW
+      </div>
+    </div>
+
+    <!-- Main Site Header -->
+    <header class="preview-site-header" style="background:#ffffff;border-bottom:1px solid #e2e8f0;padding:12px 24px;display:flex;align-items:center;justify-content:space-between;gap:18px;position:relative;z-index:2;">
+      <!-- Logo & Tagline -->
+      <div style="display:flex;flex-direction:column;align-items:flex-start;flex-shrink:0;">
+        <div style="height:${scaledH}px;display:flex;align-items:center;">
           ${renderedLogo}
         </div>
+        ${tagline ? `<span style="font-size:10.5px;color:#64748b;font-family:'Playfair Display',serif;letter-spacing:0.04em;margin-top:2px;font-style:italic;">${escapeHtml(tagline)}</span>` : ''}
       </div>
-      <nav style="display:flex;align-items:center;gap:16px;overflow-x:auto;flex:1;justify-content:center;">
-        ${navList.map(s => `<span style="font-size:13px;font-weight:600;color:#0f172a;white-space:nowrap;padding:4px 8px;border-radius:4px;background:#f1f5f9;">${escapeHtml(isBn && s.name_bn ? s.name_bn : s.name)}</span>`).join('')}
+
+      <!-- Navigation Categories -->
+      <nav style="display:flex;align-items:center;gap:8px;overflow-x:auto;flex:1;justify-content:center;padding:4px 0;scrollbar-width:none;">
+        ${orderedNavList.map((s, idx) => `
+          <a href="#" onclick="return false;" style="font-size:12px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;color:${idx === 0 ? '#0a528e' : '#334155'};white-space:nowrap;padding:5px 10px;border-radius:4px;background:${idx === 0 ? '#e0f2fe' : 'transparent'};border:${idx === 0 ? '1px solid #bae6fd' : '1px solid transparent'};text-decoration:none;transition:all 0.15s ease;">
+            ${escapeHtml(isBn && s.name_bn ? s.name_bn : s.name)}
+          </a>
+        `).join('')}
       </nav>
+
+      <!-- Right Header Actions (Language, Menu, Search) -->
       <div style="display:flex;align-items:center;gap:10px;flex-shrink:0;">
-        <span style="font-size:12px;font-weight:700;color:#64748b;padding:4px 8px;border:1px solid #cbd5e1;border-radius:4px;">${isBn ? 'বাংলা' : 'EN'}</span>
-        <div style="width:32px;height:32px;border-radius:50%;background:#f8fafc;border:1px solid #cbd5e1;display:flex;align-items:center;justify-content:center;">
-          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <!-- Language Switcher Pill -->
+        <div style="display:flex;align-items:center;background:#f8fafc;border:1px solid #cbd5e1;border-radius:20px;padding:2px 4px;cursor:pointer;" onclick="setHeaderPreviewLang('${isBn ? 'en' : 'bn'}')" title="Click to test language switch in preview">
+          <span style="font-size:11px;font-weight:700;padding:2px 7px;border-radius:12px;background:${!isBn ? '#0a528e' : 'transparent'};color:${!isBn ? '#ffffff' : '#64748b'};">EN</span>
+          <span style="font-size:10px;color:#cbd5e1;margin:0 1px;">|</span>
+          <span style="font-size:11px;font-weight:700;padding:2px 7px;border-radius:12px;background:${isBn ? '#0a528e' : 'transparent'};color:${isBn ? '#ffffff' : '#64748b'};">বাংলা</span>
+        </div>
+
+        <!-- Menu Button -->
+        <button type="button" style="display:flex;align-items:center;gap:5px;background:#f8fafc;border:1px solid #cbd5e1;padding:5px 10px;border-radius:6px;font-size:12px;font-weight:700;color:#0f172a;cursor:pointer;">
+          <span style="font-size:13px;line-height:1;">☰</span>
+          <span>${isBn ? 'মেন্যু' : 'Menu'}</span>
+        </button>
+
+        <!-- Search Button -->
+        <div style="width:34px;height:34px;border-radius:50%;background:#f8fafc;border:1px solid #cbd5e1;display:flex;align-items:center;justify-content:center;color:#0f172a;cursor:pointer;" title="Search">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
         </div>
       </div>
-    </div>
-    <div style="background:#f8fafc;border-bottom:1px solid #e2e8f0;padding:8px 24px;display:flex;align-items:center;gap:16px;overflow-x:auto;">
+    </header>
+
+    <!-- Sub-header Bar -->
+    <div style="background:#f8fafc;border-bottom:1px solid #e2e8f0;padding:7px 24px;display:flex;align-items:center;gap:18px;overflow-x:auto;scrollbar-width:none;">
       ${subList.map(sub => `
-        <span style="font-size:11px;font-weight:700;letter-spacing:0.05em;color:#475569;white-space:nowrap;display:inline-flex;align-items:center;gap:4px;">
-          ${sub.icon === 'calendar' ? '<svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>' : ''}
-          ${escapeHtml(sub.label)}
-        </span>
+        <a href="#" onclick="return false;" style="font-size:11px;font-weight:700;letter-spacing:0.06em;color:#475569;text-transform:uppercase;white-space:nowrap;display:inline-flex;align-items:center;gap:5px;text-decoration:none;padding:2px 0;">
+          ${sub.icon === 'calendar' ? '<svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="#0a528e" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>' : ''}
+          <span>${escapeHtml(sub.label)}</span>
+        </a>
       `).join('')}
     </div>
+
+    <!-- Simulated Page Context (Hero Area Underneath) -->
+    <div style="background:linear-gradient(180deg, #f1f5f9 0%, #ffffff 100%);padding:28px 24px;text-align:center;border-top:1px solid #f1f5f9;">
+      <span style="display:inline-block;font-size:10px;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:#0a528e;background:#e0f2fe;padding:3px 10px;border-radius:20px;margin-bottom:8px;">
+        ${isBn ? 'কেমব্রিজ, ম্যাসাচুসেটস • অফিশিয়াল প্রকাশনা' : 'Cambridge, Massachusetts • Official Publication'}
+      </span>
+      <h2 style="font-family:'Playfair Display',Georgia,serif;font-size:21px;font-weight:700;color:#0f172a;margin:4px 0 8px;">
+        ${isBn ? 'জ্ঞান, ঐতিহ্য ও জীবনের সন্ধানে দ্য প্রাইভেটিয়ান ফ্যামিলি' : 'Documenting the Timeless Pursuit of Truth, Heritage & Distinction'}
+      </h2>
+      <p style="font-size:12.5px;color:#64748b;max-width:540px;margin:0 auto;line-height:1.5;">
+        ${isBn ? 'এই লাইভ সিমুলেশনে ব্রাউজারের উপরে থাকা হেডার, লোগো স্কেল, সাব-হেডার ও ক্যাটাগরির অবস্থান পরীক্ষা করুন।' : 'Test and verify how your brand logo scale, navigation ordering, favicon badge, and multilingual strings appear across visitor devices.'}
+      </p>
+    </div>
   `;
-}
-
-// ── Browser Tab & Hover Card (SEO) ──────────────────────────────
-function renderHsTabCard(hs) {
-  const siteTitleInp = document.getElementById('hs-site-title-input');
-  const tabTaglineInp = document.getElementById('hs-tab-tagline-input');
-  const customTitleInp = document.getElementById('hs-tab-title-custom-input');
-  const metaDescInp = document.getElementById('hs-meta-desc-input');
-  const faviconInp = document.getElementById('hs-favicon-input');
-  const tabPreview = document.getElementById('browser-tab-preview-title');
-  const hoverPreview = document.getElementById('hover-card-preview-title');
-
-  if (siteTitleInp) siteTitleInp.value = hs.siteTitle || 'The Privatian Family';
-  if (tabTaglineInp) tabTaglineInp.value = hs.tabTagline !== undefined ? hs.tabTagline : 'Insights, Stories & Heritage';
-  if (customTitleInp) customTitleInp.value = hs.browserTabTitle || '';
-  if (metaDescInp) metaDescInp.value = hs.metaDescription || '';
-  if (faviconInp) faviconInp.value = hs.faviconUrl || '';
-
-  updateFaviconPreviews(hs.faviconUrl || '');
-
-  function refreshTabCardPreview() {
-    const brand = (siteTitleInp ? siteTitleInp.value.trim() : '') || 'The Privatian Family';
-    const tag = (tabTaglineInp ? tabTaglineInp.value.trim() : '') || '';
-    const custom = customTitleInp ? customTitleInp.value.trim() : '';
-
-    const finalTitle = custom || (brand + (tag ? ' — ' + tag : ''));
-    if (tabPreview) tabPreview.textContent = finalTitle;
-    if (hoverPreview) hoverPreview.textContent = finalTitle;
-  }
-  refreshTabCardPreview();
-
-  if (siteTitleInp) {
-    siteTitleInp.addEventListener('input', () => {
-      hs.siteTitle = siteTitleInp.value.trim();
-      if (!customTitleInp.value.trim() || customTitleInp.dataset.manual !== 'true') {
-        const brand = hs.siteTitle || 'The Privatian Family';
-        const tag = (tabTaglineInp ? tabTaglineInp.value.trim() : '') || '';
-        hs.browserTabTitle = brand + (tag ? ' — ' + tag : '');
-        if (customTitleInp) customTitleInp.placeholder = hs.browserTabTitle;
-      }
-      refreshTabCardPreview();
-      updateGlobalSyncStatus();
-    });
-  }
-
-  if (tabTaglineInp) {
-    tabTaglineInp.addEventListener('input', () => {
-      hs.tabTagline = tabTaglineInp.value.trim();
-      if (!customTitleInp.value.trim() || customTitleInp.dataset.manual !== 'true') {
-        const brand = (siteTitleInp ? siteTitleInp.value.trim() : '') || 'The Privatian Family';
-        const tag = hs.tabTagline;
-        hs.browserTabTitle = brand + (tag ? ' — ' + tag : '');
-        if (customTitleInp) customTitleInp.placeholder = hs.browserTabTitle;
-      }
-      refreshTabCardPreview();
-      updateGlobalSyncStatus();
-    });
-  }
-
-  if (customTitleInp) {
-    customTitleInp.addEventListener('input', () => {
-      customTitleInp.dataset.manual = customTitleInp.value.trim() ? 'true' : 'false';
-      hs.browserTabTitle = customTitleInp.value.trim();
-      refreshTabCardPreview();
-      updateGlobalSyncStatus();
-    });
-  }
-
-  if (metaDescInp) {
-    metaDescInp.addEventListener('input', () => {
-      hs.metaDescription = metaDescInp.value.trim();
-      updateGlobalSyncStatus();
-    });
-  }
-
-  if (faviconInp) {
-    faviconInp.addEventListener('input', () => {
-      hs.faviconUrl = faviconInp.value.trim();
-      updateFaviconPreviews(hs.faviconUrl);
-      updateGlobalSyncStatus();
-    });
-  }
-}
-
-async function saveHeaderSettings(hs) {
-  hs.updatedAt = new Date().toISOString();
-  hs.lang = _adminContentLang;
-  try {
-    localStorage.setItem(HEADER_SETTINGS_KEY + '_' + _adminContentLang, JSON.stringify(hs));
-    // Also sync structural settings (enabledNavSections, subsections enabled, logo, etc.) into other language cache
-    const otherLang = (_adminContentLang === 'bn') ? 'en' : 'bn';
-    const otherRaw = localStorage.getItem(HEADER_SETTINGS_KEY + '_' + otherLang);
-    if (otherRaw) {
-      const otherHs = JSON.parse(otherRaw);
-      otherHs.enabledNavSections = hs.enabledNavSections;
-      otherHs.logoHeight = hs.logoHeight;
-      otherHs.logoSvg = hs.logoSvg;
-      otherHs.faviconUrl = hs.faviconUrl;
-      if (Array.isArray(hs.subsections) && Array.isArray(otherHs.subsections)) {
-        otherHs.subsections = hs.subsections.map((srcSub, idx) => {
-          const match = otherHs.subsections.find(t => t.id === srcSub.id) || otherHs.subsections[idx] || {};
-          return {
-            ...match,
-            id: srcSub.id,
-            enabled: srcSub.enabled !== false,
-            icon: srcSub.icon !== undefined ? srcSub.icon : match.icon,
-            href: (_adminContentLang === 'en') ? srcSub.href : (match.href || srcSub.href)
-          };
-        });
-      }
-      localStorage.setItem(HEADER_SETTINGS_KEY + '_' + otherLang, JSON.stringify(otherHs));
-    }
-  } catch(e) {}
-  try {
-    await _apiPost('/api/sections?action=header' + (_adminContentLang === 'bn' ? '&lang=bn' : ''), hs);
-  } catch(err) {
-    console.warn('[Admin] saveHeaderSettings API error:', err.message);
-  }
 }
 
 // ── HEADER BRAND LOGO & LIVE PREVIEW (MATCHING FOOTER STYLE) ─────────────
@@ -3184,7 +3281,10 @@ function bindHsAddForm(hs) {
 function bindHsSaveBtn(hs) {
   const saveBtn = document.getElementById('hs-save-btn');
   if (!saveBtn) return;
-  saveBtn.addEventListener('click', async () => {
+  saveBtn.onclick = async () => {
+    const currentInstance = _hsInstance || hs;
+    const def = getHeaderDefaultSettings(_adminContentLang);
+
     // Collect Browser Tab & SEO
     const siteTitleInp = document.getElementById('hs-site-title-input');
     const tabTaglineInp = document.getElementById('hs-tab-tagline-input');
@@ -3192,19 +3292,19 @@ function bindHsSaveBtn(hs) {
     const metaDescInp = document.getElementById('hs-meta-desc-input');
     const faviconInp = document.getElementById('hs-favicon-input');
 
-    if (siteTitleInp) hs.siteTitle = siteTitleInp.value.trim() || 'The Privatian Family';
-    if (tabTaglineInp) hs.tabTagline = tabTaglineInp.value.trim() || '';
-    if (customTitleInp) hs.browserTabTitle = customTitleInp.value.trim() || (hs.siteTitle + (hs.tabTagline ? ' — ' + hs.tabTagline : ''));
-    if (metaDescInp) hs.metaDescription = metaDescInp.value.trim() || '';
-    if (faviconInp) hs.faviconUrl = faviconInp.value.trim() || '';
+    if (siteTitleInp) currentInstance.siteTitle = siteTitleInp.value.trim() || def.siteTitle;
+    if (tabTaglineInp) currentInstance.tabTagline = tabTaglineInp.value.trim();
+    if (customTitleInp) currentInstance.browserTabTitle = customTitleInp.value.trim() || (currentInstance.siteTitle + (currentInstance.tabTagline ? ' — ' + currentInstance.tabTagline : ''));
+    if (metaDescInp) currentInstance.metaDescription = metaDescInp.value.trim() || def.metaDescription;
+    if (faviconInp) currentInstance.faviconUrl = faviconInp.value.trim() || '';
 
     // Collect enabled nav sections
-    hs.enabledNavSections = getEnabledNavSections();
+    currentInstance.enabledNavSections = getEnabledNavSections();
     // Collect logo
     const svgInput = document.getElementById('hs-logo-svg-input');
     const slider   = document.getElementById('hs-logo-height');
-    if (svgInput) hs.logoSvg = svgInput.value.trim() || null;
-    if (slider) hs.logoHeight = parseInt(slider.value) || 80;
+    if (svgInput) currentInstance.logoSvg = svgInput.value.trim() || null;
+    if (slider) currentInstance.logoHeight = parseInt(slider.value) || 80;
 
     const orig = saveBtn.innerHTML;
     saveBtn.disabled = true;
@@ -3212,27 +3312,28 @@ function bindHsSaveBtn(hs) {
     updateGlobalSyncStatus('syncing', 'Saving to database...');
 
     try {
-      await saveHeaderSettings(hs);
-      window._appliedHeaderConfig = JSON.parse(JSON.stringify(hs));
+      await saveHeaderSettings(currentInstance);
+      window._appliedHeaderConfig = JSON.parse(JSON.stringify(currentInstance));
       updateGlobalSyncStatus('synced', 'Synced with database');
       saveBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" width="15" height="15"><polyline points="20 6 9 17 4 12"/></svg> Changes Applied!`;
       saveBtn.style.background = 'var(--success, #1a7a4a)';
-      showToast('success', 'Header & Browser Tab settings saved to database & applied!');
+      showToast('success', `Header (${_adminContentLang === 'bn' ? 'বাংলা' : 'English'}) settings saved & applied!`);
+      renderHeaderPreviewCanvas();
       recordActivityLog({
         action: 'layout.header_save',
         category: 'layout',
-        summary: `Applied Header Settings (Site Title: "${hs.siteTitle}", Tagline: "${hs.tabTagline}", Logo: ${hs.logoHeight}px, ${hs.subsections.length} Tabs)`,
+        summary: `Applied Header Settings (${_adminContentLang === 'bn' ? 'BN' : 'EN'}: "${currentInstance.siteTitle}", Logo: ${currentInstance.logoHeight}px, ${currentInstance.subsections.length} Tabs)`,
         target_id: 'site_header_config',
         target_name: 'Header Settings',
-        details: { siteTitle: hs.siteTitle, tabTagline: hs.tabTagline, metaDescription: hs.metaDescription, logoHeight: hs.logoHeight, tabsCount: hs.subsections.length }
+        details: { siteTitle: currentInstance.siteTitle, tabTagline: currentInstance.tabTagline, metaDescription: currentInstance.metaDescription, logoHeight: currentInstance.logoHeight, tabsCount: currentInstance.subsections.length, lang: _adminContentLang }
       });
     } catch(err) {
       updateGlobalSyncStatus('error', 'Sync error (offline/cache)');
-      showToast('error', 'Failed to save header settings.');
+      showToast('error', 'Failed to save header settings: ' + err.message);
     } finally {
       setTimeout(() => { saveBtn.innerHTML = orig; saveBtn.style.background = ''; saveBtn.disabled = false; }, 2500);
     }
-  });
+  };
 }
 
 _hsInstance = null;
@@ -3247,8 +3348,7 @@ async function initHeaderPage() {
   renderHsSubsections(_hsInstance);
   bindHsAddForm(_hsInstance);
   bindHsSaveBtn(_hsInstance);
-  initHeaderSliderGestures();
-  switchHeaderSlide(_currentHeaderSlide || 0);
+  renderHeaderPreviewCanvas();
   updateGlobalSyncStatus();
 }
 

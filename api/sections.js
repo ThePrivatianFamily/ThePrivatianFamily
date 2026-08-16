@@ -230,9 +230,9 @@ function syncHeaderStructures(source, target, sourceIsBn) {
   };
   const DEFAULT_BN_LABELS = {
     'sub-1': 'পারিবারিক ঐতিহ্য',
-    'sub-2': 'অভিজ্ঞতা ও সংস্কৃতি',
-    'sub-3': 'প্রাইভেসিয়ান পঠন',
-    'sub-4': 'অনুষ্ঠানসমূহ'
+    'sub-2': 'অভিজ্ঞতা',
+    'sub-3': 'প্রাইভেটিয়ান পাঠ',
+    'sub-4': 'ইভেন্ট ও আয়োজন'
   };
 
   if (Array.isArray(source.subsections)) {
@@ -241,18 +241,19 @@ function syncHeaderStructures(source, target, sourceIsBn) {
       const match = tgtSubs.find(t => t.id === srcItem.id) || tgtSubs[idx] || {};
       const subId = srcItem.id || match.id || `sub-${idx + 1}`;
       
-      let labelEn = match.label || (!sourceIsBn ? srcItem.label : '') || DEFAULT_EN_LABELS[subId] || '';
-      let labelBn = match.label_bn || (sourceIsBn ? srcItem.label : '') || DEFAULT_BN_LABELS[subId] || '';
-
-      if (sourceIsBn && /[\u0980-\u09FF]/.test(labelEn)) {
-        labelEn = DEFAULT_EN_LABELS[subId] || 'SECTION';
+      let targetLabel = '';
+      if (sourceIsBn) {
+        // Target is English
+        targetLabel = match.label && !/[\u0980-\u09FF]/.test(match.label) ? match.label : (DEFAULT_EN_LABELS[subId] || 'SECTION');
+      } else {
+        // Target is Bengali
+        targetLabel = match.label && /[\u0980-\u09FF]/.test(match.label) ? match.label : (DEFAULT_BN_LABELS[subId] || match.label || srcItem.label);
       }
 
       return {
         id: subId,
-        label: sourceIsBn ? labelEn : (srcItem.label || labelEn),
-        label_bn: sourceIsBn ? (srcItem.label_bn || srcItem.label || labelBn) : (match.label_bn || labelBn),
-        href: sourceIsBn ? (match.href || srcItem.href) : (srcItem.href || match.href),
+        label: targetLabel,
+        href: srcItem.href || match.href,
         icon: srcItem.icon !== undefined ? srcItem.icon : match.icon,
         enabled: srcItem.enabled !== false
       };
@@ -515,11 +516,16 @@ module.exports = async function handler(req, res) {
       logoSvg: null,
       logoHeight: 80,
       enabledNavSections: null,
-      subsections: [
-        { id: 'sub-1', label: isBn ? 'পারিবারিক ঐতিহ্য' : 'FAMILY LEGACY', href: '/section/community-heritage', icon: null, enabled: true },
-        { id: 'sub-2', label: isBn ? 'অভিজ্ঞতা' : 'EXPERIENCE', href: '/section/culture', icon: null, enabled: true },
-        { id: 'sub-3', label: isBn ? 'গবেষণা ও মূল্যবোধ' : 'RESEARCH & VALUES', href: '/section/privacy-values', icon: null, enabled: true },
-        { id: 'sub-4', label: isBn ? 'দৃষ্টিভঙ্গি' : 'PERSPECTIVES', href: '/section/opinion', icon: null, enabled: true }
+      subsections: isBn ? [
+        { id: 'sub-1', label: 'পারিবারিক ঐতিহ্য', href: '/section/community-heritage', icon: null, enabled: true },
+        { id: 'sub-2', label: 'অভিজ্ঞতা', href: '/section/culture', icon: null, enabled: true },
+        { id: 'sub-3', label: 'প্রাইভেটিয়ান পাঠ', href: '/section/findings', icon: null, enabled: true },
+        { id: 'sub-4', label: 'ইভেন্ট ও আয়োজন', href: '/events', icon: 'calendar', enabled: true }
+      ] : [
+        { id: 'sub-1', label: 'FAMILY LEGACY', href: '/section/community-heritage', icon: null, enabled: true },
+        { id: 'sub-2', label: 'EXPERIENCE', href: '/section/culture', icon: null, enabled: true },
+        { id: 'sub-3', label: 'THE PRIVATIAN READS', href: '/section/findings', icon: null, enabled: true },
+        { id: 'sub-4', label: 'EVENTS', href: '/events', icon: 'calendar', enabled: true }
       ],
       social: [
         { id: 'soc-1', platform: 'instagram', label: 'Instagram', href: 'https://instagram.com', enabled: true },
@@ -530,21 +536,58 @@ module.exports = async function handler(req, res) {
       ]
     };
 
+    function sanitizeHeaderConfig(val, isBnLang) {
+      if (!val || typeof val !== 'object') return DEFAULT_HEADER_CONFIG;
+      const res = Object.assign({}, DEFAULT_HEADER_CONFIG, val);
+      if (isBnLang) {
+        // Bengali config should not have English title if English was mistakenly swapped in
+        if (!res.siteTitle || !/[\u0980-\u09FF]/.test(res.siteTitle)) {
+          res.siteTitle = 'দ্য প্রাইভেটিয়ান ফ্যামিলি';
+        }
+        if (!res.tabTagline || !/[\u0980-\u09FF]/.test(res.tabTagline)) {
+          res.tabTagline = 'জ্ঞান, ঐতিহ্য ও জীবনের কথা';
+        }
+        if (!res.browserTabTitle || !/[\u0980-\u09FF]/.test(res.browserTabTitle)) {
+          res.browserTabTitle = res.siteTitle + ' — ' + res.tabTagline;
+        }
+        if (Array.isArray(res.subsections)) {
+          const DEFAULT_BN_MAP = { 'sub-1': 'পারিবারিক ঐতিহ্য', 'sub-2': 'অভিজ্ঞতা', 'sub-3': 'প্রাইভেটিয়ান পাঠ', 'sub-4': 'ইভেন্ট ও আয়োজন' };
+          res.subsections = res.subsections.map(s => {
+            if (!s.label || !/[\u0980-\u09FF]/.test(s.label)) {
+              return { ...s, label: DEFAULT_BN_MAP[s.id] || s.label || 'বিভাগ' };
+            }
+            return s;
+          });
+        }
+      } else {
+        // English config should not have Bengali title if Bengali was mistakenly swapped in
+        if (res.siteTitle && /[\u0980-\u09FF]/.test(res.siteTitle)) {
+          res.siteTitle = 'The Privatian Family';
+        }
+        if (res.tabTagline && /[\u0980-\u09FF]/.test(res.tabTagline)) {
+          res.tabTagline = 'Insights, Stories & Heritage';
+        }
+        if (res.browserTabTitle && /[\u0980-\u09FF]/.test(res.browserTabTitle)) {
+          res.browserTabTitle = 'The Privatian Family — Insights, Stories & Heritage';
+        }
+        if (Array.isArray(res.subsections)) {
+          const DEFAULT_EN_MAP = { 'sub-1': 'FAMILY LEGACY', 'sub-2': 'EXPERIENCE', 'sub-3': 'THE PRIVATIAN READS', 'sub-4': 'EVENTS' };
+          res.subsections = res.subsections.map(s => {
+            if (s.label && /[\u0980-\u09FF]/.test(s.label)) {
+              return { ...s, label: DEFAULT_EN_MAP[s.id] || 'SECTION' };
+            }
+            return s;
+          });
+        }
+      }
+      return res;
+    }
+
     if (req.method === 'GET') {
       try {
         const { data } = await sb.from('site_settings').select('value').eq('key', settingsKey).maybeSingle();
         if (data && data.value) {
-          let val = data.value;
-          if (!isBn && Array.isArray(val.subsections)) {
-            val.subsections = val.subsections.map(s => {
-              if (s.label && /[\u0980-\u09FF]/.test(s.label)) {
-                const def = DEFAULT_HEADER_CONFIG.subsections.find(d => d.id === s.id);
-                return { ...s, label: (def && def.label) ? def.label : s.label };
-              }
-              return s;
-            });
-          }
-          return res.status(200).json(val);
+          return res.status(200).json(sanitizeHeaderConfig(data.value, isBn));
         }
       } catch(e) {}
 
@@ -554,16 +597,7 @@ module.exports = async function handler(req, res) {
         if (sData && sData.name) {
           const parsed = JSON.parse(sData.name);
           if (parsed && typeof parsed === 'object') {
-            if (!isBn && Array.isArray(parsed.subsections)) {
-              parsed.subsections = parsed.subsections.map(s => {
-                if (s.label && /[\u0980-\u09FF]/.test(s.label)) {
-                  const def = DEFAULT_HEADER_CONFIG.subsections.find(d => d.id === s.id);
-                  return { ...s, label: (def && def.label) ? def.label : s.label };
-                }
-                return s;
-              });
-            }
-            return res.status(200).json(parsed);
+            return res.status(200).json(sanitizeHeaderConfig(parsed, isBn));
           }
         }
       } catch(e) {}
