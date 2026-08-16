@@ -146,58 +146,125 @@ async function recordActivityLog({ action, category = 'general', summary, target
 }
 window.recordActivityLog = recordActivityLog;
 
-// ── Admin Content Language Toggle (EN / BN) ──────────────────────────────
-var _adminContentLang = localStorage.getItem('privatian_admin_content_lang') || 'en';
+// ── INDEPENDENT SECTION-BY-SECTION LANGUAGE CONTROLS (EN / BN) ───────────
+var _sectionsLang = localStorage.getItem('privatian_admin_lang_sections') || 'en';
+var _headerLang   = localStorage.getItem('privatian_admin_lang_header')   || 'en';
+var _menuLang     = localStorage.getItem('privatian_admin_lang_menu')     || 'en';
+var _homepageLang = localStorage.getItem('privatian_admin_lang_homepage') || 'en';
+var _footerLang   = localStorage.getItem('privatian_admin_lang_footer')   || 'en';
 
-function updateAllAdminLangButtons(lang) {
-  const switchers = [
-    ['sec-lang-en', 'sec-lang-bn'],
-    ['hd-lang-en', 'hd-lang-bn'],
-    ['menu-lang-en', 'menu-lang-bn'],
-    ['hp-lang-en', 'hp-lang-bn'],
-    ['ft-lang-en', 'ft-lang-bn'],
-    ['admin-lang-en', 'admin-lang-bn']
-  ];
-  switchers.forEach(([enId, bnId]) => {
-    const enEl = document.getElementById(enId);
-    const bnEl = document.getElementById(bnId);
-    if (enEl) enEl.classList.toggle('active', lang === 'en');
-    if (bnEl) bnEl.classList.toggle('active', lang === 'bn');
-  });
+window.getSectionLang  = () => _sectionsLang  || 'en';
+window.getHeaderLang    = () => _headerLang    || 'en';
+window.getMenuLang      = () => _menuLang      || 'en';
+window.getHomepageLang  = () => _homepageLang  || 'en';
+window.getFooterLang    = () => _footerLang    || 'en';
+
+function updateSectionLangUI() {
+  const en = document.getElementById('sec-lang-en');
+  const bn = document.getElementById('sec-lang-bn');
+  if (en) en.classList.toggle('active', _sectionsLang === 'en');
+  if (bn) bn.classList.toggle('active', _sectionsLang === 'bn');
 }
 
-window.setAdminContentLang = function(lang) {
-  _adminContentLang = lang || 'en';
-  try { localStorage.setItem('privatian_admin_content_lang', _adminContentLang); } catch(e) {}
+function updateHeaderLangUI() {
+  const en = document.getElementById('hd-lang-en');
+  const bn = document.getElementById('hd-lang-bn');
+  if (en) en.classList.toggle('active', _headerLang === 'en');
+  if (bn) bn.classList.toggle('active', _headerLang === 'bn');
+}
 
-  updateAllAdminLangButtons(_adminContentLang);
+function updateMenuLangUI() {
+  const en = document.getElementById('menu-lang-en');
+  const bn = document.getElementById('menu-lang-bn');
+  if (en) en.classList.toggle('active', _menuLang === 'en');
+  if (bn) bn.classList.toggle('active', _menuLang === 'bn');
+}
 
+function updateHomepageLangUI() {
+  const en = document.getElementById('hp-lang-en');
+  const bn = document.getElementById('hp-lang-bn');
+  if (en) en.classList.toggle('active', _homepageLang === 'en');
+  if (bn) bn.classList.toggle('active', _homepageLang === 'bn');
+}
+
+function updateFooterLangUI() {
+  const en = document.getElementById('ft-lang-en');
+  const bn = document.getElementById('ft-lang-bn');
+  if (en) en.classList.toggle('active', _footerLang === 'en');
+  if (bn) bn.classList.toggle('active', _footerLang === 'bn');
+}
+
+function updateAllAdminLangButtons() {
+  updateSectionLangUI();
+  updateHeaderLangUI();
+  updateMenuLangUI();
+  updateHomepageLangUI();
+  updateFooterLangUI();
+}
+
+window.setSectionLang = function(lang) {
+  _sectionsLang = lang || 'en';
+  try { localStorage.setItem('privatian_admin_lang_sections', _sectionsLang); } catch(e) {}
+  updateSectionLangUI();
   if (typeof showToast === 'function') {
-    showToast('info', _adminContentLang === 'bn' ? 'Switched editor to Bengali (বাংলা) configuration' : 'Switched editor to English configuration');
+    showToast('info', _sectionsLang === 'bn' ? 'Sections editor switched to Bengali (বাংলা)' : 'Sections editor switched to English');
   }
+  if (typeof loadSectionsFromAPI === 'function') loadSectionsFromAPI();
+};
 
-  // Refresh currently active page
-  const isHeaderActive = (_currentAdminPage === 'header') || (document.getElementById('page-header') && document.getElementById('page-header').classList.contains('active'));
-  const isSectionsActive = (_currentAdminPage === 'sections') || (document.getElementById('page-sections') && document.getElementById('page-sections').classList.contains('active'));
-  const isMenuActive = (_currentAdminPage === 'menu') || (document.getElementById('page-menu') && document.getElementById('page-menu').classList.contains('active'));
-  const isHomepageActive = (_currentAdminPage === 'homepage') || (document.getElementById('page-homepage') && document.getElementById('page-homepage').classList.contains('active'));
-  const isFooterActive = (_currentAdminPage === 'footer') || (document.getElementById('page-footer') && document.getElementById('page-footer').classList.contains('active'));
-
-  if (isHeaderActive) {
-    if (typeof initHeaderPage === 'function') initHeaderPage();
-  } else if (isSectionsActive) {
-    if (typeof loadSectionsFromAPI === 'function') loadSectionsFromAPI();
-  } else if (isMenuActive) {
-    if (typeof initMenuPage === 'function') initMenuPage();
-  } else if (isHomepageActive) {
-    if (typeof initHomepagePage === 'function') initHomepagePage();
-  } else if (isFooterActive) {
-    if (typeof initFooterPage === 'function') initFooterPage();
+window.setHeaderLang = function(lang) {
+  _headerLang = lang || 'en';
+  try { localStorage.setItem('privatian_admin_lang_header', _headerLang); } catch(e) {}
+  updateHeaderLangUI();
+  if (typeof showToast === 'function') {
+    showToast('info', _headerLang === 'bn' ? 'Header editor switched to Bengali (বাংলা)' : 'Header editor switched to English');
   }
+  if (typeof initHeaderPage === 'function') initHeaderPage();
+};
+
+window.setMenuLang = function(lang) {
+  _menuLang = lang || 'en';
+  try { localStorage.setItem('privatian_admin_lang_menu', _menuLang); } catch(e) {}
+  updateMenuLangUI();
+  if (typeof showToast === 'function') {
+    showToast('info', _menuLang === 'bn' ? 'Navigation Menu editor switched to Bengali (বাংলা)' : 'Navigation Menu editor switched to English');
+  }
+  if (typeof initMenuPage === 'function') initMenuPage();
+};
+
+window.setHomepageLang = function(lang) {
+  _homepageLang = lang || 'en';
+  try { localStorage.setItem('privatian_admin_lang_homepage', _homepageLang); } catch(e) {}
+  updateHomepageLangUI();
+  if (typeof showToast === 'function') {
+    showToast('info', _homepageLang === 'bn' ? 'Homepage editor switched to Bengali (বাংলা)' : 'Homepage editor switched to English');
+  }
+  if (typeof initHomepagePage === 'function') initHomepagePage();
+};
+
+window.setFooterLang = function(lang) {
+  _footerLang = lang || 'en';
+  try { localStorage.setItem('privatian_admin_lang_footer', _footerLang); } catch(e) {}
+  updateFooterLangUI();
+  if (typeof showToast === 'function') {
+    showToast('info', _footerLang === 'bn' ? 'Footer editor switched to Bengali (বাংলা)' : 'Footer editor switched to English');
+  }
+  if (typeof initFooterPage === 'function') initFooterPage();
+};
+
+// Backwards compatibility alias
+window.setAdminContentLang = function(lang, targetSec) {
+  const sec = targetSec || _currentAdminPage;
+  if (sec === 'header') window.setHeaderLang(lang);
+  else if (sec === 'sections') window.setSectionLang(lang);
+  else if (sec === 'menu') window.setMenuLang(lang);
+  else if (sec === 'homepage') window.setHomepageLang(lang);
+  else if (sec === 'footer') window.setFooterLang(lang);
+  else window.setHeaderLang(lang);
 };
 
 document.addEventListener('DOMContentLoaded', () => {
-  updateAllAdminLangButtons(_adminContentLang);
+  updateAllAdminLangButtons();
 });
 
 // -- Core "All" section (always available, editable, permanent/cannot be deleted) --
@@ -423,7 +490,7 @@ function renderActive(active) {
   if (quickPicker) {
     quickPicker.innerHTML = '<option value="">Choose a section to edit…</option>' +
       sorted.map(s => {
-        const lbl = (_adminContentLang === 'bn' && s.name_bn) ? `${s.name_bn} (${s.name})` : s.name;
+        const lbl = (_sectionsLang === 'bn' && s.name_bn) ? `${s.name_bn} (${s.name})` : s.name;
         return `<option value="${s.id}">${escapeHtml(lbl)} (${s.slug ? '/section/' + s.slug : '/'})</option>`;
       }).join('');
   }
@@ -431,7 +498,7 @@ function renderActive(active) {
   sorted.forEach(s => {
     const isPermanent = s.id === 'all' || s.isPermanent;
     const tr = document.createElement('tr');
-    const nameHtml = (_adminContentLang === 'bn' && s.name_bn)
+    const nameHtml = (_sectionsLang === 'bn' && s.name_bn)
       ? `<strong>${escapeHtml(s.name_bn)}</strong> <span style="font-size:12px;color:var(--text-muted);margin-left:4px;">(${escapeHtml(s.name)})</span>`
       : (s.name_bn
           ? `${escapeHtml(s.name)} <span style="font-size:12px;color:var(--text-muted);margin-left:4px;">[${escapeHtml(s.name_bn)}]</span>`
@@ -838,14 +905,14 @@ async function openSectionStudio(id) {
   const descInput = document.getElementById('studio-desc-input');
   const writeArtBtn = document.getElementById('studio-write-art-btn');
 
-  if (titleEl) titleEl.textContent = (_adminContentLang === 'bn' && s.name_bn) ? `${s.name_bn} (${s.name})` : s.name;
+  if (titleEl) titleEl.textContent = (_sectionsLang === 'bn' && s.name_bn) ? `${s.name_bn} (${s.name})` : s.name;
   if (idEl) idEl.value = s.id;
   if (slugEl) slugEl.value = s.slug || 'all';
   if (nameInput) nameInput.value = s.name;
   if (nameBnInput) nameBnInput.value = s.name_bn || '';
   if (slugInput) {
     slugInput.value = s.slug || '';
-    const isBn = _adminContentLang === 'bn';
+    const isBn = _sectionsLang === 'bn';
     if (isBn) {
       slugInput.readOnly = true;
       slugInput.style.opacity = '0.55';
@@ -866,7 +933,7 @@ async function openSectionStudio(id) {
     switcherEl.innerHTML = sections
       .filter(sec => !sec.deleted)
       .map(sec => {
-        const secLabel = (_adminContentLang === 'bn' && sec.name_bn) ? `${sec.name_bn} (${sec.name})` : sec.name;
+        const secLabel = (_sectionsLang === 'bn' && sec.name_bn) ? `${sec.name_bn} (${sec.name})` : sec.name;
         return `<option value="${sec.id}" ${sec.id === s.id ? 'selected' : ''}>${escapeHtml(secLabel)}</option>`;
       })
       .join('');
@@ -906,7 +973,7 @@ async function openSectionStudio(id) {
   // Load existing configuration for this section
   let existingConfig = { featuredArticleId: null, selectedArticleIds: [], customTitle: '', description: '' };
   try {
-    const res = await _apiGet(`/api/sections?action=section-config&slug=${encodeURIComponent(s.slug || 'all')}${_adminContentLang === 'bn' ? '&lang=bn' : ''}`);
+    const res = await _apiGet(`/api/sections?action=section-config&slug=${encodeURIComponent(s.slug || 'all')}${_sectionsLang === 'bn' ? '&lang=bn' : ''}`);
     if (res && typeof res === 'object') existingConfig = res;
   } catch(e) {}
 
@@ -1242,9 +1309,9 @@ async function saveSectionStudio() {
 
     // 2. Save section custom configuration (hero, selected slots, description)
     const configSlug = _studioCurrentSection.slug || 'all';
-    await _apiPost(`/api/sections?action=section-config&slug=${encodeURIComponent(configSlug)}${_adminContentLang === 'bn' ? '&lang=bn' : ''}`, {
+    await _apiPost(`/api/sections?action=section-config&slug=${encodeURIComponent(configSlug)}${_sectionsLang === 'bn' ? '&lang=bn' : ''}`, {
       slug: configSlug,
-      lang: _adminContentLang,
+      lang: _sectionsLang,
       featuredArticleId: heroArtId,
       selectedArticleIds: selIds,
       description: desc
@@ -1610,8 +1677,9 @@ function navigateTo(page) {
     loadSectionsFromAPI();
   }
 
-  // Update Global Sync status immediately
+  // Update Global Sync status and language switcher buttons immediately
   updateGlobalSyncStatus();
+  updateAllAdminLangButtons();
 }
 
 document.querySelectorAll('.sidebar-nav-item').forEach(el => {
@@ -3067,7 +3135,7 @@ function sanitizeLoadedHeaderData(data, lang) {
 }
 
 async function loadHeaderSettings() {
-  const currentLang = _adminContentLang || 'en';
+  const currentLang = _headerLang || 'en';
   const defaults = getHeaderDefaultSettings(currentLang);
 
   try {
@@ -3264,7 +3332,7 @@ function selectAllHeaderSections(selectBool) {
 
 // ── Interactive Header Preview Controls ───────────────────────────
 var _headerPreviewViewport = 'desktop';
-var _headerPreviewLang = null; // null => follow _adminContentLang
+var _headerPreviewLang = null; // null => follow _headerLang
 
 function setHeaderPreviewViewport(vp) {
   _headerPreviewViewport = vp || 'desktop';
@@ -3296,7 +3364,7 @@ function setHeaderPreviewLang(lang) {
   ['en', 'bn'].forEach(l => {
     const b = document.getElementById(`hs-prevlang-${l}`);
     if (b) {
-      const active = (l === (_headerPreviewLang || _adminContentLang));
+      const active = (l === (_headerPreviewLang || _headerLang));
       b.classList.toggle('active', active);
       b.style.background = active ? '#38bdf8' : 'transparent';
       b.style.color = active ? '#0f172a' : '#94a3b8';
@@ -3310,7 +3378,7 @@ function renderHeaderPreviewCanvas() {
   const box = document.getElementById('hs-live-preview-box');
   if (!box || !_hsInstance) return;
 
-  const previewLang = _headerPreviewLang || _adminContentLang || 'en';
+  const previewLang = _headerPreviewLang || _headerLang || 'en';
   const isBn = (previewLang === 'bn');
 
   // Update preview language toggle buttons state
@@ -3454,8 +3522,8 @@ function renderHsTabCard(hs) {
   const tabPreview = document.getElementById('browser-tab-preview-title');
   const hoverPreview = document.getElementById('hover-card-preview-title');
 
-  const isBn = (_adminContentLang === 'bn');
-  const def = getHeaderDefaultSettings(_adminContentLang);
+  const isBn = (_headerLang === 'bn');
+  const def = getHeaderDefaultSettings(_headerLang);
 
   if (siteTitleInp) siteTitleInp.value = hs.siteTitle || def.siteTitle;
   if (tabTaglineInp) tabTaglineInp.value = (hs.tabTagline !== undefined && hs.tabTagline !== null) ? hs.tabTagline : def.tabTagline;
@@ -3552,7 +3620,7 @@ function renderHsTabCard(hs) {
 }
 
 async function saveHeaderSettings(hs) {
-  const currentLang = _adminContentLang || 'en';
+  const currentLang = _headerLang || 'en';
   hs.updatedAt = new Date().toISOString();
   hs.lang = currentLang;
 
@@ -3709,7 +3777,7 @@ function updateHeaderLogoPreview() {
   }
 
   if (taglineEl) {
-    taglineEl.textContent = _hsInstance.tabTagline || (_adminContentLang === 'bn' ? 'জ্ঞান, ঐতিহ্য ও জীবনের কথা' : 'Insights, Stories & Heritage');
+    taglineEl.textContent = _hsInstance.tabTagline || (_headerLang === 'bn' ? 'জ্ঞান, ঐতিহ্য ও জীবনের কথা' : 'Insights, Stories & Heritage');
     taglineEl.style.display = _hsInstance.tabTagline ? 'block' : 'none';
   }
 }
@@ -3756,7 +3824,7 @@ function renderHsNavSections(hs) {
     });
   }
 
-  const isBn = (_adminContentLang === 'bn');
+  const isBn = (_headerLang === 'bn');
   container.innerHTML = '';
   orderedSecs.forEach((s, idx) => {
     const sectionId = s.slug || s.id;
@@ -4058,7 +4126,7 @@ function bindHsSaveBtn(hs) {
   if (!saveBtn) return;
   saveBtn.onclick = async () => {
     const currentInstance = _hsInstance || hs;
-    const def = getHeaderDefaultSettings(_adminContentLang);
+    const def = getHeaderDefaultSettings(_headerLang);
 
     // Collect Browser Tab & SEO
     const siteTitleInp = document.getElementById('hs-site-title-input');
@@ -4092,15 +4160,15 @@ function bindHsSaveBtn(hs) {
       updateGlobalSyncStatus('synced', 'Synced with database');
       saveBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" width="15" height="15"><polyline points="20 6 9 17 4 12"/></svg> Changes Applied!`;
       saveBtn.style.background = 'var(--success, #1a7a4a)';
-      showToast('success', `Header (${_adminContentLang === 'bn' ? 'বাংলা' : 'English'}) settings saved & applied!`);
+      showToast('success', `Header (${_headerLang === 'bn' ? 'বাংলা' : 'English'}) settings saved & applied!`);
       renderHeaderPreviewCanvas();
       recordActivityLog({
         action: 'layout.header_save',
         category: 'layout',
-        summary: `Applied Header Settings (${_adminContentLang === 'bn' ? 'BN' : 'EN'}: "${currentInstance.siteTitle}", Logo: ${currentInstance.logoHeight}px, ${currentInstance.subsections.length} Tabs)`,
+        summary: `Applied Header Settings (${_headerLang === 'bn' ? 'BN' : 'EN'}: "${currentInstance.siteTitle}", Logo: ${currentInstance.logoHeight}px, ${currentInstance.subsections.length} Tabs)`,
         target_id: 'site_header_config',
         target_name: 'Header Settings',
-        details: { siteTitle: currentInstance.siteTitle, tabTagline: currentInstance.tabTagline, metaDescription: currentInstance.metaDescription, logoHeight: currentInstance.logoHeight, tabsCount: currentInstance.subsections.length, lang: _adminContentLang }
+        details: { siteTitle: currentInstance.siteTitle, tabTagline: currentInstance.tabTagline, metaDescription: currentInstance.metaDescription, logoHeight: currentInstance.logoHeight, tabsCount: currentInstance.subsections.length, lang: _headerLang }
       });
     } catch(err) {
       updateGlobalSyncStatus('error', 'Sync error (offline/cache)');
@@ -4809,7 +4877,7 @@ async function initMenuPage() {
 async function loadMenuSettings() {
   let loaded = null;
   try {
-    const data = await _apiGet('/api/sections?action=menu' + (_adminContentLang === 'bn' ? '&lang=bn' : ''));
+    const data = await _apiGet('/api/sections?action=menu' + (_menuLang === 'bn' ? '&lang=bn' : ''));
     if (data && typeof data === 'object') {
       loaded = Object.assign({}, JSON.parse(JSON.stringify(DEFAULT_MENU_CONFIG)), data);
     }
@@ -4819,7 +4887,7 @@ async function loadMenuSettings() {
     try {
       const sb = window._sb || (window.initSupabaseClient && window.initSupabaseClient());
       if (sb) {
-        const targetAdminId = (_adminContentLang === 'bn') ? '__menu_config_bn__' : '__menu_config__';
+        const targetAdminId = (_menuLang === 'bn') ? '__menu_config_bn__' : '__menu_config__';
         const { data: sData } = await sb.from('sections').select('name').eq('admin_id', targetAdminId).maybeSingle();
         if (sData && sData.name) {
           const parsed = JSON.parse(sData.name);
@@ -4888,11 +4956,11 @@ function renderMenuSearch() {
   if (!menuDraftConfig.search) {
     menuDraftConfig.search = {
       enabled: true,
-      placeholder: _adminContentLang === 'bn' ? 'নিবন্ধ, গল্প, বিষয় খুঁজুন...' : 'Search articles, stories, topics...',
-      exploreLabel: _adminContentLang === 'bn' ? 'দ্রুত খুঁজুন:' : 'Explore:',
-      closeText: _adminContentLang === 'bn' ? 'বন্ধ করুন' : 'Close',
-      hintText: _adminContentLang === 'bn' ? 'অনুসন্ধান করতে লিখুন অথবা ওপরের বিষয় বেছে নিন…' : 'Start typing to search or select a topic above…',
-      noResultsText: _adminContentLang === 'bn' ? 'কোনো ফলাফল পাওয়া যায়নি' : 'No matching stories found',
+      placeholder: _menuLang === 'bn' ? 'নিবন্ধ, গল্প, বিষয় খুঁজুন...' : 'Search articles, stories, topics...',
+      exploreLabel: _menuLang === 'bn' ? 'দ্রুত খুঁজুন:' : 'Explore:',
+      closeText: _menuLang === 'bn' ? 'বন্ধ করুন' : 'Close',
+      hintText: _menuLang === 'bn' ? 'অনুসন্ধান করতে লিখুন অথবা ওপরের বিষয় বেছে নিন…' : 'Start typing to search or select a topic above…',
+      noResultsText: _menuLang === 'bn' ? 'কোনো ফলাফল পাওয়া যায়নি' : 'No matching stories found',
       quickTags: [
         { id: 'tag-1', label: 'Findings', label_bn: 'অনুসন্ধিৎসু', query: 'Findings', enabled: true },
         { id: 'tag-2', label: 'Community & Heritage', label_bn: 'সমাজ ও ঐতিহ্য', query: 'Community & Heritage', enabled: true },
@@ -4922,7 +4990,7 @@ function renderMenuSearch() {
   if (hintInput) hintInput.value = s.hintText || '';
 
   // Update Live Preview inside Search panel
-  const isBn = (_adminContentLang === 'bn');
+  const isBn = (_menuLang === 'bn');
   const previewInput = document.getElementById('menu-search-preview-input');
   if (previewInput) previewInput.placeholder = s.placeholder || (isBn ? 'নিবন্ধ, গল্প, বিষয় খুঁজুন...' : 'Search articles, stories, topics...');
 
@@ -4966,7 +5034,7 @@ function onAdminSpPreviewSearch(query) {
   const clearBtn = document.getElementById('menu-search-preview-clear-btn');
   if (!resultsContainer || !menuDraftConfig) return;
 
-  const isBn = (_adminContentLang === 'bn');
+  const isBn = (_menuLang === 'bn');
   const s = menuDraftConfig.search || {};
   const q = (query || '').trim();
 
@@ -5055,7 +5123,7 @@ function renderSearchTagsList() {
     return;
   }
 
-  const isBn = (_adminContentLang === 'bn');
+  const isBn = (_menuLang === 'bn');
   container.innerHTML = tags.map((t, idx) => {
     const mainLabel = isBn ? (t.label_bn || t.label) : (t.label || t.label_bn);
     const subLabel = isBn ? (t.label ? `EN: ${t.label}` : '') : (t.label_bn ? `BN: ${t.label_bn}` : '');
@@ -5327,7 +5395,7 @@ function openSeriesModal(id) {
   const descInput = document.getElementById('series-desc-input');
   const enabledInput = document.getElementById('series-enabled-input');
   const hrefLockNote = document.getElementById('series-href-lock-note');
-  const isBn = _adminContentLang === 'bn';
+  const isBn = _menuLang === 'bn';
 
   if (id) {
     const item = ((menuDraftConfig && menuDraftConfig.series) || []).find(s => s.id === id);
@@ -5376,7 +5444,7 @@ function saveSeriesItem() {
   const href = document.getElementById('series-href-input').value.trim();
   const desc = document.getElementById('series-desc-input').value.trim();
   const enabled = document.getElementById('series-enabled-input').checked;
-  const isBn = _adminContentLang === 'bn';
+  const isBn = _menuLang === 'bn';
 
   if (!title) {
     showToast('error', 'Series Title is required');
@@ -5531,7 +5599,7 @@ function openExploreModal(id) {
   const targetInput = document.getElementById('explore-target-input');
   const enabledInput = document.getElementById('explore-enabled-input');
   const hrefLockNote = document.getElementById('explore-href-lock-note');
-  const isBn = _adminContentLang === 'bn';
+  const isBn = _menuLang === 'bn';
 
   if (id) {
     const item = ((menuDraftConfig && menuDraftConfig.explore) || []).find(e => e.id === id);
@@ -5586,7 +5654,7 @@ function saveExploreItem() {
   const href = document.getElementById('explore-href-input').value.trim();
   const target = document.getElementById('explore-target-input').value;
   const enabled = document.getElementById('explore-enabled-input').checked;
-  const isBn = _adminContentLang === 'bn';
+  const isBn = _menuLang === 'bn';
 
   if (!label) {
     showToast('error', 'Link Label is required');
@@ -5910,7 +5978,7 @@ function renderMenuSectionsList() {
     });
   }
 
-  const isBn = (_adminContentLang === 'bn');
+  const isBn = (_menuLang === 'bn');
   container.innerHTML = orderedSecs.map((s, idx) => {
     const slug = s.slug || s.id;
     const isChecked = (enabledSlugs === null) ? true : enabledSlugs.includes(slug);
@@ -6010,7 +6078,7 @@ function renderMenuPreview() {
 
   // Search preview
   const searchCfg = menuDraftConfig.search || {};
-  const isBn = (_adminContentLang === 'bn');
+  const isBn = (_menuLang === 'bn');
   const searchHtml = (searchCfg.enabled !== false) ? `
     <div style="background:radial-gradient(circle at 50% 0%, #081a38 0%, #030a16 80%);border:1.5px solid rgba(56,189,248,0.2);border-radius:14px;padding:16px 18px;margin-bottom:20px;box-shadow:0 10px 30px -10px rgba(0,0,0,0.6);">
       <div class="admin-sp-header-bar" style="max-width:560px;margin:0 auto 10px;">
@@ -6121,8 +6189,8 @@ async function saveMenuSettings() {
 
   try {
     // 1. Save to Supabase database via API
-    menuDraftConfig.lang = _adminContentLang;
-    await _apiPost('/api/sections?action=menu' + (_adminContentLang === 'bn' ? '&lang=bn' : ''), menuDraftConfig);
+    menuDraftConfig.lang = _menuLang;
+    await _apiPost('/api/sections?action=menu' + (_menuLang === 'bn' ? '&lang=bn' : ''), menuDraftConfig);
 
     // 2. Reset base and undo/redo stacks to the new applied state
     appliedMenuConfig = JSON.parse(JSON.stringify(menuDraftConfig));
@@ -6474,7 +6542,7 @@ async function loadArticlesForHomepagePicker() {
 async function loadHomepageSettings() {
   let loaded = null;
   try {
-    const data = await _apiGet('/api/sections?action=homepage' + (_adminContentLang === 'bn' ? '&lang=bn' : ''));
+    const data = await _apiGet('/api/sections?action=homepage' + (_homepageLang === 'bn' ? '&lang=bn' : ''));
     if (data && typeof data === 'object') loaded = data;
   } catch(err) {}
 
@@ -6482,7 +6550,7 @@ async function loadHomepageSettings() {
     try {
       const sb = window._sb || (window.initSupabaseClient && window.initSupabaseClient());
       if (sb) {
-        const targetAdminId = _adminContentLang === 'bn' ? '__homepage_config_bn__' : '__homepage_config__';
+        const targetAdminId = _homepageLang === 'bn' ? '__homepage_config_bn__' : '__homepage_config__';
         const { data: sData } = await sb.from('sections').select('name').eq('admin_id', targetAdminId).maybeSingle();
         if (sData && sData.name) {
           const parsed = JSON.parse(sData.name);
@@ -6569,7 +6637,7 @@ function switchHpTab(tab) {
 }
 
 function renderActiveHpTab() {
-  const isBn = _adminContentLang === 'bn';
+  const isBn = _homepageLang === 'bn';
   const saveBtn = document.getElementById('hp-save-btn');
   if (saveBtn) {
     saveBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" width="14" height="14"><polyline points="20 6 9 17 4 12"/></svg> ${isBn ? 'Apply Changes (বাংলা)' : 'Apply Homepage Changes'}`;
@@ -6974,8 +7042,8 @@ function renderNewsEditor() {
             <input type="text" class="form-input" value="${escapeHtml(col.label || '')}" oninput="onHpColumnLabelInput(${cIdx}, this.value)" style="font-weight:700;color:#0a528e;" />
           </div>
           <div class="form-group" style="margin-bottom:14px;">
-            <label class="form-label" style="font-size:11px;">Section Slug Link ${_adminContentLang === 'bn' ? '<span style="color:#d97706;font-size:10px;font-weight:600;">([Locked] Set in English)</span>' : ''}</label>
-            <input type="text" class="form-input" value="${escapeHtml(col.sectionSlug || '')}" ${_adminContentLang === 'bn' ? 'readonly style="opacity:0.55;cursor:not-allowed;background:#f8fafc;" title="[Locked] Section Slug is unified in backend and defined strictly in English"' : `oninput="onHpColumnSlugInput(${cIdx}, this.value)"`} placeholder="e.g. culture" />
+            <label class="form-label" style="font-size:11px;">Section Slug Link ${_homepageLang === 'bn' ? '<span style="color:#d97706;font-size:10px;font-weight:600;">([Locked] Set in English)</span>' : ''}</label>
+            <input type="text" class="form-input" value="${escapeHtml(col.sectionSlug || '')}" ${_homepageLang === 'bn' ? 'readonly style="opacity:0.55;cursor:not-allowed;background:#f8fafc;" title="[Locked] Section Slug is unified in backend and defined strictly in English"' : `oninput="onHpColumnSlugInput(${cIdx}, this.value)"`} placeholder="e.g. culture" />
           </div>
 
           <!-- Lead Story Preview -->
@@ -7071,7 +7139,7 @@ function openHpSlotModal(path, roleName) {
 
   const slotData = getHpObjectByPath(path) || {};
 
-  const isBn = _adminContentLang === 'bn';
+  const isBn = _homepageLang === 'bn';
   headlineInput.value = slotData.title || '';
   if (subtitleInput) subtitleInput.value = slotData.subtitle || slotData.description || '';
   if (linkInput) {
@@ -7271,7 +7339,7 @@ function saveHpSlotModal() {
     setHpObjectByPath(path, slotData);
   }
 
-  const isBn = _adminContentLang === 'bn';
+  const isBn = _homepageLang === 'bn';
   slotData.title = headline;
   if (path.includes('hero.main')) slotData.subtitle = subtitle;
   else if (path.includes('sidebar') || path.includes('featured')) slotData.description = subtitle;
@@ -7313,7 +7381,7 @@ function openHpEventModal(id) {
   const linkInput = document.getElementById('hp-event-link-input');
   const enabledInput = document.getElementById('hp-event-enabled-input');
   const linkLockNote = document.getElementById('hp-event-link-lock-note');
-  const isBn = _adminContentLang === 'bn';
+  const isBn = _homepageLang === 'bn';
 
   if (!modal) return;
 
@@ -7364,7 +7432,7 @@ function saveHpEventModal() {
   const meta = document.getElementById('hp-event-meta-input').value.trim();
   const link = document.getElementById('hp-event-link-input').value.trim();
   const enabled = document.getElementById('hp-event-enabled-input').checked;
-  const isBn = _adminContentLang === 'bn';
+  const isBn = _homepageLang === 'bn';
 
   if (!title) {
     showToast('error', 'Event Title is required');
@@ -7557,13 +7625,13 @@ function deleteHpSubArticle(colIdx, subIdx) {
 // ── SAVE HOMEPAGE SETTINGS TO SUPABASE DATABASE ──────────────────
 async function saveHomepageSettings() {
   const saveBtn = document.getElementById('hp-save-btn');
-  const isBn = _adminContentLang === 'bn';
+  const isBn = _homepageLang === 'bn';
 
   if (saveBtn) saveBtn.disabled = true;
   updateGlobalSyncStatus('syncing', 'Saving to database...');
 
   try {
-    homepageDraftConfig.lang = _adminContentLang;
+    homepageDraftConfig.lang = _homepageLang;
     const res = await _apiPost('/api/sections?action=homepage' + (isBn ? '&lang=bn' : ''), homepageDraftConfig);
     appliedHomepageConfig = JSON.parse(JSON.stringify(homepageDraftConfig));
     homepageUndoStack = [];
@@ -7579,7 +7647,7 @@ async function saveHomepageSettings() {
       target_id: isBn ? 'site_homepage_config_bn' : 'site_homepage_config',
       target_name: isBn ? 'বাংলা হোমপেজ কনফিগারেশন' : 'Homepage Builder',
       details: {
-        lang: _adminContentLang,
+        lang: _homepageLang,
         heroTitle: homepageDraftConfig.hero?.main?.title,
         eventsCount: (homepageDraftConfig.eventsSection?.events || []).length,
         columnsCount: (homepageDraftConfig.allNews?.columns || []).length
@@ -7600,7 +7668,7 @@ async function saveHomepageSettings() {
       summary: `Saved Homepage Builder configuration (${isBn ? 'Bengali' : 'English'}, local cache fallback)`,
       target_id: isBn ? 'site_homepage_config_bn' : 'site_homepage_config',
       target_name: 'Homepage Builder',
-      details: { lang: _adminContentLang, offlineFallback: true }
+      details: { lang: _homepageLang, offlineFallback: true }
     });
   } finally {
     if (saveBtn) saveBtn.disabled = false;
@@ -7797,14 +7865,14 @@ async function initFooterPage() {
   // Sync lang switcher buttons in footer
   const ftEn = document.getElementById('ft-lang-en');
   const ftBn = document.getElementById('ft-lang-bn');
-  if (ftEn) ftEn.classList.toggle('active', _adminContentLang === 'en');
-  if (ftBn) ftBn.classList.toggle('active', _adminContentLang === 'bn');
+  if (ftEn) ftEn.classList.toggle('active', _footerLang === 'en');
+  if (ftBn) ftBn.classList.toggle('active', _footerLang === 'bn');
 
   let loadedConfig = null;
 
   // Tier 1: Try API
   try {
-    const data = await _apiGet('/api/sections?action=footer' + (_adminContentLang === 'bn' ? '&lang=bn' : ''));
+    const data = await _apiGet('/api/sections?action=footer' + (_footerLang === 'bn' ? '&lang=bn' : ''));
     if (data && typeof data === 'object' && Object.keys(data).length > 0) {
       loadedConfig = data;
     }
@@ -7815,7 +7883,7 @@ async function initFooterPage() {
     try {
       const sb = window._sb || (window.initSupabaseClient && window.initSupabaseClient());
       if (sb) {
-        const targetAdminId = _adminContentLang === 'bn' ? '__footer_config_bn__' : '__footer_config__';
+        const targetAdminId = _footerLang === 'bn' ? '__footer_config_bn__' : '__footer_config__';
         const { data: sData } = await sb.from('sections').select('name').eq('admin_id', targetAdminId).maybeSingle();
         if (sData && sData.name) {
           const parsed = JSON.parse(sData.name);
@@ -7829,7 +7897,7 @@ async function initFooterPage() {
   if (!loadedConfig) {
     try {
       if (typeof PRIVATIAN_SUPABASE_URL !== 'undefined' && typeof PRIVATIAN_SUPABASE_KEY !== 'undefined') {
-        const targetAdminId = _adminContentLang === 'bn' ? '__footer_config_bn__' : '__footer_config__';
+        const targetAdminId = _footerLang === 'bn' ? '__footer_config_bn__' : '__footer_config__';
         const res = await fetch(`${PRIVATIAN_SUPABASE_URL}/rest/v1/sections?admin_id=eq.${targetAdminId}&select=name`, {
           headers: {
             'apikey': PRIVATIAN_SUPABASE_KEY,
@@ -7849,7 +7917,7 @@ async function initFooterPage() {
 
   // Tier 5: Default Config based on active language
   if (!loadedConfig) {
-    loadedConfig = JSON.parse(JSON.stringify(getFooterDefaultSettings(_adminContentLang)));
+    loadedConfig = JSON.parse(JSON.stringify(getFooterDefaultSettings(_footerLang)));
   }
 
   appliedFooterConfig = JSON.parse(JSON.stringify(loadedConfig));
@@ -7858,7 +7926,7 @@ async function initFooterPage() {
   footerUndoStack = [];
   footerRedoStack = [];
   updateFooterUndoRedoButtons();
-  updateGlobalSyncStatus('synced', `Synced (${_adminContentLang === 'bn' ? 'বাংলা' : 'English'})`);
+  updateGlobalSyncStatus('synced', `Synced (${_footerLang === 'bn' ? 'বাংলা' : 'English'})`);
   switchFooterTab(_activeFooterTab || 'preview');
 }
 
@@ -7955,7 +8023,7 @@ function renderFooterPreview() {
   const enabledSet = Array.isArray(cfg.enabledSections) ? cfg.enabledSections : null;
   const displaySecs = activeSecs.filter(s => enabledSet ? enabledSet.includes(s.slug || s.id) : true);
 
-  const isBn = (_adminContentLang === 'bn');
+  const isBn = (_footerLang === 'bn');
   const exploreList = cfg.explore || [];
   const seriesList = cfg.series || [];
   const socialList = cfg.social || [];
@@ -8242,7 +8310,7 @@ function renderFooterSections() {
     });
   }
 
-  const isBn = (_adminContentLang === 'bn');
+  const isBn = (_footerLang === 'bn');
   container.innerHTML = `
     <div style="display:flex;flex-direction:column;gap:8px;">
       ${orderedSecs.map((s, idx) => {
@@ -9033,8 +9101,8 @@ async function saveFooterSettings() {
 
   // 1. Try API POST
   try {
-    footerDraftConfig.lang = _adminContentLang;
-    const result = await _apiPost('/api/sections?action=footer' + (_adminContentLang === 'bn' ? '&lang=bn' : ''), footerDraftConfig);
+    footerDraftConfig.lang = _footerLang;
+    const result = await _apiPost('/api/sections?action=footer' + (_footerLang === 'bn' ? '&lang=bn' : ''), footerDraftConfig);
     if (result && (result.ok || result.data)) savedOk = true;
   } catch(err) {}
 
@@ -9043,7 +9111,7 @@ async function saveFooterSettings() {
     try {
       const sb = window._sb || (window.initSupabaseClient && window.initSupabaseClient());
       if (sb) {
-        const targetAdminId = _adminContentLang === 'bn' ? '__footer_config_bn__' : '__footer_config__';
+        const targetAdminId = _footerLang === 'bn' ? '__footer_config_bn__' : '__footer_config__';
         const { data: existing } = await sb.from('sections').select('id').eq('admin_id', targetAdminId).maybeSingle();
         if (existing) {
           await sb.from('sections').update({
