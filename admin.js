@@ -4181,7 +4181,7 @@ async function initArticlesPage() {
       if (sb) {
         const { data, error } = await sb
           .from('articles')
-          .select('id, slug, title, deck, section, author, status, created_at, updated_at, published_at, hero_img_url')
+          .select('id, slug, title, title_bn, deck, deck_bn, section, author, author_bn, status, created_at, updated_at, published_at, hero_img_url')
           .or('is_deleted.is.null,is_deleted.eq.false')
           .order('updated_at', { ascending: false });
         if (!error && Array.isArray(data) && data.length > 0) {
@@ -4195,7 +4195,7 @@ async function initArticlesPage() {
   if (_allArticles.length === 0) {
     try {
       if (typeof PRIVATIAN_SUPABASE_URL !== 'undefined' && typeof PRIVATIAN_SUPABASE_KEY !== 'undefined') {
-        const res = await fetch(`${PRIVATIAN_SUPABASE_URL}/rest/v1/articles?select=id,slug,title,deck,section,author,status,created_at,updated_at,published_at,hero_img_url&or=(is_deleted.is.null,is_deleted.eq.false)&order=updated_at.desc`, {
+        const res = await fetch(`${PRIVATIAN_SUPABASE_URL}/rest/v1/articles?select=id,slug,title,title_bn,deck,deck_bn,section,author,author_bn,status,created_at,updated_at,published_at,hero_img_url&or=(is_deleted.is.null,is_deleted.eq.false)&order=updated_at.desc`, {
           headers: {
             'apikey': PRIVATIAN_SUPABASE_KEY,
             'Authorization': 'Bearer ' + PRIVATIAN_SUPABASE_KEY
@@ -4290,6 +4290,8 @@ function renderArticlesTable(articles) {
       ? `<span class="art-badge-sec">${escapeHtml(a.section)}</span>`
       : `<span style="color:#94a3b8;font-size:12px;">—</span>`;
 
+    const displayTitle = a.title || a.title_bn || 'Untitled Draft';
+    const displayAuthor = a.author || a.author_bn || '—';
     const shortId = a.id ? (a.id.length > 12 ? a.id.slice(0, 8) + '…' : a.id) : '—';
     const idBadge = a.id ? `<span class="art-id-badge" onclick="copyTextToClipboard('${escapeHtml(a.id)}', 'Article Unique ID copied!')" title="Click to copy permanent Article Unique ID: ${escapeHtml(a.id)}"><span style="opacity:.6;font-size:9.5px;">ID:</span>${escapeHtml(shortId)}<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></span>` : '';
 
@@ -4298,7 +4300,7 @@ function renderArticlesTable(articles) {
         <div class="art-media-wrap">
           ${thumb}
           <div class="art-title-meta">
-            <div class="art-row-title" title="${escapeHtml(a.title || 'Untitled')}">${escapeHtml(a.title || 'Untitled')}</div>
+            <div class="art-row-title" title="${escapeHtml(displayTitle)}">${escapeHtml(displayTitle)}</div>
             <div style="display:flex;align-items:center;gap:6px;margin-top:3px;flex-wrap:wrap;">
               ${idBadge}
               <span class="art-row-slug" title="/article/${escapeHtml(a.slug || a.id)}">/${escapeHtml(a.slug || a.id)}</span>
@@ -4307,7 +4309,7 @@ function renderArticlesTable(articles) {
         </div>
       </td>
       <td>${sectionBadge}</td>
-      <td><span class="art-author-txt">${escapeHtml(a.author || '—')}</span></td>
+      <td><span class="art-author-txt">${escapeHtml(displayAuthor)}</span></td>
       <td>${statusBadge}</td>
       <td><span class="art-date-txt">${updated}</span></td>
       <td class="tar">
@@ -4320,7 +4322,7 @@ function renderArticlesTable(articles) {
              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
              View
           </a>` : ''}
-          <button type="button" onclick="deleteArticleConfirm('${a.id}', '${escapeHtml((a.title||'Untitled').replace(/'/g,"\\'"))}')" class="art-action-btn art-action-btn--trash" title="Move to Recycle Bin">
+          <button type="button" onclick="deleteArticleConfirm('${a.id}', '${escapeHtml((displayTitle).replace(/'/g,"\\'"))}')" class="art-action-btn art-action-btn--trash" title="Move to Recycle Bin">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
           </button>
         </div>

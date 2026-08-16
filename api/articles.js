@@ -173,13 +173,16 @@ module.exports = async function handler(req, res) {
 
     const client = sb();
 
+    let existing = null;
     if (bodyId) {
-      // Check existing article status in database
-      const { data: existing } = await client.from('articles').select('id, status, content').eq('id', bodyId).single();
+      const { data } = await client.from('articles').select('id, status, content').eq('id', bodyId).maybeSingle();
+      existing = data;
+    }
 
+    if (bodyId && existing) {
       // IF ARTICLE IS PUBLISHED AND ACTION IS "SAVE DRAFT":
       // We ONLY update the working draft in the `content` column without touching the live published article!
-      if (existing && existing.status === 'published' && is_draft) {
+      if (existing.status === 'published' && is_draft) {
         const draftPayload = {
           title, title_bn, deck, deck_bn, section, author, author_bn, author_role, author_role_bn, author_bio, author_bio_bn, author_photo_url,
           hero_img_url, hero_img_alt, hero_caption, hero_caption_bn, hero_credit, hero_credit_bn, content_html, content_html_bn,
@@ -198,9 +201,9 @@ module.exports = async function handler(req, res) {
             actor: session,
             action: 'article.save_draft',
             category: 'articles',
-            summary: `${session.name || session.email} saved working draft for article "${title || existing.title || bodyId}"`,
+            summary: `${session.name || session.email} saved working draft for article "${title || title_bn || existing.title || bodyId}"`,
             target_id: bodyId,
-            target_name: title || existing.title || bodyId,
+            target_name: title || title_bn || existing.title || bodyId,
             details: { is_draft: true },
             req
           });
@@ -211,7 +214,8 @@ module.exports = async function handler(req, res) {
 
       // OTHERWISE: DIRECT LIVE PUBLISH OR DRAFT ARTICLE UPDATE
       const updates = {
-        title, title_bn, deck, deck_bn, section, author, author_bn, author_role, author_role_bn, author_bio, author_bio_bn, author_photo_url,
+        title: title || (title_bn ? title_bn : 'Untitled'),
+        title_bn, deck, deck_bn, section, author, author_bn, author_role, author_role_bn, author_bio, author_bio_bn, author_photo_url,
         hero_img_url, hero_img_alt, hero_caption, hero_caption_bn, hero_credit, hero_credit_bn, content_html, content_html_bn,
         seo_title, seo_title_bn, meta_description, meta_description_bn, tags, tags_bn,
         content: null, // Clear working draft because live article is now updated
@@ -235,10 +239,10 @@ module.exports = async function handler(req, res) {
           action: bodyStatus === 'published' ? 'article.publish' : 'article.edit',
           category: 'articles',
           summary: bodyStatus === 'published'
-            ? `${session.name || session.email} published article "${title || data.title || bodyId}"`
-            : `${session.name || session.email} edited article "${title || data.title || bodyId}"`,
+            ? `${session.name || session.email} published article "${title || title_bn || data.title || bodyId}"`
+            : `${session.name || session.email} edited article "${title || title_bn || data.title || bodyId}"`,
           target_id: bodyId,
-          target_name: title || data.title || bodyId,
+          target_name: title || title_bn || data.title || bodyId,
           details: { status: data.status, section: data.section },
           req
         });
@@ -247,22 +251,28 @@ module.exports = async function handler(req, res) {
       return res.status(200).json(data);
     } else {
       // CREATE — custom slug or auto unique slug from title
-      let rawSlug = (bodySlug || '').trim() ? slugify(bodySlug) : slugify(title || 'untitled');
+      const baseTitle = title || title_bn || 'untitled';
+      let rawSlug = (bodySlug || '').trim() ? slugify(bodySlug) : slugify(baseTitle);
+      if (!rawSlug) rawSlug = 'draft-' + Date.now().toString(36);
       let slug = rawSlug;
-      const { data: existing } = await client.from('articles').select('id, slug').ilike('slug', rawSlug + '%');
-      if (existing && existing.length > 0) {
-        const hasExact = existing.some(a => a.slug === rawSlug);
+      const { data: existingSlugs } = await client.from('articles').select('id, slug').ilike('slug', rawSlug + '%');
+      if (existingSlugs && existingSlugs.length > 0) {
+        const hasExact = existingSlugs.some(a => a.slug === rawSlug && a.id !== bodyId);
         if (hasExact) {
-          const nums = existing.map(a => { const m = a.slug.match(/-(\d+)$/); return m ? parseInt(m[1]) : 0; });
+          const nums = existingSlugs.map(a => { const m = a.slug.match(/-(\d+)$/); return m ? parseInt(m[1]) : 0; });
           slug = rawSlug + '-' + (Math.max(...nums, 0) + 1);
         }
       }
       const newArticle = {
-        slug, title, title_bn, deck, deck_bn, section, author, author_bn, author_role, author_role_bn, author_bio, author_bio_bn, author_photo_url,
+        slug,
+        title: title || (title_bn ? title_bn : 'Untitled'),
+        title_bn, deck, deck_bn, section, author, author_bn, author_role, author_role_bn, author_bio, author_bio_bn, author_photo_url,
         hero_img_url, hero_img_alt, hero_caption, hero_caption_bn, hero_credit, hero_credit_bn, content_html, content_html_bn,
         seo_title, seo_title_bn, meta_description, meta_description_bn, tags, tags_bn,
         status: bodyStatus || 'draft',
         created_by: session.email,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
       };
       if (bodyId) newArticle.id = bodyId;
       if (bodyStatus === 'published') newArticle.published_at = new Date().toISOString();

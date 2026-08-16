@@ -1449,11 +1449,11 @@ button, input, select, textarea, [contenteditable] {
       <span>Preview</span>
     </button>
     
-    <!-- Save Draft -->
-    <button type="button" class="tb-btn tb-save" id="tb-save-btn" onclick="saveArt()" title="Save Draft (Ctrl+S)">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
-      <span>Save Draft</span>
-    </button>
+    <!-- Auto-Save Draft Status Indicator Pill (Replaces manual Save Draft button) -->
+    <div class="tb-save-status-pill" id="tb-save-status-pill" title="Automatic real-time draft saving is active" style="display:inline-flex;align-items:center;gap:7px;padding:6px 12px;border-radius:8px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.14);font-size:12px;font-weight:600;color:rgba(255,255,255,0.85);cursor:default;user-select:none;transition:all .2s;">
+      <span id="tb-save-status-dot" style="width:7px;height:7px;border-radius:50%;background:#10b981;display:inline-block;box-shadow:0 0 0 2px rgba(16,185,129,0.25);"></span>
+      <span id="tb-save-status-text">Draft saved</span>
+    </div>
     
     <!-- Publish Article -->
     <button type="button" class="tb-btn tb-pub" id="tb-pub-btn" onclick="pubArt()" title="Publish Article">
@@ -1702,7 +1702,7 @@ button, input, select, textarea, [contenteditable] {
     <p class="ed-deck" id="ed-deck" contenteditable="true" data-ph="Add a compelling subtitle…"></p>
 
     <div class="ed-meta">
-      <span class="by">By</span>
+      <span class="by" id="ed-by-lbl">By</span>
       <span class="ed-inline" id="ed-author" contenteditable="true" data-ph="Author name"></span>
       <span class="meta-dot">·</span>
       <span class="ed-inline" id="ed-date" contenteditable="true" data-ph="Date"></span>
@@ -2117,7 +2117,27 @@ function saveCurrentLangToBuffer() {
   };
 }
 
+let _articleDateObj = new Date();
+
+function toBnDigits(num) {
+  const bnDigits = ['০','১','২','৩','৪','৫','৬','৭','৮','৯'];
+  return String(num).replace(/\d/g, d => bnDigits[Number(d)]);
+}
+
+function fmtDate(d, lang = _currentEditLang) {
+  if (!(d instanceof Date) || isNaN(d.getTime())) d = new Date();
+  if (lang === 'bn') {
+    const monthsBn = ['জানুয়ারি', 'ফেব্রুয়ারি', 'মার্চ', 'এপ্রিল', 'মে', 'জুন', 'জুলাই', 'আগস্ট', 'সেপ্টেম্বর', 'অক্টোবর', 'নভেম্বর', 'ডিসেম্বর'];
+    const day = toBnDigits(d.getDate());
+    const month = monthsBn[d.getMonth()];
+    const year = toBnDigits(d.getFullYear());
+    return `${day} ${month}, ${year}`;
+  }
+  return d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+}
+
 function loadBufferToInputs(lang) {
+  const isBn = lang === 'bn';
   const data = _langData[lang] || {};
   tx('ed-headline', data.title || '');
   tx('ed-deck', data.deck || '');
@@ -2127,7 +2147,15 @@ function loadBufferToInputs(lang) {
   tx('bio-desc', data.author_bio || '');
 
   const rt = g('ed-rt');
-  if (rt) rt.innerHTML = data.content_html || '';
+  if (rt) {
+    rt.innerHTML = data.content_html || '';
+    rt.setAttribute('data-ph', isBn 
+      ? 'এখানে আপনার মূল প্রতিবেদন লেখা শুরু করুন… ফরম্যাটিংয়ের জন্য টুলবার ব্যবহার করুন।' 
+      : 'Start writing your story here… Use the toolbar or keyboard shortcuts for formatting.');
+  }
+
+  if (g('ed-by-lbl')) g('ed-by-lbl').textContent = isBn ? 'প্রতিবেদক:' : 'By';
+  tx('ed-date', fmtDate(_articleDateObj || new Date(), lang));
 
   if (g('sd-feat-caption')) g('sd-feat-caption').value = data.hero_caption || '';
   if (g('ed-feat-caption-inline')) g('ed-feat-caption-inline').value = data.hero_caption || '';
@@ -2147,17 +2175,20 @@ function loadBufferToInputs(lang) {
   renderTags();
 
   // Update Search Preview
-  if (g('sp-ttl')) g('sp-ttl').textContent = data.seo_title || data.title || 'Article Title';
-  if (g('sp-desc')) g('sp-desc').textContent = data.meta_description || 'Meta description will appear here.';
+  if (g('sp-ttl')) g('sp-ttl').textContent = data.seo_title || data.title || (isBn ? 'প্রতিবেদনের শিরোনাম' : 'Article Title');
+  if (g('sp-desc')) g('sp-desc').textContent = data.meta_description || (isBn ? 'মেটা বিবরণ এখানে প্রদর্শিত হবে।' : 'Meta description will appear here.');
 
   // Update Placeholders & UI indicator
-  const isBn = lang === 'bn';
   const hl = g('ed-headline');
   if (hl) hl.setAttribute('data-ph', isBn ? 'প্রতিবেদনের প্রধান শিরোনাম লিখুন…' : 'Article headline…');
   const dk = g('ed-deck');
   if (dk) dk.setAttribute('data-ph', isBn ? 'একটি আকর্ষণীয় উপশিরোনাম বা সারসংক্ষেপ যোগ করুন…' : 'Add a compelling subtitle…');
   const auth = g('ed-author');
   if (auth) auth.setAttribute('data-ph', isBn ? 'লেখকের নাম' : 'Author name');
+  const bName = g('bio-name');
+  if (bName) bName.setAttribute('data-ph', isBn ? 'লেখকের নাম' : 'Author Name');
+  const bRole = g('bio-role');
+  if (bRole) bRole.setAttribute('data-ph', isBn ? 'পদবি / দায়িত্ব (যেমন: জ্যেষ্ঠ প্রতিবেদক)' : 'Role · Designation');
   const bDesc = g('bio-desc');
   if (bDesc) bDesc.setAttribute('data-ph', isBn ? 'লেখক সম্পর্কে সংক্ষিপ্ত বিবরণ…' : 'A short bio about the author…');
 
@@ -2201,6 +2232,7 @@ function loadBufferToInputs(lang) {
   }
 
   updateMetrics();
+  setSaveStatus();
 }
 
 function switchEditorLang(targetLang) {
@@ -2254,15 +2286,7 @@ window.addEventListener('privatian:ready', () => {
   });
 });
 
-function initEmpty() {
-  if (!ART_ID) {
-    ART_ID = (typeof crypto !== 'undefined' && crypto.randomUUID)
-      ? crypto.randomUUID()
-      : 'art_' + Date.now().toString(36) + '_' + Math.random().toString(36).substr(2, 9);
-    const u = new URL(location.href);
-    u.searchParams.set('id', ART_ID);
-    history.replaceState({}, '', u.toString());
-  }
+  _articleDateObj = new Date();
   refreshArticleIdDisplay();
 }
 
@@ -2461,13 +2485,20 @@ function setSec(val) {
   DIRTY = true; lsSave();
 }
 
-// ── INPUT BINDING (debounced auto-save) ──────────────────────
+// ── INPUT BINDING (Fast Real-Time Auto-Save) ──────────────────────
 function bindInput() {
-  const targets = ['ed-rt','ed-headline','ed-deck','ed-author','ed-date','bio-name','bio-role','bio-desc'];
+  const targets = [
+    'ed-rt','ed-headline','ed-deck','ed-author','ed-date',
+    'bio-name','bio-role','bio-desc',
+    'ed-feat-caption-inline','ed-feat-credit-inline',
+    'sd-feat-caption','sd-feat-credit','sd-feat-alt',
+    'sd-seo-title','sd-meta-desc'
+  ];
   targets.forEach(id => {
     const el = g(id);
     if (!el) return;
     el.addEventListener('input', onInput);
+    el.addEventListener('keyup', onInput);
   });
 
   const tbSlug = g('tb-slug');
@@ -2491,6 +2522,8 @@ function bindInput() {
 
 function onInput(ev) {
   DIRTY = true;
+  saveCurrentLangToBuffer();
+
   if (ev && ev.target && ev.target.id === 'ed-headline') {
     const tbSlug = g('tb-slug');
     if (tbSlug && tbSlug.dataset.manual !== 'true' && (!tbSlug.value || !ART_ID)) {
@@ -2499,10 +2532,13 @@ function onInput(ev) {
     }
   }
   updateMetrics();
-  // Server Database auto-save — 2.5s debounce
-  clearTimeout(_srvTimer);
-  _srvTimer = setTimeout(() => { if (DIRTY) saveArt(true); }, 2500);
   setSaveStatus('Unsaved changes');
+
+  // Automatic real-time draft save after typing (600ms debounce)
+  clearTimeout(_srvTimer);
+  _srvTimer = setTimeout(() => {
+    if (DIRTY) saveArt(true);
+  }, 600);
 }
 
 function slugify(text) {
@@ -2527,50 +2563,32 @@ function recordActivityLog({ action, category, summary, target_id, target_name, 
     }
   };
 
-  // 1. Send to server API if available
-  const tok = _getTok();
-  fetch('/api/activity-log', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      ...(tok ? { 'Authorization': 'Bearer ' + tok } : {})
-    },
-    body: JSON.stringify(payload)
-  }).catch(() => {});
-
-  // 2. Direct fallback to Supabase table
   try {
-    const sb = window._sb || (window.initSupabaseClient && window.initSupabaseClient());
-    if (sb) {
-      sb.from('activity_logs').insert({
-        actor_email: user.email || 'admin@privatian.org',
-        actor_name: user.name || user.email || 'Admin',
-        actor_role: user.role || 'Admin',
-        action: payload.action,
-        category: payload.category,
-        summary: payload.summary,
-        target_id: payload.target_id,
-        target_name: payload.target_name,
-        details: payload.details,
-        created_at: new Date().toISOString()
-      }).then(() => {}).catch(() => {});
-    }
+    api('/api/activity_logs?action=record', {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    }).catch(() => {});
   } catch(e) {}
 }
 
-// ── SAVE DRAFT ───────────────────────────────────────────────
+// ── SAVE DRAFT (AUTOMATIC & ON-DEMAND) ──────────────────────────────────
 async function saveArt(silent = false) {
   if (SAVING) return;
-  SAVING = true;
-  const btn = g('tb-save-btn');
-  if (!silent && btn) {
-    btn.disabled = true;
-    btn.textContent = 'Saving…';
+
+  saveCurrentLangToBuffer();
+  const hasContent = _langData.en.title || _langData.en.deck || _langData.en.content_html || _langData.en.author ||
+                     _langData.bn.title || _langData.bn.deck || _langData.bn.content_html || _langData.bn.author ||
+                     _featImgUrl;
+
+  if (!hasContent && !ART_ID) {
+    return; // User has not typed anything yet
   }
+
+  SAVING = true;
   setSaveStatus('Saving…');
 
   const payload = buildPayload();
-  payload.is_draft = true; // Protects published articles from being overwritten
+  payload.is_draft = true; // Protects published articles from accidental live overwrite
   payload.status = STATUS || 'draft';
   let savedData = null;
 
@@ -2586,24 +2604,34 @@ async function saveArt(silent = false) {
       const sb = window._sb || (window.initSupabaseClient && window.initSupabaseClient());
       if (sb) {
         if (payload.id && STATUS === 'published') {
-          // If published -> only store working draft in content column
           const draftPayload = {
-            title: payload.title || 'Untitled',
+            title: payload.title || payload.title_bn || 'Untitled',
+            title_bn: payload.title_bn || '',
             deck: payload.deck || '',
+            deck_bn: payload.deck_bn || '',
             content_html: payload.content_html || '',
+            content_html_bn: payload.content_html_bn || '',
             section: payload.section || '',
             author: payload.author || '',
-            author_bio: payload.author_bio || '',
+            author_bn: payload.author_bn || '',
             author_role: payload.author_role || '',
+            author_role_bn: payload.author_role_bn || '',
+            author_bio: payload.author_bio || '',
+            author_bio_bn: payload.author_bio_bn || '',
             author_photo_url: payload.author_photo_url || '',
             hero_img_url: payload.hero_img_url || '',
             hero_img_alt: payload.hero_img_alt || '',
             hero_caption: payload.hero_caption || '',
+            hero_caption_bn: payload.hero_caption_bn || '',
             hero_credit: payload.hero_credit || '',
+            hero_credit_bn: payload.hero_credit_bn || '',
             slug: payload.slug || 'untitled',
             seo_title: payload.seo_title || '',
+            seo_title_bn: payload.seo_title_bn || '',
             meta_description: payload.meta_description || '',
+            meta_description_bn: payload.meta_description_bn || '',
             tags: payload.tags || '',
+            tags_bn: payload.tags_bn || '',
             draft_saved_at: new Date().toISOString()
           };
           const { data, error } = await sb.from('articles')
@@ -2614,50 +2642,38 @@ async function saveArt(silent = false) {
           if (!error && data) savedData = { ...data, ...draftPayload, _is_working_draft: true };
         } else if (payload.id) {
           const row = {
-            title: payload.title || 'Untitled',
+            id: payload.id,
+            title: payload.title || payload.title_bn || 'Untitled',
+            title_bn: payload.title_bn || '',
             deck: payload.deck || '',
+            deck_bn: payload.deck_bn || '',
             content_html: payload.content_html || '',
+            content_html_bn: payload.content_html_bn || '',
             section: payload.section || '',
             author: payload.author || '',
-            author_bio: payload.author_bio || '',
+            author_bn: payload.author_bn || '',
             author_role: payload.author_role || '',
+            author_role_bn: payload.author_role_bn || '',
+            author_bio: payload.author_bio || '',
+            author_bio_bn: payload.author_bio_bn || '',
             author_photo_url: payload.author_photo_url || '',
             hero_img_url: payload.hero_img_url || '',
             hero_img_alt: payload.hero_img_alt || '',
             hero_caption: payload.hero_caption || '',
+            hero_caption_bn: payload.hero_caption_bn || '',
             hero_credit: payload.hero_credit || '',
+            hero_credit_bn: payload.hero_credit_bn || '',
             slug: payload.slug || 'untitled',
             seo_title: payload.seo_title || '',
+            seo_title_bn: payload.seo_title_bn || '',
             meta_description: payload.meta_description || '',
+            meta_description_bn: payload.meta_description_bn || '',
             tags: payload.tags || '',
+            tags_bn: payload.tags_bn || '',
             status: 'draft',
             updated_at: new Date().toISOString()
           };
-          const { data, error } = await sb.from('articles').update(row).eq('id', payload.id).select().single();
-          if (!error && data) savedData = data;
-        } else {
-          const row = {
-            title: payload.title || 'Untitled',
-            deck: payload.deck || '',
-            content_html: payload.content_html || '',
-            section: payload.section || '',
-            author: payload.author || '',
-            author_bio: payload.author_bio || '',
-            author_role: payload.author_role || '',
-            author_photo_url: payload.author_photo_url || '',
-            hero_img_url: payload.hero_img_url || '',
-            hero_img_alt: payload.hero_img_alt || '',
-            hero_caption: payload.hero_caption || '',
-            hero_credit: payload.hero_credit || '',
-            slug: payload.slug || 'untitled',
-            seo_title: payload.seo_title || '',
-            meta_description: payload.meta_description || '',
-            tags: payload.tags || '',
-            status: 'draft',
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          };
-          const { data, error } = await sb.from('articles').insert(row).select().single();
+          const { data, error } = await sb.from('articles').upsert(row).select().single();
           if (!error && data) savedData = data;
         }
       }
@@ -2679,23 +2695,14 @@ async function saveArt(silent = false) {
     lsSave();
     setSaveStatus('Saved');
     if (!silent) {
-      toast(STATUS === 'published' ? 'Changes saved as draft (Live article unchanged)' : 'Draft saved', 'ok');
-      recordActivityLog({
-        action: 'articles.draft_save',
-        category: 'articles',
-        summary: `Saved working draft for "${savedData.title || 'Untitled'}"`,
-        target_id: savedData.id,
-        target_name: savedData.title || 'Untitled',
-        details: { id: savedData.id, status: STATUS, section: savedData.section }
-      });
+      toast(STATUS === 'published' ? 'Changes saved as draft' : 'Draft saved in database', 'ok');
     }
   } else {
     setSaveStatus('Save failed');
-    if (!silent) toast('Save failed. Please check network.', 'err');
+    if (!silent) toast('Auto-save failed. Check connection.', 'err');
   }
 
   SAVING = false;
-  if (!silent && btn) { btn.disabled = false; btn.textContent = 'Save Draft'; }
 }
 
 // ── PUBLISH / UNPUBLISH ──────────────────────────────────────
@@ -3861,7 +3868,6 @@ function refreshStatus() {
 function refreshPubBtn() {
   const pubBtn = g('tb-pub-btn');
   const unpubBtn = g('tb-unpub-btn');
-  const saveBtn = g('tb-save-btn');
 
   if (STATUS === 'published') {
     if (pubBtn) {
@@ -3872,10 +3878,6 @@ function refreshPubBtn() {
     if (unpubBtn) {
       unpubBtn.style.display = 'inline-flex';
     }
-    if (saveBtn) {
-      saveBtn.textContent = 'Save Draft';
-      saveBtn.title = 'Save your edits as draft without changing published status';
-    }
   } else {
     if (pubBtn) {
       pubBtn.textContent = 'Publish';
@@ -3885,36 +3887,59 @@ function refreshPubBtn() {
     if (unpubBtn) {
       unpubBtn.style.display = 'none';
     }
-    if (saveBtn) {
-      saveBtn.textContent = 'Save Draft';
-      saveBtn.title = 'Save article as draft';
-    }
   }
 }
 
-function updateEditorSyncStatus(state = 'synced', text = 'Synced with database') {
+function updateEditorSyncStatus(state = 'synced', text = 'Draft saved') {
   const wrap = g('art-sync-status-wrap');
   const dot  = g('art-status-dot');
   const txt  = g('art-sync-status');
   if (wrap) wrap.className = 'ed-sync-badge ' + state;
   if (dot)  dot.className  = 'ft-pulse-dot' + (state !== 'synced' ? ' ' + state : '');
   if (txt)  txt.textContent = text;
+
+  const tbDot = g('tb-save-status-dot');
+  const tbTxt = g('tb-save-status-text');
+  const isBn = _currentEditLang === 'bn';
+
+  if (tbDot && tbTxt) {
+    if (state === 'syncing') {
+      tbDot.style.background = '#38bdf8';
+      tbDot.style.boxShadow = '0 0 0 3px rgba(56,189,248,0.35)';
+      tbTxt.textContent = isBn ? 'ড্রাফট সেভ হচ্ছে…' : 'Saving draft…';
+    } else if (state === 'unsaved') {
+      tbDot.style.background = '#f59e0b';
+      tbDot.style.boxShadow = '0 0 0 3px rgba(245,158,11,0.25)';
+      tbTxt.textContent = isBn ? 'অসংরক্ষিত পরিবর্তন…' : 'Unsaved changes…';
+    } else if (state === 'synced') {
+      tbDot.style.background = '#10b981';
+      tbDot.style.boxShadow = '0 0 0 3px rgba(16,185,129,0.25)';
+      const msg = STATUS === 'published' 
+        ? (isBn ? 'ড্রাফট হিসেবে সংরক্ষিত' : 'Changes saved as draft')
+        : (isBn ? 'ড্রাফট সংরক্ষিত' : 'Draft saved');
+      tbTxt.textContent = msg;
+    } else if (state === 'error') {
+      tbDot.style.background = '#ef4444';
+      tbDot.style.boxShadow = '0 0 0 3px rgba(239,68,68,0.25)';
+      tbTxt.textContent = isBn ? 'সেভ ব্যর্থ হয়েছে' : 'Save failed';
+    }
+  }
 }
 
 function setSaveStatus(msg) {
   if (!msg) {
-    updateEditorSyncStatus(DIRTY ? 'unsaved' : 'synced', DIRTY ? 'Unsaved changes' : 'Synced with database');
+    updateEditorSyncStatus(DIRTY ? 'unsaved' : 'synced', DIRTY ? 'Unsaved changes' : 'Draft saved');
     return;
   }
   const low = msg.toLowerCase();
   if (low.includes('saving')) {
-    updateEditorSyncStatus('syncing', 'Saving to database...');
+    updateEditorSyncStatus('syncing', 'Saving draft to database…');
   } else if (low.includes('unsaved')) {
     updateEditorSyncStatus('unsaved', 'Unsaved changes');
   } else if (low.includes('saved') || low.includes('synced')) {
-    updateEditorSyncStatus('synced', 'Synced with database');
+    updateEditorSyncStatus('synced', STATUS === 'published' ? 'Changes saved as draft' : 'Draft saved');
   } else if (low.includes('error') || low.includes('failed')) {
-    updateEditorSyncStatus('error', 'Sync error (offline/cache)');
+    updateEditorSyncStatus('error', 'Save error');
   } else {
     updateEditorSyncStatus('synced', msg);
   }
@@ -3958,7 +3983,7 @@ async function verifyEditorDbSync(shouldToast = false) {
     if (DIRTY) {
       updateEditorSyncStatus('unsaved', 'Unsaved changes');
     } else {
-      updateEditorSyncStatus('synced', 'Synced with database');
+      updateEditorSyncStatus('synced', 'Draft saved');
     }
     if (shouldToast) {
       toast('Database connection verified & synchronized', 'ok');
@@ -3972,28 +3997,45 @@ async function verifyEditorDbSync(shouldToast = false) {
 }
 
 function updateMetrics() {
+  const isBn = _currentEditLang === 'bn';
   const text = (g('ed-rt')?.innerText || '').replace(/\s+/g,' ').trim();
-  const words = text ? text.split(' ').filter(Boolean).length : 0;
+  const words = text ? text.split(/\s+/).filter(Boolean).length : 0;
   const chars = text.length;
   const rtime = Math.max(1, Math.round(words / 200)); // 200 WPM — international standard
+
   // Metrics bar
-  if (g('mb-words')) g('mb-words').textContent = words.toLocaleString();
-  if (g('mb-chars')) g('mb-chars').textContent = chars.toLocaleString();
-  if (g('mb-rtime')) g('mb-rtime').textContent = rtime;
+  const mbWords = g('mb-words');
+  if (mbWords) {
+    mbWords.textContent = isBn ? toBnDigits(words) : words.toLocaleString();
+    if (mbWords.nextElementSibling) mbWords.nextElementSibling.textContent = isBn ? 'শব্দ' : 'words';
+  }
+  const mbChars = g('mb-chars');
+  if (mbChars) {
+    mbChars.textContent = isBn ? toBnDigits(chars) : chars.toLocaleString();
+    if (mbChars.nextElementSibling) mbChars.nextElementSibling.textContent = isBn ? 'অক্ষর' : 'characters';
+  }
+  const mbRtime = g('mb-rtime');
+  if (mbRtime) {
+    mbRtime.textContent = isBn ? toBnDigits(rtime) : rtime;
+    if (mbRtime.nextElementSibling) mbRtime.nextElementSibling.textContent = isBn ? 'মিনিট পাঠ' : 'min read';
+  }
+
   // Header read-time
-  if (g('ed-rtime')) g('ed-rtime').textContent = rtime + ' min read';
+  if (g('ed-rtime')) {
+    g('ed-rtime').textContent = isBn ? `${toBnDigits(rtime)} মিনিট পাঠ` : `${rtime} min read`;
+  }
 }
+
 // Legacy alias
 function updateReadTime() { updateMetrics(); }
+
 async function previewArt() {
   if (!ART_ID) {
     await saveArt(true);
-    if (!ART_ID) { toast('Save first to preview', 'info'); return; }
+    if (!ART_ID) { toast('Type article content first to preview', 'info'); return; }
   } else {
-    // Save draft edits so preview always reflects the latest content
     await saveArt(true);
   }
-  // Always preview using permanent Article Unique ID
   window.open('/article.html?id=' + encodeURIComponent(ART_ID) + '&preview=1', '_blank');
 }
 
@@ -4001,7 +4043,6 @@ async function previewArt() {
 const g   = id   => document.getElementById(id);
 const gt  = id   => (g(id)?.textContent || '').trim();
 const tx  = (id,v)=> { const el = g(id); if (el) el.textContent = v; };
-const fmtDate = d => d.toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'});
 const escH = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 function placeEnd(el) {
   const r = document.createRange(); r.selectNodeContents(el); r.collapse(false);
