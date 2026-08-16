@@ -3261,6 +3261,24 @@ function renderHsTabCard(hs) {
       renderHeaderPreviewCanvas();
     };
   }
+
+  const cfTokenInp = document.getElementById('hs-cf-token-input');
+  const cfStatusEl = document.getElementById('hs-cf-token-status');
+  if (cfTokenInp) {
+    cfTokenInp.value = hs.cloudflareAnalyticsToken || '';
+    if (cfStatusEl) {
+      cfStatusEl.textContent = hs.cloudflareAnalyticsToken ? '✓ Active & Tracking' : 'Not configured';
+      cfStatusEl.style.color = hs.cloudflareAnalyticsToken ? '#10b981' : '#64748b';
+    }
+    cfTokenInp.oninput = () => {
+      hs.cloudflareAnalyticsToken = cfTokenInp.value.trim();
+      if (cfStatusEl) {
+        cfStatusEl.textContent = hs.cloudflareAnalyticsToken ? '✓ Active & Tracking' : 'Not configured';
+        cfStatusEl.style.color = hs.cloudflareAnalyticsToken ? '#10b981' : '#64748b';
+      }
+      updateGlobalSyncStatus();
+    };
+  }
 }
 
 async function saveHeaderSettings(hs) {
@@ -3279,6 +3297,7 @@ async function saveHeaderSettings(hs) {
       otherHs.logoHeight = hs.logoHeight;
       otherHs.logoSvg = hs.logoSvg;
       otherHs.faviconUrl = hs.faviconUrl;
+      otherHs.cloudflareAnalyticsToken = hs.cloudflareAnalyticsToken;
       if (Array.isArray(hs.subsections) && Array.isArray(otherHs.subsections)) {
         otherHs.subsections = hs.subsections.map((srcSub, idx) => {
           const match = otherHs.subsections.find(t => t.id === srcSub.id) || otherHs.subsections[idx] || {};
