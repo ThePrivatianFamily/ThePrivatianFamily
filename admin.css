@@ -180,6 +180,14 @@ body {
   flex: 1;
   padding: 14px 10px;
   overflow-y: auto;
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+
+.sidebar-nav::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
 }
 
 .sidebar-nav ul {
@@ -1552,6 +1560,14 @@ body.modal-open {
   border-bottom: 1px solid var(--border);
   padding-bottom: 8px;
   overflow-x: auto;
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+
+.menu-tab-bar::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
 }
 
 .menu-items-grid {
@@ -3778,9 +3794,16 @@ body.modal-open {
   gap: 6px;
   overflow-x: auto;
   padding: 2px 2px 6px 2px;
-  scrollbar-width: thin;
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
   width: 100%;
   max-width: 100%;
+}
+
+.gallery-folders-scroll::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
 }
 
 .gallery-folder-chip {
