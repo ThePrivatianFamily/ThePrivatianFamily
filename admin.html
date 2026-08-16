@@ -294,281 +294,316 @@
         </div>
       </div>
 
-      <!-- Segmented Tab Bar -->
-      <div class="tab-bar menu-tab-bar" id="hs-tabs-nav" style="margin-bottom:20px;">
-        <button class="tab-btn active" id="tab-hs-tabcard" onclick="switchHeaderTab('tabcard')">
-          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
-          <span>Browser Tab &amp; Favicon (SEO)</span>
-        </button>
-        <button class="tab-btn" id="tab-hs-logo" onclick="switchHeaderTab('logo')">
-          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-          <span>Header Brand Logo</span>
-        </button>
-        <button class="tab-btn" id="tab-hs-nav" onclick="switchHeaderTab('nav')">
-          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
-          <span>Navigation Sections</span>
-        </button>
-        <button class="tab-btn" id="tab-hs-sub" onclick="switchHeaderTab('sub')">
-          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-          <span>Sub-header Tabs</span>
-        </button>
-        <button class="tab-btn" id="tab-hs-preview" onclick="switchHeaderTab('preview')">
-          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-          <span>Live Header Preview</span>
-        </button>
-      </div>
+      <!-- Horizontal Step Navigation Bar -->
+      <div class="hs-slider-nav-bar" id="hs-slider-nav-bar">
+        <div class="hs-step-pills" id="hs-step-pills">
+          <button type="button" class="hs-step-pill active" id="pill-hs-0" onclick="switchHeaderSlide(0)">
+            <span class="hs-step-pill-num">1</span>
+            <span>Favicon &amp; SEO</span>
+          </button>
+          <button type="button" class="hs-step-pill" id="pill-hs-1" onclick="switchHeaderSlide(1)">
+            <span class="hs-step-pill-num">2</span>
+            <span>Brand Logo &amp; Scale</span>
+          </button>
+          <button type="button" class="hs-step-pill" id="pill-hs-2" onclick="switchHeaderSlide(2)">
+            <span class="hs-step-pill-num">3</span>
+            <span>Navigation Sections</span>
+          </button>
+          <button type="button" class="hs-step-pill" id="pill-hs-3" onclick="switchHeaderSlide(3)">
+            <span class="hs-step-pill-num">4</span>
+            <span>Sub-header Tabs</span>
+          </button>
+          <button type="button" class="hs-step-pill" id="pill-hs-4" onclick="switchHeaderSlide(4)">
+            <span class="hs-step-pill-num">5</span>
+            <span>Live Simulation</span>
+          </button>
+        </div>
 
-      <!-- Tab Panel 1: Browser Tab & Favicon (SEO Studio) -->
-      <div class="hs-tab-panel active" id="panel-hs-tabcard">
-        <div class="card hs-card" id="hs-tabcard-card" style="margin-bottom:20px;padding:24px;border-radius:12px;">
-          <div style="display:grid;grid-template-columns:1fr 360px;gap:26px;align-items:start;" class="hs-tabcard-layout">
-            <!-- Left Controls -->
-            <div class="hs-tabcard-controls">
-              <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:18px;margin-bottom:18px;">
-                <h3 style="font-size:14.5px;font-weight:700;color:#0f172a;margin:0 0 14px;display:flex;align-items:center;gap:6px;">
-                  <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--brand);"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
-                  Publication Title &amp; SEO Meta
-                </h3>
-                <div class="form-group" style="margin-bottom:14px;">
-                  <label class="form-label" for="hs-site-title-input" style="font-weight:600;">Publication / Brand Name</label>
-                  <input type="text" id="hs-site-title-input" class="form-input" placeholder="The Privatian Family" value="The Privatian Family" style="background:#fff;" />
-                </div>
-
-                <div class="form-group" style="margin-bottom:14px;">
-                  <label class="form-label" for="hs-tab-tagline-input" style="font-weight:600;">Browser Tab Slogan / Tagline</label>
-                  <input type="text" id="hs-tab-tagline-input" class="form-input" placeholder="Insights, Stories &amp; Heritage" value="Insights, Stories &amp; Heritage" style="background:#fff;" />
-                  <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">Appears after the publication name separated by a dash.</div>
-                </div>
-
-                <div class="form-group" style="margin-bottom:14px;">
-                  <label class="form-label" for="hs-tab-title-custom-input" style="font-weight:600;">
-                    Full Browser Tab Title (&lt;title&gt;)
-                    <span style="font-weight:400;color:var(--text-muted);font-size:11px;">(Auto-composed or custom override)</span>
-                  </label>
-                  <input type="text" id="hs-tab-title-custom-input" class="form-input" placeholder="The Privatian Family — Insights, Stories &amp; Heritage" style="background:#fff;" />
-                </div>
-
-                <div class="form-group" style="margin-bottom:0;">
-                  <label class="form-label" for="hs-meta-desc-input" style="font-weight:600;">Meta Description (Search Engines &amp; Social Snippets)</label>
-                  <textarea id="hs-meta-desc-input" class="form-input" rows="2" placeholder="The Official Publication of The Privatian Society — Cambridge, Massachusetts." style="background:#fff;"></textarea>
-                </div>
-              </div>
-
-              <!-- Dedicated Luxury Favicon Studio -->
-              <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:18px;" id="hs-favicon-studio">
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
-                  <h3 style="font-size:14.5px;font-weight:700;color:#0f172a;margin:0;display:flex;align-items:center;gap:6px;">
-                    <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--brand);"><rect x="3" y="3" width="18" height="18" rx="4"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-                    Website Favicon Studio
-                  </h3>
-                  <div style="display:flex;gap:6px;align-items:center;">
-                    <button type="button" class="btn btn--secondary btn--sm" onclick="openFaviconGalleryPicker()" title="Choose or upload favicon via Universal Media Modal" style="font-size:11.5px;padding:4px 9px;">
-                      <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-1px;margin-right:3px;"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg> Choose from Gallery / R2
-                    </button>
-                    <input type="file" id="hs-favicon-file-input" accept=".ico,.png,.svg,.webp,image/*" style="display:none;" onchange="handleFaviconFileUpload(event)" />
-                    <button type="button" class="btn btn--secondary btn--sm" onclick="document.getElementById('hs-favicon-file-input').click()" title="Upload from PC" style="font-size:11.5px;padding:4px 9px;">
-                      <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-1px;margin-right:3px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg> Upload File
-                    </button>
-                    <button type="button" class="btn btn--ghost btn--sm" onclick="resetFaviconToDefault()" title="Reset to default monogram favicon" style="font-size:11.5px;padding:4px 9px;color:var(--text-secondary);">
-                      Reset
-                    </button>
-                  </div>
-                </div>
-
-                <div class="form-group" style="margin-bottom:14px;">
-                  <label class="form-label" for="hs-favicon-input" style="font-weight:600;font-size:12px;">Favicon URL or Cloudflare R2 Unique ID</label>
-                  <input type="text" id="hs-favicon-input" class="form-input" placeholder="e.g. https://... or favicon.ico or img/favicon.png" oninput="onFaviconUrlInput(this.value)" style="background:#fff;" />
-                </div>
-
-                <!-- Multi-Size Favicon Visual Badges -->
-                <div style="background:#ffffff;border:1px solid #e2e8f0;border-radius:8px;padding:12px 14px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
-                  <div style="display:flex;align-items:center;gap:14px;">
-                    <div style="text-align:center;">
-                      <div id="hs-favicon-preview-16" style="width:16px;height:16px;border-radius:3px;background:#0a528e;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:900;color:#fff;overflow:hidden;border:1px solid #cbd5e1;margin:0 auto 4px;">P</div>
-                      <span style="font-size:10px;color:var(--text-muted);">16×16</span>
-                    </div>
-                    <div style="text-align:center;">
-                      <div id="hs-favicon-preview-32" style="width:32px;height:32px;border-radius:6px;background:#0a528e;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:900;color:#fff;overflow:hidden;border:1px solid #cbd5e1;margin:0 auto 4px;">P</div>
-                      <span style="font-size:10px;color:var(--text-muted);">32×32</span>
-                    </div>
-                    <div style="text-align:center;">
-                      <div id="hs-favicon-preview-48" style="width:48px;height:48px;border-radius:8px;background:#0a528e;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:900;color:#fff;overflow:hidden;border:1px solid #cbd5e1;margin:0 auto 4px;">P</div>
-                      <span style="font-size:10px;color:var(--text-muted);">48×48 (PWA)</span>
-                    </div>
-                  </div>
-                  <div style="font-size:11.5px;color:var(--text-secondary);max-width:220px;line-height:1.35;">
-                    Automatically applied to all browser tabs, mobile bookmarks &amp; home screen shortcuts.
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Right Interactive Tab Hover Card Live Preview -->
-            <div class="hs-tabcard-preview-wrap" style="background:#0f172a;border:1px solid #1e293b;border-radius:12px;padding:18px;color:#fff;position:sticky;top:20px;">
-              <div style="font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#38bdf8;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;">
-                <span>Live Browser Tab Simulation</span>
-                <span class="ft-pulse-dot" style="width:6px;height:6px;"></span>
-              </div>
-
-              <!-- Browser Chrome Tab Simulation -->
-              <div class="browser-tab-sim" style="background:#1e293b;border-radius:8px 8px 0 0;padding:6px 10px 0;border-bottom:2px solid #334155;">
-                <div class="browser-tab-item active" style="background:#0f172a;border-radius:6px 6px 0 0;padding:8px 12px;display:flex;align-items:center;gap:8px;max-width:260px;position:relative;border:1px solid #334155;border-bottom:none;">
-                  <div class="browser-tab-favicon" id="browser-tab-sim-favicon" style="width:14px;height:14px;border-radius:50%;background:#0a528e;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:900;color:#fff;flex-shrink:0;overflow:hidden;">P</div>
-                  <span id="browser-tab-preview-title" style="font-size:11.5px;font-weight:500;color:#e2e8f0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;">The Privatian Family — Insights...</span>
-                  <span style="font-size:10px;color:#64748b;cursor:pointer;">✕</span>
-                </div>
-              </div>
-
-              <!-- Realistic Chrome/Edge Tab Hover Card -->
-              <div class="tab-hover-card-preview" style="background:#1e293b;border:1px solid #334155;border-radius:10px;padding:14px;margin-top:12px;box-shadow:0 12px 32px rgba(0,0,0,0.5);">
-                <div style="display:flex;align-items:flex-start;gap:10px;">
-                  <div id="hover-card-sim-favicon" style="width:20px;height:20px;border-radius:4px;background:#0a528e;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:900;color:#fff;flex-shrink:0;margin-top:2px;overflow:hidden;">P</div>
-                  <div style="flex:1;min-width:0;">
-                    <div id="hover-card-preview-title" style="font-size:13px;font-weight:600;color:#f8fafc;line-height:1.35;word-break:break-word;">
-                      The Privatian Family — Insights, Stories &amp; Heritage
-                    </div>
-                    <div style="font-size:11.5px;color:#94a3b8;margin-top:3px;">
-                      theprivatianfamily.vercel.app
-                    </div>
-                  </div>
-                </div>
-                <div style="margin-top:12px;padding-top:10px;border-top:1px solid rgba(255,255,255,0.08);display:flex;align-items:center;gap:6px;font-size:11px;color:#60a5fa;">
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-                  <span>Appears on browser tab hover &amp; search preview</span>
-                </div>
-              </div>
-            </div>
-          </div>
+        <div style="display:flex;align-items:center;gap:6px;">
+          <button type="button" class="btn btn--ghost btn--sm" id="hs-nav-prev-top" onclick="navigateHeaderSlide(-1)" title="Previous Section (Swipe Right)">
+            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+            <span>Prev</span>
+          </button>
+          <button type="button" class="btn btn--secondary btn--sm" id="hs-nav-next-top" onclick="navigateHeaderSlide(1)" title="Next Section (Swipe Left)">
+            <span>Next</span>
+            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
         </div>
       </div>
 
-      <!-- Tab Panel 2: Header Brand Logo & Scale -->
-      <div class="hs-tab-panel" id="panel-hs-logo" style="display:none;">
-        <div class="card hs-card" id="hs-logo-card" style="padding:24px;border-radius:12px;margin-bottom:20px;">
-          <!-- BRAND LOGO & LIVE PREVIEW CARD -->
-          <div style="background:#090e17;border:1px solid #1e293b;border-radius:12px;padding:24px;margin-bottom:0;color:#fff;">
-            <div style="font-size:12px;font-weight:700;letter-spacing:0.06em;color:#38bdf8;text-transform:uppercase;margin-bottom:14px;display:flex;align-items:center;gap:6px;">
-              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" style="display:inline-block;vertical-align:-2px;"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-              Header Brand Logo &amp; Live Composite Preview
-            </div>
+      <!-- Horizontal Swipeable Viewport -->
+      <div class="hs-slider-viewport" id="hs-slider-viewport">
+        <div class="hs-slider-track" id="hs-slider-track">
+          
+          <!-- SLIDE 1: Browser Tab & Favicon (SEO Studio) -->
+          <div class="hs-slide-item" id="slide-hs-0">
+            <div class="card hs-card" style="margin-bottom:0;padding:22px;border-radius:12px;">
+              <div style="display:grid;grid-template-columns:1fr 340px;gap:22px;align-items:start;" class="hs-tabcard-layout">
+                <!-- Left Controls -->
+                <div class="hs-tabcard-controls">
+                  <!-- Favicon Studio First (Top Priority) -->
+                  <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:18px;margin-bottom:16px;" id="hs-favicon-studio">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
+                      <div>
+                        <h3 style="font-size:14.5px;font-weight:700;color:#0f172a;margin:0 0 2px;display:flex;align-items:center;gap:6px;">
+                          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--brand);"><rect x="3" y="3" width="18" height="18" rx="4"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                          Website Favicon Studio
+                        </h3>
+                        <p style="font-size:11.5px;color:var(--text-muted);margin:0;">Upload from PC, drag &amp; drop, or pick from R2 Media Gallery</p>
+                      </div>
+                      <div style="display:flex;gap:6px;align-items:center;">
+                        <button type="button" class="btn btn--primary btn--sm" onclick="openFaviconMediaModal()" title="Open Common Image Upload Popup" style="font-size:12px;padding:5px 12px;display:flex;align-items:center;gap:6px;">
+                          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                          <span>Upload / Select Favicon</span>
+                        </button>
+                        <button type="button" class="btn btn--ghost btn--sm" onclick="resetFaviconToDefault()" title="Reset to default monogram favicon" style="font-size:11.5px;padding:5px 9px;color:var(--text-secondary);">
+                          Reset
+                        </button>
+                      </div>
+                    </div>
 
-            <!-- Composite Preview on dark luxury background -->
-            <div style="background:#05080e;border:1px dashed rgba(255,255,255,0.15);border-radius:10px;padding:22px;margin-bottom:20px;display:flex;flex-direction:column;align-items:flex-start;">
-              <div id="hs-logo-render-preview" style="margin-bottom:8px;display:inline-block;"></div>
-              <div id="hs-tagline-preview-text" style="font-size:12px;color:rgba(255,255,255,0.7);margin-top:2px;line-height:1.4;">Insights, Stories &amp; Heritage</div>
-            </div>
+                    <div class="form-group" style="margin-bottom:12px;">
+                      <label class="form-label" for="hs-favicon-input" style="font-weight:600;font-size:11.5px;color:#334155;">Favicon Image URL or Cloudflare R2 Unique ID</label>
+                      <input type="text" id="hs-favicon-input" class="form-input" placeholder="Paste URL or choose via Upload/Select button above" oninput="onFaviconUrlInput(this.value)" style="background:#fff;font-size:12.5px;" />
+                    </div>
 
-            <!-- Logo Configuration Controls -->
-            <div style="display:grid;grid-template-columns:1fr;gap:18px;">
-              <div>
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;flex-wrap:wrap;gap:8px;">
-                  <label class="form-label" for="hs-logo-svg-input" style="color:#e2e8f0;margin:0;font-weight:700;">SVG Logo Code <span style="font-weight:400;color:#94a3b8;">(SVG only — paste &lt;svg&gt;...&lt;/svg&gt; code)</span></label>
-                  <div style="display:flex;gap:6px;align-items:center;">
-                    <button type="button" class="btn btn--ghost btn--sm" onclick="openUniversalMediaModal(item => { if(item.url) fetch(item.url).then(r=>r.text()).then(svg=>{ if(svg.includes('<svg')) { onHeaderLogoSvgInput(svg); if(document.getElementById('hs-logo-svg-input')) document.getElementById('hs-logo-svg-input').value = svg; showToast('success', 'Logo loaded from gallery!'); } }); })" style="color:#38bdf8;border-color:rgba(56,189,248,0.3);padding:4px 10px;font-size:11.5px;display:flex;align-items:center;gap:5px;">
-                      <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-                      Choose from Gallery
-                    </button>
-                    <input type="file" id="hs-logo-file-input" accept=".svg,image/svg+xml" style="display:none;" onchange="handleHeaderSvgFileUpload(event)" />
-                    <button type="button" class="btn btn--ghost btn--sm" onclick="document.getElementById('hs-logo-file-input').click()" style="color:#38bdf8;border-color:rgba(56,189,248,0.3);padding:4px 10px;font-size:11.5px;display:flex;align-items:center;gap:5px;">
-                      <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-                      Upload .SVG File
+                    <!-- Multi-Size Favicon Visual Badges -->
+                    <div style="background:#ffffff;border:1px solid #e2e8f0;border-radius:8px;padding:10px 14px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+                      <div style="display:flex;align-items:center;gap:14px;">
+                        <div style="text-align:center;">
+                          <div id="hs-favicon-preview-16" style="width:16px;height:16px;border-radius:3px;background:#0a528e;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:900;color:#fff;overflow:hidden;border:1px solid #cbd5e1;margin:0 auto 3px;">P</div>
+                          <span style="font-size:10px;color:var(--text-muted);">16×16</span>
+                        </div>
+                        <div style="text-align:center;">
+                          <div id="hs-favicon-preview-32" style="width:32px;height:32px;border-radius:6px;background:#0a528e;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:900;color:#fff;overflow:hidden;border:1px solid #cbd5e1;margin:0 auto 3px;">P</div>
+                          <span style="font-size:10px;color:var(--text-muted);">32×32</span>
+                        </div>
+                        <div style="text-align:center;">
+                          <div id="hs-favicon-preview-48" style="width:48px;height:48px;border-radius:8px;background:#0a528e;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:900;color:#fff;overflow:hidden;border:1px solid #cbd5e1;margin:0 auto 3px;">P</div>
+                          <span style="font-size:10px;color:var(--text-muted);">48×48</span>
+                        </div>
+                      </div>
+                      <div style="font-size:11px;color:var(--text-secondary);max-width:210px;line-height:1.35;">
+                        Instant dynamic sync across browser tabs, bookmarks &amp; mobile home screens.
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Publication & SEO Meta -->
+                  <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:16px;">
+                    <h3 style="font-size:13.5px;font-weight:700;color:#0f172a;margin:0 0 12px;display:flex;align-items:center;gap:6px;">
+                      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--brand);"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                      Publication Title &amp; SEO Meta
+                    </h3>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:10px;">
+                      <div class="form-group" style="margin-bottom:0;">
+                        <label class="form-label" for="hs-site-title-input" style="font-weight:600;font-size:11.5px;">Brand / Publication Name</label>
+                        <input type="text" id="hs-site-title-input" class="form-input" placeholder="The Privatian Family" value="The Privatian Family" style="background:#fff;" />
+                      </div>
+                      <div class="form-group" style="margin-bottom:0;">
+                        <label class="form-label" for="hs-tab-tagline-input" style="font-weight:600;font-size:11.5px;">Browser Tab Tagline</label>
+                        <input type="text" id="hs-tab-tagline-input" class="form-input" placeholder="Insights, Stories &amp; Heritage" value="Insights, Stories &amp; Heritage" style="background:#fff;" />
+                      </div>
+                    </div>
+                    <div class="form-group" style="margin-bottom:10px;">
+                      <label class="form-label" for="hs-tab-title-custom-input" style="font-weight:600;font-size:11.5px;">Full &lt;title&gt; Tag Override</label>
+                      <input type="text" id="hs-tab-title-custom-input" class="form-input" placeholder="The Privatian Family — Insights, Stories &amp; Heritage" style="background:#fff;" />
+                    </div>
+                    <div class="form-group" style="margin-bottom:0;">
+                      <label class="form-label" for="hs-meta-desc-input" style="font-weight:600;font-size:11.5px;">Meta Description</label>
+                      <textarea id="hs-meta-desc-input" class="form-input" rows="2" placeholder="The Official Publication of The Privatian Society — Cambridge, Massachusetts." style="background:#fff;"></textarea>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Right Live Preview -->
+                <div class="hs-tabcard-preview-wrap" style="background:#0f172a;border:1px solid #1e293b;border-radius:10px;padding:16px;color:#fff;">
+                  <div style="font-size:11px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:#38bdf8;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;">
+                    <span>Live Tab Simulation</span>
+                    <span class="ft-pulse-dot" style="width:6px;height:6px;"></span>
+                  </div>
+
+                  <!-- Chrome Tab Simulation -->
+                  <div class="browser-tab-sim" style="background:#1e293b;border-radius:6px 6px 0 0;padding:5px 8px 0;border-bottom:2px solid #334155;">
+                    <div class="browser-tab-item active" style="background:#0f172a;border-radius:5px 5px 0 0;padding:6px 10px;display:flex;align-items:center;gap:6px;position:relative;border:1px solid #334155;border-bottom:none;">
+                      <div class="browser-tab-favicon" id="browser-tab-sim-favicon" style="width:14px;height:14px;border-radius:50%;background:#0a528e;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:900;color:#fff;flex-shrink:0;overflow:hidden;">P</div>
+                      <span id="browser-tab-preview-title" style="font-size:11px;font-weight:500;color:#e2e8f0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;">The Privatian Family — Insights...</span>
+                      <span style="font-size:10px;color:#64748b;">✕</span>
+                    </div>
+                  </div>
+
+                  <!-- Hover Card Preview -->
+                  <div class="tab-hover-card-preview" style="background:#1e293b;border:1px solid #334155;border-radius:8px;padding:12px;margin-top:10px;box-shadow:0 8px 24px rgba(0,0,0,0.5);">
+                    <div style="display:flex;align-items:flex-start;gap:8px;">
+                      <div id="hover-card-sim-favicon" style="width:18px;height:18px;border-radius:4px;background:#0a528e;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:900;color:#fff;flex-shrink:0;margin-top:2px;overflow:hidden;">P</div>
+                      <div style="flex:1;min-width:0;">
+                        <div id="hover-card-preview-title" style="font-size:12px;font-weight:600;color:#f8fafc;line-height:1.35;word-break:break-word;">
+                          The Privatian Family — Insights, Stories &amp; Heritage
+                        </div>
+                        <div style="font-size:10.5px;color:#94a3b8;margin-top:2px;">
+                          theprivatianfamily.vercel.app
+                        </div>
+                      </div>
+                    </div>
+                    <div style="margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,0.08);font-size:10.5px;color:#60a5fa;display:flex;align-items:center;gap:4px;">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                      <span>Browser tab hover &amp; search snippet</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- SLIDE 2: Header Brand Logo & Scale -->
+          <div class="hs-slide-item" id="slide-hs-1">
+            <div class="card hs-card" style="padding:22px;border-radius:12px;margin-bottom:0;">
+              <div style="background:#090e17;border:1px solid #1e293b;border-radius:10px;padding:20px;color:#fff;">
+                <div style="font-size:12px;font-weight:700;letter-spacing:0.06em;color:#38bdf8;text-transform:uppercase;margin-bottom:12px;display:flex;align-items:center;gap:6px;">
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                  Header Brand Logo &amp; Live Composite Preview
+                </div>
+
+                <div style="background:#05080e;border:1px dashed rgba(255,255,255,0.15);border-radius:8px;padding:18px;margin-bottom:16px;display:flex;flex-direction:column;align-items:flex-start;">
+                  <div id="hs-logo-render-preview" style="margin-bottom:6px;display:inline-block;"></div>
+                  <div id="hs-tagline-preview-text" style="font-size:12px;color:rgba(255,255,255,0.7);margin-top:2px;">Insights, Stories &amp; Heritage</div>
+                </div>
+
+                <div style="display:grid;grid-template-columns:1fr;gap:14px;">
+                  <div>
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;flex-wrap:wrap;gap:8px;">
+                      <label class="form-label" for="hs-logo-svg-input" style="color:#e2e8f0;margin:0;font-weight:700;font-size:12px;">SVG Logo Code <span style="font-weight:400;color:#94a3b8;">(&lt;svg&gt;...&lt;/svg&gt;)</span></label>
+                      <div style="display:flex;gap:6px;align-items:center;">
+                        <button type="button" class="btn btn--ghost btn--sm" onclick="openUniversalMediaModal(item => { if(item.url) fetch(item.url).then(r=>r.text()).then(svg=>{ if(svg.includes('<svg')) { onHeaderLogoSvgInput(svg); if(document.getElementById('hs-logo-svg-input')) document.getElementById('hs-logo-svg-input').value = svg; showToast('success', 'Logo loaded from media manager!'); } }); })" style="color:#38bdf8;border-color:rgba(56,189,248,0.3);padding:3px 9px;font-size:11px;display:flex;align-items:center;gap:4px;">
+                          <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                          Pick from Gallery / R2
+                        </button>
+                        <input type="file" id="hs-logo-file-input" accept=".svg,image/svg+xml" style="display:none;" onchange="handleHeaderSvgFileUpload(event)" />
+                        <button type="button" class="btn btn--ghost btn--sm" onclick="document.getElementById('hs-logo-file-input').click()" style="color:#38bdf8;border-color:rgba(56,189,248,0.3);padding:3px 9px;font-size:11px;display:flex;align-items:center;gap:4px;">
+                          <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                          Upload .SVG
+                        </button>
+                      </div>
+                    </div>
+                    <textarea id="hs-logo-svg-input" class="form-input hs-svg-textarea" placeholder="Paste custom <svg>...</svg> code here. Leave empty to use default site logo." rows="4" oninput="onHeaderLogoSvgInput(this.value)" style="background:#0f172a;color:#f8fafc;border-color:#334155;font-family:monospace;font-size:12px;"></textarea>
+                  </div>
+
+                  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;background:#0f172a;border:1px solid #1e293b;border-radius:8px;padding:12px 16px;">
+                    <div style="flex:1;min-width:220px;">
+                      <label class="form-label" style="color:#e2e8f0;margin-bottom:4px;font-weight:700;font-size:12px;">Logo Scale: <strong id="hs-logo-height-val" style="color:#38bdf8;">80</strong>px</label>
+                      <div class="hs-range-wrap">
+                        <span class="hs-range-min" style="color:#94a3b8;">30</span>
+                        <input type="range" id="hs-logo-height-slider" class="hs-range" min="30" max="160" value="80" step="2" oninput="onHeaderLogoHeightInput(this.value)" />
+                        <span class="hs-range-max" style="color:#94a3b8;">160</span>
+                      </div>
+                    </div>
+                    <button type="button" class="btn btn--ghost btn--sm" onclick="resetHeaderLogoToDefault()" style="color:#cbd5e1;border-color:#475569;font-size:11px;">
+                      Reset to Default
                     </button>
                   </div>
                 </div>
-                <textarea id="hs-logo-svg-input" class="form-input hs-svg-textarea" placeholder="Paste your custom <svg>...</svg> code here&#10;Leave empty to use the default site logo." rows="5" oninput="onHeaderLogoSvgInput(this.value)" style="background:#0f172a;color:#f8fafc;border-color:#334155;font-family:monospace;font-size:12px;"></textarea>
+              </div>
+            </div>
+          </div>
+
+          <!-- SLIDE 3: Navigation Sections -->
+          <div class="hs-slide-item" id="slide-hs-2">
+            <div class="card hs-card" style="padding:22px;border-radius:12px;margin-bottom:0;">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
+                <div>
+                  <h3 style="font-size:14.5px;font-weight:700;color:var(--text-primary);margin:0 0 2px;">Header Navigation Bar Sections</h3>
+                  <p style="font-size:12px;color:var(--text-muted);margin:0;">Toggle visibility or reorder categories shown in the main header navbar</p>
+                </div>
+                <div style="display:flex;gap:6px;">
+                  <button type="button" class="btn btn--ghost btn--sm" onclick="selectAllHeaderSections(true)">Select All</button>
+                  <button type="button" class="btn btn--ghost btn--sm" onclick="selectAllHeaderSections(false)">Deselect All</button>
+                </div>
+              </div>
+              <div id="hs-nav-sections-list" class="hs-section-list"></div>
+            </div>
+          </div>
+
+          <!-- SLIDE 4: Sub-header Tabs -->
+          <div class="hs-slide-item" id="slide-hs-3">
+            <div class="card hs-card" style="padding:22px;border-radius:12px;margin-bottom:0;">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
+                <div>
+                  <h3 style="font-size:14.5px;font-weight:700;color:var(--text-primary);margin:0 0 2px;">Sub-header Secondary Tabs</h3>
+                  <p style="font-size:12px;color:var(--text-muted);margin:0;">Secondary bar tabs below main navigation (e.g. FAMILY LEGACY, EXPERIENCE, EVENTS)</p>
+                </div>
+                <button class="btn btn--primary btn--sm" id="hs-add-subsection-btn" style="display:flex;align-items:center;gap:5px;">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                  Add Sub-header Tab
+                </button>
               </div>
 
-              <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;background:#0f172a;border:1px solid #1e293b;border-radius:8px;padding:14px 18px;">
-                <div style="flex:1;min-width:240px;">
-                  <label class="form-label" style="color:#e2e8f0;margin-bottom:6px;font-weight:700;">Logo Height / Scale: <strong id="hs-logo-height-val" style="color:#38bdf8;">80</strong>px</label>
-                  <div class="hs-range-wrap">
-                    <span class="hs-range-min" style="color:#94a3b8;">30</span>
-                    <input type="range" id="hs-logo-height-slider" class="hs-range" min="30" max="160" value="80" step="2" oninput="onHeaderLogoHeightInput(this.value)" />
-                    <span class="hs-range-max" style="color:#94a3b8;">160</span>
+              <div id="hs-subsections-list" class="hs-sub-list"></div>
+
+              <div class="hs-add-form" id="hs-add-form" hidden style="margin-top:12px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:14px;">
+                <h4 style="font-size:12.5px;font-weight:700;color:#0f172a;margin:0 0 8px;">Add New Sub-header Tab</h4>
+                <div class="hs-add-form-grid">
+                  <div class="form-group">
+                    <label class="form-label" for="hs-new-label">Tab Label</label>
+                    <input type="text" id="hs-new-label" class="form-input" placeholder="E.g. CULTURE" maxlength="40">
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label" for="hs-new-href">Link URL</label>
+                    <input type="text" id="hs-new-href" class="form-input" placeholder="/section/culture or section.html?slug=culture">
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label" for="hs-new-icon">Icon</label>
+                    <select id="hs-new-icon" class="form-input">
+                      <option value="">None</option>
+                      <option value="calendar">Calendar Icon</option>
+                    </select>
+                  </div>
+                  <div class="hs-add-form-btns">
+                    <button class="btn btn--primary btn--sm" id="hs-add-confirm-btn">Add Tab</button>
+                    <button class="btn btn--ghost btn--sm" id="hs-add-cancel-btn">Cancel</button>
                   </div>
                 </div>
-                <div style="display:flex;gap:8px;align-items:center;">
-                  <button type="button" class="btn btn--ghost btn--sm" onclick="resetHeaderLogoToDefault()" style="color:#cbd5e1;border-color:#475569;">
-                    Reset to Default Logo
-                  </button>
-                </div>
               </div>
             </div>
           </div>
+
+          <!-- SLIDE 5: Live Header Preview Canvas -->
+          <div class="hs-slide-item" id="slide-hs-4">
+            <div class="card" style="padding:20px;margin-bottom:0;background:#1e293b;color:#fff;border-radius:12px;border:1px solid #334155;">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;border-bottom:1px solid rgba(255,255,255,0.1);padding-bottom:10px;">
+                <div style="font-size:12.5px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:#94a3b8;">Full Header Live Interactive Simulation</div>
+                <button class="btn btn--ghost btn--sm" style="color:#fff;border-color:rgba(255,255,255,0.2);" onclick="renderHeaderPreviewCanvas()">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+                  Refresh Canvas
+                </button>
+              </div>
+              <div id="hs-live-preview-box" class="hs-live-preview-container" style="background:#ffffff;color:#0d1f35;border-radius:8px;overflow:hidden;box-shadow:0 10px 25px rgba(0,0,0,0.3);"></div>
+            </div>
+          </div>
+
         </div>
       </div>
 
-      <!-- Tab Panel 3: Navigation Sections -->
-      <div class="hs-tab-panel" id="panel-hs-nav" style="display:none;">
-        <div class="card hs-card" id="hs-nav-card" style="padding:24px;border-radius:12px;margin-bottom:20px;">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px;">
-            <div>
-              <h3 style="font-size:15px;font-weight:700;color:var(--text-primary);margin:0 0 2px;">Header Navigation Bar Sections</h3>
-              <p style="font-size:12px;color:var(--text-muted);margin:0;">Toggle visibility or reorder categories shown in the main header navbar</p>
-            </div>
-            <div style="display:flex;gap:8px;">
-              <button type="button" class="btn btn--ghost btn--sm" onclick="selectAllHeaderSections(true)">Select All</button>
-              <button type="button" class="btn btn--ghost btn--sm" onclick="selectAllHeaderSections(false)">Deselect All</button>
-            </div>
-          </div>
-          <div id="hs-nav-sections-list" class="hs-section-list"></div>
+      <!-- Horizontal Swipe / Step Footer Navigation Controls -->
+      <div class="hs-slider-footer-nav" id="hs-slider-footer-nav">
+        <button type="button" class="btn btn--ghost btn--sm" id="hs-nav-prev-btn" onclick="navigateHeaderSlide(-1)" style="display:flex;align-items:center;gap:6px;">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+          <span>Previous Section</span>
+        </button>
+
+        <div class="hs-slide-counter-badge" id="hs-slide-counter-badge">
+          <span class="dot"></span>
+          <span id="hs-slide-step-text">Section 1 of 5: Favicon &amp; SEO</span>
         </div>
-      </div>
 
-      <!-- Tab Panel 4: Sub-header Tabs -->
-      <div class="hs-tab-panel" id="panel-hs-sub" style="display:none;">
-        <div class="card hs-card" id="hs-sub-card" style="padding:24px;border-radius:12px;margin-bottom:20px;">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px;">
-            <div>
-              <h3 style="font-size:15px;font-weight:700;color:var(--text-primary);margin:0 0 2px;">Sub-header Secondary Tabs</h3>
-              <p style="font-size:12px;color:var(--text-muted);margin:0;">These tabs appear in the secondary bar below the main navigation (e.g. FAMILY LEGACY, EXPERIENCE, EVENTS)</p>
-            </div>
-            <button class="btn btn--primary btn--sm" id="hs-add-subsection-btn" style="display:flex;align-items:center;gap:6px;">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-              Add Sub-header Tab
-            </button>
-          </div>
-
-          <div id="hs-subsections-list" class="hs-sub-list"></div>
-
-          <div class="hs-add-form" id="hs-add-form" hidden style="margin-top:14px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:16px;">
-            <h4 style="font-size:13px;font-weight:700;color:#0f172a;margin:0 0 10px;">Add New Sub-header Tab</h4>
-            <div class="hs-add-form-grid">
-              <div class="form-group">
-                <label class="form-label" for="hs-new-label">Tab Label</label>
-                <input type="text" id="hs-new-label" class="form-input" placeholder="E.g. CULTURE" maxlength="40">
-              </div>
-              <div class="form-group">
-                <label class="form-label" for="hs-new-href">Link URL</label>
-                <input type="text" id="hs-new-href" class="form-input" placeholder="/section/culture or section.html?slug=culture">
-              </div>
-              <div class="form-group">
-                <label class="form-label" for="hs-new-icon">Icon</label>
-                <select id="hs-new-icon" class="form-input">
-                  <option value="">None</option>
-                  <option value="calendar">Calendar Icon</option>
-                </select>
-              </div>
-              <div class="hs-add-form-btns">
-                <button class="btn btn--primary btn--sm" id="hs-add-confirm-btn">Add Tab</button>
-                <button class="btn btn--ghost btn--sm" id="hs-add-cancel-btn">Cancel</button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Tab Panel 5: Live Header Preview Canvas -->
-      <div class="hs-tab-panel" id="panel-hs-preview" style="display:none;">
-        <div class="card" style="padding:22px;margin-bottom:20px;background:#1e293b;color:#fff;border-radius:12px;border:1px solid #334155;">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;border-bottom:1px solid rgba(255,255,255,0.1);padding-bottom:12px;">
-            <div style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:#94a3b8;">Interactive Header Live Simulation</div>
-            <button class="btn btn--ghost btn--sm" style="color:#fff;border-color:rgba(255,255,255,0.2);" onclick="renderHeaderPreviewCanvas()">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
-              Refresh Canvas
-            </button>
-          </div>
-          <div id="hs-live-preview-box" class="hs-live-preview-container" style="background:#ffffff;color:#0d1f35;border-radius:8px;overflow:hidden;box-shadow:0 10px 25px rgba(0,0,0,0.3);"></div>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <button type="button" class="btn btn--secondary btn--sm" id="hs-nav-next-btn" onclick="navigateHeaderSlide(1)" style="display:flex;align-items:center;gap:6px;">
+            <span>Next Section</span>
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+          <button type="button" class="btn btn--primary btn--sm" onclick="document.getElementById('hs-save-btn').click()" style="display:flex;align-items:center;gap:6px;">
+            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="20 6 9 17 4 12"/></svg>
+            <span>Save All</span>
+          </button>
         </div>
       </div>
 

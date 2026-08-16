@@ -2420,18 +2420,104 @@ async function loadHeaderSettings() {
   return Object.assign({}, DEFAULT_HEADER_SETTINGS);
 }
 
-// ── Header Segmented Tabs Switcher ───────────────────────────────
-function switchHeaderTab(tabKey) {
-  const tabs = ['tabcard', 'logo', 'nav', 'sub', 'preview'];
-  tabs.forEach(t => {
-    const btn = document.getElementById('tab-hs-' + t);
-    const panel = document.getElementById('panel-hs-' + t);
-    if (btn) btn.classList.toggle('active', t === tabKey);
-    if (panel) panel.style.display = (t === tabKey) ? 'block' : 'none';
+// ── Header Settings Horizontal Swipeable Slider (Pashapashi Swipe) ──
+let _currentHeaderSlide = 0;
+const HEADER_SLIDE_TITLES = ['Favicon & SEO', 'Brand Logo & Scale', 'Navigation Sections', 'Sub-header Tabs', 'Live Simulation'];
+const HEADER_SLIDE_KEYS = ['tabcard', 'logo', 'nav', 'sub', 'preview'];
+
+function switchHeaderSlide(indexOrKey) {
+  let idx = 0;
+  if (typeof indexOrKey === 'string') {
+    const foundIdx = HEADER_SLIDE_KEYS.indexOf(indexOrKey);
+    idx = foundIdx !== -1 ? foundIdx : 0;
+  } else {
+    idx = Math.max(0, Math.min(4, parseInt(indexOrKey, 10) || 0));
+  }
+
+  _currentHeaderSlide = idx;
+
+  // Move slider track horizontally
+  const track = document.getElementById('hs-slider-track');
+  if (track) {
+    track.style.transform = `translateX(-${idx * 20}%)`;
+  }
+
+  // Update top step pills
+  HEADER_SLIDE_KEYS.forEach((k, i) => {
+    const pill = document.getElementById(`pill-hs-${i}`);
+    if (pill) pill.classList.toggle('active', i === idx);
   });
-  if (tabKey === 'preview') {
+
+  // Update status badge text & navigation buttons
+  const stepText = document.getElementById('hs-slide-step-text');
+  if (stepText) {
+    stepText.textContent = `Section ${idx + 1} of 5: ${HEADER_SLIDE_TITLES[idx]}`;
+  }
+
+  const prevBtnTop = document.getElementById('hs-nav-prev-top');
+  const prevBtnBottom = document.getElementById('hs-nav-prev-btn');
+  const nextBtnTop = document.getElementById('hs-nav-next-top');
+  const nextBtnBottom = document.getElementById('hs-nav-next-btn');
+
+  if (prevBtnTop) prevBtnTop.disabled = (idx === 0);
+  if (prevBtnBottom) prevBtnBottom.disabled = (idx === 0);
+  if (nextBtnTop) nextBtnTop.disabled = (idx === 4);
+  if (nextBtnBottom) {
+    if (idx === 4) {
+      nextBtnBottom.innerHTML = `<span>Completed (5/5)</span>`;
+      nextBtnBottom.disabled = true;
+    } else {
+      nextBtnBottom.innerHTML = `<span>Next Section</span><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>`;
+      nextBtnBottom.disabled = false;
+    }
+  }
+
+  if (idx === 4) {
     renderHeaderPreviewCanvas();
   }
+}
+
+function navigateHeaderSlide(delta) {
+  switchHeaderSlide(_currentHeaderSlide + delta);
+}
+
+// Backward compatibility alias
+function switchHeaderTab(tabKey) {
+  switchHeaderSlide(tabKey);
+}
+
+// Attach touch swipe and drag gestures
+function initHeaderSliderGestures() {
+  const viewport = document.getElementById('hs-slider-viewport');
+  if (!viewport || viewport.dataset.gesturesBound) return;
+  viewport.dataset.gesturesBound = 'true';
+
+  let startX = 0;
+  let startY = 0;
+  let isDragging = false;
+
+  viewport.addEventListener('touchstart', (e) => {
+    if (e.touches && e.touches.length === 1) {
+      startX = e.touches[0].clientX;
+      startY = e.touches[0].clientY;
+      isDragging = true;
+    }
+  }, { passive: true });
+
+  viewport.addEventListener('touchend', (e) => {
+    if (!isDragging) return;
+    isDragging = false;
+    if (!e.changedTouches || !e.changedTouches.length) return;
+    const diffX = e.changedTouches[0].clientX - startX;
+    const diffY = e.changedTouches[0].clientY - startY;
+    if (Math.abs(diffX) > 40 && Math.abs(diffX) > Math.abs(diffY)) {
+      if (diffX < 0) {
+        navigateHeaderSlide(1);
+      } else {
+        navigateHeaderSlide(-1);
+      }
+    }
+  }, { passive: true });
 }
 
 // ── Favicon Studio Helpers ───────────────────────────────────────
@@ -2462,7 +2548,7 @@ function updateFaviconPreviews(url) {
   setImgOrMonogram(p32, 32, 14, 6);
   setImgOrMonogram(p48, 48, 20, 8);
   setImgOrMonogram(simTab, 14, 8, 7);
-  setImgOrMonogram(simHover, 20, 11, 4);
+  setImgOrMonogram(simHover, 18, 10, 4);
 }
 
 function onFaviconUrlInput(url) {
@@ -2472,18 +2558,22 @@ function onFaviconUrlInput(url) {
   updateGlobalSyncStatus();
 }
 
-function openFaviconGalleryPicker() {
+/**
+ * Universal Common Image Upload Modal for Favicon
+ */
+function openFaviconMediaModal() {
   if (typeof window.openUniversalMediaModal === 'function') {
     window.openUniversalMediaModal({
-      title: 'Choose Website Favicon',
-      subtitle: 'Select from Media Gallery, Cloudflare R2, or upload new .ico / .png / .svg',
-      defaultTab: 'gallery',
+      title: 'Upload or Select Website Favicon',
+      subtitle: 'Upload .ico / .png / .svg from PC, drag & drop, or browse Cloudflare R2 gallery',
+      defaultTab: 'upload',
       allowIdInput: true,
+      targetFolder: 'Logos & Icons',
       onSelect: item => {
         const inp = document.getElementById('hs-favicon-input');
         if (inp) inp.value = item.url;
         onFaviconUrlInput(item.url);
-        showToast('success', `Favicon selected: ${item.title || item.uniqueId || 'Image'}`);
+        showToast('success', `Favicon applied: ${item.title || item.uniqueId || 'Asset'}`);
       }
     });
   } else {
@@ -2491,6 +2581,9 @@ function openFaviconGalleryPicker() {
     if (inp) inp.click();
   }
 }
+
+// Export for backward compatibility
+const openFaviconGalleryPicker = openFaviconMediaModal;
 
 async function handleFaviconFileUpload(event) {
   const file = event.target.files && event.target.files[0];
@@ -3211,6 +3304,8 @@ async function initHeaderPage() {
   renderHsSubsections(_hsInstance);
   bindHsAddForm(_hsInstance);
   bindHsSaveBtn(_hsInstance);
+  initHeaderSliderGestures();
+  switchHeaderSlide(_currentHeaderSlide || 0);
   updateGlobalSyncStatus();
 }
 
