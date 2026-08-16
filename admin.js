@@ -1593,11 +1593,10 @@ function navigateTo(page) {
   if (_currentAdminPage === 'activity')  { loadActivityLogs(); }
   if (_currentAdminPage === 'gallery')   {
     loadGalleryAssets();
-    initGalleryUploadDropzone();
     const btn = document.createElement('button');
     btn.className = 'btn btn--primary';
-    btn.innerHTML = `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Upload Images`;
-    btn.onclick = () => document.getElementById('gallery-file-input').click();
+    btn.innerHTML = `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg> Upload Media`;
+    btn.onclick = () => openGalleryUniversalUpload();
     topbarActions.appendChild(btn);
   }
   if (_currentAdminPage === 'sections') {
@@ -9621,6 +9620,27 @@ function _syncFolderSelectDropdowns() {
   }
 }
 
+// ── Universal Media Modal Integration for Gallery Page ────────────
+function openGalleryUniversalUpload(targetFolder) {
+  const folder = targetFolder !== undefined ? targetFolder : (_galleryActiveFolder !== 'all' && _galleryActiveFolder !== '__root__' ? _galleryActiveFolder : '');
+  if (typeof window.openUniversalMediaModal === 'function') {
+    window.openUniversalMediaModal({
+      title: 'Universal Media Uploader',
+      defaultTab: 'upload',
+      targetFolder: folder,
+      onSelect: () => {
+        if (typeof loadGalleryAssets === 'function') {
+          loadGalleryAssets();
+        }
+      }
+    });
+  } else {
+    const input = document.getElementById('gallery-file-input');
+    if (input) input.click();
+  }
+}
+window.openGalleryUniversalUpload = openGalleryUniversalUpload;
+
 // ── Folder Modal Actions ──────────────────────────────────────────
 function _openNewFolderModal(presetName = '') {
   const modal = document.getElementById('modal-gallery-folder');
@@ -9927,7 +9947,7 @@ function renderGalleryGrid() {
           </div>
           <h3 style="margin:0;font-size:15px;color:var(--text-primary);">${_gallerySearchQuery ? 'No matching images found' : (_galleryActiveFolder !== 'all' ? `No images in "${_galleryActiveFolder}" folder` : 'No images uploaded yet')}</h3>
           <p style="margin:0;font-size:12.5px;color:var(--text-muted);max-width:360px;">${_gallerySearchQuery ? 'Try searching for a different keyword or filename.' : 'Drag & drop images into the upload area above to store them in Cloudflare R2.'}</p>
-          ${!_gallerySearchQuery ? `<button class="btn btn--primary btn--sm" onclick="document.getElementById('gallery-file-input').click()" style="margin-top:4px;">Upload to this folder</button>` : ''}
+          ${!_gallerySearchQuery ? `<button class="btn btn--primary btn--sm" onclick="openGalleryUniversalUpload()" style="margin-top:4px;">Upload to this folder</button>` : ''}
         </div>
       `;
     }

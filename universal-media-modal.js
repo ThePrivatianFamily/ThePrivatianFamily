@@ -10,6 +10,8 @@
 
   // Global state for universal modal
   let _modalCallback = null;
+  let _onUploadComplete = null;
+  let _hideBrowseTab = false;
   let _selectedItem = null;
   let _activeTab = 'gallery'; // 'gallery' | 'upload'
   let _activeFolder = 'all';
@@ -61,7 +63,7 @@
         </div>
 
         <!-- Segmented 2-Tab Navigation -->
-        <div class="umm-tabs">
+        <div class="umm-tabs" id="umm-tabs-container">
           <button type="button" class="umm-tab-btn active" id="umm-tab-btn-gallery" onclick="window._ummSwitchTab('gallery')">
             <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
             <span>Browse Library</span>
@@ -421,10 +423,19 @@
     }
 
     if (uploadedCount > 0) {
-      setTimeout(() => {
-        window._ummSwitchTab('gallery');
-        renderGalleryGrid();
-      }, 500);
+      if (typeof _onUploadComplete === 'function') {
+        try { _onUploadComplete(); } catch(e) {}
+      }
+      if (typeof window.loadGalleryAssets === 'function') {
+        try { window.loadGalleryAssets(); } catch(e) {}
+      }
+
+      if (!_hideBrowseTab) {
+        setTimeout(() => {
+          window._ummSwitchTab('gallery');
+          renderGalleryGrid();
+        }, 500);
+      }
     }
   }
 
@@ -563,6 +574,8 @@
     let subtitle = 'Cloudflare R2 Media Library';
     let defaultTab = 'gallery';
     let targetFolder = '';
+    let hideBrowseTab = false;
+    let onUploadComplete = null;
 
     if (typeof opts === 'function') {
       callback = opts;
@@ -572,23 +585,50 @@
       if (opts.subtitle) subtitle = opts.subtitle;
       if (opts.defaultTab) defaultTab = opts.defaultTab;
       if (opts.targetFolder) targetFolder = opts.targetFolder;
+      if (opts.hideBrowseTab || opts.onlyUpload || opts.hideGalleryTab) hideBrowseTab = true;
+      if (opts.onUploadComplete) onUploadComplete = opts.onUploadComplete;
     }
 
     _modalCallback = callback;
+    _onUploadComplete = onUploadComplete;
+    _hideBrowseTab = hideBrowseTab;
     _selectedItem = null;
     _activeFolder = targetFolder || 'all';
     _lastSearchQuery = '';
+
+    if (_hideBrowseTab) {
+      defaultTab = 'upload';
+      if (!opts.title) title = 'Upload Media to Cloudflare R2';
+      if (!opts.subtitle) subtitle = 'Direct high-speed upload to cloud storage';
+    }
 
     const titleEl = document.getElementById('umm-header-title');
     const subEl = document.getElementById('umm-header-sub');
     const searchInp = document.getElementById('umm-search-input');
     const clearBtn = document.getElementById('umm-search-clear');
     const overlay = document.getElementById('universal-media-modal-overlay');
+    const tabsContainer = document.getElementById('umm-tabs-container');
+    const confirmBtn = document.getElementById('umm-btn-confirm');
+    const cancelBtn = document.querySelector('.umm-btn-cancel');
+    const summaryEl = document.getElementById('umm-selected-summary');
 
     if (titleEl) titleEl.textContent = title;
     if (subEl) subEl.textContent = subtitle;
     if (searchInp) searchInp.value = '';
     if (clearBtn) clearBtn.style.display = 'none';
+
+    if (tabsContainer) {
+      tabsContainer.style.display = _hideBrowseTab ? 'none' : 'flex';
+    }
+    if (confirmBtn) {
+      confirmBtn.style.display = _hideBrowseTab ? 'none' : 'inline-flex';
+    }
+    if (cancelBtn) {
+      cancelBtn.textContent = _hideBrowseTab ? 'Close' : 'Cancel';
+    }
+    if (summaryEl) {
+      summaryEl.style.display = _hideBrowseTab ? 'none' : 'block';
+    }
 
     updateSelectedSummary();
     window._ummSwitchTab(defaultTab);
@@ -610,7 +650,9 @@
     const overlay = document.getElementById('universal-media-modal-overlay');
     if (overlay) overlay.classList.remove('show');
     _modalCallback = null;
+    _onUploadComplete = null;
     _selectedItem = null;
+    _hideBrowseTab = false;
   };
 
   // Standard alias for legacy code

@@ -1960,9 +1960,9 @@
             <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
             <span id="gallery-btn-sync-text">Sync with R2 &amp; DB</span>
           </button>
-          <button class="btn btn--primary btn--sm" id="gallery-btn-upload-trigger" onclick="openUniversalMediaModal({ allowIdInput: false, defaultTab: 'upload', title: 'Upload New Asset to Cloudflare R2' })">
-            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-            <span>Upload New Images</span>
+          <button class="btn btn--primary btn--sm" id="gallery-btn-upload-trigger" onclick="openGalleryUniversalUpload()" title="Open Universal Media Uploader">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            <span>Upload Media (R2)</span>
           </button>
         </div>
       </div>
@@ -2056,10 +2056,6 @@
             </div>
           </div>
           <div class="gallery-folders-actions">
-            <button type="button" class="btn btn--primary btn--sm" onclick="openUniversalMediaModal({ allowIdInput: false, defaultTab: 'upload', title: 'Upload New Asset to Cloudflare R2' })" title="Upload new image with popup uploader">
-              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-              <span>Upload Asset</span>
-            </button>
             <button type="button" class="btn btn--secondary btn--sm" onclick="openAllFoldersModal()" title="View and manage all folders">
               <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
               <span>See All Folders</span>
@@ -2073,37 +2069,6 @@
         <div class="gallery-folders-scroll" id="gallery-folders-list">
           <!-- Dynamically populated max 5 folder chips + See All Folders button -->
         </div>
-      </div>
-
-      <!-- Upload Dropzone Card -->
-      <div class="card gallery-upload-card" id="gallery-upload-zone-wrap">
-        <div class="gallery-upload-header-row" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
-          <div style="display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--text-secondary);">
-            <span style="display:inline-flex;align-items:center;gap:5px;"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--brand);"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg> Upload Destination:</span>
-            <select id="gallery-upload-target-select" class="gallery-folder-select" onchange="_handleTargetFolderChange(this.value)">
-              <option value="">Root / All Media</option>
-            </select>
-          </div>
-          <div style="font-size:11.5px;color:var(--text-muted);">Max 25 MB/file • Automated WebP &amp; CDN Cache</div>
-        </div>
-
-        <div class="gallery-dropzone" id="gallery-dropzone" onclick="document.getElementById('gallery-file-input').click()">
-          <input type="file" id="gallery-file-input" multiple accept="image/jpeg,image/png,image/webp,image/avif,image/svg+xml,image/gif" style="display:none;" />
-          <div class="gallery-dropzone-icon-wrap">
-            <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="1.8">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-              <polyline points="17 8 12 3 7 8"/>
-              <line x1="12" y1="3" x2="12" y2="15"/>
-            </svg>
-          </div>
-          <div class="gallery-dropzone-content">
-            <h3 class="gallery-dropzone-title">Drop your images here, or <span class="gallery-browse-link">browse files</span></h3>
-            <p class="gallery-dropzone-subtitle" id="gallery-dropzone-sub">Supports JPG, PNG, WebP, AVIF, SVG, GIF. Direct high-speed upload to Cloudflare R2.</p>
-          </div>
-        </div>
-
-        <!-- Upload Progress & Status Bar -->
-        <div class="gallery-upload-progress-list" id="gallery-upload-progress-list" style="display:none;"></div>
       </div>
 
       <!-- Main Gallery Toolbar & Grid -->
@@ -2134,7 +2099,7 @@
             <div class="gallery-search-wrap">
               <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
               <input type="text" id="gallery-search-input" placeholder="Search by name, ID or tags..." oninput="_handleGallerySearch()" />
-              <button id="gallery-search-clear" class="gallery-search-clear" onclick="_clearGallerySearch()" style="display:none;" aria-label="Clear search">&times;</button>
+              <button id="gallery-search-clear" class="gallery-search-clear" onclick="_clearGallerySearch()" style="display:none;" aria-label="Clear search"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
             </div>
 
             <select id="gallery-sort-select" class="gallery-sort-select" onchange="_handleGallerySort()">
