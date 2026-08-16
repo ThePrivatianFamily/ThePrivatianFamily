@@ -167,4 +167,22 @@
     }
   })();
 
+  // ── 15-Minute Inactivity Timeout Guard ───────────────────────
+  const INACTIVITY_TIMEOUT_MS = 15 * 60 * 1000;
+  let _lastActivityTime = Date.now();
+
+  function recordActivity() {
+    _lastActivityTime = Date.now();
+  }
+
+  ['mousedown', 'mousemove', 'keydown', 'scroll', 'touchstart', 'input'].forEach(function (evt) {
+    window.addEventListener(evt, recordActivity, { passive: true });
+  });
+
+  setInterval(function () {
+    if (Date.now() - _lastActivityTime > INACTIVITY_TIMEOUT_MS) {
+      redirectToLogin('Your session expired due to 15 minutes of inactivity. Please sign in again.');
+    }
+  }, 20000);
+
 })();
