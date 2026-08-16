@@ -491,22 +491,58 @@ module.exports = async function handler(req, res) {
     let svgsCount = 0;
 
     try {
-      const { data: mediaRow } = await sb.from('site_settings').select('value').eq('key', 'media_library_items').maybeSingle();
-      let mediaItems = (mediaRow && Array.isArray(mediaRow.value)) ? mediaRow.value : [];
-      if (!mediaItems.length) {
-        const { data: fMedia } = await sb.from('sections').select('name').eq('admin_id', '__media_library_items__').maybeSingle();
-        if (fMedia && fMedia.name) {
-          try { mediaItems = JSON.parse(fMedia.name); } catch(e) {}
-        }
-      }
-      if (Array.isArray(mediaItems)) {
-        const activeMedia = mediaItems.filter(m => !m.is_deleted);
-        totalMediaFiles = activeMedia.length;
-        totalMediaBytes = activeMedia.reduce((acc, m) => acc + (m.file_size || 0), 0);
-        svgsCount = activeMedia.filter(m => (m.mime_type && m.mime_type.includes('svg')) || (m.filename && m.filename.endsWith('.svg'))).length;
+      const R2_ACCOUNT_ID = process.env.R2_ACCOUNT_ID || '44fa7e7d93ed3ba71fdc0ce85e2dd0ed';
+      const R2_BUCKET_NAME = process.env.R2_BUCKET_NAME || 'theprivatianfamily';
+      const R2_ACCESS_KEY_ID = process.env.R2_ACCESS_KEY_ID || '51b83c34bbe3d11ceabd3effda70ad02';
+      const R2_SECRET_ACCESS_KEY = process.env.R2_SECRET_ACCESS_KEY || '9f4544f5357f1ebd2c2a4860c8fb1100b59ef2e851ba424d3b4ff9db501a08ec';
+      const R2_ENDPOINT = process.env.R2_ENDPOINT || `https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com`;
+
+      const { S3Client, ListObjectsV2Command } = require('@aws-sdk/client-s3');
+      const r2 = new S3Client({
+        region: 'auto',
+        endpoint: R2_ENDPOINT,
+        credentials: {
+          accessKeyId: R2_ACCESS_KEY_ID,
+          secretAccessKey: R2_SECRET_ACCESS_KEY,
+        },
+      });
+
+      const r2Res = await r2.send(new ListObjectsV2Command({ Bucket: R2_BUCKET_NAME }));
+      if (r2Res && r2Res.Contents && Array.isArray(r2Res.Contents)) {
+        const files = r2Res.Contents.filter(o => !o.Key.endsWith('/'));
+        totalMediaFiles = files.length;
+        totalMediaBytes = files.reduce((acc, o) => acc + (o.Size || 0), 0);
+        svgsCount = files.filter(o => o.Key.toLowerCase().endsWith('.svg')).length;
         photosCount = totalMediaFiles - svgsCount;
       }
-    } catch(e) {}
+    } catch(r2Err) {
+      console.warn('[Dashboard stats R2 query error]:', r2Err.message);
+    }
+
+    // Fallback or addition if Supabase store has items
+    if (totalMediaFiles === 0) {
+      try {
+        const { data: mediaRow } = await sb.from('site_settings').select('value').eq('key', 'privatian_media_library_items').maybeSingle();
+        let mediaItems = (mediaRow && Array.isArray(mediaRow.value)) ? mediaRow.value : [];
+        if (!mediaItems.length) {
+          const { data: fMedia } = await sb.from('sections').select('name').eq('admin_id', '__media_library_store__').maybeSingle();
+          if (fMedia && fMedia.name) {
+            try { mediaItems = JSON.parse(fMedia.name); } catch(e) {}
+          }
+        }
+        if (!mediaItems.length) {
+          const { data: mediaRowOld } = await sb.from('site_settings').select('value').eq('key', 'media_library_items').maybeSingle();
+          if (mediaRowOld && Array.isArray(mediaRowOld.value)) mediaItems = mediaRowOld.value;
+        }
+        if (Array.isArray(mediaItems) && mediaItems.length > 0) {
+          const activeMedia = mediaItems.filter(m => !m.is_deleted && !m.deleted);
+          totalMediaFiles = activeMedia.length;
+          totalMediaBytes = activeMedia.reduce((acc, m) => acc + (m.file_size || m.size || 0), 0);
+          svgsCount = activeMedia.filter(m => (m.mime_type && m.mime_type.includes('svg')) || (m.filename && m.filename.endsWith('.svg'))).length;
+          photosCount = totalMediaFiles - svgsCount;
+        }
+      } catch(e) {}
+    }
 
     let analyticsStore = null;
     try {

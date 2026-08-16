@@ -586,7 +586,16 @@ body {
   max-width: 260px;
 }
 
-/* ── EMPTY STATE ─────────────────────────────────────────── */
+/* ── EMPTY STATE & HIDDEN FIX ────────────────────────────── */
+[hidden],
+.empty-state[hidden],
+.card[hidden],
+.panel[hidden],
+[hidden="true"],
+[hidden="hidden"] {
+  display: none !important;
+}
+
 .empty-state {
   display: flex;
   flex-direction: column;

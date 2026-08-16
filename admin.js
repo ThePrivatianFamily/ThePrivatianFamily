@@ -340,13 +340,20 @@ function render() {
 }
 
 function renderActive(active) {
+  if (!sectionsTable) return;
   sectionsTable.innerHTML = '';
 
-  if (active.length === 0) {
-    activeEmpty.hidden = false;
+  if (!active || active.length === 0) {
+    if (activeEmpty) {
+      activeEmpty.hidden = false;
+      activeEmpty.style.display = 'flex';
+    }
     return;
   }
-  activeEmpty.hidden = true;
+  if (activeEmpty) {
+    activeEmpty.hidden = true;
+    activeEmpty.style.display = 'none';
+  }
 
   // Pin "All" first
   const sorted = [
@@ -418,13 +425,20 @@ function renderActive(active) {
 }
 
 function renderTrash(trash) {
+  if (!trashTable) return;
   trashTable.innerHTML = '';
 
-  if (trash.length === 0) {
-    trashEmpty.hidden = false;
+  if (!trash || trash.length === 0) {
+    if (trashEmpty) {
+      trashEmpty.hidden = false;
+      trashEmpty.style.display = 'flex';
+    }
     return;
   }
-  trashEmpty.hidden = true;
+  if (trashEmpty) {
+    trashEmpty.hidden = true;
+    trashEmpty.style.display = 'none';
+  }
 
   const isAdmin = Boolean(window.PRIVATIAN_USER && window.PRIVATIAN_USER.role === 'Admin');
   trash.forEach(s => {
@@ -1683,6 +1697,13 @@ function renderDashboardUI(stats) {
   if (elMediaPhotos) elMediaPhotos.textContent = formatNumber(media.photos || 0);
   if (elMediaSvgs) elMediaSvgs.textContent = formatNumber(media.svgs || 0);
   if (elMediaSize) elMediaSize.textContent = formatBytes(media.totalBytes || 0);
+
+  const elMediaBadge = document.getElementById('gallery-count-badge');
+  if (elMediaBadge) {
+    const cnt = media.totalFiles || 0;
+    elMediaBadge.textContent = formatNumber(cnt);
+    elMediaBadge.style.display = cnt > 0 ? 'inline-block' : 'none';
+  }
 
   // 5. 7-Day Chart Visualizer
   render7DayChart(views.last7Days || []);
