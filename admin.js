@@ -2420,104 +2420,47 @@ async function loadHeaderSettings() {
   return Object.assign({}, DEFAULT_HEADER_SETTINGS);
 }
 
-// ── Header Settings Horizontal Swipeable Slider (Pashapashi Swipe) ──
-let _currentHeaderSlide = 0;
-const HEADER_SLIDE_TITLES = ['Favicon & SEO', 'Brand Logo & Scale', 'Navigation Sections', 'Sub-header Tabs', 'Live Simulation'];
-const HEADER_SLIDE_KEYS = ['tabcard', 'logo', 'nav', 'sub', 'preview'];
-
-function switchHeaderSlide(indexOrKey) {
-  let idx = 0;
-  if (typeof indexOrKey === 'string') {
-    const foundIdx = HEADER_SLIDE_KEYS.indexOf(indexOrKey);
-    idx = foundIdx !== -1 ? foundIdx : 0;
-  } else {
-    idx = Math.max(0, Math.min(4, parseInt(indexOrKey, 10) || 0));
-  }
-
-  _currentHeaderSlide = idx;
-
-  // Move slider track horizontally
-  const track = document.getElementById('hs-slider-track');
-  if (track) {
-    track.style.transform = `translateX(-${idx * 20}%)`;
-  }
-
-  // Update top step pills
-  HEADER_SLIDE_KEYS.forEach((k, i) => {
-    const pill = document.getElementById(`pill-hs-${i}`);
-    if (pill) pill.classList.toggle('active', i === idx);
+// ── Header Settings Tab Switcher (Matches Navigation Menu standard) ──
+function switchHeaderTab(tabKey) {
+  const tabAliases = {
+    '0': 'favicon', '1': 'logo', '2': 'nav', '3': 'subtabs', '4': 'preview',
+    'tabcard': 'favicon', 'logo': 'logo', 'nav': 'nav', 'sub': 'subtabs', 'subtabs': 'subtabs', 'preview': 'preview', 'favicon': 'favicon'
+  };
+  const target = tabAliases[tabKey] || 'favicon';
+  const tabs = ['favicon', 'logo', 'nav', 'subtabs', 'preview'];
+  
+  tabs.forEach(t => {
+    const btn = document.getElementById(`tab-hs-${t}`);
+    const panel = document.getElementById(`panel-hs-${t}`);
+    if (btn) btn.classList.toggle('active', t === target);
+    if (panel) panel.style.display = (t === target ? 'block' : 'none');
   });
-
-  // Update status badge text & navigation buttons
-  const stepText = document.getElementById('hs-slide-step-text');
-  if (stepText) {
-    stepText.textContent = `Section ${idx + 1} of 5: ${HEADER_SLIDE_TITLES[idx]}`;
-  }
-
-  const prevBtnTop = document.getElementById('hs-nav-prev-top');
-  const prevBtnBottom = document.getElementById('hs-nav-prev-btn');
-  const nextBtnTop = document.getElementById('hs-nav-next-top');
-  const nextBtnBottom = document.getElementById('hs-nav-next-btn');
-
-  if (prevBtnTop) prevBtnTop.disabled = (idx === 0);
-  if (prevBtnBottom) prevBtnBottom.disabled = (idx === 0);
-  if (nextBtnTop) nextBtnTop.disabled = (idx === 4);
-  if (nextBtnBottom) {
-    if (idx === 4) {
-      nextBtnBottom.innerHTML = `<span>Completed (5/5)</span>`;
-      nextBtnBottom.disabled = true;
-    } else {
-      nextBtnBottom.innerHTML = `<span>Next Section</span><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>`;
-      nextBtnBottom.disabled = false;
-    }
-  }
-
-  if (idx === 4) {
+  
+  if (target === 'preview') {
     renderHeaderPreviewCanvas();
   }
 }
 
+// Backward-compatibility aliases
+function switchHeaderSlide(indexOrKey) {
+  switchHeaderTab(indexOrKey);
+}
+
 function navigateHeaderSlide(delta) {
-  switchHeaderSlide(_currentHeaderSlide + delta);
+  const tabs = ['favicon', 'logo', 'nav', 'subtabs', 'preview'];
+  const activeBtn = document.querySelector('.header-tab-bar .tab-btn.active');
+  let currentIdx = 0;
+  if (activeBtn) {
+    const id = activeBtn.id.replace('tab-hs-', '');
+    currentIdx = tabs.indexOf(id);
+    if (currentIdx === -1) currentIdx = 0;
+  }
+  const nextIdx = Math.max(0, Math.min(tabs.length - 1, currentIdx + delta));
+  switchHeaderTab(tabs[nextIdx]);
 }
 
-// Backward compatibility alias
-function switchHeaderTab(tabKey) {
-  switchHeaderSlide(tabKey);
-}
-
-// Attach touch swipe and drag gestures
 function initHeaderSliderGestures() {
-  const viewport = document.getElementById('hs-slider-viewport');
-  if (!viewport || viewport.dataset.gesturesBound) return;
-  viewport.dataset.gesturesBound = 'true';
-
-  let startX = 0;
-  let startY = 0;
-  let isDragging = false;
-
-  viewport.addEventListener('touchstart', (e) => {
-    if (e.touches && e.touches.length === 1) {
-      startX = e.touches[0].clientX;
-      startY = e.touches[0].clientY;
-      isDragging = true;
-    }
-  }, { passive: true });
-
-  viewport.addEventListener('touchend', (e) => {
-    if (!isDragging) return;
-    isDragging = false;
-    if (!e.changedTouches || !e.changedTouches.length) return;
-    const diffX = e.changedTouches[0].clientX - startX;
-    const diffY = e.changedTouches[0].clientY - startY;
-    if (Math.abs(diffX) > 40 && Math.abs(diffX) > Math.abs(diffY)) {
-      if (diffX < 0) {
-        navigateHeaderSlide(1);
-      } else {
-        navigateHeaderSlide(-1);
-      }
-    }
-  }, { passive: true });
+  // Tabs naturally support horizontal scrolling on mobile
 }
 
 // ── Favicon Studio Helpers ───────────────────────────────────────
