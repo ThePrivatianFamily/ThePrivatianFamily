@@ -200,13 +200,6 @@ async function loadSectionsFromAPI() {
   updateGlobalSyncStatus('syncing', 'Loading sections from database...');
   let loaded = null;
 
-  try {
-    const savedAllName = localStorage.getItem('pf_all_section_name');
-    const savedAllSlug = localStorage.getItem('pf_all_section_slug');
-    if (savedAllName) ALL_SECTION.name = savedAllName;
-    if (savedAllSlug !== null && savedAllSlug !== undefined) ALL_SECTION.slug = savedAllSlug;
-  } catch(e){}
-
   const isSystemConfig = r => {
     const adminId = r.admin_id || r.id || '';
     const slug = r.slug || '';
@@ -221,6 +214,12 @@ async function loadSectionsFromAPI() {
   try {
     const data = await _apiGet('/api/sections?status=all');
     if (Array.isArray(data)) {
+      const allRow = data.find(r => (r.admin_id === 'all' || r.id === 'all' || r.slug === ''));
+      if (allRow) {
+        ALL_SECTION.name = allRow.name || 'All';
+        ALL_SECTION.name_bn = allRow.name_bn || 'সকল';
+        ALL_SECTION.slug = allRow.slug || '';
+      }
       loaded = data.filter(r => !isSystemConfig(r)).map(r => ({
         id:        r.id || r.admin_id || r.slug,
         name:      r.name,
@@ -599,10 +598,10 @@ async function renameSection(id, name, slug, name_bn = '') {
     ALL_SECTION.slug = slugVal;
     const local = sections.find(s => s.id === 'all');
     if (local) { local.name = trimmed; local.name_bn = bnVal || 'সকল'; local.slug = slugVal; }
+    updateGlobalSyncStatus('syncing', 'Saving to database...');
     try {
-      localStorage.setItem('pf_all_section_name', trimmed);
-      localStorage.setItem('pf_all_section_slug', slugVal);
-    } catch(e){}
+      await _apiPut('/api/sections?id=all', { name: trimmed, name_bn: bnVal, slug: slugVal });
+    } catch(e) {}
     render();
     updateGlobalSyncStatus('synced', 'Synced with database');
     showToast('success', `Renamed to "${trimmed}".`);
@@ -2829,9 +2828,7 @@ async function loadHeaderSettings() {
   try {
     const data = await _apiGet('/api/sections?action=header' + (currentLang === 'bn' ? '&lang=bn' : ''));
     if (data && typeof data === 'object') {
-      const sanitized = sanitizeLoadedHeaderData(data, currentLang);
-      try { localStorage.setItem(HEADER_SETTINGS_KEY + '_' + currentLang, JSON.stringify(sanitized)); } catch(e) {}
-      return sanitized;
+      return sanitizeLoadedHeaderData(data, currentLang);
     }
   } catch(err) {
     console.warn('[Admin] loadHeaderSettings API failed (trying fallback):', err.message);
@@ -2845,19 +2842,9 @@ async function loadHeaderSettings() {
       if (sData && sData.name) {
         const parsed = JSON.parse(sData.name);
         if (parsed && typeof parsed === 'object') {
-          const sanitized = sanitizeLoadedHeaderData(parsed, currentLang);
-          try { localStorage.setItem(HEADER_SETTINGS_KEY + '_' + currentLang, JSON.stringify(sanitized)); } catch(e) {}
-          return sanitized;
+          return sanitizeLoadedHeaderData(parsed, currentLang);
         }
       }
-    }
-  } catch(e) {}
-
-  try {
-    const raw = localStorage.getItem(HEADER_SETTINGS_KEY + '_' + currentLang);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      return sanitizeLoadedHeaderData(parsed, currentLang);
     }
   } catch(e) {}
 
@@ -3323,34 +3310,6 @@ async function saveHeaderSettings(hs) {
   const currentLang = _adminContentLang || 'en';
   hs.updatedAt = new Date().toISOString();
   hs.lang = currentLang;
-
-  try {
-    localStorage.setItem(HEADER_SETTINGS_KEY + '_' + currentLang, JSON.stringify(hs));
-    // Also sync structural settings (enabledNavSections, subsections enabled, logo, etc.) into other language cache
-    const otherLang = (currentLang === 'bn') ? 'en' : 'bn';
-    const otherRaw = localStorage.getItem(HEADER_SETTINGS_KEY + '_' + otherLang);
-    if (otherRaw) {
-      const otherHs = JSON.parse(otherRaw);
-      otherHs.enabledNavSections = hs.enabledNavSections;
-      otherHs.logoHeight = hs.logoHeight;
-      otherHs.logoSvg = hs.logoSvg;
-      otherHs.faviconUrl = hs.faviconUrl;
-      otherHs.cloudflareAnalyticsToken = hs.cloudflareAnalyticsToken;
-      if (Array.isArray(hs.subsections) && Array.isArray(otherHs.subsections)) {
-        otherHs.subsections = hs.subsections.map((srcSub, idx) => {
-          const match = otherHs.subsections.find(t => t.id === srcSub.id) || otherHs.subsections[idx] || {};
-          return {
-            ...match,
-            id: srcSub.id,
-            enabled: srcSub.enabled !== false,
-            icon: srcSub.icon !== undefined ? srcSub.icon : match.icon,
-            href: (currentLang === 'en') ? srcSub.href : (match.href || srcSub.href)
-          };
-        });
-      }
-      localStorage.setItem(HEADER_SETTINGS_KEY + '_' + otherLang, JSON.stringify(otherHs));
-    }
-  } catch(e) {}
 
   try {
     await _apiPost('/api/sections?action=header' + (currentLang === 'bn' ? '&lang=bn' : ''), hs);
@@ -4588,12 +4547,20 @@ async function loadMenuSettings() {
 
   if (!loaded) {
     try {
-      const cached = localStorage.getItem('privatian_menu_settings_' + _adminContentLang) || localStorage.getItem('privatian_menu_settings');
-      if (cached) loaded = Object.assign({}, JSON.parse(JSON.stringify(DEFAULT_MENU_CONFIG)), JSON.parse(cached));
-      else loaded = JSON.parse(JSON.stringify(DEFAULT_MENU_CONFIG));
-    } catch(e) {
-      loaded = JSON.parse(JSON.stringify(DEFAULT_MENU_CONFIG));
-    }
+      const sb = window._sb || (window.initSupabaseClient && window.initSupabaseClient());
+      if (sb) {
+        const targetAdminId = (_adminContentLang === 'bn') ? '__menu_config_bn__' : '__menu_config__';
+        const { data: sData } = await sb.from('sections').select('name').eq('admin_id', targetAdminId).maybeSingle();
+        if (sData && sData.name) {
+          const parsed = JSON.parse(sData.name);
+          if (parsed && typeof parsed === 'object') loaded = Object.assign({}, JSON.parse(JSON.stringify(DEFAULT_MENU_CONFIG)), parsed);
+        }
+      }
+    } catch(e) {}
+  }
+
+  if (!loaded) {
+    loaded = JSON.parse(JSON.stringify(DEFAULT_MENU_CONFIG));
   }
 
   // Set distinct working baseline and draft copies
@@ -5887,12 +5854,7 @@ async function saveMenuSettings() {
     menuDraftConfig.lang = _adminContentLang;
     await _apiPost('/api/sections?action=menu' + (_adminContentLang === 'bn' ? '&lang=bn' : ''), menuDraftConfig);
 
-    // 2. Publish to local applied cache
-    try {
-      localStorage.setItem('privatian_menu_settings_' + _adminContentLang, JSON.stringify(menuDraftConfig));
-    } catch(e) {}
-
-    // 3. Reset base and undo/redo stacks to the new applied state
+    // 2. Reset base and undo/redo stacks to the new applied state
     appliedMenuConfig = JSON.parse(JSON.stringify(menuDraftConfig));
     menuUndoStack = [];
     menuRedoStack = [];
@@ -5919,15 +5881,12 @@ async function saveMenuSettings() {
     });
   } catch(err) {
     console.warn('[Admin] saveMenuSettings server error:', err.message);
-    try {
-      localStorage.setItem('privatian_menu_settings', JSON.stringify(menuDraftConfig));
-    } catch(e) {}
     appliedMenuConfig = JSON.parse(JSON.stringify(menuDraftConfig));
     menuUndoStack = [];
     menuRedoStack = [];
     updateUndoRedoButtons();
-    updateGlobalSyncStatus('synced', 'Synced with database');
-    showToast('success', 'Changes applied to local cache');
+    updateGlobalSyncStatus('error', 'Error syncing with database');
+    showToast('error', 'Failed to save menu changes to database: ' + err.message);
 
     recordActivityLog({
       action: 'layout.menu_save',
@@ -6264,10 +6223,7 @@ async function loadHomepageSettings() {
   }
 
   if (!loaded) {
-    try {
-      const cached = localStorage.getItem('privatian_homepage_settings_' + _adminContentLang) || localStorage.getItem('privatian_homepage_settings');
-      if (cached) loaded = JSON.parse(cached);
-    } catch(e) {}
+    loaded = JSON.parse(JSON.stringify(DEFAULT_HOMEPAGE_CONFIG));
   }
 
   homepageDraftConfig = loaded ? JSON.parse(JSON.stringify(loaded)) : JSON.parse(JSON.stringify(DEFAULT_HOMEPAGE_CONFIG));
@@ -7340,9 +7296,6 @@ async function saveHomepageSettings() {
     homepageDraftConfig.lang = _adminContentLang;
     const res = await _apiPost('/api/sections?action=homepage' + (isBn ? '&lang=bn' : ''), homepageDraftConfig);
     appliedHomepageConfig = JSON.parse(JSON.stringify(homepageDraftConfig));
-    try {
-      localStorage.setItem('privatian_homepage_settings_' + _adminContentLang, JSON.stringify(homepageDraftConfig));
-    } catch(e) {}
     homepageUndoStack = [];
     homepageRedoStack = [];
     updateHomepageUndoRedoBtns();
@@ -7364,15 +7317,12 @@ async function saveHomepageSettings() {
     });
   } catch(err) {
     console.warn('[Admin] saveHomepageSettings server error:', err.message);
-    try {
-      localStorage.setItem('privatian_homepage_settings_' + _adminContentLang, JSON.stringify(homepageDraftConfig));
-    } catch(e) {}
     appliedHomepageConfig = JSON.parse(JSON.stringify(homepageDraftConfig));
     homepageUndoStack = [];
     homepageRedoStack = [];
     updateHomepageUndoRedoBtns();
-    updateGlobalSyncStatus('synced', 'Synced with database');
-    showToast('success', isBn ? 'বাংলা হোমপেজের পরিবর্তন লোকাল ক্যাশে সংরক্ষিত হয়েছে' : 'Homepage changes applied to local cache');
+    updateGlobalSyncStatus('error', 'Error saving to database');
+    showToast('error', 'Failed to save homepage settings: ' + err.message);
 
     recordActivityLog({
       action: 'layout.homepage_save',
@@ -7565,14 +7515,6 @@ async function initFooterPage() {
         }
       }
     } catch(e) {}
-  }
-
-  // Tier 4: LocalStorage
-  if (!loadedConfig) {
-    try {
-      const cached = localStorage.getItem(FOOTER_SETTINGS_KEY + '_' + _adminContentLang) || localStorage.getItem(FOOTER_SETTINGS_KEY);
-      if (cached) loadedConfig = JSON.parse(cached);
-    } catch(err) {}
   }
 
   // Tier 5: Default Config
@@ -8795,11 +8737,6 @@ async function saveFooterSettings() {
       }
     } catch(e) {}
   }
-
-  // 3. Always persist to localStorage
-  try {
-    localStorage.setItem(FOOTER_SETTINGS_KEY + '_' + _adminContentLang, JSON.stringify(footerDraftConfig));
-  } catch(e) {}
 
   appliedFooterConfig = JSON.parse(JSON.stringify(footerDraftConfig));
   footerUndoStack = [];

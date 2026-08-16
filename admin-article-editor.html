@@ -1647,16 +1647,6 @@ button, input, select, textarea, [contenteditable] {
 <input type="file" id="img-inp" accept="image/*" style="display:none" onchange="handleImgFile(this)" />
 <input type="file" id="author-photo-inp" accept="image/*" style="display:none" onchange="handleAuthorPhoto(this)" />
 
-<!-- ═══ RESTORE BANNER ═══════════════════════════════════════════ -->
-<div id="restore-banner">
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4M12 17h.01"/><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>
-  <span id="rb-msg">You have unsaved local changes.</span>
-  <div class="rb-btns">
-    <button class="rb-btn rb-restore" onclick="restoreLocal()">Restore</button>
-    <button class="rb-btn rb-discard" onclick="discardLocal()">Discard</button>
-  </div>
-</div>
-
 <!-- ═══ IMAGE TOOLBAR (floating) ════════════════════════════════ -->
 <div id="img-tb">
   <span style="font:600 10px/1 var(--sans);color:rgba(255,255,255,.4);letter-spacing:.08em;text-transform:uppercase;margin-right:4px;">Size</span>
@@ -2274,7 +2264,6 @@ function initEmpty() {
     history.replaceState({}, '', u.toString());
   }
   refreshArticleIdDisplay();
-  checkLocalDraft();
 }
 
 function refreshArticleIdDisplay() {
@@ -2343,7 +2332,6 @@ async function loadArticle(id) {
   if (a && a.id) {
     _serverTS = new Date(a.updated_at || a.created_at || 0).getTime();
     fill(a);
-    checkLocalDraft();
   } else {
     toast('Failed to load article from database', 'err');
   }
@@ -2511,12 +2499,9 @@ function onInput(ev) {
     }
   }
   updateMetrics();
-  // 1. localStorage — 300ms debounce
-  clearTimeout(_lsTimer);
-  _lsTimer = setTimeout(lsSave, 300);
-  // 2. Server — 3s debounce
+  // Server Database auto-save — 2.5s debounce
   clearTimeout(_srvTimer);
-  _srvTimer = setTimeout(() => { if (DIRTY) saveArt(true); }, 3000);
+  _srvTimer = setTimeout(() => { if (DIRTY) saveArt(true); }, 2500);
   setSaveStatus('Unsaved changes');
 }
 
@@ -2525,63 +2510,6 @@ function slugify(text) {
     .replace(/[^\w\s-]/g, '')
     .replace(/[\s_-]+/g, '-')
     .replace(/^-+|-+$/g, '');
-}
-
-// ── LOCALSTORAGE DRAFT ─────────────────────────────────────────
-function lsKey() { return 'pf_draft_' + (ART_ID || 'new'); }
-
-function lsSave() {
-  try {
-    saveCurrentLangToBuffer();
-    localStorage.setItem(lsKey(), JSON.stringify({
-      ...buildPayload(),
-      _ts:          Date.now(),
-      _langData:    _langData,
-      _currentLang: _currentEditLang,
-      _artId:       ART_ID,
-    }));
-  } catch(e) {}
-}
-
-function checkLocalDraft() {
-  const raw = localStorage.getItem(lsKey());
-  if (!raw) return;
-  try {
-    const d = JSON.parse(raw);
-    if (!d._ts) return;
-    // Show banner if localStorage is newer than server
-    if (d._ts > _serverTS + 5000) {
-      const ago = Math.round((Date.now() - d._ts) / 60000);
-      const msg = ago < 1 ? 'just now' : `${ago} minute${ago > 1 ? 's' : ''} ago`;
-      g('rb-msg').textContent = `You have unsaved local changes from ${msg}.`;
-      g('restore-banner').classList.add('show');
-    }
-  } catch(e) {}
-}
-
-function restoreLocal() {
-  try {
-    const d = JSON.parse(localStorage.getItem(lsKey()) || '{}');
-    if (d._langData) {
-      _langData = d._langData;
-      if (d._currentLang) _currentEditLang = d._currentLang;
-      loadBufferToInputs(_currentEditLang);
-    } else {
-      if (d.content_html) g('ed-rt').innerHTML = d.content_html;
-      if (d.title)   tx('ed-headline', d.title);
-      if (d.deck)    tx('ed-deck',     d.deck);
-      if (d.author)  tx('ed-author',   d.author);
-    }
-    if (d.section) setSec(d.section);
-    DIRTY = true;
-  } catch(e) { toast('Restore failed', 'err'); }
-  g('restore-banner').classList.remove('show');
-  toast('Local draft restored', 'ok');
-}
-
-function discardLocal() {
-  localStorage.removeItem(lsKey());
-  g('restore-banner').classList.remove('show');
 }
 
 // ── AUDIT LOGGING HELPER ─────────────────────────────────────────

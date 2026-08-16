@@ -336,19 +336,7 @@
         return String(str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
       }
 
-      // 1. Immediate cache render
-      try {
-        var isBn = window.PrivatianLang && window.PrivatianLang.getLang() === 'bn';
-        var raw = localStorage.getItem(isBn ? 'privatian_homepage_settings_bn' : 'privatian_homepage_settings');
-        if (raw) {
-          var cfg = JSON.parse(raw);
-          if (cfg && cfg.eventsSection && Array.isArray(cfg.eventsSection.events)) {
-            renderEvents(cfg.eventsSection.events);
-          }
-        }
-      } catch(e) {}
-
-      // 2. Fetch live from database
+      // Fetch live from database
       async function loadLiveEvents() {
         var isBn = window.PrivatianLang && window.PrivatianLang.getLang() === 'bn';
         var cfg = null;
@@ -372,7 +360,6 @@
         }
 
         if (cfg && cfg.eventsSection && Array.isArray(cfg.eventsSection.events)) {
-          try { localStorage.setItem(isBn ? 'privatian_homepage_settings_bn' : 'privatian_homepage_settings', JSON.stringify(cfg)); } catch(e) {}
           renderEvents(cfg.eventsSection.events);
         }
       }

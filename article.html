@@ -201,19 +201,6 @@
     }
 
     async function fetchArticleData() {
-      // 1. If querying by ID (Draft / Preview Mode), check local draft cache first for instantaneous preview
-      if (id) {
-        try {
-          var lsRaw = localStorage.getItem('pf_draft_' + id);
-          if (lsRaw) {
-            var lsDraft = JSON.parse(lsRaw);
-            if (lsDraft && (lsDraft.title || lsDraft.content_html)) {
-              return Object.assign({ id: id, status: 'draft' }, lsDraft);
-            }
-          }
-        } catch(e) {}
-      }
-
       var url = '/api/articles?action=public-get';
       if (id)   url += '&id='   + encodeURIComponent(id);
       if (slug) url += '&slug=' + encodeURIComponent(slug);

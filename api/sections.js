@@ -2061,10 +2061,26 @@ module.exports = async function handler(req, res) {
     if (slug) updateObj.slug = slug;
     if (name_bn !== undefined) updateObj.name_bn = name_bn;
 
-    const { data, error } = await sb.from('sections')
+    let { data, error } = await sb.from('sections')
       .update(updateObj)
       .eq('admin_id', id)
-      .select().single();
+      .select().maybeSingle();
+
+    if (!data && !error) {
+      const insertObj = Object.assign({
+        admin_id: id,
+        name: name || 'All',
+        name_bn: name_bn || 'সকল',
+        slug: slug || '',
+        display_order: 0,
+        is_active: true,
+        locked: false,
+        is_deleted: false
+      }, updateObj);
+      const insRes = await sb.from('sections').insert(insertObj).select().single();
+      data = insRes.data;
+      error = insRes.error;
+    }
 
     if (error) return res.status(500).json({ error: error.message });
 
@@ -2073,10 +2089,10 @@ module.exports = async function handler(req, res) {
         actor: session,
         action: 'section.edit',
         category: 'sections',
-        summary: `${session.name || session.email} renamed section ID "${id}" to "${name}" (/section/${slug})`,
+        summary: `${session.name || session.email} updated section ID "${id}" to "${name || (data && data.name)}" (/section/${slug || ''})`,
         target_id: id,
-        target_name: name,
-        details: { slug, name },
+        target_name: name || (data && data.name),
+        details: { slug, name, name_bn },
         req
       });
     } catch(e) {}

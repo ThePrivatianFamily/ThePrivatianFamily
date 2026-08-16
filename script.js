@@ -1,65 +1,27 @@
 // THE PRIVATIAN FAMILY — Main Page Script (index.html)
 //
-// Full Database-Driven & Bilingual Homepage Synchronization:
-// 1. Instant zero-flash cache application from localStorage ('privatian_homepage_settings')
+// 100% Database-Driven & Bilingual Homepage Synchronization:
+// 1. Direct API fetch from /api/sections?action=homepage and Supabase database in real time
 // 2. Bilingual rendering for English and Bengali
-// 3. Background API fetch from /api/sections?action=homepage to update Supabase data in real time
-// 4. Sections & All News columns live label synchronization
+// 3. Sections & All News columns live label synchronization
+// (No localStorage fallback/caching)
 
 var _lastHomepageConfig = null;
 
 document.addEventListener('DOMContentLoaded', function () {
 
-  // ── 1. Immediate fallback from localStorage cache ─────────────────
-  (function applyImmediateCache() {
-    try {
-      var isBn = window.PrivatianLang && window.PrivatianLang.getLang() === 'bn';
-      var cached = localStorage.getItem(isBn ? 'privatian_homepage_settings_bn' : 'privatian_homepage_settings');
-      if (cached) {
-        var cfg = JSON.parse(cached);
-        if (cfg && typeof cfg === 'object') {
-          _lastHomepageConfig = cfg;
-          applyHomepageConfig(cfg);
-        }
-      }
-    } catch(e) {}
-  })();
-
-  // ── 2. Background live fetch from Supabase database ───────────────
+  // ── 1. Live fetch from Supabase database ───────────────
   fetchHomepageConfigFromAPI();
 
-  // ── 3. Listen for sections-loaded event for column slugs ──────────
+  // ── 2. Listen for sections-loaded event for column slugs ──────────
   document.addEventListener('privatian:sections-loaded', function(e) {
     var sections = e && e.detail && e.detail.sections;
     if (sections) updateAllNewsLabels(sections);
   });
 
-  // ── 4. Reactive language change listener ─────────────────────────
+  // ── 3. Reactive language change listener ─────────────────────────
   document.addEventListener('privatian:language-changed', function() {
-    var isBn = window.PrivatianLang && window.PrivatianLang.getLang() === 'bn';
-    try {
-      var cached = localStorage.getItem(isBn ? 'privatian_homepage_settings_bn' : 'privatian_homepage_settings');
-      if (cached) {
-        var cfg = JSON.parse(cached);
-        if (cfg) {
-          _lastHomepageConfig = cfg;
-          applyHomepageConfig(cfg);
-        }
-      } else if (_lastHomepageConfig) {
-        applyHomepageConfig(_lastHomepageConfig);
-      }
-    } catch(e) {
-      if (_lastHomepageConfig) applyHomepageConfig(_lastHomepageConfig);
-    }
     fetchHomepageConfigFromAPI();
-    try {
-      var rawSecs = localStorage.getItem('privatian_applied_sections') || localStorage.getItem('privatian_sections');
-      if (rawSecs) {
-        var d = JSON.parse(rawSecs);
-        var sList = Array.isArray(d) ? d : (d.sections || []);
-        updateAllNewsLabels(sList);
-      }
-    } catch(e) {}
   });
 
 });
@@ -91,9 +53,6 @@ async function fetchHomepageConfigFromAPI() {
 
   if (cfg && typeof cfg === 'object') {
     _lastHomepageConfig = cfg;
-    try {
-      localStorage.setItem(isBn ? 'privatian_homepage_settings_bn' : 'privatian_homepage_settings', JSON.stringify(cfg));
-    } catch(e) {}
     applyHomepageConfig(cfg);
   }
 }
