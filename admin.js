@@ -1532,7 +1532,7 @@ async function verifyDatabaseSync(shouldToast = false) {
   if (dbOk) {
     updateGlobalSyncStatus();
     if (shouldToast) {
-      showToast('success', 'Database connection verified & synchronized ✓');
+      showToast('success', 'Database connection verified & synchronized');
     }
   } else {
     updateGlobalSyncStatus('error', 'Sync error (offline/cache)');
@@ -1685,7 +1685,7 @@ async function initDashboardPage(forceRefresh = false) {
 
 function refreshDashboardMetrics() {
   initDashboardPage(true).then(() => {
-    showToast('success', 'Dashboard metrics synchronized with live database ✓');
+    showToast('success', 'Dashboard metrics synchronized with live database');
   });
 }
 
@@ -1858,7 +1858,7 @@ async function resetAnalyticsStoreToZero() {
     });
     const data = await res.json();
     if (res.ok && data.ok) {
-      showToast('success', 'Analytics store reset to authentic 0 ✓');
+      showToast('success', 'Analytics store reset to authentic 0');
       initDashboardPage(true);
     } else {
       showToast('error', data.error || 'Failed to reset analytics');
@@ -2028,7 +2028,7 @@ function updateSyncBadge(done) {
   _lastSyncedAt = new Date();
   const el = document.getElementById('sync-badge');
   if (!el) return;
-  el.textContent = 'Synced ✓';
+  el.textContent = 'Synced';
   el.title = _lastSyncedAt.toLocaleTimeString();
 }
 
@@ -3176,9 +3176,8 @@ function renderHeaderPreviewCanvas() {
           <span style="font-size:11px;font-weight:700;padding:2px 7px;border-radius:12px;background:${isBn ? '#0a528e' : 'transparent'};color:${isBn ? '#ffffff' : '#64748b'};">বাংলা</span>
         </div>
 
-        <!-- Menu Button -->
-        <button type="button" style="display:flex;align-items:center;gap:5px;background:#f8fafc;border:1px solid #cbd5e1;padding:5px 10px;border-radius:6px;font-size:12px;font-weight:700;color:#0f172a;cursor:pointer;">
-          <span style="font-size:13px;line-height:1;">☰</span>
+        <button type="button" style="display:flex;align-items:center;gap:6px;background:#f8fafc;border:1px solid #cbd5e1;padding:5px 10px;border-radius:6px;font-size:12px;font-weight:700;color:#0f172a;cursor:pointer;">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
           <span>${isBn ? 'মেন্যু' : 'Menu'}</span>
         </button>
 
@@ -3307,13 +3306,7 @@ function renderHsTabCard(hs) {
   if (cfTokenInp) {
     cfTokenInp.value = hs.cloudflareAnalyticsToken || '';
     if (cfStatusEl) {
-      cfStatusEl.textContent = hs.cloudflareAnalyticsToken ? '✓ Active & Tracking' : 'Not configured';
-      cfStatusEl.style.color = hs.cloudflareAnalyticsToken ? '#10b981' : '#64748b';
-    }
-    cfTokenInp.oninput = () => {
-      hs.cloudflareAnalyticsToken = cfTokenInp.value.trim();
-      if (cfStatusEl) {
-        cfStatusEl.textContent = hs.cloudflareAnalyticsToken ? '✓ Active & Tracking' : 'Not configured';
+      cfStatusEl.textContent = hs.cloudflareAnalyticsToken ? 'Active & Tracking' : 'Not configured';
         cfStatusEl.style.color = hs.cloudflareAnalyticsToken ? '#10b981' : '#64748b';
       }
       updateGlobalSyncStatus();
@@ -6981,7 +6974,7 @@ async function fetchArticleByIdForHpSlot(searchQuery) {
 
   if (match) {
     applyHpArticleToSlot(match);
-    showToast('success', `Found article: "${match.title}" ✓`);
+    showToast('success', `Found article: "${match.title}"`);
   } else {
     showToast('error', `No article found matching ID or query "${q}"`);
   }
@@ -9543,7 +9536,7 @@ function _renderAllFoldersModalList(query = '') {
           <div class="all-folder-card-name" title="${escapeHtml(folder)}">${escapeHtml(folder)}</div>
           <div class="all-folder-card-actions" onclick="event.stopPropagation();">
             <button type="button" class="all-folder-card-select-btn" onclick="_selectFolderFromModal('${escapeHtml(folder)}')">
-              ${isActive ? '✓ Active' : 'Select'}
+              ${isActive ? 'Active' : 'Select'}
             </button>
             <div class="all-folder-action-btns">
               <button type="button" class="gallery-icon-btn" onclick="_openRenameFolderModal('${escapeHtml(folder)}')" title="Rename Folder">

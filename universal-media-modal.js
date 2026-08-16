@@ -55,7 +55,9 @@
             <h2 class="umm-header-title" id="umm-header-title">Select or Upload Image</h2>
             <p class="umm-header-sub" id="umm-header-sub">High-performance asset library with instant search</p>
           </div>
-          <button type="button" class="umm-close-btn" onclick="window.closeUniversalMediaModal()" title="Close (Esc)">✕</button>
+          <button type="button" class="umm-close-btn" onclick="window.closeUniversalMediaModal()" title="Close (Esc)">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
         </div>
 
         <!-- Segmented 2-Tab Navigation -->
@@ -78,7 +80,9 @@
               <div class="umm-search-wrap">
                 <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
                 <input type="text" id="umm-search-input" class="umm-search-input" placeholder="Search by name, Unique ID (img_...), or paste image URL..." oninput="window._ummOnSearch(this.value)" />
-                <button type="button" id="umm-search-clear" class="umm-search-clear" onclick="window._ummClearSearch()" style="display:none;">&times;</button>
+                <button type="button" id="umm-search-clear" class="umm-search-clear" onclick="window._ummClearSearch()" style="display:none;" title="Clear search">
+                  <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
               </div>
               <select id="umm-folder-select" class="umm-folder-select" onchange="window._ummOnFolderFilter(this.value)">
                 <option value="all">All Folders</option>
@@ -235,11 +239,11 @@
     const sorted = Array.from(folderSet).sort();
 
     folderFilter.innerHTML = `<option value="all">All Folders</option><option value="__root__">Root / Uncategorized</option>` +
-      sorted.map(f => `<option value="${esc(f)}">📁 ${esc(f)}</option>`).join('');
+      sorted.map(f => `<option value="${esc(f)}">${esc(f)}</option>`).join('');
     folderFilter.value = _activeFolder;
 
     uploadDest.innerHTML = `<option value="">Root / All Media</option>` +
-      sorted.map(f => `<option value="${esc(f)}">📁 ${esc(f)}</option>`).join('');
+      sorted.map(f => `<option value="${esc(f)}">${esc(f)}</option>`).join('');
   }
 
   /**
@@ -394,7 +398,7 @@
         }
 
         if (barEl) { barEl.style.width = '100%'; barEl.style.background = '#16a34a'; }
-        if (pctEl) { pctEl.textContent = 'Upload Complete ✓'; pctEl.style.color = '#16a34a'; }
+        if (pctEl) { pctEl.textContent = 'Upload Complete'; pctEl.style.color = '#16a34a'; }
 
         // Prepend to cached list
         _cachedList.unshift(data.media);
