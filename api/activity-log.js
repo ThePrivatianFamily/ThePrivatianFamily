@@ -101,6 +101,8 @@ module.exports = async function handler(req, res) {
               if (Array.isArray(parsed)) rawList = parsed;
             }
           } catch(e) {}
+        }
+
         // Filter out routine edits and drafts from audit trail
         rawList = rawList.filter(l => {
           const act = (l.action || '').toLowerCase();
