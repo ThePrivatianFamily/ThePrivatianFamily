@@ -31,6 +31,53 @@ var _activeFooterTab = 'preview';
 var _lastAccessCheck = 0;
 var _accessRevoked = false;
 
+var HEADER_SETTINGS_KEY = 'privatian_header_settings';
+
+var DEFAULT_HEADER_SUBSECTIONS_EN = [
+  { id: 'sub-1', label: 'FAMILY LEGACY', href: '/section/community-heritage', icon: null, enabled: true },
+  { id: 'sub-2', label: 'EXPERIENCE', href: '/section/culture', icon: null, enabled: true },
+  { id: 'sub-3', label: 'THE PRIVATIAN READS', href: '/section/findings', icon: null, enabled: true },
+  { id: 'sub-4', label: 'EVENTS', href: '/events', icon: 'calendar', enabled: true }
+];
+
+var DEFAULT_HEADER_SUBSECTIONS_BN = [
+  { id: 'sub-1', label: 'পারিবারিক ঐতিহ্য', href: '/section/community-heritage', icon: null, enabled: true },
+  { id: 'sub-2', label: 'অভিজ্ঞতা', href: '/section/culture', icon: null, enabled: true },
+  { id: 'sub-3', label: 'প্রাইভেটিয়ান পাঠ', href: '/section/findings', icon: null, enabled: true },
+  { id: 'sub-4', label: 'ইভেন্ট ও আয়োজন', href: '/events', icon: 'calendar', enabled: true }
+];
+
+var DEFAULT_HEADER_SETTINGS_EN = {
+  siteTitle: 'The Privatian Family',
+  tabTagline: 'Insights, Stories & Heritage',
+  browserTabTitle: 'The Privatian Family — Insights, Stories & Heritage',
+  metaDescription: 'The Official Publication of The Privatian Society — Cambridge, Massachusetts.',
+  faviconUrl: '',
+  cloudflareAnalyticsToken: 'ce994487070d403ba18f466602524948',
+  logoSvg: null,
+  logoHeight: 80,
+  enabledNavSections: null,
+  subsections: DEFAULT_HEADER_SUBSECTIONS_EN.map(s => ({...s}))
+};
+
+var DEFAULT_HEADER_SETTINGS_BN = {
+  siteTitle: 'দ্য প্রাইভেটিয়ান ফ্যামিলি',
+  tabTagline: 'জ্ঞান, ঐতিহ্য ও জীবনের কথা',
+  browserTabTitle: 'দ্য প্রাইভেটিয়ান ফ্যামিলি — জ্ঞান, ঐতিহ্য ও জীবনের কথা',
+  metaDescription: 'দ্য প্রাইভেটিয়ান সোসাইটির অফিশিয়াল প্রকাশনা — ক্যামব্রিজ, ম্যাসাচুসেটস।',
+  faviconUrl: '',
+  cloudflareAnalyticsToken: 'ce994487070d403ba18f466602524948',
+  logoSvg: null,
+  logoHeight: 80,
+  enabledNavSections: null,
+  subsections: DEFAULT_HEADER_SUBSECTIONS_BN.map(s => ({...s}))
+};
+
+function getHeaderDefaultSettings(lang) {
+  const isBn = (lang === 'bn');
+  return JSON.parse(JSON.stringify(isBn ? DEFAULT_HEADER_SETTINGS_BN : DEFAULT_HEADER_SETTINGS_EN));
+}
+
 // -- Authentication & API helpers --
 function _getAuthToken() {
   return window.PRIVATIAN_TOKEN || localStorage.getItem('privatian_token') || '';
@@ -2723,55 +2770,7 @@ setTimeout(checkMyAccess, 10000);
 window.addEventListener('privatian:ready', () => { initAccessPage(); checkMyAccess(); });
 
 // HEADER SETTINGS PAGE
-// HEADER SETTINGS PAGE
 // ═══════════════════════════════════════════════════════════════
-
-const HEADER_SETTINGS_KEY = 'privatian_header_settings';
-
-const DEFAULT_HEADER_SUBSECTIONS_EN = [
-  { id: 'sub-1', label: 'FAMILY LEGACY', href: '/section/community-heritage', icon: null, enabled: true },
-  { id: 'sub-2', label: 'EXPERIENCE', href: '/section/culture', icon: null, enabled: true },
-  { id: 'sub-3', label: 'THE PRIVATIAN READS', href: '/section/findings', icon: null, enabled: true },
-  { id: 'sub-4', label: 'EVENTS', href: '/events', icon: 'calendar', enabled: true }
-];
-
-const DEFAULT_HEADER_SUBSECTIONS_BN = [
-  { id: 'sub-1', label: 'পারিবারিক ঐতিহ্য', href: '/section/community-heritage', icon: null, enabled: true },
-  { id: 'sub-2', label: 'অভিজ্ঞতা', href: '/section/culture', icon: null, enabled: true },
-  { id: 'sub-3', label: 'প্রাইভেটিয়ান পাঠ', href: '/section/findings', icon: null, enabled: true },
-  { id: 'sub-4', label: 'ইভেন্ট ও আয়োজন', href: '/events', icon: 'calendar', enabled: true }
-];
-
-const DEFAULT_HEADER_SETTINGS_EN = {
-  siteTitle: 'The Privatian Family',
-  tabTagline: 'Insights, Stories & Heritage',
-  browserTabTitle: 'The Privatian Family — Insights, Stories & Heritage',
-  metaDescription: 'The Official Publication of The Privatian Society — Cambridge, Massachusetts.',
-  faviconUrl: '',
-  cloudflareAnalyticsToken: 'ce994487070d403ba18f466602524948',
-  logoSvg: null,
-  logoHeight: 80,
-  enabledNavSections: null,
-  subsections: DEFAULT_HEADER_SUBSECTIONS_EN.map(s => ({...s}))
-};
-
-const DEFAULT_HEADER_SETTINGS_BN = {
-  siteTitle: 'দ্য প্রাইভেটিয়ান ফ্যামিলি',
-  tabTagline: 'জ্ঞান, ঐতিহ্য ও জীবনের কথা',
-  browserTabTitle: 'দ্য প্রাইভেটিয়ান ফ্যামিলি — জ্ঞান, ঐতিহ্য ও জীবনের কথা',
-  metaDescription: 'দ্য প্রাইভেটিয়ান সোসাইটির অফিশিয়াল প্রকাশনা — ক্যামব্রিজ, ম্যাসাচুসেটস।',
-  faviconUrl: '',
-  cloudflareAnalyticsToken: 'ce994487070d403ba18f466602524948',
-  logoSvg: null,
-  logoHeight: 80,
-  enabledNavSections: null,
-  subsections: DEFAULT_HEADER_SUBSECTIONS_BN.map(s => ({...s}))
-};
-
-function getHeaderDefaultSettings(lang) {
-  const isBn = (lang === 'bn');
-  return JSON.parse(JSON.stringify(isBn ? DEFAULT_HEADER_SETTINGS_BN : DEFAULT_HEADER_SETTINGS_EN));
-}
 
 function sanitizeLoadedHeaderData(data, lang) {
   const isBn = (lang === 'bn');
@@ -10511,7 +10510,7 @@ window._copyInspectorDirectUrl = _copyInspectorDirectUrl;
 window._copyInspectorMarkdown = _copyInspectorMarkdown;
 window._saveInspectorMetadata = _saveInspectorMetadata;
 window._deleteInspectorMedia = _deleteInspectorMedia;
-window.deleteMediaConfirm = deleteMediaConfirm;
+window.deleteMediaConfirm = function(id) { if (typeof _deleteInspectorMedia === 'function') _deleteInspectorMedia(id); };
 window.openGalleryPicker = openGalleryPicker;
 window.closeGalleryPicker = closeGalleryPicker;
 window._handlePickerFolderFilter = _handlePickerFolderFilter;
