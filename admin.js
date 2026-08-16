@@ -9224,14 +9224,32 @@ async function loadActivityLogs(showToastFeedback = false) {
     if (actorFilter) params.set('actor', actorFilter);
     if (searchVal) params.set('search', searchVal);
 
-    const [listData, statsData] = await Promise.all([
-      _apiGet(`/api/activity-log?${params.toString()}`),
-      _apiGet('/api/activity-log?action=stats').catch(() => null)
-    ]);
-
-    if (loadingEl) loadingEl.style.display = 'none';
+    let listData = null;
+    let statsData = null;
+    try {
+      [listData, statsData] = await Promise.all([
+        _apiGet(`/api/activity-log?${params.toString()}`),
+        _apiGet('/api/activity-log?action=stats').catch(() => null)
+      ]);
+    } catch(e) {}
 
     let items = (listData && Array.isArray(listData.items)) ? listData.items : (Array.isArray(listData) ? listData : []);
+
+    // Fallback: direct Supabase read from __activity_logs_store__ if items is empty
+    if (!items || items.length === 0) {
+      try {
+        const sb = window._sb || (window.initSupabaseClient && window.initSupabaseClient());
+        if (sb) {
+          const { data: secRow } = await sb.from('sections').select('name').eq('admin_id', '__activity_logs_store__').maybeSingle();
+          if (secRow && secRow.name) {
+            const parsed = JSON.parse(secRow.name);
+            if (Array.isArray(parsed)) items = parsed;
+          }
+        }
+      } catch(e) {}
+    }
+
+    if (loadingEl) loadingEl.style.display = 'none';
 
     // Filter by date client-side if specified
     if (dateFilter !== 'all') {
@@ -9251,6 +9269,8 @@ async function loadActivityLogs(showToastFeedback = false) {
         }
         return true;
       });
+    }
+
     // Filter out routine edits, draft auto-saves, and micro-customizations
     items = items.filter(l => {
       const act = (l.action || '').toLowerCase();
