@@ -1602,13 +1602,15 @@
   fetchMenuFromAPI();
   fetchFooterFromAPI();
 
-  // ── Cloudflare Web Analytics (100% Free Lifetime) ────────────────────────
+  // ── Cloudflare Web Analytics ────────────────────────────────────────────
   var DEFAULT_CF_TOKEN = 'ce994487070d403ba18f466602524948';
   function initCloudflareAnalytics(token) {
     var cfToken = token || (typeof window !== 'undefined' && window.__CLOUDFLARE_ANALYTICS_TOKEN__);
     if (!cfToken) {
       try {
-        var hs = JSON.parse(localStorage.getItem(HEADER_SETTINGS_KEY) || '{}');
+        var isBn = window.PrivatianLang && window.PrivatianLang.getLang() === 'bn';
+        var hsKey = isBn ? (HEADER_SETTINGS_KEY + '_bn') : HEADER_SETTINGS_KEY;
+        var hs = JSON.parse(localStorage.getItem(hsKey) || localStorage.getItem(HEADER_SETTINGS_KEY) || '{}');
         if (hs && hs.cloudflareAnalyticsToken) cfToken = hs.cloudflareAnalyticsToken;
       } catch(e) {}
     }
@@ -1616,7 +1618,17 @@
     if (!cfToken || typeof cfToken !== 'string' || cfToken.trim() === '') return;
     cfToken = cfToken.trim();
 
-    if (document.getElementById('cf-analytics-beacon')) return;
+    var existingBeacon = document.getElementById('cf-analytics-beacon') || document.querySelector('script[src*="cloudflareinsights.com/beacon"]');
+    if (existingBeacon) {
+      try {
+        var currentAttr = existingBeacon.getAttribute('data-cf-beacon');
+        var parsed = currentAttr ? JSON.parse(currentAttr) : {};
+        if (parsed.token === cfToken) return; // already active with this token
+        existingBeacon.remove();
+      } catch(e) {
+        existingBeacon.remove();
+      }
+    }
     var script = document.createElement('script');
     script.id = 'cf-analytics-beacon';
     script.type = 'module';

@@ -1,7 +1,7 @@
 /* ═══════════════════════════════════════════════════════════════════
-   UNIVERSAL MEDIA MANAGER & UPLOADER MODAL (LUXURY THEME)
-   The Privatian Family — Standardized Across All Admin Views
-═══════════════════════════════════════════════════════════════════ */
+   UNIVERSAL MEDIA MANAGER & UPLOADER MODAL (LUXURY OPTIMIZED THEME)
+   The Privatian Family — Standardized Across All Admin Views & Editor
+   ═══════════════════════════════════════════════════════════════════ */
 
 /* Modal Backdrop */
 .umm-overlay {
@@ -41,6 +41,7 @@
   transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   color: #0f172a;
+  contain: layout paint;
 }
 
 .umm-overlay.show .umm-card {
@@ -113,18 +114,17 @@
 .umm-tabs {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   padding: 10px 24px;
   background: #ffffff;
   border-bottom: 1px solid #e2e8f0;
-  overflow-x: auto;
 }
 
 .umm-tab-btn {
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  padding: 7px 14px;
+  padding: 8px 16px;
   font-size: 12.5px;
   font-weight: 600;
   color: #64748b;
@@ -155,7 +155,7 @@
 
 /* Modal Body */
 .umm-body {
-  padding: 20px 24px;
+  padding: 18px 24px;
   overflow-y: auto;
   flex: 1;
   min-height: 320px;
@@ -197,7 +197,7 @@
 
 .umm-search-input {
   width: 100%;
-  height: 36px;
+  height: 38px;
   padding: 0 32px 0 34px;
   font-size: 12.5px;
   border: 1.5px solid #cbd5e1;
@@ -206,7 +206,7 @@
   background: #ffffff;
   color: #0f172a;
   box-sizing: border-box;
-  transition: border-color 0.15s ease;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .umm-search-input:focus {
@@ -233,7 +233,7 @@
 }
 
 .umm-folder-select {
-  height: 36px;
+  height: 38px;
   padding: 0 10px;
   font-size: 12px;
   font-weight: 500;
@@ -250,12 +250,13 @@
   border-color: #0a528e;
 }
 
-/* Gallery Grid */
+/* Gallery Grid — High Performance GPU Rendering */
 .umm-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(135px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
   gap: 12px;
   min-height: 200px;
+  content-visibility: auto;
 }
 
 .umm-grid-item {
@@ -268,12 +269,14 @@
   position: relative;
   display: flex;
   flex-direction: column;
+  user-select: none;
+  contain: layout paint;
 }
 
 .umm-grid-item:hover {
   border-color: #94a3b8;
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
 
 .umm-grid-item.selected {
@@ -295,6 +298,7 @@
   height: 100%;
   object-fit: cover;
   display: block;
+  image-rendering: auto;
 }
 
 .umm-item-name {
@@ -338,7 +342,7 @@
   display: none;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.25);
 }
 
 .umm-grid-item.selected .umm-item-check {
@@ -484,155 +488,6 @@
   background: #0a528e;
   width: 0%;
   transition: width 0.2s ease;
-}
-
-/* ── TAB 3: UNIQUE ID RESOLVER ── */
-.umm-id-resolver-card {
-  background: #f8fafc;
-  border: 1.5px solid #cbd5e1;
-  border-radius: 12px;
-  padding: 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.umm-id-input-wrap {
-  position: relative;
-  display: flex;
-  gap: 8px;
-}
-
-.umm-id-input-icon {
-  position: absolute;
-  left: 12px;
-  top: 50%;
-  transform: translateY(-50%);
-  color: #94a3b8;
-  pointer-events: none;
-}
-
-.umm-id-input {
-  flex: 1;
-  height: 42px;
-  padding: 0 14px 0 38px;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  font-size: 13px;
-  border: 1.5px solid #cbd5e1;
-  border-radius: 8px;
-  outline: none;
-  background: #ffffff;
-  color: #0f172a;
-  box-sizing: border-box;
-  transition: border-color 0.15s ease;
-}
-
-.umm-id-input:focus {
-  border-color: #0a528e;
-  box-shadow: 0 0 0 3px rgba(10, 82, 142, 0.15);
-}
-
-.umm-id-verify-btn {
-  height: 42px;
-  padding: 0 16px;
-  font-size: 12.5px;
-  font-weight: 600;
-  background: #0a528e;
-  color: #ffffff;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: background 0.15s ease;
-  white-space: nowrap;
-}
-
-.umm-id-verify-btn:hover {
-  background: #083c68;
-}
-
-/* Verified Result Card */
-.umm-resolved-card {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  background: #ffffff;
-  border: 1.5px solid #e2e8f0;
-  border-radius: 10px;
-  padding: 12px 16px;
-  transition: all 0.15s ease;
-}
-
-.umm-resolved-card.valid {
-  border-color: #86efac;
-  background: #f0fdf4;
-}
-
-.umm-resolved-card.invalid {
-  border-color: #fca5a5;
-  background: #fef2f2;
-}
-
-.umm-resolved-thumb {
-  width: 76px;
-  height: 76px;
-  border-radius: 8px;
-  object-fit: cover;
-  border: 1px solid #cbd5e1;
-  flex-shrink: 0;
-  background: #0f172a;
-}
-
-.umm-resolved-meta {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.umm-resolved-title {
-  font-size: 13.5px;
-  font-weight: 700;
-  color: #0f172a;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.umm-resolved-id-tag {
-  font-family: ui-monospace, monospace;
-  font-size: 11.5px;
-  font-weight: 700;
-  color: #4338ca;
-  background: #eef2ff;
-  padding: 2px 6px;
-  border-radius: 4px;
-  display: inline-block;
-  width: fit-content;
-}
-
-.umm-resolved-sub {
-  font-size: 11.5px;
-  color: #64748b;
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.umm-resolved-status-badge {
-  font-size: 11px;
-  font-weight: 700;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.umm-resolved-status-badge.ok {
-  color: #15803d;
-}
-
-.umm-resolved-status-badge.err {
-  color: #dc2626;
 }
 
 /* Modal Footer */

@@ -10017,12 +10017,16 @@ function _setGalleryFilter(filter) {
   renderGalleryGrid();
 }
 
+var _gallerySearchDebounceTimer = null;
 function _handleGallerySearch() {
   const input = document.getElementById('gallery-search-input');
   const clearBtn = document.getElementById('gallery-search-clear');
   _gallerySearchQuery = (input ? input.value : '').trim();
   if (clearBtn) clearBtn.style.display = _gallerySearchQuery ? 'block' : 'none';
-  renderGalleryGrid();
+  clearTimeout(_gallerySearchDebounceTimer);
+  _gallerySearchDebounceTimer = setTimeout(() => {
+    renderGalleryGrid();
+  }, 120);
 }
 
 function _clearGallerySearch() {
@@ -10031,6 +10035,7 @@ function _clearGallerySearch() {
   if (input) input.value = '';
   _gallerySearchQuery = '';
   if (clearBtn) clearBtn.style.display = 'none';
+  clearTimeout(_gallerySearchDebounceTimer);
   renderGalleryGrid();
 }
 
@@ -10381,8 +10386,8 @@ function _renderPickerGrid(searchQuery = '') {
   grid.innerHTML = items.map(item => {
     const isSel = _galleryPickerSelectedItem && (_galleryPickerSelectedItem.unique_id === item.unique_id);
     return `
-      <div class="picker-item-card ${isSel ? 'selected' : ''}" onclick="_selectGalleryPickerItem('${item.unique_id}')" title="${escapeHtml(item.title || item.filename)}">
-        <img src="${escapeHtml(item.url)}" alt="" class="picker-item-thumb" />
+      <div class="picker-item-card ${isSel ? 'selected' : ''}" onclick="_selectGalleryPickerItem('${item.unique_id}')" ondblclick="_confirmGalleryPickerSelection()" title="${escapeHtml(item.title || item.filename)}">
+        <img src="${escapeHtml(item.url)}" alt="" class="picker-item-thumb" loading="lazy" decoding="async" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\\'http://www.w3.org/2000/svg\\' width=\\'40\\' height=\\'40\\' viewBox=\\'0 0 24 24\\' fill=\\'none\\' stroke=\\'%2364748b\\' stroke-width=\\'2\\'><rect x=\\'3\\' y=\\'3\\' width=\\'18\\' height=\\'18\\' rx=\\'2\\'/><circle cx=\\'8.5\\' cy=\\'8.5\\' r=\\'1.5\\'/><polyline points=\\'21 15 16 10 5 21\\'/></svg>'" />
         <div class="picker-item-name">${escapeHtml(item.title || item.filename)}</div>
         ${item.folder ? `<span style="position:absolute;top:6px;left:6px;font-size:9.5px;font-weight:600;background:rgba(15,23,42,0.85);backdrop-filter:blur(4px);color:#fff;padding:2px 6px;border-radius:4px;display:inline-flex;align-items:center;gap:3px;"><svg viewBox="0 0 24 24" width="9" height="9" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>${escapeHtml(item.folder)}</span>` : ''}
         <div class="picker-item-check">
@@ -10393,9 +10398,13 @@ function _renderPickerGrid(searchQuery = '') {
   }).join('');
 }
 
+var _pickerSearchDebounce = null;
 function _handlePickerSearch() {
-  const input = document.getElementById('picker-search-input');
-  _renderPickerGrid(input ? input.value.trim() : '');
+  clearTimeout(_pickerSearchDebounce);
+  _pickerSearchDebounce = setTimeout(() => {
+    const input = document.getElementById('picker-search-input');
+    _renderPickerGrid(input ? input.value.trim() : '');
+  }, 120);
 }
 
 function _selectGalleryPickerItem(uniqueId) {
