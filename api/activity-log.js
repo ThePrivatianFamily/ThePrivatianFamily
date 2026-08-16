@@ -60,7 +60,7 @@ module.exports = async function handler(req, res) {
       query = query.range(offset, offset + limit - 1);
 
       const { data, count, error } = await query;
-      if (!error && Array.isArray(data)) {
+      if (!error && Array.isArray(data) && data.length > 0) {
         logs = {
           items: data,
           total: count !== null ? count : data.length,
