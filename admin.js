@@ -1844,13 +1844,12 @@ window._handleAccessFilterChange = _handleAccessFilterChange;
 
 function _getAvatarGradient(email) {
   const gradients = [
-    'linear-gradient(135deg, #4f46e5, #7c3aed)',
-    'linear-gradient(135deg, #0284c7, #06b6d4)',
-    'linear-gradient(135deg, #059669, #10b981)',
-    'linear-gradient(135deg, #d97706, #f59e0b)',
-    'linear-gradient(135deg, #e11d48, #f43f5e)',
-    'linear-gradient(135deg, #7c2d12, #c2410c)',
-    'linear-gradient(135deg, #1e3a5f, #3b82f6)'
+    'linear-gradient(135deg, #0a528e, #083d6b)',
+    'linear-gradient(135deg, #0f172a, #1e293b)',
+    'linear-gradient(135deg, #1e3a5f, #0a528e)',
+    'linear-gradient(135deg, #1e293b, #334155)',
+    'linear-gradient(135deg, #071e38, #0a528e)',
+    'linear-gradient(135deg, #172554, #1e3a8a)'
   ];
   let hash = 0;
   const str = email || 'U';

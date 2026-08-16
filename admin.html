@@ -1400,7 +1400,7 @@
         </div>
         <div class="access-header-metrics">
           <div class="access-metric-chip" title="Total whitelist records">
-            <span class="access-metric-chip-icon" style="background:#eff6ff;color:#2563eb;">
+            <span class="access-metric-chip-icon">
               <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
             </span>
             <div class="access-metric-chip-data">
@@ -1410,7 +1410,7 @@
           </div>
 
           <div class="access-metric-chip" title="Active Admins (Min 2 required)">
-            <span class="access-metric-chip-icon" style="background:#fdf4ff;color:#9333ea;">
+            <span class="access-metric-chip-icon">
               <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 4l3 12h14l3-12-6 7-4-7-4 7-6-7z"/><path d="M4 20h16"/></svg>
             </span>
             <div class="access-metric-chip-data">
@@ -1421,7 +1421,7 @@
           </div>
 
           <div class="access-metric-chip" title="Active Moderators">
-            <span class="access-metric-chip-icon" style="background:#ecfdf5;color:#059669;">
+            <span class="access-metric-chip-icon">
               <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
             </span>
             <div class="access-metric-chip-data">
@@ -1431,7 +1431,7 @@
           </div>
 
           <div class="access-metric-chip" title="Suspended & Recycled accounts">
-            <span class="access-metric-chip-icon" style="background:#fff1f2;color:#e11d48;">
+            <span class="access-metric-chip-icon">
               <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
             </span>
             <div class="access-metric-chip-data">
@@ -1442,7 +1442,7 @@
 
           <div id="access-save-status-wrap" class="ft-header-badge synced" title="Access whitelist database status">
             <span class="ft-pulse-dot" id="access-status-dot"></span>
-            <span id="access-save-status">Synced</span>
+            <span id="access-save-status">Synced with database</span>
           </div>
         </div>
       </div>
@@ -1585,15 +1585,15 @@
             <span class="gallery-header-pill">Zero Egress CDN</span>
           </div>
           <h2 class="gallery-header-title">Media Gallery &amp; Asset Library</h2>
-          <p class="gallery-header-desc">Upload, store, and manage high-resolution media with automated unique IDs (<code style="color:#4f46e5;font-weight:700;">img_xxxxxxxx</code>) for instant insertion across all articles, sections, and site layouts.</p>
+          <p class="gallery-header-desc">Upload, store, and manage high-resolution media with automated unique IDs (<code style="color:var(--brand);font-weight:700;">img_xxxxxxxx</code>) for instant insertion across all articles, sections, and site layouts.</p>
         </div>
         <div class="gallery-header-actions">
-          <button class="btn btn--secondary" id="gallery-btn-sync-trigger" onclick="syncGalleryAssets()" title="Force real-time scan and sync between Cloudflare R2 &amp; Database">
-            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+          <button class="btn btn--secondary btn--sm" id="gallery-btn-sync-trigger" onclick="syncGalleryAssets()" title="Force real-time scan and sync between Cloudflare R2 &amp; Database">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
             <span id="gallery-btn-sync-text">Sync with R2 &amp; DB</span>
           </button>
-          <button class="btn btn--primary" id="gallery-btn-upload-trigger" onclick="document.getElementById('gallery-file-input').click()">
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          <button class="btn btn--primary btn--sm" id="gallery-btn-upload-trigger" onclick="openUniversalMediaModal({ allowIdInput: false, defaultTab: 'upload', title: 'Upload New Asset to Cloudflare R2' })">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             <span>Upload New Images</span>
           </button>
         </div>
@@ -1605,8 +1605,8 @@
         <div class="gallery-kpi-grid">
           <!-- KPI 1: Total Uploaded Files -->
           <div class="gallery-kpi-card">
-            <div class="gallery-kpi-icon-wrap" style="background:#e0e7ff;color:#4338ca;">
-              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+            <div class="gallery-kpi-icon-wrap">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
             </div>
             <div class="gallery-kpi-data">
               <span class="gallery-kpi-label">Uploaded Files</span>
@@ -1617,8 +1617,8 @@
 
           <!-- KPI 2: Storage Used -->
           <div class="gallery-kpi-card">
-            <div class="gallery-kpi-icon-wrap" style="background:#e0f2fe;color:#0284c7;">
-              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+            <div class="gallery-kpi-icon-wrap">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
             </div>
             <div class="gallery-kpi-data">
               <span class="gallery-kpi-label">Storage Used</span>
@@ -1629,20 +1629,20 @@
 
           <!-- KPI 3: Storage Free / Available -->
           <div class="gallery-kpi-card">
-            <div class="gallery-kpi-icon-wrap" style="background:#dcfce7;color:#16a34a;">
-              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/><polyline points="9 13 12 10 15 13"/><line x1="12" y1="10" x2="12" y2="16"/></svg>
+            <div class="gallery-kpi-icon-wrap">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/><polyline points="9 13 12 10 15 13"/><line x1="12" y1="10" x2="12" y2="16"/></svg>
             </div>
             <div class="gallery-kpi-data">
               <span class="gallery-kpi-label">Storage Free (R2)</span>
-              <div class="gallery-kpi-val" id="gallery-stat-storage-free" style="color:#15803d;">10.00 GB</div>
+              <div class="gallery-kpi-val" id="gallery-stat-storage-free">10.00 GB</div>
               <div class="gallery-kpi-sub" id="gallery-stat-free-pct">100% capacity remaining</div>
             </div>
           </div>
 
           <!-- KPI 4: Average & Largest File -->
           <div class="gallery-kpi-card">
-            <div class="gallery-kpi-icon-wrap" style="background:#fef3c7;color:#d97706;">
-              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></svg>
+            <div class="gallery-kpi-icon-wrap">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></svg>
             </div>
             <div class="gallery-kpi-data">
               <span class="gallery-kpi-label">Average File Size</span>
