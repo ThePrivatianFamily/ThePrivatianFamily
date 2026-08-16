@@ -1939,19 +1939,6 @@ module.exports = async function handler(req, res) {
         }
       } catch(err) {}
 
-      try {
-        await logActivity({
-          actor: session,
-          action: 'section.customize',
-          category: 'sections',
-          summary: `${session.name || session.email} updated Section Studio configuration for section "${slug}"`,
-          target_id: slug,
-          target_name: payload.customTitle || slug,
-          details: { slug, featuredArticleId: payload.featuredArticleId, selectedArticleIds: payload.selectedArticleIds },
-          req
-        });
-      } catch(e) {}
-
       return res.status(200).json({ ok: true, data: allConfigs[slug] });
     }
   }
@@ -2083,19 +2070,6 @@ module.exports = async function handler(req, res) {
     }
 
     if (error) return res.status(500).json({ error: error.message });
-
-    try {
-      await logActivity({
-        actor: session,
-        action: 'section.edit',
-        category: 'sections',
-        summary: `${session.name || session.email} updated section ID "${id}" to "${name || (data && data.name)}" (/section/${slug || ''})`,
-        target_id: id,
-        target_name: name || (data && data.name),
-        details: { slug, name, name_bn },
-        req
-      });
-    } catch(e) {}
 
     return res.status(200).json(rowToAdminSection(data));
   }

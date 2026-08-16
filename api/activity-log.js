@@ -101,7 +101,15 @@ module.exports = async function handler(req, res) {
               if (Array.isArray(parsed)) rawList = parsed;
             }
           } catch(e) {}
-        }
+        // Filter out routine edits and drafts from audit trail
+        rawList = rawList.filter(l => {
+          const act = (l.action || '').toLowerCase();
+          return act !== 'article.edit' && 
+                 act !== 'article.save_draft' && 
+                 act !== 'section.edit' && 
+                 act !== 'section.customize' &&
+                 !act.endsWith('.save_draft');
+        });
 
         // Apply filters in memory
         if (category && category !== 'all') {

@@ -196,19 +196,6 @@ module.exports = async function handler(req, res) {
           .single();
         if (error) return res.status(500).json({ error: error.message });
 
-        try {
-          await logActivity({
-            actor: session,
-            action: 'article.save_draft',
-            category: 'articles',
-            summary: `${session.name || session.email} saved working draft for article "${title || title_bn || existing.title || bodyId}"`,
-            target_id: bodyId,
-            target_name: title || title_bn || existing.title || bodyId,
-            details: { is_draft: true },
-            req
-          });
-        } catch(e) {}
-
         return res.status(200).json({ ...data, ...draftPayload, _is_working_draft: true });
       }
 
@@ -233,20 +220,20 @@ module.exports = async function handler(req, res) {
       const { data, error } = await client.from('articles').update(updates).eq('id', bodyId).select().single();
       if (error) return res.status(500).json({ error: error.message });
 
-      try {
-        await logActivity({
-          actor: session,
-          action: bodyStatus === 'published' ? 'article.publish' : 'article.edit',
-          category: 'articles',
-          summary: bodyStatus === 'published'
-            ? `${session.name || session.email} published article "${title || title_bn || data.title || bodyId}"`
-            : `${session.name || session.email} edited article "${title || title_bn || data.title || bodyId}"`,
-          target_id: bodyId,
-          target_name: title || title_bn || data.title || bodyId,
-          details: { status: data.status, section: data.section },
-          req
-        });
-      } catch(e) {}
+      if (bodyStatus === 'published') {
+        try {
+          await logActivity({
+            actor: session,
+            action: 'article.publish',
+            category: 'articles',
+            summary: `${session.name || session.email} published article "${title || title_bn || data.title || bodyId}"`,
+            target_id: bodyId,
+            target_name: title || title_bn || data.title || bodyId,
+            details: { status: data.status, section: data.section },
+            req
+          });
+        } catch(e) {}
+      }
 
       return res.status(200).json(data);
     } else {

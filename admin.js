@@ -158,6 +158,11 @@ window.setAdminContentLang = function(lang) {
   if (btnEn) btnEn.classList.toggle('active', _adminContentLang === 'en');
   if (btnBn) btnBn.classList.toggle('active', _adminContentLang === 'bn');
 
+  const ftEn = document.getElementById('ft-lang-en');
+  const ftBn = document.getElementById('ft-lang-bn');
+  if (ftEn) ftEn.classList.toggle('active', _adminContentLang === 'en');
+  if (ftBn) ftBn.classList.toggle('active', _adminContentLang === 'bn');
+
   if (typeof showToast === 'function') {
     showToast('info', _adminContentLang === 'bn' ? 'Switched editor to Bengali (বাংলা) configuration' : 'Switched editor to English configuration');
   }
@@ -7703,6 +7708,60 @@ const DEFAULT_FOOTER_CONFIG = {
   ]
 };
 
+const DEFAULT_FOOTER_CONFIG_BN = {
+  sectionsTitle: 'বিভাগসমূহ',
+  enabledSections: null,
+  exploreTitle: 'প্রাইভেটিয়ান এক্সপ্লোর করুন',
+  explore: [
+    { id: 'f-exp-1', label: 'ইভেন্টসমূহ', href: '/events', target: '_self', enabled: true },
+    { id: 'f-exp-2', label: 'আর্টিকেল আর্কাইভ', href: '/', target: '_self', enabled: true },
+    { id: 'f-exp-3', label: 'আমাদের সম্পর্কে', href: '/', target: '_self', enabled: true },
+    { id: 'f-exp-4', label: 'সংবাদ+', href: '/', target: '_self', enabled: true },
+    { id: 'f-exp-5', label: 'পডকাস্ট', href: '/', target: '_self', enabled: true }
+  ],
+  seriesTitle: 'আমাদের সাম্প্রতিক সিরিজ',
+  series: [
+    {
+      id: 'f-ser-1',
+      title: 'অনুসন্ধিৎসু',
+      href: '/section/findings',
+      description: 'প্রাইভেটিয়ান ফ্যামিলি বিশেষজ্ঞদের গভীর অনুসন্ধানী আলোচনা।',
+      enabled: true
+    },
+    {
+      id: 'f-ser-2',
+      title: 'জীবন | ঐতিহ্য',
+      href: '/section/community-heritage',
+      description: 'পারিবারিক ঐতিহ্য ও ব্যক্তিগত গবেষণার উপর গুরুত্ব দেওয়া একটি বিশেষ সিরিজ।',
+      enabled: true
+    }
+  ],
+  socialTitle: 'অনুসরণ করুন',
+  social: [
+    { id: 'f-soc-1', platform: 'instagram', label: 'Instagram', href: 'https://instagram.com', enabled: true },
+    { id: 'f-soc-2', platform: 'linkedin', label: 'LinkedIn', href: 'https://linkedin.com', enabled: true },
+    { id: 'f-soc-3', platform: 'tiktok', label: 'TikTok', href: 'https://tiktok.com', enabled: true },
+    { id: 'f-soc-4', platform: 'facebook', label: 'Facebook', href: 'https://facebook.com', enabled: true },
+    { id: 'f-soc-5', platform: 'youtube', label: 'YouTube', href: 'https://youtube.com', enabled: true },
+    { id: 'f-soc-6', platform: 'email', label: 'Email', href: 'mailto:contact@privatian.org', enabled: true }
+  ],
+  logoSvg: '',
+  logoHeight: 80,
+  tagline: 'দ্য প্রাইভেটিয়ান সোসাইটির অফিশিয়াল প্রকাশনা — ক্যামব্রিজ, ম্যাসাচুসেটস',
+  copyright: '© ২০২৬ দ্য প্রাইভেটিয়ান ফ্যামিলি। সর্বস্বত্ব সংরক্ষিত।',
+  bottomLinks: [
+    { id: 'f-bot-1', label: 'মিডিয়া ও সাংবাদিকদের জন্য', href: '#', target: '_self', enabled: true },
+    { id: 'f-bot-2', label: 'পারিবারিক সংবাদ ও আর্কাইভ', href: '#', target: '_self', enabled: true },
+    { id: 'f-bot-3', label: 'ডিজিটাল এক্সেসিবিলিটি', href: '#', target: '_self', enabled: true },
+    { id: 'f-bot-4', label: 'গোপনীয়তা নীতি', href: '#', target: '_self', enabled: true },
+    { id: 'f-bot-5', label: 'ট্রেডমার্ক', href: '#', target: '_self', enabled: true }
+  ]
+};
+
+function getFooterDefaultSettings(lang) {
+  return lang === 'bn' ? DEFAULT_FOOTER_CONFIG_BN : DEFAULT_FOOTER_CONFIG;
+}
+
 const FT_ICONS = {
   sections: `<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" style="display:inline-block;vertical-align:-2px;margin-right:4px;"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>`,
   explore:  `<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" style="display:inline-block;vertical-align:-2px;margin-right:4px;"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>`,
@@ -7747,6 +7806,12 @@ function getSocialIconSvgForAdmin(platform) {
 
 async function initFooterPage() {
   updateGlobalSyncStatus('syncing', 'Loading footer settings...');
+
+  // Sync lang switcher buttons in footer
+  const ftEn = document.getElementById('ft-lang-en');
+  const ftBn = document.getElementById('ft-lang-bn');
+  if (ftEn) ftEn.classList.toggle('active', _adminContentLang === 'en');
+  if (ftBn) ftBn.classList.toggle('active', _adminContentLang === 'bn');
 
   let loadedConfig = null;
 
@@ -7795,9 +7860,9 @@ async function initFooterPage() {
     } catch(e) {}
   }
 
-  // Tier 5: Default Config
+  // Tier 5: Default Config based on active language
   if (!loadedConfig) {
-    loadedConfig = JSON.parse(JSON.stringify(DEFAULT_FOOTER_CONFIG));
+    loadedConfig = JSON.parse(JSON.stringify(getFooterDefaultSettings(_adminContentLang)));
   }
 
   appliedFooterConfig = JSON.parse(JSON.stringify(loadedConfig));
@@ -7806,7 +7871,7 @@ async function initFooterPage() {
   footerUndoStack = [];
   footerRedoStack = [];
   updateFooterUndoRedoButtons();
-  updateGlobalSyncStatus('synced', 'Synced with database');
+  updateGlobalSyncStatus('synced', `Synced (${_adminContentLang === 'bn' ? 'বাংলা' : 'English'})`);
   switchFooterTab(_activeFooterTab || 'preview');
 }
 
@@ -7903,6 +7968,7 @@ function renderFooterPreview() {
   const enabledSet = Array.isArray(cfg.enabledSections) ? cfg.enabledSections : null;
   const displaySecs = activeSecs.filter(s => enabledSet ? enabledSet.includes(s.slug || s.id) : true);
 
+  const isBn = (_adminContentLang === 'bn');
   const exploreList = cfg.explore || [];
   const seriesList = cfg.series || [];
   const socialList = cfg.social || [];
@@ -7913,7 +7979,7 @@ function renderFooterPreview() {
       <!-- Col 1: Sections -->
       <div class="ft-interactive-col">
         <div class="ft-col-header-bar">
-          <span class="ft-col-title-badge">${FT_ICONS.sections}${escapeHtml(cfg.sectionsTitle || 'Sections')}</span>
+          <span class="ft-col-title-badge">${FT_ICONS.sections}${escapeHtml(cfg.sectionsTitle || (isBn ? 'বিভাগসমূহ' : 'Sections'))}</span>
           <button type="button" class="ft-col-quick-btn" onclick="switchFooterTab('sections')">
             ${FT_ICONS.settings}Edit (${displaySecs.length})
           </button>
@@ -7922,9 +7988,10 @@ function renderFooterPreview() {
           ${displaySecs.length === 0 ? '<span style="font-size:12px;color:#64748b;font-style:italic;">No sections enabled.</span>' : ''}
           ${displaySecs.map(s => {
             const secSlug = s.slug || s.id;
+            const displayName = (isBn && s.name_bn) ? s.name_bn : s.name;
             return `
               <div class="ft-visual-item" onclick="switchFooterTab('sections')" title="Manage section visibility">
-                <span style="font-size:12.5px;color:#e2e8f0;">${escapeHtml(s.name)}</span>
+                <span style="font-size:12.5px;color:#e2e8f0;">${escapeHtml(displayName)}</span>
                 <span style="font-size:10px;color:#38bdf8;">${s.slug ? '/section/' + escapeHtml(s.slug) : '/ (all)'}</span>
               </div>
             `;
@@ -9184,7 +9251,15 @@ async function loadActivityLogs(showToastFeedback = false) {
         }
         return true;
       });
-    }
+    // Filter out routine edits, draft auto-saves, and micro-customizations
+    items = items.filter(l => {
+      const act = (l.action || '').toLowerCase();
+      return act !== 'article.edit' && 
+             act !== 'article.save_draft' && 
+             act !== 'section.edit' && 
+             act !== 'section.customize' &&
+             !act.endsWith('.save_draft');
+    });
 
     _allActivityLogs = items;
 

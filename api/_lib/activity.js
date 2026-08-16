@@ -46,6 +46,17 @@ async function logActivity({
   details = {},
   req = null
 }) {
+  const act = (action || '').toLowerCase();
+  if (
+    act === 'article.edit' ||
+    act === 'article.save_draft' ||
+    act === 'section.edit' ||
+    act === 'section.customize' ||
+    act.endsWith('.save_draft')
+  ) {
+    return null; // Skip routine edits & auto-save drafts
+  }
+
   try {
     const sb = getSbClient();
     if (!sb) {

@@ -1177,6 +1177,10 @@
           <p class="page-subtitle" style="font-size:13px;color:var(--text-muted);margin:0;">Interactive visual editor for footer columns, Explore links, Editorial series, Social channels, Branding &amp; Legal links</p>
         </div>
         <div class="menu-mgr-actions" style="display:flex;align-items:center;gap:10px;">
+          <div class="admin-lang-switcher" style="display:inline-flex;" role="tablist" aria-label="Footer Content Language">
+            <button type="button" class="admin-lang-btn active" id="ft-lang-en" onclick="setAdminContentLang('en')" title="Switch to English footer editor">EN</button>
+            <button type="button" class="admin-lang-btn" id="ft-lang-bn" onclick="setAdminContentLang('bn')" title="Switch to বাংলা (Bengali) footer editor">বাং</button>
+          </div>
           <div id="ft-save-status-wrap" class="ft-header-badge synced">
             <span class="ft-pulse-dot" id="ft-status-dot"></span>
             <span id="ft-save-status">Synced with database</span>
