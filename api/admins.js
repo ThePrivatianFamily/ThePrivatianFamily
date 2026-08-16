@@ -45,10 +45,68 @@ module.exports = async function handler(req, res) {
     if (!session) return;
     const { data, error } = await client
       .from('allowed_admins')
-      .select('id, email, role, status, added_by, added_at, modified_by, modified_at, modified_action')
+      .select('id, email, role, status, added_by, added_at, modified_by, modified_at, modified_action, full_name, university, university_id, university_mail, mobile_number, profile_pic')
       .order('added_at', { ascending: true });
     if (error) return res.status(500).json({ error: error.message });
     return res.status(200).json(data || []);
+  }
+
+  // ── GET PROFILE ──────────────────────────────────────────────────
+  if (action === 'get-profile' && req.method === 'GET') {
+    const session = await requireAuth(req, res);
+    if (!session) return;
+    const targetId = id;
+    let query = client.from('allowed_admins').select('*');
+    if (targetId) query = query.eq('id', targetId);
+    else if (req.query.email) query = query.ilike('email', req.query.email.trim());
+    else query = query.ilike('email', session.email);
+    
+    const { data, error } = await query.single();
+    if (error || !data) return res.status(404).json({ error: 'Profile not found' });
+    return res.status(200).json(data);
+  }
+
+  // ── UPDATE PROFILE (Full Name, University, ID, Mail, Phone, Pic) ─
+  if ((action === 'update-profile' || action === 'save-profile') && (req.method === 'PATCH' || req.method === 'POST')) {
+    const session = await requireAuth(req, res);
+    if (!session) return;
+    if (!id) return res.status(400).json({ error: 'id is required' });
+
+    const { data: target } = await client.from('allowed_admins').select('*').eq('id', id).single();
+    if (!target) return res.status(404).json({ error: 'Admin not found' });
+
+    const isSelf = target.email.toLowerCase() === session.email.toLowerCase();
+    if (session.role !== 'Admin' && !isSelf) {
+      return res.status(403).json({ error: 'Forbidden: You can only edit your own profile.' });
+    }
+
+    const { full_name, university, university_id, university_mail, mobile_number, profile_pic } = req.body || {};
+    const profileUpdates = {
+      full_name: typeof full_name === 'string' ? full_name.trim() : target.full_name || '',
+      university: typeof university === 'string' ? university.trim() : target.university || '',
+      university_id: typeof university_id === 'string' ? university_id.trim() : target.university_id || '',
+      university_mail: typeof university_mail === 'string' ? university_mail.trim() : target.university_mail || '',
+      mobile_number: typeof mobile_number === 'string' ? mobile_number.trim() : target.mobile_number || '',
+      profile_pic: typeof profile_pic === 'string' ? profile_pic.trim() : target.profile_pic || ''
+    };
+
+    const { data, error } = await client.from('allowed_admins').update(profileUpdates).eq('id', id).select().single();
+    if (error) return res.status(500).json({ error: error.message });
+
+    try {
+      await logActivity({
+        actor: session,
+        action: 'admin.update_profile',
+        category: 'admins',
+        summary: `${session.name || session.email} updated profile for "${target.email}"`,
+        target_id: target.id,
+        target_name: target.email,
+        details: { updates: profileUpdates },
+        req
+      });
+    } catch(e) {}
+
+    return res.status(200).json({ success: true, profile: data });
   }
 
   // ── CHECK (own access) ───────────────────────────────────────────

@@ -26,7 +26,27 @@ module.exports = async function handler(req, res) {
   if (action === 'me') {
     const s = await requireAuth(req, res);
     if (!s) return;
-    return res.status(200).json({ email: s.email, role: s.role, name: s.name || s.email, picture: s.picture || '' });
+    try {
+      const sb = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
+      const { data: admin } = await sb.from('allowed_admins').select('*').ilike('email', s.email).single();
+      const displayName = (admin && admin.full_name) || s.name || s.email.split('@')[0];
+      const displayPic  = (admin && admin.profile_pic) || s.picture || '';
+      return res.status(200).json({
+        id: admin?.id || '',
+        email: s.email,
+        role: admin?.role || s.role,
+        name: displayName,
+        full_name: admin?.full_name || '',
+        picture: displayPic,
+        profile_pic: admin?.profile_pic || '',
+        university: admin?.university || '',
+        university_id: admin?.university_id || '',
+        university_mail: admin?.university_mail || '',
+        mobile_number: admin?.mobile_number || ''
+      });
+    } catch(e) {
+      return res.status(200).json({ email: s.email, role: s.role, name: s.name || s.email, picture: s.picture || '' });
+    }
   }
 
   // ── LOGOUT ──────────────────────────────────────────────────────
@@ -67,14 +87,11 @@ module.exports = async function handler(req, res) {
       if (!gp.email_verified) return res.status(401).json({ error: 'Email not verified with Google' });
 
       const email   = gp.email.toLowerCase();
-      const name    = gp.name    || email;
-      const picture = gp.picture || '';
-
       const sb = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
       const { data: admin, error } = await sb
         .from('allowed_admins')
         .select('*')
-        .eq('email', email)
+        .ilike('email', email)
         .eq('status', 'active')
         .single();
 
@@ -85,8 +102,19 @@ module.exports = async function handler(req, res) {
         });
       }
 
+      // Populate default name and picture from Google if not already saved in database
+      const updates = {};
+      if (!admin.full_name && gp.name) updates.full_name = gp.name;
+      if (!admin.profile_pic && gp.picture) updates.profile_pic = gp.picture;
+      if (Object.keys(updates).length > 0) {
+        await sb.from('allowed_admins').update(updates).eq('id', admin.id);
+      }
+
+      const displayName = admin.full_name || gp.name || email.split('@')[0];
+      const displayPic  = admin.profile_pic || gp.picture || '';
+
       const token = jwt.sign(
-        { email: admin.email, role: admin.role, name, picture },
+        { email: admin.email, role: admin.role, name: displayName, picture: displayPic },
         process.env.SESSION_SECRET,
         { expiresIn: '24h' }
       );
@@ -95,13 +123,13 @@ module.exports = async function handler(req, res) {
         `privatian_session=${token}; HttpOnly; Secure; SameSite=Strict; Max-Age=86400; Path=/`
       );
 
-      // Record Activity Log for login — properly awaited before response
+      // Record Activity Log for login
       try {
         await logActivity({
-          actor: { email: admin.email, name, role: admin.role },
+          actor: { email: admin.email, name: displayName, role: admin.role },
           action: 'auth.login',
           category: 'auth',
-          summary: `${name} (${admin.email}) logged in successfully via Google OAuth`,
+          summary: `${displayName} (${admin.email}) logged in successfully via Google OAuth`,
           target_id: admin.id || admin.email,
           target_name: admin.email,
           details: { method: 'Google OAuth', role: admin.role },
@@ -113,7 +141,19 @@ module.exports = async function handler(req, res) {
 
       return res.status(200).json({
         success: true, token,
-        user: { email: admin.email, role: admin.role, name, picture }
+        user: {
+          id: admin.id,
+          email: admin.email,
+          role: admin.role,
+          name: displayName,
+          full_name: admin.full_name || gp.name || '',
+          picture: displayPic,
+          profile_pic: admin.profile_pic || gp.picture || '',
+          university: admin.university || '',
+          university_id: admin.university_id || '',
+          university_mail: admin.university_mail || '',
+          mobile_number: admin.mobile_number || ''
+        }
       });
 
     } catch(e) {
@@ -309,11 +349,11 @@ module.exports = async function handler(req, res) {
         });
       }
 
-      const name    = user.user_metadata?.full_name || user.user_metadata?.name || admin.name || email.split('@')[0];
-      const picture = user.user_metadata?.avatar_url || user.user_metadata?.picture || '';
+      const displayName = admin.full_name || user.user_metadata?.full_name || user.user_metadata?.name || email.split('@')[0];
+      const displayPic  = admin.profile_pic || user.user_metadata?.avatar_url || user.user_metadata?.picture || '';
 
       const token = jwt.sign(
-        { email: admin.email, role: admin.role, name, picture },
+        { email: admin.email, role: admin.role, name: displayName, picture: displayPic },
         process.env.SESSION_SECRET,
         { expiresIn: '24h' }
       );
@@ -332,10 +372,10 @@ module.exports = async function handler(req, res) {
       // Record Activity Log for OTP login
       try {
         await logActivity({
-          actor: { email: admin.email, name, role: admin.role },
+          actor: { email: admin.email, name: displayName, role: admin.role },
           action: 'auth.login',
           category: 'auth',
-          summary: `${name} (${admin.email}) logged in successfully via Email Verification Code (OTP)`,
+          summary: `${displayName} (${admin.email}) logged in successfully via Email Verification Code (OTP)`,
           target_id: admin.id || admin.email,
           target_name: admin.email,
           details: { method: 'Email OTP (Supabase)', role: admin.role },
@@ -348,7 +388,19 @@ module.exports = async function handler(req, res) {
       return res.status(200).json({
         success: true,
         token,
-        user: { email: admin.email, role: admin.role, name, picture }
+        user: {
+          id: admin.id,
+          email: admin.email,
+          role: admin.role,
+          name: displayName,
+          full_name: admin.full_name || '',
+          picture: displayPic,
+          profile_pic: admin.profile_pic || '',
+          university: admin.university || '',
+          university_id: admin.university_id || '',
+          university_mail: admin.university_mail || '',
+          mobile_number: admin.mobile_number || ''
+        }
       });
 
     } catch(e) {

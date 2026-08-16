@@ -100,6 +100,8 @@
     }
   }
 
+  window.injectSidebarUser = injectSidebarUser;
+
   // ── Instant Local Validation (0ms delay) ───────────────────
   const token = getToken();
   if (!token) {

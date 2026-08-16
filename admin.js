@@ -2336,7 +2336,7 @@ function renderAccessLists() {
 
       // Search query
       if (_accessSearchQuery) {
-        const text = `${a.email} ${a.role} ${a.added_by || ''} ${a.modified_by || ''} ${a.modified_action || ''}`.toLowerCase();
+        const text = `${a.email} ${a.role} ${a.full_name || ''} ${a.university || ''} ${a.university_id || ''} ${a.university_mail || ''} ${a.mobile_number || ''} ${a.added_by || ''} ${a.modified_by || ''} ${a.modified_action || ''}`.toLowerCase();
         if (!text.includes(_accessSearchQuery)) return false;
       }
       return true;
@@ -2365,9 +2365,19 @@ function renderAccessLists() {
       statusBadge = `<span class="access-status-pill recycle"><span class="access-tab-dot recycle"></span> In Recycle</span>`;
     }
 
+    const profileBtn = `
+      <button class="access-action-btn secondary" title="View & Edit User Profile" onclick="openAdminProfileModal('${a.id}')">
+        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        Profile
+      </button>
+    `;
+
     let actionsHtml = '';
     if (isSelf) {
-      actionsHtml = `<span class="access-user-you-tag" title="Protected: Your active session cannot be modified by yourself"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" style="vertical-align:-1px;margin-right:3px;"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> Active (You)</span>`;
+      actionsHtml = `
+        ${profileBtn}
+        <span class="access-user-you-tag" title="Protected: Your active session cannot be modified by yourself"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" style="vertical-align:-1px;margin-right:3px;"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> Active (You)</span>
+      `;
     } else if (panel === 'recycle') {
       actionsHtml = `
         <button class="access-action-btn success" onclick="restoreAdmin('${a.id}','${escapeHtml(a.email)}','${a.role || ''}')">
@@ -2404,21 +2414,37 @@ function renderAccessLists() {
         </button>
       `;
 
-      actionsHtml = `${roleToggleBtn} ${suspendBtn} ${removeBtn}`;
+      actionsHtml = `${profileBtn} ${roleToggleBtn} ${suspendBtn} ${removeBtn}`;
     }
+
+    const avatarHtml = a.profile_pic
+      ? `<div class="access-avatar" style="background:transparent;padding:0;overflow:hidden;border:2px solid #0a528e;border-radius:50%;"><img src="${escapeHtml(a.profile_pic)}" referrerpolicy="no-referrer" style="width:100%;height:100%;object-fit:cover;" /></div>`
+      : `<div class="access-avatar" style="background:${gradient};border-radius:50%;" title="${escapeHtml(a.email)}">${initials}</div>`;
+
+    const userEmailHtml = a.full_name
+      ? `<span class="access-user-fullname" style="font-weight:700;color:#0f172a;margin-right:6px;font-size:14px;">${escapeHtml(a.full_name)}</span><span class="access-user-email" style="font-size:12.5px;color:#64748b;font-weight:500;">(${escapeHtml(a.email)})</span>`
+      : `<span class="access-user-email">${escapeHtml(a.email)}</span>`;
+
+    const extraProfileDetails = (a.university || a.university_id || a.university_mail || a.mobile_number)
+      ? `<div style="font-size:11.5px;color:#475569;margin-top:4px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;">` +
+          (a.university ? `<span style="display:inline-flex;align-items:center;gap:4px;background:#f8fafc;padding:2px 7px;border-radius:5px;border:1px solid #e2e8f0;">🏛️ ${escapeHtml(a.university)}</span>` : '') +
+          (a.university_id ? `<span style="display:inline-flex;align-items:center;gap:4px;background:#f8fafc;padding:2px 7px;border-radius:5px;border:1px solid #e2e8f0;">🪪 ID: ${escapeHtml(a.university_id)}</span>` : '') +
+          (a.university_mail ? `<span style="display:inline-flex;align-items:center;gap:4px;background:#f8fafc;padding:2px 7px;border-radius:5px;border:1px solid #e2e8f0;">✉️ ${escapeHtml(a.university_mail)}</span>` : '') +
+          (a.mobile_number ? `<span style="display:inline-flex;align-items:center;gap:4px;background:#f8fafc;padding:2px 7px;border-radius:5px;border:1px solid #e2e8f0;">📱 ${escapeHtml(a.mobile_number)}</span>` : '') +
+        `</div>`
+      : '';
 
     return `
       <div class="access-user-card">
-        <div class="access-avatar" style="background:${gradient};" title="${escapeHtml(a.email)}">
-          ${initials}
-        </div>
+        ${avatarHtml}
         <div class="access-user-details">
           <div class="access-user-main-row">
-            <span class="access-user-email">${escapeHtml(a.email)}</span>
+            ${userEmailHtml}
             ${isSelf ? '<span class="access-user-you-tag">You</span>' : ''}
             ${roleBadge}
             ${statusBadge}
           </div>
+          ${extraProfileDetails}
           <div class="access-user-meta">
             ${_auditLine(a)}
           </div>
@@ -2458,6 +2484,237 @@ function renderAccessLists() {
     pR.innerHTML = recycleFiltered.length
       ? recycleFiltered.map(a => renderRow(a, 'recycle')).join('')
       : renderEmpty('Recycle Bin is Empty', 'Removed accounts are safely archived here before permanent deletion.');
+  }
+}
+
+// ── Admin Profile Modal & Update Functions ─────────────────────────
+function openAdminProfileModal(id) {
+  const admin = _rawAdminList.find(x => x.id === id);
+  if (!admin) {
+    showToast('error', 'User not found in whitelist.');
+    return;
+  }
+
+  const { gradient, initials } = _getAvatarGradient(admin.email);
+  const currentPic = admin.profile_pic || '';
+
+  const oldModal = document.getElementById('admin-profile-modal-overlay');
+  if (oldModal) oldModal.remove();
+
+  const modal = document.createElement('div');
+  modal.id = 'admin-profile-modal-overlay';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,0.65);backdrop-filter:blur(5px);z-index:99999;display:flex;align-items:center;justify-content:center;padding:16px;box-sizing:border-box;animation:fadeIn .2s ease;';
+
+  modal.innerHTML = `
+    <div style="background:#ffffff;border-radius:20px;max-width:540px;width:100%;padding:26px 28px;box-shadow:0 25px 60px rgba(0,0,0,0.25);border:1px solid #e2e8f0;position:relative;box-sizing:border-box;max-height:92vh;overflow-y:auto;">
+      
+      <!-- Close Button -->
+      <button type="button" onclick="closeAdminProfileModal()" style="position:absolute;top:20px;right:20px;background:#f1f5f9;border:none;cursor:pointer;color:#64748b;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;transition:all .2s;" onmouseover="this.style.background='#e2e8f0'" onmouseout="this.style.background='#f1f5f9'">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+
+      <!-- Header with Circular Avatar -->
+      <div style="display:flex;align-items:center;gap:16px;margin-bottom:22px;padding-bottom:18px;border-bottom:1px solid #f1f5f9;">
+        <div id="prof-modal-avatar-preview" style="width:68px;height:68px;border-radius:50%;overflow:hidden;flex-shrink:0;border:3px solid #0a528e;display:flex;align-items:center;justify-content:center;background:${gradient};color:#fff;font-size:24px;font-weight:700;box-shadow:0 4px 12px rgba(0,0,0,0.1);">
+          ${currentPic ? `<img src="${escapeHtml(currentPic)}" referrerpolicy="no-referrer" style="width:100%;height:100%;object-fit:cover;" />` : `<span>${initials}</span>`}
+        </div>
+        <div style="min-width:0;flex:1;">
+          <h3 style="font-size:18px;font-weight:700;color:#0f172a;margin:0 0 3px;">User Profile</h3>
+          <div style="font-size:13px;font-weight:500;color:#64748b;word-break:break-all;">${escapeHtml(admin.email)}</div>
+          <div style="margin-top:5px;display:flex;gap:6px;">
+            <span style="display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:700;background:#eff6ff;color:#1d4ed8;">${escapeHtml(admin.role)}</span>
+            <span style="display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:700;background:#f0fdf4;color:#16a34a;">${escapeHtml(admin.status)}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Profile Form -->
+      <form id="admin-profile-form" onsubmit="handleSaveAdminProfile(event, '${admin.id}')" style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+        
+        <div style="grid-column:1 / -1;">
+          <label style="display:block;font-size:12px;font-weight:700;color:#334155;margin-bottom:6px;">Full Name (Optional)</label>
+          <input type="text" id="prof-input-full-name" value="${escapeHtml(admin.full_name || '')}" placeholder="e.g. Rizwan Ahmed" style="width:100%;height:40px;padding:0 12px;border:1.5px solid #cbd5e1;border-radius:10px;font-size:13.5px;box-sizing:border-box;outline:none;font-family:inherit;" onfocus="this.style.borderColor='#0a528e'" onblur="this.style.borderColor='#cbd5e1'" />
+        </div>
+
+        <div style="grid-column:1 / -1;">
+          <label style="display:block;font-size:12px;font-weight:700;color:#334155;margin-bottom:6px;">Profile Picture (Circle Avatar, Optional)</label>
+          <div style="display:flex;gap:8px;">
+            <input type="url" id="prof-input-pic-url" value="${escapeHtml(admin.profile_pic || '')}" placeholder="https://... or upload photo" oninput="updateProfileModalAvatarLive(this.value, '${escapeHtml(admin.email)}')" style="flex:1;height:40px;padding:0 12px;border:1.5px solid #cbd5e1;border-radius:10px;font-size:13.5px;box-sizing:border-box;outline:none;font-family:inherit;" onfocus="this.style.borderColor='#0a528e'" onblur="this.style.borderColor='#cbd5e1'" />
+            <button type="button" onclick="document.getElementById('prof-pic-file-input').click()" style="padding:0 14px;background:#f8fafc;border:1.5px solid #cbd5e1;border-radius:10px;font-size:12.5px;font-weight:600;color:#334155;cursor:pointer;white-space:nowrap;display:flex;align-items:center;gap:5px;transition:all .2s;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='#f8fafc'">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+              Upload
+            </button>
+            <input type="file" id="prof-pic-file-input" accept="image/*" style="display:none;" onchange="handleProfileModalFileUpload(event, '${escapeHtml(admin.email)}')" />
+          </div>
+          <div style="font-size:11px;color:#94a3b8;margin-top:4px;">Paste an image URL or choose a local photo (auto-compressed to circle avatar).</div>
+        </div>
+
+        <div>
+          <label style="display:block;font-size:12px;font-weight:700;color:#334155;margin-bottom:6px;">University (Optional)</label>
+          <input type="text" id="prof-input-university" value="${escapeHtml(admin.university || '')}" placeholder="e.g. North South University" style="width:100%;height:40px;padding:0 12px;border:1.5px solid #cbd5e1;border-radius:10px;font-size:13.5px;box-sizing:border-box;outline:none;font-family:inherit;" onfocus="this.style.borderColor='#0a528e'" onblur="this.style.borderColor='#cbd5e1'" />
+        </div>
+
+        <div>
+          <label style="display:block;font-size:12px;font-weight:700;color:#334155;margin-bottom:6px;">University ID (Optional)</label>
+          <input type="text" id="prof-input-uni-id" value="${escapeHtml(admin.university_id || '')}" placeholder="e.g. 2121234" style="width:100%;height:40px;padding:0 12px;border:1.5px solid #cbd5e1;border-radius:10px;font-size:13.5px;box-sizing:border-box;outline:none;font-family:inherit;" onfocus="this.style.borderColor='#0a528e'" onblur="this.style.borderColor='#cbd5e1'" />
+        </div>
+
+        <div>
+          <label style="display:block;font-size:12px;font-weight:700;color:#334155;margin-bottom:6px;">University Email (Optional)</label>
+          <input type="email" id="prof-input-uni-mail" value="${escapeHtml(admin.university_mail || '')}" placeholder="e.g. student@nsu.edu" style="width:100%;height:40px;padding:0 12px;border:1.5px solid #cbd5e1;border-radius:10px;font-size:13.5px;box-sizing:border-box;outline:none;font-family:inherit;" onfocus="this.style.borderColor='#0a528e'" onblur="this.style.borderColor='#cbd5e1'" />
+        </div>
+
+        <div>
+          <label style="display:block;font-size:12px;font-weight:700;color:#334155;margin-bottom:6px;">Mobile Number (Optional)</label>
+          <input type="tel" id="prof-input-mobile" value="${escapeHtml(admin.mobile_number || '')}" placeholder="e.g. +880 1700-000000" style="width:100%;height:40px;padding:0 12px;border:1.5px solid #cbd5e1;border-radius:10px;font-size:13.5px;box-sizing:border-box;outline:none;font-family:inherit;" onfocus="this.style.borderColor='#0a528e'" onblur="this.style.borderColor='#cbd5e1'" />
+        </div>
+
+        <div style="grid-column:1 / -1;display:flex;justify-content:flex-end;gap:10px;margin-top:10px;padding-top:16px;border-top:1px solid #f1f5f9;">
+          <button type="button" onclick="closeAdminProfileModal()" style="padding:10px 18px;background:#f1f5f9;border:1px solid #cbd5e1;border-radius:10px;font-size:13px;font-weight:600;color:#475569;cursor:pointer;transition:all .2s;" onmouseover="this.style.background='#e2e8f0'" onmouseout="this.style.background='#f1f5f9'">Cancel</button>
+          <button type="submit" id="prof-modal-save-btn" style="padding:10px 22px;background:linear-gradient(135deg, #0a528e, #0284c7);color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;box-shadow:0 4px 14px rgba(10,82,142,0.35);display:flex;align-items:center;gap:6px;transition:all .2s;">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+            Save Profile
+          </button>
+        </div>
+
+      </form>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+}
+
+function closeAdminProfileModal() {
+  const modal = document.getElementById('admin-profile-modal-overlay');
+  if (modal) modal.remove();
+}
+
+function updateProfileModalAvatarLive(url, email) {
+  const container = document.getElementById('prof-modal-avatar-preview');
+  if (!container) return;
+  const trimmed = (url || '').trim();
+  if (trimmed) {
+    container.innerHTML = `<img src="${escapeHtml(trimmed)}" referrerpolicy="no-referrer" style="width:100%;height:100%;object-fit:cover;" onerror="this.onerror=null;this.parentElement.innerHTML='<span style=\\'font-size:20px;\\'>⚠️</span>';" />`;
+  } else {
+    const { initials } = _getAvatarGradient(email || '');
+    container.innerHTML = `<span>${initials}</span>`;
+  }
+}
+
+function handleProfileModalFileUpload(event, email) {
+  const file = event.target.files && event.target.files[0];
+  if (!file) return;
+
+  if (!file.type.startsWith('image/')) {
+    showToast('error', 'Please select a valid image file (JPG, PNG, WebP).');
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const img = new Image();
+    img.onload = function() {
+      const canvas = document.createElement('canvas');
+      const size = 256;
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext('2d');
+
+      const minDim = Math.min(img.width, img.height);
+      const sx = (img.width - minDim) / 2;
+      const sy = (img.height - minDim) / 2;
+
+      ctx.drawImage(img, sx, sy, minDim, minDim, 0, 0, size, size);
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+
+      const input = document.getElementById('prof-input-pic-url');
+      if (input) input.value = dataUrl;
+      updateProfileModalAvatarLive(dataUrl, email);
+      showToast('success', 'Image processed! Click "Save Profile" to save.');
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+async function handleSaveAdminProfile(event, id) {
+  event.preventDefault();
+  const btn = document.getElementById('prof-modal-save-btn');
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm" style="width:14px;height:14px;border:2px solid #fff;border-top-color:transparent;border-radius:50%;display:inline-block;animation:spin 1s linear infinite;"></span> Saving...';
+  }
+
+  const fullName   = (document.getElementById('prof-input-full-name')?.value || '').trim();
+  const picUrl     = (document.getElementById('prof-input-pic-url')?.value || '').trim();
+  const university = (document.getElementById('prof-input-university')?.value || '').trim();
+  const uniId      = (document.getElementById('prof-input-uni-id')?.value || '').trim();
+  const uniMail    = (document.getElementById('prof-input-uni-mail')?.value || '').trim();
+  const mobile     = (document.getElementById('prof-input-mobile')?.value || '').trim();
+
+  try {
+    const res = await fetch('/api/admins?action=update-profile&id=' + encodeURIComponent(id), {
+      method: 'PATCH',
+      headers: _authHeaders(),
+      body: JSON.stringify({
+        full_name: fullName,
+        profile_pic: picUrl,
+        university: university,
+        university_id: uniId,
+        university_mail: uniMail,
+        mobile_number: mobile
+      })
+    });
+
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to save profile');
+
+    showToast('success', 'Profile updated successfully in database!');
+
+    // Update local cache
+    const targetIdx = _rawAdminList.findIndex(x => x.id === id);
+    if (targetIdx !== -1) {
+      _rawAdminList[targetIdx] = {
+        ..._rawAdminList[targetIdx],
+        full_name: fullName,
+        profile_pic: picUrl,
+        university: university,
+        university_id: uniId,
+        university_mail: uniMail,
+        mobile_number: mobile
+      };
+    }
+
+    // If edited self, update current session
+    const meEmail = ((window.PRIVATIAN_USER && window.PRIVATIAN_USER.email) || '').toLowerCase();
+    const admin = _rawAdminList.find(x => x.id === id);
+    if (admin && admin.email.toLowerCase() === meEmail) {
+      if (window.PRIVATIAN_USER) {
+        window.PRIVATIAN_USER.name = fullName || admin.email.split('@')[0];
+        window.PRIVATIAN_USER.full_name = fullName;
+        window.PRIVATIAN_USER.picture = picUrl;
+        window.PRIVATIAN_USER.profile_pic = picUrl;
+        window.PRIVATIAN_USER.university = university;
+        window.PRIVATIAN_USER.university_id = uniId;
+        window.PRIVATIAN_USER.university_mail = uniMail;
+        window.PRIVATIAN_USER.mobile_number = mobile;
+      }
+      // Re-inject sidebar user
+      if (typeof window.injectSidebarUser === 'function') {
+        window.injectSidebarUser(window.PRIVATIAN_USER);
+      }
+    }
+
+    renderAccessLists();
+    closeAdminProfileModal();
+
+  } catch(err) {
+    console.error('[handleSaveAdminProfile error]', err);
+    showToast('error', err.message || 'Failed to save profile');
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Save Profile';
+    }
   }
 }
 
