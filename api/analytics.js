@@ -115,27 +115,32 @@ async function loadAnalyticsStore(client) {
 async function saveAnalyticsStore(client, store) {
   store.updated_at = new Date().toISOString();
 
-  // 1. Save to site_settings
+  // Save to sections table fallback store
   try {
-    await client.from('site_settings').upsert({
-      key: ANALYTICS_STORE_KEY,
-      value: store,
-      updated_at: store.updated_at
-    }, { onConflict: 'key' });
-  } catch (e) {}
-
-  // 2. Save fallback to sections
-  try {
-    await client.from('sections').upsert({
-      admin_id: ANALYTICS_FALLBACK_ID,
-      name: JSON.stringify(store),
-      slug: ANALYTICS_FALLBACK_ID,
-      display_order: 9999,
-      is_active: false,
-      locked: true,
-      is_deleted: true
-    }, { onConflict: 'admin_id' });
-  } catch (e) {}
+    const { data: existing } = await client.from('sections').select('id').eq('admin_id', ANALYTICS_FALLBACK_ID).maybeSingle();
+    if (existing) {
+      await client.from('sections').update({
+        name: JSON.stringify(store),
+        slug: ANALYTICS_FALLBACK_ID,
+        display_order: 9999,
+        is_active: false,
+        locked: true,
+        is_deleted: true
+      }).eq('admin_id', ANALYTICS_FALLBACK_ID);
+    } else {
+      await client.from('sections').insert({
+        admin_id: ANALYTICS_FALLBACK_ID,
+        name: JSON.stringify(store),
+        slug: ANALYTICS_FALLBACK_ID,
+        display_order: 9999,
+        is_active: false,
+        locked: true,
+        is_deleted: true
+      });
+    }
+  } catch (e) {
+    console.error('[Analytics save error]:', e.message);
+  }
 }
 
 /**

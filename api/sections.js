@@ -407,24 +407,30 @@ module.exports = async function handler(req, res) {
     store.updated_at = now.toISOString();
 
     try {
-      await sb.from('site_settings').upsert({
-        key: 'site_analytics_store',
-        value: store,
-        updated_at: now.toISOString()
-      }, { onConflict: 'key' });
-    } catch(e) {}
-
-    try {
-      await sb.from('sections').upsert({
-        admin_id: '__site_analytics_store__',
-        name: JSON.stringify(store),
-        slug: '__site_analytics_store__',
-        display_order: 9999,
-        is_active: false,
-        locked: true,
-        is_deleted: true
-      }, { onConflict: 'admin_id' });
-    } catch(e) {}
+      const { data: existing } = await sb.from('sections').select('id').eq('admin_id', '__site_analytics_store__').maybeSingle();
+      if (existing) {
+        await sb.from('sections').update({
+          name: JSON.stringify(store),
+          slug: '__site_analytics_store__',
+          display_order: 9999,
+          is_active: false,
+          locked: true,
+          is_deleted: true
+        }).eq('admin_id', '__site_analytics_store__');
+      } else {
+        await sb.from('sections').insert({
+          admin_id: '__site_analytics_store__',
+          name: JSON.stringify(store),
+          slug: '__site_analytics_store__',
+          display_order: 9999,
+          is_active: false,
+          locked: true,
+          is_deleted: true
+        });
+      }
+    } catch(e) {
+      console.error('[Sections track_view save error]:', e.message);
+    }
 
     return res.status(200).json({
       ok: true,

@@ -1613,8 +1613,8 @@
       if (lastTrackStr) {
         try {
           var lastObj = JSON.parse(lastTrackStr);
-          // If same path was tracked within last 8 seconds, ignore rapid duplicate/refresh
-          if (lastObj && lastObj.p === fullPath && (nowTs - lastObj.t) < 8000) {
+          // If same path was tracked within last 2 seconds, ignore rapid duplicate click
+          if (lastObj && lastObj.p === fullPath && (nowTs - lastObj.t) < 2000) {
             return;
           }
         } catch(e) {}
@@ -1653,16 +1653,21 @@
         lang: (navigator.language || navigator.userLanguage || 'en').toLowerCase()
       };
 
-      var payloadBlob = new Blob([JSON.stringify(payload)], { type: 'application/json' });
-      if (navigator.sendBeacon) {
-        navigator.sendBeacon('/api/analytics', payloadBlob);
-      } else {
+      try {
         fetch('/api/analytics', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload),
           keepalive: true
-        }).catch(function() {});
+        }).catch(function() {
+          if (navigator.sendBeacon) {
+            navigator.sendBeacon('/api/analytics', new Blob([JSON.stringify(payload)], { type: 'application/json' }));
+          }
+        });
+      } catch(err) {
+        if (navigator.sendBeacon) {
+          navigator.sendBeacon('/api/analytics', new Blob([JSON.stringify(payload)], { type: 'application/json' }));
+        }
       }
     } catch(e) {}
   }
