@@ -4364,6 +4364,29 @@ function deleteArticleConfirm(id, title) {
 
 async function _doDeleteArticle(id) {
   const art = _allArticles.find(a => a.id === id);
+  const displayTitle = art?.title || art?.title_bn || 'Article';
+
+  // 1. Instant optimistic UI removal with smooth animation
+  const tbody = document.getElementById('articles-tbody');
+  if (tbody) {
+    const rows = Array.from(tbody.querySelectorAll('tr'));
+    const targetRow = rows.find(r => r.innerHTML.includes(`'${id}'`));
+    if (targetRow) {
+      targetRow.style.transition = 'opacity 0.2s ease, transform 0.2s ease';
+      targetRow.style.opacity = '0';
+      targetRow.style.transform = 'scale(0.96)';
+      setTimeout(() => targetRow.remove(), 200);
+    }
+  }
+
+  // Update in-memory state and counts immediately
+  _allArticles = _allArticles.filter(a => a.id !== id);
+  filterArticles();
+  
+  // Show instant confirmation toast
+  showToast('success', `"${displayTitle}" moved to Recycle Bin.`);
+
+  // 2. Perform backend deletion asynchronously
   try {
     let ok = false;
     try {
@@ -4381,20 +4404,20 @@ async function _doDeleteArticle(id) {
       }
     }
 
-    _allArticles = _allArticles.filter(a => a.id !== id);
-    filterArticles();
     _loadArticleTrash();
-    _showAdminToast('Article moved to Trash', 'success');
 
     recordActivityLog({
       action: 'articles.trash',
       category: 'articles',
-      summary: `Moved article "${art?.title || id}" to Recycle Bin`,
+      summary: `Moved article "${displayTitle}" to Recycle Bin`,
       target_id: id,
-      target_name: art?.title || id,
+      target_name: displayTitle,
       details: { id, title: art?.title, slug: art?.slug }
     });
-  } catch(e) { _showAdminToast(e.message, 'error'); }
+  } catch(e) {
+    showToast('error', 'Failed to move to Recycle Bin: ' + e.message);
+    await initArticlesPage();
+  }
 }
 
 function restoreArticleConfirm(id, title) {
@@ -4415,7 +4438,7 @@ async function _doRestoreArticle(id, title) {
     const rows = Array.from(tbody.querySelectorAll('tr'));
     const targetRow = rows.find(r => r.innerHTML.includes(`'${id}'`));
     if (targetRow) {
-      targetRow.style.transition = 'opacity 0.2s, transform 0.2s';
+      targetRow.style.transition = 'opacity 0.2s ease, transform 0.2s ease';
       targetRow.style.opacity = '0';
       targetRow.style.transform = 'scale(0.96)';
       setTimeout(() => targetRow.remove(), 200);
@@ -4425,6 +4448,8 @@ async function _doRestoreArticle(id, title) {
       }
     }
   }
+
+  showToast('success', `"${title || 'Article'}" restored to active articles.`);
 
   try {
     let ok = false;
@@ -4443,8 +4468,6 @@ async function _doRestoreArticle(id, title) {
       }
     }
 
-    _showAdminToast('Article restored to active list', 'success');
-
     recordActivityLog({
       action: 'articles.restore',
       category: 'articles',
@@ -4456,7 +4479,7 @@ async function _doRestoreArticle(id, title) {
 
     await initArticlesPage();
   } catch(e) {
-    _showAdminToast(e.message, 'error');
+    showToast('error', 'Failed to restore article: ' + e.message);
     await _loadArticleTrash();
   }
 }
@@ -4479,7 +4502,7 @@ async function _doPermanentDeleteArticle(id, title) {
     const rows = Array.from(tbody.querySelectorAll('tr'));
     const targetRow = rows.find(r => r.innerHTML.includes(`'${id}'`));
     if (targetRow) {
-      targetRow.style.transition = 'opacity 0.2s, transform 0.2s';
+      targetRow.style.transition = 'opacity 0.2s ease, transform 0.2s ease';
       targetRow.style.opacity = '0';
       targetRow.style.transform = 'scale(0.96)';
       setTimeout(() => targetRow.remove(), 200);
@@ -4489,6 +4512,8 @@ async function _doPermanentDeleteArticle(id, title) {
       }
     }
   }
+
+  showToast('success', `"${title || 'Article'}" permanently deleted.`);
 
   try {
     let ok = false;
@@ -4507,8 +4532,6 @@ async function _doPermanentDeleteArticle(id, title) {
       }
     }
 
-    _showAdminToast('Article permanently deleted', 'success');
-
     recordActivityLog({
       action: 'articles.permanent_delete',
       category: 'articles',
@@ -4520,7 +4543,7 @@ async function _doPermanentDeleteArticle(id, title) {
 
     await _loadArticleTrash();
   } catch(e) {
-    _showAdminToast(e.message, 'error');
+    showToast('error', 'Failed to permanently delete: ' + e.message);
     await _loadArticleTrash();
   }
 }
