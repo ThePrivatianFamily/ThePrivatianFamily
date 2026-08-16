@@ -8,7 +8,7 @@
  * DELETE ?action=delete&id=<id>      Auth — Delete file from R2 and remove metadata
  */
 
-const { S3Client, ListObjectsV2Command, PutObjectCommand, DeleteObjectCommand } = require('@aws-sdk/client-s3');
+const { S3Client, ListObjectsV2Command, PutObjectCommand, DeleteObjectCommand, GetObjectCommand } = require('@aws-sdk/client-s3');
 const { createClient } = require('@supabase/supabase-js');
 const { requireAuth } = require('./_lib/auth');
 const { logActivity } = require('./_lib/activity');
@@ -372,6 +372,51 @@ module.exports = async (req, res) => {
     } catch(err) {
       console.error('[Media] Get single asset error:', err);
       return res.status(500).json({ error: 'Failed to retrieve asset.' });
+    }
+  }
+
+  // ── 1c. READ TEXT / RAW CONTENT (E.G. FOR SVG IMPORT) ───────────────────
+  if (req.method === 'GET' && (action === 'read_text' || action === 'raw_svg')) {
+    const session = await requireAuth(req, res);
+    if (!session) return;
+
+    const id = (req.query.id || req.query.unique_id || '').trim();
+    const r2Key = (req.query.key || '').trim();
+
+    try {
+      let targetKey = r2Key;
+      if (!targetKey && id) {
+        const items = await getStoredMediaList(sb);
+        const item = items.find(x => x.unique_id === id || x.id === id || x.filename === id);
+        if (item && item.r2_key) targetKey = item.r2_key;
+      }
+
+      if (!targetKey) {
+        return res.status(400).json({ error: 'Valid id, unique_id, or key required.' });
+      }
+
+      const getRes = await s3.send(new GetObjectCommand({
+        Bucket: R2_BUCKET_NAME,
+        Key: targetKey
+      }));
+
+      const streamToBuffer = async (stream) => {
+        const chunks = [];
+        for await (const chunk of stream) chunks.push(chunk);
+        return Buffer.concat(chunks);
+      };
+
+      const buf = await streamToBuffer(getRes.Body);
+      const text = buf.toString('utf-8');
+
+      return res.status(200).json({
+        ok: true,
+        content: text,
+        contentType: getRes.ContentType || 'text/plain'
+      });
+    } catch(err) {
+      console.error('[Media] read_text error:', err);
+      return res.status(500).json({ error: 'Failed to read media content.' });
     }
   }
 

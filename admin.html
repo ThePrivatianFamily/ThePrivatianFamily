@@ -812,7 +812,7 @@
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;flex-wrap:wrap;gap:8px;">
                   <label class="form-label" for="hs-logo-svg-input" style="color:#e2e8f0;margin:0;font-weight:700;font-size:12px;">SVG Logo Code <span style="font-weight:400;color:#94a3b8;">(&lt;svg&gt;...&lt;/svg&gt;)</span></label>
                   <div style="display:flex;gap:6px;align-items:center;">
-                    <button type="button" class="btn btn--ghost btn--sm" onclick="openUniversalMediaModal(item => { if(item.url) fetch(item.url).then(r=>r.text()).then(svg=>{ if(svg.includes('<svg')) { onHeaderLogoSvgInput(svg); if(document.getElementById('hs-logo-svg-input')) document.getElementById('hs-logo-svg-input').value = svg; showToast('success', 'Logo loaded from media manager!'); } }); })" style="color:#38bdf8;border-color:rgba(56,189,248,0.3);padding:3px 9px;font-size:11px;display:flex;align-items:center;gap:4px;">
+                    <button type="button" class="btn btn--ghost btn--sm" onclick="openHeaderLogoPicker()" style="color:#38bdf8;border-color:rgba(56,189,248,0.3);padding:3px 9px;font-size:11px;display:flex;align-items:center;gap:4px;">
                       <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
                       Pick from Gallery / R2
                     </button>
