@@ -2460,10 +2460,10 @@ function renderAccessLists() {
 
     const extraProfileDetails = (a.university || a.university_id || a.university_mail || a.mobile_number)
       ? `<div style="font-size:11.5px;color:#475569;margin-top:4px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;">` +
-          (a.university ? `<span style="display:inline-flex;align-items:center;gap:4px;background:#f8fafc;padding:2px 7px;border-radius:5px;border:1px solid #e2e8f0;">🏛️ ${escapeHtml(a.university)}</span>` : '') +
-          (a.university_id ? `<span style="display:inline-flex;align-items:center;gap:4px;background:#f8fafc;padding:2px 7px;border-radius:5px;border:1px solid #e2e8f0;">🪪 ID: ${escapeHtml(a.university_id)}</span>` : '') +
-          (a.university_mail ? `<span style="display:inline-flex;align-items:center;gap:4px;background:#f8fafc;padding:2px 7px;border-radius:5px;border:1px solid #e2e8f0;">✉️ ${escapeHtml(a.university_mail)}</span>` : '') +
-          (a.mobile_number ? `<span style="display:inline-flex;align-items:center;gap:4px;background:#f8fafc;padding:2px 7px;border-radius:5px;border:1px solid #e2e8f0;">📱 ${escapeHtml(a.mobile_number)}</span>` : '') +
+          (a.university ? `<span style="display:inline-flex;align-items:center;gap:4px;background:#f8fafc;padding:2px 7px;border-radius:5px;border:1px solid #e2e8f0;"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M5 21V11M19 21V11M9 21V11M15 21V11M2 11h20M12 3L2 11h20L12 3z"/></svg> ${escapeHtml(a.university)}</span>` : '') +
+          (a.university_id ? `<span style="display:inline-flex;align-items:center;gap:4px;background:#f8fafc;padding:2px 7px;border-radius:5px;border:1px solid #e2e8f0;"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><line x1="15" y1="8" x2="17" y2="8"/><line x1="15" y1="12" x2="17" y2="12"/><line x1="7" y1="16" x2="17" y2="16"/></svg> ID: ${escapeHtml(a.university_id)}</span>` : '') +
+          (a.university_mail ? `<span style="display:inline-flex;align-items:center;gap:4px;background:#f8fafc;padding:2px 7px;border-radius:5px;border:1px solid #e2e8f0;"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg> ${escapeHtml(a.university_mail)}</span>` : '') +
+          (a.mobile_number ? `<span style="display:inline-flex;align-items:center;gap:4px;background:#f8fafc;padding:2px 7px;border-radius:5px;border:1px solid #e2e8f0;"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg> ${escapeHtml(a.mobile_number)}</span>` : '') +
         `</div>`
       : '';
 
@@ -2650,7 +2650,7 @@ function updateProfileModalAvatarLive(url, email) {
   if (!container) return;
   const trimmed = (url || '').trim();
   if (trimmed) {
-    container.innerHTML = `<img src="${escapeHtml(trimmed)}" referrerpolicy="no-referrer" style="width:100%;height:100%;object-fit:cover;" onerror="this.onerror=null;this.parentElement.innerHTML='<span style=\\'font-size:20px;\\'>⚠️</span>';" />`;
+    container.innerHTML = `<img src="${escapeHtml(trimmed)}" referrerpolicy="no-referrer" style="width:100%;height:100%;object-fit:cover;" onerror="this.onerror=null;this.parentElement.innerHTML='<svg viewBox=\\'0 0 24 24\\' width=\\'20\\' height=\\'20\\' fill=\\'none\\' stroke=\\'%23dc2626\\' stroke-width=\\'2\\'><circle cx=\\'12\\' cy=\\'12\\' r=\\'10\\'/><line x1=\\'12\\' y1=\\'8\\' x2=\\'12\\' y2=\\'12\\'/><line x1=\\'12\\' y1=\\'16\\' x2=\\'12.01\\' y2=\\'16\\'/></svg>';" />`;
   } else {
     const { initials } = _getAvatarGradient(email || '');
     container.innerHTML = `<span>${initials}</span>`;
@@ -6939,8 +6939,9 @@ function renderEventsEditor() {
     <div style="display:grid;grid-template-columns:1.2fr 1fr;gap:20px;">
       <!-- Events Settings Card -->
       <div class="card" style="padding:22px;">
-        <div style="background:#e0f2fe;border:1px solid #bae6fd;border-radius:8px;padding:12px 14px;margin-bottom:18px;font-size:12.5px;color:#0369a1;line-height:1.45;">
-          <strong>ℹ Event Display Rule:</strong> The top <strong>2 active events</strong> in this list will automatically show on the Homepage "Upcoming Events" section. All scheduled events will be displayed on the dedicated <a href="/events" target="_blank" style="color:#0284c7;font-weight:700;text-decoration:underline;">All Events Page (/events)</a>. Use the <strong>▲ / ▼</strong> arrows to reorder events.
+        <div style="background:#e0f2fe;border:1px solid #bae6fd;border-radius:8px;padding:12px 14px;margin-bottom:18px;font-size:12.5px;color:#0369a1;line-height:1.45;display:flex;align-items:flex-start;gap:8px;">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#0284c7" stroke-width="2" style="flex-shrink:0;margin-top:2px;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+          <div><strong>Event Display Rule:</strong> The top <strong>2 active events</strong> in this list will automatically show on the Homepage "Upcoming Events" section. All scheduled events will be displayed on the dedicated <a href="/events" target="_blank" style="color:#0284c7;font-weight:700;text-decoration:underline;">All Events Page (/events)</a>. Use the arrow buttons to reorder events.</div>
         </div>
 
         <div class="form-group" style="margin-bottom:16px;">
@@ -10655,8 +10656,8 @@ function openMediaInspector(uniqueId) {
   }
   if (provEl) {
     provEl.innerHTML = provider === 'b2'
-      ? '<span style="color:#e11d48;font-weight:800;">🔴 Backblaze B2 (10 GB)</span>'
-      : '<span style="color:#ea580c;font-weight:800;">🟠 Cloudflare R2 (10 GB)</span>';
+      ? '<span style="display:inline-flex;align-items:center;gap:5px;color:#e11d48;font-weight:700;"><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#e11d48;"></span>Backblaze B2 (10 GB)</span>'
+      : '<span style="display:inline-flex;align-items:center;gap:5px;color:#ea580c;font-weight:700;"><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#f97316;"></span>Cloudflare R2 (10 GB)</span>';
   }
 
   // Inspector footer action buttons depending on trash state

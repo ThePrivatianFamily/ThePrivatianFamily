@@ -91,13 +91,13 @@
                 </button>
               </div>
               <div class="umm-filters-wrap" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-                <select id="umm-provider-select" class="umm-folder-select" style="min-width:130px;" onchange="window._ummOnProviderFilter(this.value)" title="Filter by Cloud Storage">
-                  <option value="all">☁️ All Storage (20 GB)</option>
-                  <option value="r2">🟠 Cloudflare R2 (10 GB)</option>
-                  <option value="b2">🔴 Backblaze B2 (10 GB)</option>
+                <select id="umm-provider-select" class="umm-folder-select" style="min-width:140px;" onchange="window._ummOnProviderFilter(this.value)" title="Filter by Cloud Storage">
+                  <option value="all">All Storage (20 GB)</option>
+                  <option value="r2">Cloudflare R2 (10 GB)</option>
+                  <option value="b2">Backblaze B2 (10 GB)</option>
                 </select>
                 <select id="umm-folder-select" class="umm-folder-select" onchange="window._ummOnFolderFilter(this.value)">
-                  <option value="all">📁 All Folders</option>
+                  <option value="all">All Folders</option>
                 </select>
               </div>
             </div>
@@ -118,10 +118,10 @@
                     <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="#0a528e" stroke-width="2"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/></svg>
                     <span>Target Cloud:</span>
                   </div>
-                  <select id="umm-upload-provider-select" class="umm-folder-select" style="height:32px;font-size:11.5px;min-width:160px;" onchange="window._ummOnUploadProviderChange(this.value)">
-                    <option value="r2">🟠 Cloudflare R2 (10 GB)</option>
-                    <option value="b2">🔴 Backblaze B2 (10 GB)</option>
-                    <option value="auto">🔄 Auto (Smart Balance)</option>
+                  <select id="umm-upload-provider-select" class="umm-folder-select" style="height:32px;font-size:11.5px;min-width:170px;" onchange="window._ummOnUploadProviderChange(this.value)">
+                    <option value="r2" selected>Cloudflare R2 (Primary • 10 GB)</option>
+                    <option value="b2">Backblaze B2 (Secondary • 10 GB)</option>
+                    <option value="auto">Auto (Smart Routing)</option>
                   </select>
                 </div>
 
@@ -281,7 +281,7 @@
     const previousUploadDest = uploadDest.value;
     const activeFilter = _activeFolder || folderFilter.value || 'all';
 
-    folderFilter.innerHTML = `<option value="all">📁 All Folders</option><option value="__root__">📂 Root / Uncategorized</option>` +
+    folderFilter.innerHTML = `<option value="all">All Folders</option><option value="__root__">Root / Uncategorized</option>` +
       sorted.map(f => `<option value="${esc(f)}">${esc(f)}</option>`).join('');
     folderFilter.value = activeFilter;
 
