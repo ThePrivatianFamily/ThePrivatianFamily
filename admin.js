@@ -10967,30 +10967,86 @@ let _emailSettings = {
 
 let _currentEmailMode = 'visual';
 
+const DEFAULT_EMAIL_LOGO_URL = 'https://pub-1e6b79ea34c74adfa8dc145a3b5a4e5a.r2.dev/gallery/2026/08/img_zqfa3rwk_the-privatian-family-5125-x-2888-px-white.png';
+
+function resolveEmailLogoUrl(val) {
+  if (!val) return DEFAULT_EMAIL_LOGO_URL;
+  const str = String(val).trim();
+  if (str.startsWith('http://') || str.startsWith('https://') || str.startsWith('data:')) {
+    return str;
+  }
+  if (str === 'img_zqfa3rwk' || str.includes('zqfa3rwk')) {
+    return DEFAULT_EMAIL_LOGO_URL;
+  }
+  if (Array.isArray(window._rawGalleryList) && window._rawGalleryList.length > 0) {
+    const found = window._rawGalleryList.find(x => x.id === str || x.unique_id === str);
+    if (found && found.url) return found.url;
+  }
+  return str;
+}
+
+window.openEmailLogoPicker = function(options = {}) {
+  if (typeof window.openUniversalMediaModal === 'function') {
+    window.openUniversalMediaModal({
+      title: 'Choose Brand Logo for Verification Email',
+      subtitle: 'Select white or transparent logo from Cloudflare R2 or upload a new image',
+      defaultTab: options.defaultTab || 'gallery',
+      allowIdInput: true,
+      targetFolder: 'Logos & Icons',
+      onSelect: item => {
+        const logoVal = (item && (item.unique_id || item.id || item.url)) || '';
+        if (!logoVal) return;
+        const inp = document.getElementById('ev-logo-url');
+        if (inp) {
+          inp.value = logoVal;
+          syncVisualToHtml();
+        }
+      }
+    });
+  } else {
+    showToast('error', 'Universal Media Modal is loading, please try again.');
+  }
+};
+
+window.onEmailLogoHeightInput = function(val) {
+  const num = parseInt(val, 10) || 54;
+  const valEl = document.getElementById('ev-logo-height-val');
+  if (valEl) valEl.textContent = num;
+  syncVisualToHtml();
+};
+
+window.resetEmailLogoToDefault = function() {
+  const inp = document.getElementById('ev-logo-url');
+  if (inp) inp.value = 'img_zqfa3rwk';
+  const slider = document.getElementById('ev-logo-height');
+  if (slider) slider.value = 54;
+  const valEl = document.getElementById('ev-logo-height-val');
+  if (valEl) valEl.textContent = 54;
+  syncVisualToHtml();
+};
+
 const DEFAULT_MAGIC_LINK_HTML = `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Admin Login Verification</title>
+  <title>Your Login Verification Code</title>
 </head>
-<body style="margin:0;padding:0;background-color:#f4f6f9;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased;">
-  <table width="100%" border="0" cellpadding="0" cellspacing="0" style="background-color:#f4f6f9;padding:40px 16px;">
+<body style="margin:0;padding:0;background-color:#f0f4f8;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased;">
+  <table width="100%" border="0" cellpadding="0" cellspacing="0" style="background-color:#f0f4f8;padding:40px 16px;">
     <tr>
       <td align="center">
         <!-- Main Email Container Card -->
-        <table width="100%" border="0" cellpadding="0" cellspacing="0" style="max-width:520px;background-color:#ffffff;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden;box-shadow:0 4px 12px rgba(10,25,47,0.04);">
+        <table width="100%" border="0" cellpadding="0" cellspacing="0" style="max-width:520px;background-color:#ffffff;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden;box-shadow:0 4px 16px rgba(10,37,64,0.06);">
           
-          <!-- Top Brand Header Banner -->
+          <!-- Top Brand Header Banner (Deep Royal Navy Blue) -->
           <tr>
-            <td align="center" style="background-color:#051326;padding:34px 28px 28px;border-bottom:2px solid #c9a050;">
+            <td align="center" style="background-color:#0a2540;padding:32px 28px 26px;border-bottom:3px solid #1e3a8a;">
               <table border="0" cellpadding="0" cellspacing="0">
                 <tr>
                   <td align="center">
-                    <div style="font-family:Georgia,'Times New Roman',serif;font-size:22px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:#ffffff;line-height:1.2;margin:0;">
-                      The Privatian Family
-                    </div>
-                    <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:11.5px;letter-spacing:0.08em;text-transform:uppercase;color:#c9a050;margin-top:6px;font-weight:600;">
+                    <img src="${DEFAULT_EMAIL_LOGO_URL}" alt="The Privatian Family" height="54" style="display:block;height:54px;max-height:54px;width:auto;margin:0 auto;border:0;outline:none;text-decoration:none;" />
+                    <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:11.5px;letter-spacing:0.08em;text-transform:uppercase;color:#93c5fd;margin-top:10px;font-weight:600;">
                       Administrative Portal &bull; Verification
                     </div>
                   </td>
@@ -11001,22 +11057,22 @@ const DEFAULT_MAGIC_LINK_HTML = `<!DOCTYPE html>
 
           <!-- Main Body Content -->
           <tr>
-            <td style="padding:36px 36px 28px;">
-              <div style="font-family:Georgia,'Times New Roman',serif;font-size:19px;font-weight:700;color:#0f172a;line-height:1.3;margin-bottom:12px;">
+            <td style="padding:36px 32px 28px;background-color:#ffffff;">
+              <div style="font-family:Georgia,'Times New Roman',serif;font-size:20px;font-weight:700;color:#0a2540;line-height:1.3;margin-bottom:12px;">
                 Your Login Verification Code
               </div>
-              <div style="font-size:14.5px;color:#475569;line-height:1.6;margin-bottom:26px;">
+              <div style="font-size:14px;color:#475569;line-height:1.6;margin-bottom:24px;">
                 Enter the single-use 6-digit verification code below in the administrator sign-in form to authenticate your session:
               </div>
 
               <!-- OTP Code Display Card -->
-              <table width="100%" border="0" cellpadding="0" cellspacing="0" style="margin:0 0 26px;">
+              <table width="100%" border="0" cellpadding="0" cellspacing="0" style="margin:0 0 24px;">
                 <tr>
-                  <td align="center" style="background-color:#f8fafc;border:1.5px solid #e2e8f0;border-radius:10px;padding:20px 24px;">
-                    <div style="font-family:'SF Pro Display',-apple-system,BlinkMacSystemFont,monospace,Consolas;font-size:36px;font-weight:800;letter-spacing:12px;color:#0a192f;line-height:1;margin:0 0 6px;padding-left:12px;">
+                  <td align="center" style="background-color:#f0f7ff;border:2px solid #bfdbfe;border-radius:10px;padding:22px 20px;">
+                    <div style="font-family:'SF Pro Display',-apple-system,BlinkMacSystemFont,monospace,Consolas;font-size:38px;font-weight:800;letter-spacing:12px;color:#0a2540;line-height:1;margin:0 0 8px;padding-left:12px;">
                       {{ .Token }}
                     </div>
-                    <div style="font-size:11.5px;color:#94a3b8;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;">
+                    <div style="font-size:11px;color:#2563eb;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;">
                       Single-Use Security Passcode
                     </div>
                   </td>
@@ -11024,10 +11080,10 @@ const DEFAULT_MAGIC_LINK_HTML = `<!DOCTYPE html>
               </table>
 
               <!-- Security Information Note -->
-              <table width="100%" border="0" cellpadding="0" cellspacing="0" style="background-color:#fafaf9;border-left:3px solid #c9a050;border-radius:4px;padding:12px 14px;margin-bottom:20px;">
+              <table width="100%" border="0" cellpadding="0" cellspacing="0" style="background-color:#f8fafc;border-left:3px solid #2563eb;border-radius:4px;padding:12px 16px;margin-bottom:8px;">
                 <tr>
-                  <td style="font-size:12.5px;color:#64748b;line-height:1.5;">
-                    <strong style="color:#334155;">Security Notice:</strong> This passcode will expire in <strong>1 hour</strong>. Never share this code with anyone. If you did not request this login attempt, no further action is required.
+                  <td style="font-size:12.5px;color:#475569;line-height:1.5;">
+                    <strong style="color:#0a2540;">Security Notice:</strong> This passcode will expire in <strong>1 hour</strong>. Never share this code with anyone. If you did not request this login attempt, no further action is required.
                   </td>
                 </tr>
               </table>
@@ -11036,12 +11092,12 @@ const DEFAULT_MAGIC_LINK_HTML = `<!DOCTYPE html>
 
           <!-- Subtle Footer & Sign-off -->
           <tr>
-            <td align="center" style="background-color:#f8fafc;border-top:1px solid #f1f5f9;padding:20px 28px;">
-              <div style="font-size:12px;color:#64748b;font-weight:500;line-height:1.4;">
+            <td align="center" style="background-color:#f8fafc;border-top:1px solid #e2e8f0;padding:20px 24px;">
+              <div style="font-size:12px;color:#64748b;font-weight:600;line-height:1.4;">
                 The Official Publication of The Privatian Society
               </div>
-              <div style="font-size:11px;color:#94a3b8;margin-top:4px;">
-                Cambridge, Massachusetts &bull; All Rights Reserved
+              <div style="font-size:11.5px;color:#94a3b8;margin-top:4px;">
+                Dhaka, Bangladesh &bull; All Rights Reserved
               </div>
             </td>
           </tr>
@@ -11092,18 +11148,29 @@ function parseHtmlToVisualFields(html) {
   try {
     const doc = new DOMParser().parseFromString(html, 'text/html');
     
-    // Brand title & subtitle
+    // Logo & Height
+    const imgEl = doc.querySelector('td[style*="background-color:#0a2540"] img') || doc.querySelector('img[alt*="Privatian"]');
+    if (imgEl && document.getElementById('ev-logo-url')) {
+      const src = imgEl.getAttribute('src') || '';
+      document.getElementById('ev-logo-url').value = src.includes('img_zqfa3rwk') ? 'img_zqfa3rwk' : src;
+      const h = parseInt(imgEl.getAttribute('height') || (imgEl.style && imgEl.style.height), 10);
+      if (h && document.getElementById('ev-logo-height')) {
+        document.getElementById('ev-logo-height').value = h;
+        if (document.getElementById('ev-logo-height-val')) document.getElementById('ev-logo-height-val').textContent = h;
+      }
+    }
+
     const allDivs = Array.from(doc.querySelectorAll('div'));
-    const brandDiv = allDivs.find(d => d.textContent.includes('The Privatian Family') || (d.style.letterSpacing && d.style.letterSpacing.includes('em')));
-    const subDiv = allDivs.find(d => d.textContent.includes('Administrative') || d.textContent.includes('Portal'));
+    const subDiv = allDivs.find(d => d.textContent.includes('Administrative') || d.textContent.includes('Verification') || d.textContent.includes('Portal'));
     const headingDiv = allDivs.find(d => d.textContent.includes('Verification Code') || d.textContent.includes('Login'));
     const introDiv = allDivs.find(d => d.textContent.includes('Enter the') || d.textContent.includes('sign-in form'));
     const secTd = doc.querySelector('td[style*="border-left"]');
-    const footDiv = allDivs.find(d => d.textContent.includes('The Official Publication') || d.textContent.includes('Privatian Society'));
+    
+    // Footer lines
+    const footerTds = Array.from(doc.querySelectorAll('td[style*="border-top"] div'));
+    const footTitleDiv = footerTds[0] || allDivs.find(d => d.textContent.includes('The Official Publication') || d.textContent.includes('Privatian Society'));
+    const footLocDiv = footerTds[1] || allDivs.find(d => d.textContent.includes('All Rights Reserved') || d.textContent.includes('Dhaka') || d.textContent.includes('Cambridge'));
 
-    if (brandDiv && document.getElementById('ev-brand-title')) {
-      document.getElementById('ev-brand-title').value = brandDiv.textContent.trim();
-    }
     if (subDiv && document.getElementById('ev-brand-sub')) {
       document.getElementById('ev-brand-sub').value = subDiv.textContent.replace(/•/g, '•').trim();
     }
@@ -11116,8 +11183,11 @@ function parseHtmlToVisualFields(html) {
     if (secTd && document.getElementById('ev-security-notice')) {
       document.getElementById('ev-security-notice').value = secTd.textContent.replace('Security Notice:', '').trim();
     }
-    if (footDiv && document.getElementById('ev-footer-text')) {
-      document.getElementById('ev-footer-text').value = footDiv.textContent.trim();
+    if (footTitleDiv && document.getElementById('ev-footer-title')) {
+      document.getElementById('ev-footer-title').value = footTitleDiv.textContent.trim();
+    }
+    if (footLocDiv && document.getElementById('ev-footer-location')) {
+      document.getElementById('ev-footer-location').value = footLocDiv.textContent.trim();
     }
   } catch(e) {}
 }
@@ -11145,12 +11215,19 @@ function switchEmailEditorMode(mode) {
 }
 
 function syncVisualToHtml() {
-  const brandTitle = document.getElementById('ev-brand-title')?.value || 'The Privatian Family';
+  const rawLogo    = document.getElementById('ev-logo-url')?.value || 'img_zqfa3rwk';
+  const logoUrl    = resolveEmailLogoUrl(rawLogo);
+  const logoHeight = parseInt(document.getElementById('ev-logo-height')?.value, 10) || 54;
   const brandSub   = document.getElementById('ev-brand-sub')?.value || 'Administrative Portal • Verification';
   const heading    = document.getElementById('ev-main-heading')?.value || 'Your Login Verification Code';
   const intro      = document.getElementById('ev-intro-text')?.value || 'Enter the single-use 6-digit verification code below in the administrator sign-in form to authenticate your session:';
   const secNotice  = document.getElementById('ev-security-notice')?.value || 'This passcode will expire in 1 hour. Never share this code with anyone. If you did not request this login attempt, no further action is required.';
-  const footText   = document.getElementById('ev-footer-text')?.value || 'The Official Publication of The Privatian Society';
+  const footTitle  = document.getElementById('ev-footer-title')?.value || 'The Official Publication of The Privatian Society';
+  const footLoc    = document.getElementById('ev-footer-location')?.value || 'Dhaka, Bangladesh • All Rights Reserved';
+
+  const logoHtml = logoUrl
+    ? `<img src="${logoUrl}" alt="The Privatian Family" height="${logoHeight}" style="display:block;height:${logoHeight}px;max-height:${logoHeight}px;width:auto;margin:0 auto;border:0;outline:none;text-decoration:none;" />`
+    : `<div style="font-family:Georgia,'Times New Roman',serif;font-size:22px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#ffffff;line-height:1.2;margin:0;">The Privatian Family</div>`;
 
   const html = `<!DOCTYPE html>
 <html lang="en">
@@ -11159,23 +11236,21 @@ function syncVisualToHtml() {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${escapeHtml(heading)}</title>
 </head>
-<body style="margin:0;padding:0;background-color:#f4f6f9;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased;">
-  <table width="100%" border="0" cellpadding="0" cellspacing="0" style="background-color:#f4f6f9;padding:40px 16px;">
+<body style="margin:0;padding:0;background-color:#f0f4f8;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased;">
+  <table width="100%" border="0" cellpadding="0" cellspacing="0" style="background-color:#f0f4f8;padding:40px 16px;">
     <tr>
       <td align="center">
         <!-- Main Email Container Card -->
-        <table width="100%" border="0" cellpadding="0" cellspacing="0" style="max-width:520px;background-color:#ffffff;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden;box-shadow:0 4px 12px rgba(10,25,47,0.04);">
+        <table width="100%" border="0" cellpadding="0" cellspacing="0" style="max-width:520px;background-color:#ffffff;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden;box-shadow:0 4px 16px rgba(10,37,64,0.06);">
           
-          <!-- Top Brand Header Banner -->
+          <!-- Top Brand Header Banner (Deep Royal Navy Blue) -->
           <tr>
-            <td align="center" style="background-color:#051326;padding:34px 28px 28px;border-bottom:2px solid #c9a050;">
+            <td align="center" style="background-color:#0a2540;padding:32px 28px 26px;border-bottom:3px solid #1e3a8a;">
               <table border="0" cellpadding="0" cellspacing="0">
                 <tr>
                   <td align="center">
-                    <div style="font-family:Georgia,'Times New Roman',serif;font-size:22px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:#ffffff;line-height:1.2;margin:0;">
-                      ${escapeHtml(brandTitle)}
-                    </div>
-                    <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:11.5px;letter-spacing:0.08em;text-transform:uppercase;color:#c9a050;margin-top:6px;font-weight:600;">
+                    ${logoHtml}
+                    <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:11.5px;letter-spacing:0.08em;text-transform:uppercase;color:#93c5fd;margin-top:10px;font-weight:600;">
                       ${escapeHtml(brandSub)}
                     </div>
                   </td>
@@ -11186,22 +11261,22 @@ function syncVisualToHtml() {
 
           <!-- Main Body Content -->
           <tr>
-            <td style="padding:36px 36px 28px;">
-              <div style="font-family:Georgia,'Times New Roman',serif;font-size:19px;font-weight:700;color:#0f172a;line-height:1.3;margin-bottom:12px;">
+            <td style="padding:36px 32px 28px;background-color:#ffffff;">
+              <div style="font-family:Georgia,'Times New Roman',serif;font-size:20px;font-weight:700;color:#0a2540;line-height:1.3;margin-bottom:12px;">
                 ${escapeHtml(heading)}
               </div>
-              <div style="font-size:14.5px;color:#475569;line-height:1.6;margin-bottom:26px;">
+              <div style="font-size:14px;color:#475569;line-height:1.6;margin-bottom:24px;">
                 ${escapeHtml(intro)}
               </div>
 
               <!-- OTP Code Display Card -->
-              <table width="100%" border="0" cellpadding="0" cellspacing="0" style="margin:0 0 26px;">
+              <table width="100%" border="0" cellpadding="0" cellspacing="0" style="margin:0 0 24px;">
                 <tr>
-                  <td align="center" style="background-color:#f8fafc;border:1.5px solid #e2e8f0;border-radius:10px;padding:20px 24px;">
-                    <div style="font-family:'SF Pro Display',-apple-system,BlinkMacSystemFont,monospace,Consolas;font-size:36px;font-weight:800;letter-spacing:12px;color:#0a192f;line-height:1;margin:0 0 6px;padding-left:12px;">
+                  <td align="center" style="background-color:#f0f7ff;border:2px solid #bfdbfe;border-radius:10px;padding:22px 20px;">
+                    <div style="font-family:'SF Pro Display',-apple-system,BlinkMacSystemFont,monospace,Consolas;font-size:38px;font-weight:800;letter-spacing:12px;color:#0a2540;line-height:1;margin:0 0 8px;padding-left:12px;">
                       {{ .Token }}
                     </div>
-                    <div style="font-size:11.5px;color:#94a3b8;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;">
+                    <div style="font-size:11px;color:#2563eb;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;">
                       Single-Use Security Passcode
                     </div>
                   </td>
@@ -11209,10 +11284,10 @@ function syncVisualToHtml() {
               </table>
 
               <!-- Security Information Note -->
-              <table width="100%" border="0" cellpadding="0" cellspacing="0" style="background-color:#fafaf9;border-left:3px solid #c9a050;border-radius:4px;padding:12px 14px;margin-bottom:20px;">
+              <table width="100%" border="0" cellpadding="0" cellspacing="0" style="background-color:#f8fafc;border-left:3px solid #2563eb;border-radius:4px;padding:12px 16px;margin-bottom:8px;">
                 <tr>
-                  <td style="font-size:12.5px;color:#64748b;line-height:1.5;">
-                    <strong style="color:#334155;">Security Notice:</strong> ${escapeHtml(secNotice)}
+                  <td style="font-size:12.5px;color:#475569;line-height:1.5;">
+                    <strong style="color:#0a2540;">Security Notice:</strong> ${escapeHtml(secNotice)}
                   </td>
                 </tr>
               </table>
@@ -11221,12 +11296,12 @@ function syncVisualToHtml() {
 
           <!-- Subtle Footer & Sign-off -->
           <tr>
-            <td align="center" style="background-color:#f8fafc;border-top:1px solid #f1f5f9;padding:20px 28px;">
-              <div style="font-size:12px;color:#64748b;font-weight:500;line-height:1.4;">
-                ${escapeHtml(footText)}
+            <td align="center" style="background-color:#f8fafc;border-top:1px solid #e2e8f0;padding:20px 24px;">
+              <div style="font-size:12px;color:#64748b;font-weight:600;line-height:1.4;">
+                ${escapeHtml(footTitle)}
               </div>
-              <div style="font-size:11px;color:#94a3b8;margin-top:4px;">
-                Cambridge, Massachusetts &bull; All Rights Reserved
+              <div style="font-size:11.5px;color:#94a3b8;margin-top:4px;">
+                ${escapeHtml(footLoc)}
               </div>
             </td>
           </tr>
@@ -11272,7 +11347,7 @@ function updateEmailPreview() {
 
   // Simulated dynamic variables
   let rendered = html
-    .replace(/{{\s*\.Token\s*}}/g, '<span style="letter-spacing:12px;font-weight:800;color:#0a192f;">604789</span>')
+    .replace(/{{\s*\.Token\s*}}/g, '<span style="letter-spacing:12px;font-weight:800;color:#0a2540;">604789</span>')
     .replace(/{{\s*\.ConfirmationURL\s*}}/g, 'https://theprivatianfamily.vercel.app/admin-login.html?token=sample-token')
     .replace(/{{\s*\.Email\s*}}/g, 'admin@theprivatianfamily.com')
     .replace(/{{\s*\.SiteURL\s*}}/g, 'https://theprivatianfamily.vercel.app');
@@ -11343,10 +11418,19 @@ function resetEmailTemplateToDefault() {
       document.getElementById('email-subject-input').value = 'Your 6-Digit Admin Verification Code (OTP) — The Privatian Family';
       document.getElementById('email-sender-name-input').value = 'The Privatian Family';
       document.getElementById('email-otp-exp-input').value = '3600';
+      if (document.getElementById('ev-logo-url')) document.getElementById('ev-logo-url').value = 'img_zqfa3rwk';
+      if (document.getElementById('ev-logo-height')) document.getElementById('ev-logo-height').value = 54;
+      if (document.getElementById('ev-logo-height-val')) document.getElementById('ev-logo-height-val').textContent = 54;
+      if (document.getElementById('ev-brand-sub')) document.getElementById('ev-brand-sub').value = 'Administrative Portal • Verification';
+      if (document.getElementById('ev-main-heading')) document.getElementById('ev-main-heading').value = 'Your Login Verification Code';
+      if (document.getElementById('ev-intro-text')) document.getElementById('ev-intro-text').value = 'Enter the single-use 6-digit verification code below in the administrator sign-in form to authenticate your session:';
+      if (document.getElementById('ev-security-notice')) document.getElementById('ev-security-notice').value = 'This passcode will expire in 1 hour. Never share this code with anyone. If you did not request this login attempt, no further action is required.';
+      if (document.getElementById('ev-footer-title')) document.getElementById('ev-footer-title').value = 'The Official Publication of The Privatian Society';
+      if (document.getElementById('ev-footer-location')) document.getElementById('ev-footer-location').value = 'Dhaka, Bangladesh • All Rights Reserved';
+      
       document.getElementById('email-html-textarea').value = DEFAULT_MAGIC_LINK_HTML;
-      parseHtmlToVisualFields(DEFAULT_MAGIC_LINK_HTML);
       updateEmailPreview();
-      showToast('info', 'Template reset to default. Click "Save Settings" to persist.');
+      showToast('info', 'Template reset to default layout.');
     }
   });
 }
@@ -11359,4 +11443,3 @@ window.onEmailFieldChange = onEmailFieldChange;
 window.updateEmailPreview = updateEmailPreview;
 window.saveEmailSettings = saveEmailSettings;
 window.resetEmailTemplateToDefault = resetEmailTemplateToDefault;
-

@@ -1663,13 +1663,40 @@
           </div>
 
           <!-- Mode A: Visual Builder Fields -->
-          <div id="email-visual-builder-panel" style="display:flex;flex-direction:column;gap:12px;">
-            <div class="form-group" style="margin:0;">
-              <label style="font-size:11.5px;font-weight:600;color:var(--text-secondary);margin-bottom:4px;display:block;">Brand Header Title</label>
-              <input type="text" id="ev-brand-title" class="form-input" style="width:100%;font-size:13px;padding:7px 10px;border:1px solid #cbd5e1;border-radius:6px;" value="The Privatian Family" oninput="syncVisualToHtml()">
+          <div id="email-visual-builder-panel" style="display:flex;flex-direction:column;gap:14px;">
+            <!-- Brand Logo Selection & Scale -->
+            <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:9px;padding:14px;">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:6px;">
+                <label style="font-size:11.5px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.04em;margin:0;">Header Brand Logo (Image / SVG)</label>
+                <div style="display:flex;gap:6px;">
+                  <button type="button" class="btn btn--ghost btn--sm" onclick="openEmailLogoPicker({ defaultTab: 'gallery' })" style="color:var(--brand-navy,#0a528e);border-color:#cbd5e1;padding:3px 9px;font-size:11.5px;display:flex;align-items:center;gap:4px;">
+                    <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                    Pick from Gallery
+                  </button>
+                  <button type="button" class="btn btn--ghost btn--sm" onclick="openEmailLogoPicker({ defaultTab: 'upload' })" style="color:var(--brand-navy,#0a528e);border-color:#cbd5e1;padding:3px 9px;font-size:11.5px;display:flex;align-items:center;gap:4px;">
+                    <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                    Upload Logo
+                  </button>
+                </div>
+              </div>
+              <div style="display:flex;gap:10px;align-items:center;margin-bottom:10px;">
+                <input type="text" id="ev-logo-url" class="form-input" style="flex:1;font-size:12.5px;padding:7px 10px;border:1px solid #cbd5e1;border-radius:6px;background:#fff;" placeholder="Image URL or Media ID (e.g. img_zqfa3rwk)" value="img_zqfa3rwk" oninput="syncVisualToHtml()">
+                <button type="button" class="btn btn--ghost btn--sm" onclick="resetEmailLogoToDefault()" title="Reset to default white logo" style="font-size:11.5px;padding:6px 10px;">Reset</button>
+              </div>
+
+              <!-- Logo Scale Slider -->
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;background:#fff;border:1px solid #e2e8f0;border-radius:6px;padding:8px 12px;">
+                <span style="font-size:12px;font-weight:600;color:var(--text-secondary);">Logo Height: <strong id="ev-logo-height-val" style="color:var(--brand-navy,#0a528e);">54</strong>px</span>
+                <div style="display:flex;align-items:center;gap:8px;flex:1;max-width:220px;">
+                  <span style="font-size:11px;color:#94a3b8;">30</span>
+                  <input type="range" id="ev-logo-height" min="30" max="120" value="54" step="2" class="hs-range" style="flex:1;" oninput="onEmailLogoHeightInput(this.value)">
+                  <span style="font-size:11px;color:#94a3b8;">120</span>
+                </div>
+              </div>
             </div>
+
             <div class="form-group" style="margin:0;">
-              <label style="font-size:11.5px;font-weight:600;color:var(--text-secondary);margin-bottom:4px;display:block;">Brand Subtitle</label>
+              <label style="font-size:11.5px;font-weight:600;color:var(--text-secondary);margin-bottom:4px;display:block;">Brand Subtitle (Below Logo)</label>
               <input type="text" id="ev-brand-sub" class="form-input" style="width:100%;font-size:13px;padding:7px 10px;border:1px solid #cbd5e1;border-radius:6px;" value="Administrative Portal • Verification" oninput="syncVisualToHtml()">
             </div>
             <div class="form-group" style="margin:0;">
@@ -1684,9 +1711,17 @@
               <label style="font-size:11.5px;font-weight:600;color:var(--text-secondary);margin-bottom:4px;display:block;">Security Notice</label>
               <textarea id="ev-security-notice" class="form-input" rows="2" style="width:100%;font-size:12.5px;padding:7px 10px;border:1px solid #cbd5e1;border-radius:6px;resize:vertical;" oninput="syncVisualToHtml()">This passcode will expire in 1 hour. Never share this code with anyone. If you did not request this login attempt, no further action is required.</textarea>
             </div>
-            <div class="form-group" style="margin:0;">
-              <label style="font-size:11.5px;font-weight:600;color:var(--text-secondary);margin-bottom:4px;display:block;">Footer Publication Info</label>
-              <input type="text" id="ev-footer-text" class="form-input" style="width:100%;font-size:12.5px;padding:7px 10px;border:1px solid #cbd5e1;border-radius:6px;" value="The Official Publication of The Privatian Society — Cambridge, Massachusetts" oninput="syncVisualToHtml()">
+            
+            <!-- Footer Publication & Rights Notice -->
+            <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:9px;padding:12px 14px;">
+              <div class="form-group" style="margin-bottom:10px;">
+                <label style="font-size:11.5px;font-weight:600;color:var(--text-secondary);margin-bottom:4px;display:block;">Footer Publication Line</label>
+                <input type="text" id="ev-footer-title" class="form-input" style="width:100%;font-size:12.5px;padding:7px 10px;border:1px solid #cbd5e1;border-radius:6px;background:#fff;" value="The Official Publication of The Privatian Society" oninput="syncVisualToHtml()">
+              </div>
+              <div class="form-group" style="margin:0;">
+                <label style="font-size:11.5px;font-weight:600;color:var(--text-secondary);margin-bottom:4px;display:block;">Footer Location &amp; Rights Notice</label>
+                <input type="text" id="ev-footer-location" class="form-input" style="width:100%;font-size:12.5px;padding:7px 10px;border:1px solid #cbd5e1;border-radius:6px;background:#fff;" value="Dhaka, Bangladesh • All Rights Reserved" oninput="syncVisualToHtml()">
+              </div>
             </div>
           </div>
 
