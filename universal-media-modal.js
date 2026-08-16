@@ -530,12 +530,16 @@
       const payload = {
         url: _selectedItem.url,
         uniqueId: _selectedItem.unique_id || '',
+        unique_id: _selectedItem.unique_id || '',
+        id: _selectedItem.id || _selectedItem.unique_id || '',
+        r2_key: _selectedItem.r2_key || '',
         title: _selectedItem.title || _selectedItem.filename || '',
         altText: _selectedItem.alt_text || '',
         altTextBn: _selectedItem.alt_text_bn || '',
         filename: _selectedItem.filename || '',
         mimeType: _selectedItem.mime_type || '',
-        folder: _selectedItem.folder || ''
+        folder: _selectedItem.folder || '',
+        ..._selectedItem
       };
       _modalCallback(payload);
     } catch(err) {
@@ -554,6 +558,7 @@
     let title = 'Select Image';
     let subtitle = 'Cloudflare R2 Media Library';
     let defaultTab = 'gallery';
+    let targetFolder = '';
 
     if (typeof opts === 'function') {
       callback = opts;
@@ -562,11 +567,12 @@
       if (opts.title) title = opts.title;
       if (opts.subtitle) subtitle = opts.subtitle;
       if (opts.defaultTab) defaultTab = opts.defaultTab;
+      if (opts.targetFolder) targetFolder = opts.targetFolder;
     }
 
     _modalCallback = callback;
     _selectedItem = null;
-    _activeFolder = 'all';
+    _activeFolder = targetFolder || 'all';
     _lastSearchQuery = '';
 
     const titleEl = document.getElementById('umm-header-title');
@@ -587,6 +593,12 @@
 
     // Fetch and render list
     await fetchMediaList();
+    if (targetFolder) {
+      const folderFilter = document.getElementById('umm-folder-select');
+      const uploadDest = document.getElementById('umm-upload-dest-select');
+      if (folderFilter) folderFilter.value = targetFolder;
+      if (uploadDest) uploadDest.value = targetFolder;
+    }
     renderGalleryGrid('');
   };
 

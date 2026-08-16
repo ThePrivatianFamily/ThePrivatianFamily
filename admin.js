@@ -3387,12 +3387,14 @@ function handleHeaderSvgFileUpload(event) {
   event.target.value = '';
 }
 
-function openHeaderLogoPicker() {
+function openHeaderLogoPicker(opts = {}) {
+  const defaultTab = typeof opts === 'string' ? opts : (opts && opts.defaultTab ? opts.defaultTab : 'gallery');
   if (typeof window.openUniversalMediaModal === 'function') {
     window.openUniversalMediaModal({
       title: 'Select or Upload Header SVG Logo',
       subtitle: 'Pick an SVG logo from gallery or upload new SVG file',
       targetFolder: 'Logos & Icons',
+      defaultTab: defaultTab,
       type: 'svg',
       onSelect: async (item) => {
         if (!item) return;
@@ -8156,6 +8158,60 @@ function handleFooterSvgFileUpload(event) {
   };
   reader.readAsText(file);
   event.target.value = '';
+}
+
+function openFooterLogoPicker(opts = {}) {
+  const defaultTab = typeof opts === 'string' ? opts : (opts && opts.defaultTab ? opts.defaultTab : 'gallery');
+  if (typeof window.openUniversalMediaModal === 'function') {
+    window.openUniversalMediaModal({
+      title: 'Select or Upload Footer SVG Logo',
+      subtitle: 'Pick an SVG logo from gallery or upload new SVG file',
+      targetFolder: 'Logos & Icons',
+      defaultTab: defaultTab,
+      type: 'svg',
+      onSelect: async (item) => {
+        if (!item) return;
+        try {
+          showToast('info', 'Loading SVG logo content...');
+          let text = '';
+          // 1. Try reading via backend proxy / read_text endpoint (CORS-safe & direct from R2)
+          try {
+            const token = _getAuthToken();
+            const res = await fetch(`/api/media?action=read_text&id=${encodeURIComponent(item.unique_id || item.id || '')}&key=${encodeURIComponent(item.r2_key || '')}`, {
+              headers: token ? { 'Authorization': 'Bearer ' + token } : {}
+            });
+            if (res.ok) {
+              const data = await res.json();
+              if (data && data.content) text = data.content;
+            }
+          } catch(e) {}
+
+          // 2. Fallback to direct URL fetch
+          if (!text && item.url) {
+            try {
+              const uRes = await fetch(item.url);
+              if (uRes.ok) text = await uRes.text();
+            } catch(e) {}
+          }
+
+          if (text && text.includes('<svg')) {
+            const cleanSvg = text.trim();
+            onFooterLogoSvgInput(cleanSvg);
+            const textarea = document.getElementById('ft-logo-svg-input');
+            if (textarea) textarea.value = cleanSvg;
+            showToast('success', 'Footer SVG Logo loaded from Media Gallery!');
+          } else {
+            showToast('error', 'Selected file does not contain valid SVG code.');
+          }
+        } catch(err) {
+          showToast('error', 'Failed to load SVG: ' + err.message);
+        }
+      }
+    });
+  } else {
+    const fileInp = document.getElementById('ft-logo-file-input');
+    if (fileInp) fileInp.click();
+  }
 }
 
 function onFooterLogoSvgInput(svgCode) {
