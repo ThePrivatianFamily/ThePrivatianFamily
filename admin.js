@@ -10762,19 +10762,23 @@ function _deleteInspectorMedia() {
 
 // ── 9. Trash & Deletion Confirmations ─────────────────────────────
 function _trashAssetConfirm(uniqueId, filename) {
+  const item = _rawGalleryList.find(x => x.unique_id === uniqueId || x.id === uniqueId);
+  const provider = item ? (item.provider || (item.url?.includes('backblazeb2') ? 'b2' : 'r2')) : 'r2';
+  const providerName = provider === 'b2' ? 'Backblaze B2' : 'Cloudflare R2';
+
   _confirmModal({
     title: 'Move Asset to Trash',
-    body: `Are you sure you want to move <strong>${escapeHtml(filename)}</strong> (<code style="color:#4f46e5;">${uniqueId}</code>) to the <strong>Trash Bin</strong>?<br><div style="margin-top:8px;font-size:12px;color:#1e293b;background:#f8fafc;border:1px solid #e2e8f0;padding:8px 12px;border-radius:8px;">The file remains safely in Cloudflare R2 and can be restored at any time from the Trash Bin tab.</div>`,
+    body: `Are you sure you want to move <strong>${escapeHtml(filename)}</strong> (<code style="color:#4f46e5;">${uniqueId}</code>) to the <strong>Trash Bin</strong>?<br><div style="margin-top:8px;font-size:12px;color:#1e293b;background:#f8fafc;border:1px solid #e2e8f0;padding:8px 12px;border-radius:8px;">The file remains safely in <strong>${providerName}</strong> and can be restored at any time from the Trash Bin tab.</div>`,
     confirmText: 'Move to Trash',
     variant: 'danger',
     onConfirm: async () => {
       try {
         const res = await _apiDelete(`/api/media?action=trash&id=${encodeURIComponent(uniqueId)}`);
         if (res && res.ok) {
-          const item = _rawGalleryList.find(x => x.unique_id === uniqueId || x.id === uniqueId);
-          if (item) {
-            item.is_deleted = true;
-            item.deleted_at = new Date().toISOString();
+          const target = _rawGalleryList.find(x => x.unique_id === uniqueId || x.id === uniqueId);
+          if (target) {
+            target.is_deleted = true;
+            target.deleted_at = new Date().toISOString();
           }
           renderGalleryFolders();
           _updateGalleryCounts();
@@ -10811,9 +10815,13 @@ async function _restoreAsset(uniqueId) {
 }
 
 function _deletePermanentConfirm(uniqueId, filename) {
+  const item = _rawGalleryList.find(x => x.unique_id === uniqueId || x.id === uniqueId);
+  const provider = item ? (item.provider || (item.url?.includes('backblazeb2') ? 'b2' : 'r2')) : 'r2';
+  const providerName = provider === 'b2' ? 'Backblaze B2' : 'Cloudflare R2';
+
   _confirmModal({
-    title: 'Permanently Erase from Cloudflare R2',
-    body: `Permanently erase <strong>${escapeHtml(filename)}</strong> (<code style="color:#dc2626;">${uniqueId}</code>) from your Cloudflare R2 bucket?<br><div style="margin-top:8px;font-size:12px;color:#991b1b;background:#fef2f2;border:1px solid #fecaca;padding:8px 12px;border-radius:8px;"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:3px;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><strong>Irreversible Action:</strong> This file will be permanently deleted from Cloudflare R2 and CDN. This action cannot be recovered.</div>`,
+    title: `Permanently Erase from ${providerName}`,
+    body: `Permanently erase <strong>${escapeHtml(filename)}</strong> (<code style="color:#dc2626;">${uniqueId}</code>) from your <strong>${providerName}</strong> bucket?<br><div style="margin-top:8px;font-size:12px;color:#991b1b;background:#fef2f2;border:1px solid #fecaca;padding:8px 12px;border-radius:8px;"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:3px;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><strong>Irreversible Action:</strong> This file will be permanently deleted from <strong>${providerName}</strong> and CDN. This action cannot be recovered.</div>`,
     confirmText: 'Permanently Delete',
     variant: 'danger',
     onConfirm: async () => {
@@ -10827,7 +10835,7 @@ function _deletePermanentConfirm(uniqueId, filename) {
           renderGalleryFolders();
           _updateGalleryCounts();
           renderGalleryGrid();
-          showToast('success', `Permanently erased "${filename}" from Cloudflare R2.`);
+          showToast('success', `Permanently erased "${filename}" from ${providerName}.`);
         }
       } catch(e) {
         showToast('error', 'Failed to delete asset: ' + e.message);
@@ -10844,7 +10852,7 @@ function _emptyTrashConfirm() {
   }
   _confirmModal({
     title: `Empty Trash Bin (${trashCount} ${trashCount === 1 ? 'item' : 'items'})`,
-    body: `Are you sure you want to permanently erase all <strong>${trashCount}</strong> trashed items from your Cloudflare R2 bucket?<br><div style="margin-top:8px;font-size:12px;color:#991b1b;background:#fef2f2;border:1px solid #fecaca;padding:8px 12px;border-radius:8px;"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:3px;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><strong>Irreversible Action:</strong> All trashed images will be permanently erased from Cloudflare R2. This action cannot be recovered.</div>`,
+    body: `Are you sure you want to permanently erase all <strong>${trashCount}</strong> trashed items from your cloud storage (Cloudflare R2 & Backblaze B2)?<br><div style="margin-top:8px;font-size:12px;color:#991b1b;background:#fef2f2;border:1px solid #fecaca;padding:8px 12px;border-radius:8px;"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:3px;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><strong>Irreversible Action:</strong> All trashed images will be permanently erased from cloud storage. This action cannot be recovered.</div>`,
     confirmText: 'Empty Trash Now',
     variant: 'danger',
     onConfirm: async () => {
