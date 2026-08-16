@@ -10967,12 +10967,12 @@ let _emailSettings = {
 
 let _currentEmailMode = 'visual';
 
-const DEFAULT_EMAIL_LOGO_URL = 'https://pub-1e6b79ea34c74adfa8dc145a3b5a4e5a.r2.dev/gallery/2026/08/the-privatian-family-white-logo-retina.png';
+const DEFAULT_EMAIL_LOGO_URL = 'https://pub-1e6b79ea34c74adfa8dc145a3b5a4e5a.r2.dev/gallery/2026/08/img_jms7zxw4_the-privatian-family-logo-white-cropped.svg';
 
 function resolveEmailLogoUrl(val) {
   if (!val) return DEFAULT_EMAIL_LOGO_URL;
   const str = String(val).trim();
-  if (str === 'img_jms7zxw4' || str.includes('jms7zxw4') || str.includes('the-privatian-family-white-logo-retina')) {
+  if (str === 'img_jms7zxw4' || str.includes('jms7zxw4')) {
     return DEFAULT_EMAIL_LOGO_URL;
   }
   if (str === 'img_zqfa3rwk' || str.includes('zqfa3rwk')) {
@@ -10995,8 +10995,8 @@ function updateLogoThumbnail(logoUrl, name) {
   if (nameEl) {
     if (name) {
       nameEl.textContent = name;
-    } else if (logoUrl.includes('retina') || logoUrl.includes('jms7zxw4')) {
-      nameEl.textContent = 'The Privatian Family White Logo (Retina)';
+    } else if (logoUrl.includes('jms7zxw4')) {
+      nameEl.textContent = 'The Privatian Family Logo (SVG)';
     } else if (logoUrl.includes('zqfa3rwk')) {
       nameEl.textContent = 'The Privatian Family White Logo (PNG)';
     } else {
@@ -11010,7 +11010,7 @@ window.openEmailLogoPicker = function(options = {}) {
   if (typeof window.openUniversalMediaModal === 'function') {
     window.openUniversalMediaModal({
       title: 'Upload or Select Brand Logo',
-      subtitle: 'Upload your PNG / SVG logo from device or select from Cloudflare R2 library',
+      subtitle: 'Upload your SVG / PNG logo from device or select from Cloudflare R2 library',
       defaultTab: options.defaultTab || 'upload',
       allowIdInput: true,
       targetFolder: 'Logos & Icons',
@@ -11044,9 +11044,9 @@ window.resetEmailLogoToDefault = function() {
   if (slider) slider.value = 50;
   const valEl = document.getElementById('ev-logo-height-val');
   if (valEl) valEl.textContent = 50;
-  updateLogoThumbnail(DEFAULT_EMAIL_LOGO_URL, 'The Privatian Family White Logo (Retina)');
+  updateLogoThumbnail(DEFAULT_EMAIL_LOGO_URL, 'The Privatian Family Logo (SVG)');
   syncVisualToHtml();
-  showToast('info', 'Reset brand logo to default Retina logo.');
+  showToast('info', 'Reset brand logo to default SVG.');
 };
 
 const DEFAULT_MAGIC_LINK_HTML = `<!DOCTYPE html>
@@ -11065,12 +11065,14 @@ const DEFAULT_MAGIC_LINK_HTML = `<!DOCTYPE html>
           
           <!-- Top Brand Header Banner (Deep Royal Navy Blue) -->
           <tr>
-            <td align="center" oncontextmenu="return false;" style="background-color:#0a2540;padding:28px 24px 20px;border-bottom:3px solid #1e3a8a;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;">
-              <table border="0" cellpadding="0" cellspacing="0" style="margin:0 auto;">
+            <td align="center" style="background-color:#0a2540;padding:28px 24px 20px;border-bottom:3px solid #1e3a8a;user-select:none;-webkit-user-select:none;" oncontextmenu="return false;">
+              <table border="0" cellpadding="0" cellspacing="0" style="margin:0 auto;user-select:none;-webkit-user-select:none;" oncontextmenu="return false;">
                 <tr>
-                  <td align="center">
-                    <img src="${DEFAULT_EMAIL_LOGO_URL}" alt="The Privatian Family" height="50" draggable="false" oncontextmenu="return false;" style="display:block;height:50px;max-height:50px;width:auto;margin:0 auto;border:0;outline:none;text-decoration:none;pointer-events:none;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;" />
-                    <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:11px;letter-spacing:0.09em;text-transform:uppercase;color:#93c5fd;margin-top:8px;font-weight:600;line-height:1.2;-webkit-user-select:none;user-select:none;">
+                  <td align="center" style="user-select:none;-webkit-user-select:none;pointer-events:none;" oncontextmenu="return false;">
+                    <div style="pointer-events:none;user-select:none;-webkit-user-select:none;-webkit-user-drag:none;display:inline-block;" oncontextmenu="return false;">
+                      <img src="${DEFAULT_EMAIL_LOGO_URL}" alt="The Privatian Family" height="50" draggable="false" oncontextmenu="return false;" style="display:block;height:50px;max-height:50px;width:auto;margin:0 auto;border:0;outline:none;text-decoration:none;pointer-events:none;-webkit-user-drag:none;user-select:none;-webkit-user-select:none;" />
+                    </div>
+                    <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:11px;letter-spacing:0.09em;text-transform:uppercase;color:#93c5fd;margin-top:8px;font-weight:600;line-height:1.2;pointer-events:none;user-select:none;-webkit-user-select:none;">
                       Administrative Portal &bull; Verification
                     </div>
                   </td>
@@ -11177,7 +11179,7 @@ function parseHtmlToVisualFields(html) {
     if (imgEl) {
       const src = imgEl.getAttribute('src') || '';
       if (document.getElementById('ev-logo-url')) {
-        document.getElementById('ev-logo-url').value = (src.includes('jms7zxw4') || src.includes('retina')) ? 'img_jms7zxw4' : (src.includes('zqfa3rwk') ? 'img_zqfa3rwk' : src);
+        document.getElementById('ev-logo-url').value = src.includes('jms7zxw4') ? 'img_jms7zxw4' : (src.includes('zqfa3rwk') ? 'img_zqfa3rwk' : src);
       }
       const hAttr = imgEl.getAttribute('height');
       const hStyle = imgEl.style && imgEl.style.height;
@@ -11255,8 +11257,10 @@ function syncVisualToHtml() {
   const footLoc    = document.getElementById('ev-footer-location')?.value || 'Dhaka, Bangladesh • All Rights Reserved';
 
   const logoHtml = logoUrl
-    ? `<img src="${logoUrl}" alt="The Privatian Family" height="${logoHeight}" draggable="false" oncontextmenu="return false;" style="display:block;height:${logoHeight}px;max-height:${logoHeight}px;width:auto;margin:0 auto;border:0;outline:none;text-decoration:none;pointer-events:none;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;" />`
-    : `<div style="font-family:Georgia,'Times New Roman',serif;font-size:22px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#ffffff;line-height:1.2;margin:0;">The Privatian Family</div>`;
+    ? `<div style="pointer-events:none;user-select:none;-webkit-user-select:none;-webkit-user-drag:none;display:inline-block;" oncontextmenu="return false;">
+        <img src="${logoUrl}" alt="The Privatian Family" height="${logoHeight}" draggable="false" oncontextmenu="return false;" style="display:block;height:${logoHeight}px;max-height:${logoHeight}px;width:auto;margin:0 auto;border:0;outline:none;text-decoration:none;pointer-events:none;-webkit-user-drag:none;user-select:none;-webkit-user-select:none;" />
+      </div>`
+    : `<div style="font-family:Georgia,'Times New Roman',serif;font-size:22px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#ffffff;line-height:1.2;margin:0;pointer-events:none;user-select:none;">The Privatian Family</div>`;
 
   const html = `<!DOCTYPE html>
 <html lang="en">
@@ -11274,12 +11278,12 @@ function syncVisualToHtml() {
           
           <!-- Top Brand Header Banner (Deep Royal Navy Blue) -->
           <tr>
-            <td align="center" oncontextmenu="return false;" style="background-color:#0a2540;padding:28px 24px 20px;border-bottom:3px solid #1e3a8a;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;">
-              <table border="0" cellpadding="0" cellspacing="0" style="margin:0 auto;">
+            <td align="center" style="background-color:#0a2540;padding:28px 24px 20px;border-bottom:3px solid #1e3a8a;user-select:none;-webkit-user-select:none;" oncontextmenu="return false;">
+              <table border="0" cellpadding="0" cellspacing="0" style="margin:0 auto;user-select:none;-webkit-user-select:none;" oncontextmenu="return false;">
                 <tr>
-                  <td align="center">
+                  <td align="center" style="user-select:none;-webkit-user-select:none;pointer-events:none;" oncontextmenu="return false;">
                     ${logoHtml}
-                    <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:11px;letter-spacing:0.09em;text-transform:uppercase;color:#93c5fd;margin-top:8px;font-weight:600;line-height:1.2;-webkit-user-select:none;user-select:none;">
+                    <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:11px;letter-spacing:0.09em;text-transform:uppercase;color:#93c5fd;margin-top:8px;font-weight:600;line-height:1.2;pointer-events:none;user-select:none;-webkit-user-select:none;">
                       ${escapeHtml(brandSub)}
                     </div>
                   </td>
@@ -11450,7 +11454,7 @@ function resetEmailTemplateToDefault() {
       if (document.getElementById('ev-logo-url')) document.getElementById('ev-logo-url').value = 'img_jms7zxw4';
       if (document.getElementById('ev-logo-height')) document.getElementById('ev-logo-height').value = 50;
       if (document.getElementById('ev-logo-height-val')) document.getElementById('ev-logo-height-val').textContent = 50;
-      updateLogoThumbnail(DEFAULT_EMAIL_LOGO_URL, 'The Privatian Family White Logo (Retina)');
+      updateLogoThumbnail(DEFAULT_EMAIL_LOGO_URL, 'The Privatian Family Logo (SVG)');
       if (document.getElementById('ev-brand-sub')) document.getElementById('ev-brand-sub').value = 'Administrative Portal • Verification';
       if (document.getElementById('ev-main-heading')) document.getElementById('ev-main-heading').value = 'Your Login Verification Code';
       if (document.getElementById('ev-intro-text')) document.getElementById('ev-intro-text').value = 'Enter the single-use 6-digit verification code below in the administrator sign-in form to authenticate your session:';
@@ -11473,6 +11477,7 @@ window.onEmailFieldChange = onEmailFieldChange;
 window.updateEmailPreview = updateEmailPreview;
 window.saveEmailSettings = saveEmailSettings;
 window.resetEmailTemplateToDefault = resetEmailTemplateToDefault;
+
 
 
 
