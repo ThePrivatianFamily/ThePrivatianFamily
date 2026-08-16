@@ -5413,3 +5413,97 @@ body.modal-open {
   background: #e2e8f0;
 }
 
+/* ── Multi-Period Analytics Strip & Chips ────────────────────── */
+.db-period-strip {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.db-period-chip {
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.db-period-chip:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(10, 82, 142, 0.08);
+}
+
+.db-bar-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  height: 100%;
+  justify-content: flex-end;
+}
+
+.db-bar-wrap {
+  width: 100%;
+  max-width: 44px;
+  height: 110px;
+  background: rgba(10, 82, 142, 0.06);
+  border-radius: 6px 6px 0 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
+  position: relative;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.db-bar-wrap:hover {
+  background: rgba(10, 82, 142, 0.12);
+}
+
+.db-bar-wrap:hover .db-bar-val-badge {
+  opacity: 1;
+  transform: translateY(-4px);
+}
+
+.db-bar-fill {
+  width: 100%;
+  background: linear-gradient(180deg, #0a528e 0%, #073a66 100%);
+  border-radius: 4px 4px 0 0;
+  transition: height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  min-height: 4px;
+}
+
+.db-bar-val-badge {
+  position: absolute;
+  top: -26px;
+  font-size: 10.5px;
+  font-weight: 700;
+  color: #ffffff;
+  background: #071e38;
+  padding: 2px 6px;
+  border-radius: 4px;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+  z-index: 10;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+}
+
+.db-bar-day {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.db-bar-date {
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+@media (max-width: 1200px) {
+  .db-period-strip {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+

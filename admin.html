@@ -39,19 +39,10 @@
     <nav class="sidebar-nav" aria-label="Admin navigation">
       <ul>
         <li>
-          <a href="#" class="sidebar-nav-item" data-page="dashboard" id="nav-dashboard">
+          <a href="#" class="sidebar-nav-item active" data-page="dashboard" id="nav-dashboard">
             <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
               <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
               <rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
-            </svg>
-            <span>Dashboard</span>
-          </a>
-        </li>
-        <li>
-          <a href="#" class="sidebar-nav-item active" data-page="dashboard" id="nav-dashboard">
-            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-              <rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect>
-              <rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect>
             </svg>
             <span>Dashboard</span>
           </a>
@@ -329,55 +320,135 @@
 
         <!-- 4. Traffic & Views Card -->
         <div class="card db-card" style="padding:18px;display:flex;flex-direction:column;justify-content:space-between;border:1px solid var(--border);border-radius:var(--radius);background:var(--card-bg);">
-          <div class="db-card-head" style="display:flex;align-items:center;gap:14px;margin-bottom:14px;">
+          <div class="db-card-head" style="display:flex;align-items:center;gap:14px;margin-bottom:12px;">
             <div class="db-card-icon-wrap" style="width:42px;height:42px;border-radius:10px;background:rgba(16,185,129,0.1);color:#10b981;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
               <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8">
                 <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
               </svg>
             </div>
-            <div class="db-card-meta">
-              <span class="db-card-label" style="font-size:12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.04em;">Lifetime Views</span>
-              <h3 class="db-card-value" id="db-stat-views-lifetime" style="font-size:24px;font-weight:800;color:var(--text-primary);line-height:1.1;margin:2px 0 0;">0</h3>
+            <div class="db-card-meta" style="flex:1;">
+              <div style="display:flex;justify-content:space-between;align-items:center;">
+                <span class="db-card-label" style="font-size:11.5px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.04em;">Today's Views</span>
+                <span style="font-size:10.5px;font-weight:700;background:rgba(16,185,129,0.12);color:#10b981;padding:1px 6px;border-radius:10px;display:inline-flex;align-items:center;gap:4px;">
+                  <span style="width:5px;height:5px;border-radius:50%;background:#10b981;"></span> Live
+                </span>
+              </div>
+              <h3 class="db-card-value" id="db-stat-views-today" style="font-size:24px;font-weight:800;color:var(--text-primary);line-height:1.1;margin:2px 0 2px;">0</h3>
+              <div style="font-size:11.5px;color:#10b981;font-weight:600;"><span id="db-stat-visitors-today">0</span> Unique Visitors Today</div>
             </div>
           </div>
-          <div class="db-card-body" style="border-top:1px solid var(--border);padding-top:12px;display:flex;flex-direction:column;gap:6px;font-size:12.5px;">
+          <div class="db-card-body" style="border-top:1px solid var(--border);padding-top:10px;display:flex;flex-direction:column;gap:5px;font-size:12px;">
             <div class="db-stat-row" style="display:flex;justify-content:space-between;align-items:center;">
-              <span class="db-stat-k" style="color:var(--text-secondary);">Today Views</span>
-              <strong class="db-stat-v" id="db-stat-views-today" style="font-weight:700;color:var(--text-primary);">0 views</strong>
+              <span class="db-stat-k" style="color:var(--text-secondary);">This Week (7d)</span>
+              <strong class="db-stat-v" id="db-stat-views-week" style="font-weight:700;color:var(--text-primary);">0</strong>
             </div>
             <div class="db-stat-row" style="display:flex;justify-content:space-between;align-items:center;">
-              <span class="db-stat-k" style="color:var(--text-secondary);">Unique Visitors</span>
-              <strong class="db-stat-v" id="db-stat-visitors-today" style="font-weight:700;color:var(--text-primary);">0</strong>
+              <span class="db-stat-k" style="color:var(--text-secondary);">This Month</span>
+              <strong class="db-stat-v" id="db-stat-views-month" style="font-weight:700;color:var(--text-primary);">0</strong>
             </div>
             <div class="db-stat-row" style="display:flex;justify-content:space-between;align-items:center;">
-              <span class="db-stat-k" style="color:var(--text-secondary);">Month / Year</span>
-              <strong class="db-stat-v" style="font-weight:700;color:var(--text-primary);"><span id="db-stat-views-month">0</span> / <span id="db-stat-views-year">0</span></strong>
+              <span class="db-stat-k" style="color:var(--text-secondary);">This Year</span>
+              <strong class="db-stat-v" id="db-stat-views-year" style="font-weight:700;color:var(--text-primary);">0</strong>
+            </div>
+            <div class="db-stat-row" style="display:flex;justify-content:space-between;align-items:center;">
+              <span class="db-stat-k" style="color:var(--text-secondary);font-weight:600;">Lifetime Total</span>
+              <strong class="db-stat-v" id="db-stat-views-lifetime-card" style="font-weight:800;color:var(--brand);">0</strong>
             </div>
           </div>
-          <div class="db-card-foot" style="margin-top:14px;padding-top:10px;border-top:1px dashed var(--border);display:flex;justify-content:space-between;align-items:center;">
+          <div class="db-card-foot" style="margin-top:12px;padding-top:8px;border-top:1px dashed var(--border);display:flex;justify-content:space-between;align-items:center;">
             <span style="font-size:11px;color:var(--text-muted);font-weight:600;">W3C / IAB Standard</span>
             <button type="button" class="btn btn--ghost btn--xs" onclick="resetAnalyticsStoreToZero()" style="color:#ef4444;font-size:11px;padding:2px 6px;border:none;cursor:pointer;" title="Reset traffic history to authentic 0">Reset</button>
           </div>
         </div>
       </div>
 
-      <!-- 7-Day Traffic Trend Bar Visualization -->
-      <div class="card db-chart-card" style="margin-bottom:24px;padding:20px;border:1px solid var(--border);border-radius:var(--radius);background:var(--card-bg);">
-        <div class="db-chart-head" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:12px;">
+      <!-- Traffic Performance & Multi-Period Analytics Hub -->
+      <div class="card db-chart-card" style="margin-bottom:24px;padding:22px;border:1px solid var(--border);border-radius:var(--radius);background:var(--card-bg);">
+        
+        <!-- Header -->
+        <div class="db-chart-head" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;flex-wrap:wrap;gap:12px;">
           <div>
-            <h2 style="font-size:15px;font-weight:700;color:var(--text-primary);margin:0 0 2px;">7-Day Web Traffic Trend (Authentic Real-Time)</h2>
-            <p style="font-size:12px;color:var(--text-muted);margin:0;">Standardized pageviews & unique visitors distribution</p>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#0a528e" stroke-width="2">
+                <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>
+              </svg>
+              <h2 style="font-size:16px;font-weight:800;color:var(--text-primary);margin:0;">Web Traffic & Audience Analytics</h2>
+            </div>
+            <p style="font-size:12px;color:var(--text-muted);margin:3px 0 0;">Authentic W3C / IAB Standard • Bot Excluded • Session Deduplicated (Real-Time)</p>
           </div>
           <div class="db-chart-legend" style="display:flex;align-items:center;gap:14px;">
             <span class="db-legend-item" style="font-size:12px;color:var(--text-secondary);display:inline-flex;align-items:center;gap:6px;">
-              <span class="db-legend-dot" style="width:8px;height:8px;border-radius:2px;background:#0a528e;display:inline-block;"></span> Daily Pageviews
+              <span class="db-legend-dot" style="width:8px;height:8px;border-radius:2px;background:#0a528e;display:inline-block;"></span> Pageviews
             </span>
-            <span class="db-avg-daily" id="db-avg-daily-val" style="font-size:12px;font-weight:700;color:var(--text-primary);background:var(--content-bg);padding:3px 8px;border-radius:4px;border:1px solid var(--border);">0 / day</span>
+            <span class="db-avg-daily" id="db-avg-daily-val" style="font-size:12px;font-weight:700;color:var(--text-primary);background:var(--content-bg);padding:4px 10px;border-radius:6px;border:1px solid var(--border);">0 / day</span>
           </div>
         </div>
-        <div class="db-chart-body" id="db-chart-bars" style="display:flex;align-items:flex-end;justify-content:space-between;gap:12px;height:160px;padding-top:15px;border-bottom:1px solid var(--border);">
-          <!-- dynamically rendered bars -->
+
+        <!-- 5-Tier High-Visibility Period Strip -->
+        <div class="db-period-strip" style="display:grid;grid-template-columns:repeat(5, 1fr);gap:12px;margin-bottom:20px;">
+          
+          <!-- 1. Today's Views (Prominent Focus) -->
+          <div class="db-period-chip" style="background:linear-gradient(135deg, rgba(10,82,142,0.06), rgba(10,82,142,0.02));border:1px solid rgba(10,82,142,0.18);border-radius:8px;padding:12px 14px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+              <span style="font-size:11px;font-weight:700;color:#0a528e;text-transform:uppercase;letter-spacing:0.04em;">Today's Views</span>
+              <span style="width:6px;height:6px;border-radius:50%;background:#10b981;box-shadow:0 0 0 2px rgba(16,185,129,0.2);"></span>
+            </div>
+            <div id="db-stat-strip-today-views" style="font-size:22px;font-weight:800;color:var(--text-primary);line-height:1.1;">0</div>
+            <div style="font-size:11px;color:var(--text-muted);margin-top:3px;"><span id="db-stat-strip-today-visitors" style="font-weight:700;color:#10b981;">0</span> Unique Visitors</div>
+          </div>
+
+          <!-- 2. This Week (7-Day) -->
+          <div class="db-period-chip" style="background:var(--content-bg);border:1px solid var(--border);border-radius:8px;padding:12px 14px;">
+            <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.04em;margin-bottom:4px;">This Week (7d)</div>
+            <div id="db-stat-strip-week-views" style="font-size:22px;font-weight:800;color:var(--text-primary);line-height:1.1;">0</div>
+            <div style="font-size:11px;color:var(--text-muted);margin-top:3px;"><span id="db-stat-strip-week-visitors" style="font-weight:700;color:var(--text-secondary);">0</span> Visitors</div>
+          </div>
+
+          <!-- 3. This Month -->
+          <div class="db-period-chip" style="background:var(--content-bg);border:1px solid var(--border);border-radius:8px;padding:12px 14px;">
+            <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.04em;margin-bottom:4px;">This Month</div>
+            <div id="db-stat-strip-month-views" style="font-size:22px;font-weight:800;color:var(--text-primary);line-height:1.1;">0</div>
+            <div style="font-size:11px;color:var(--text-muted);margin-top:3px;">Monthly Total</div>
+          </div>
+
+          <!-- 4. This Year -->
+          <div class="db-period-chip" style="background:var(--content-bg);border:1px solid var(--border);border-radius:8px;padding:12px 14px;">
+            <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.04em;margin-bottom:4px;">This Year</div>
+            <div id="db-stat-strip-year-views" style="font-size:22px;font-weight:800;color:var(--text-primary);line-height:1.1;">0</div>
+            <div style="font-size:11px;color:var(--text-muted);margin-top:3px;">Annual Total</div>
+          </div>
+
+          <!-- 5. Lifetime Total -->
+          <div class="db-period-chip" style="background:linear-gradient(135deg, rgba(200,147,56,0.08), rgba(200,147,56,0.02));border:1px solid rgba(200,147,56,0.22);border-radius:8px;padding:12px 14px;">
+            <div style="font-size:11px;font-weight:700;color:#926116;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:4px;">Lifetime Views</div>
+            <div id="db-stat-strip-lifetime-views" style="font-size:22px;font-weight:800;color:#926116;line-height:1.1;">0</div>
+            <div style="font-size:11px;color:var(--text-muted);margin-top:3px;"><span id="db-stat-strip-lifetime-visitors" style="font-weight:700;color:#926116;">0</span> All-Time Visitors</div>
+          </div>
+
         </div>
+
+        <!-- 7-Day Interactive Trend Bar Chart -->
+        <div style="background:var(--content-bg);border:1px solid var(--border);border-radius:8px;padding:16px 18px 10px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+            <span style="font-size:12px;font-weight:700;color:var(--text-secondary);">Last 7 Days Daily Performance</span>
+            <span style="font-size:11px;color:var(--text-muted);">Hover bar for details</span>
+          </div>
+          <div class="db-chart-body" id="db-chart-bars" style="display:flex;align-items:flex-end;justify-content:space-between;gap:12px;height:150px;padding-top:10px;border-bottom:1px solid var(--border);">
+            <!-- dynamically rendered bars -->
+          </div>
+        </div>
+
+        <!-- Explanatory footer -->
+        <div style="margin-top:14px;display:flex;justify-content:space-between;align-items:center;font-size:11.5px;color:var(--text-muted);flex-wrap:wrap;gap:8px;">
+          <div style="display:flex;align-items:center;gap:6px;">
+            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+            <span><strong>Unique Visitor</strong> = 1 individual user/day • <strong>Pageviews</strong> = individual page/story reads (internal navigation & bots excluded).</span>
+          </div>
+          <button type="button" class="btn btn--ghost btn--xs" onclick="resetAnalyticsStoreToZero()" style="color:#ef4444;font-size:11.5px;padding:3px 8px;border-radius:4px;border:1px solid rgba(239,68,68,0.2);" title="Reset traffic history to authentic 0">
+            Reset to Clean 0
+          </button>
+        </div>
+
       </div>
 
       <!-- 2-Column Split: Recent Articles & Activity Logs -->

@@ -1645,17 +1645,33 @@ function refreshDashboardMetrics() {
 function renderDashboardUI(stats) {
   if (!stats) return;
 
-  // 1. Views
+  // 1. Views & Multi-Period Traffic
   const views = stats.views || {};
   const elLifetime = document.getElementById('db-stat-views-lifetime');
+  const elLifetimeCard = document.getElementById('db-stat-views-lifetime-card');
   const elToday = document.getElementById('db-stat-views-today');
   const elVisitorsToday = document.getElementById('db-stat-visitors-today');
+  const elWeek = document.getElementById('db-stat-views-week');
   const elMonth = document.getElementById('db-stat-views-month');
   const elYear = document.getElementById('db-stat-views-year');
+
+  // Strip Chips
+  const elStripTodayViews = document.getElementById('db-stat-strip-today-views');
+  const elStripTodayVisitors = document.getElementById('db-stat-strip-today-visitors');
+  const elStripWeekViews = document.getElementById('db-stat-strip-week-views');
+  const elStripWeekVisitors = document.getElementById('db-stat-strip-week-visitors');
+  const elStripMonthViews = document.getElementById('db-stat-strip-month-views');
+  const elStripYearViews = document.getElementById('db-stat-strip-year-views');
+  const elStripLifetimeViews = document.getElementById('db-stat-strip-lifetime-views');
+  const elStripLifetimeVisitors = document.getElementById('db-stat-strip-lifetime-visitors');
 
   const lifetimePageviews = typeof views.lifetime === 'object'
     ? (views.lifetime.pageviews || 0)
     : (Number(views.lifetime) || 0);
+  const lifetimeVisitors = typeof views.lifetime === 'object'
+    ? (views.lifetime.visitors || 0)
+    : (views.lifetimeVisitors || 0);
+
   const todayViews = typeof views.todayPageviews === 'number'
     ? views.todayPageviews
     : (Number(views.daily) || 0);
@@ -1663,11 +1679,34 @@ function renderDashboardUI(stats) {
     ? views.todayVisitors
     : 0;
 
+  const weeklyViews = typeof views.weeklyPageviews === 'number'
+    ? views.weeklyPageviews
+    : (typeof views.weekly === 'number' ? views.weekly : 0);
+  const weeklyVisitors = typeof views.weeklyVisitors === 'number'
+    ? views.weeklyVisitors
+    : 0;
+
+  const monthlyViews = Number(views.monthly) || 0;
+  const yearlyViews = Number(views.yearly) || 0;
+
+  // Card 4
   if (elLifetime) elLifetime.textContent = formatNumber(lifetimePageviews);
+  if (elLifetimeCard) elLifetimeCard.textContent = `${formatNumber(lifetimePageviews)} views`;
   if (elToday) elToday.textContent = `${formatNumber(todayViews)} views`;
   if (elVisitorsToday) elVisitorsToday.textContent = formatNumber(todayVisitors);
-  if (elMonth) elMonth.textContent = formatNumber(views.monthly || 0);
-  if (elYear) elYear.textContent = formatNumber(views.yearly || 0);
+  if (elWeek) elWeek.textContent = `${formatNumber(weeklyViews)} views`;
+  if (elMonth) elMonth.textContent = `${formatNumber(monthlyViews)} views`;
+  if (elYear) elYear.textContent = `${formatNumber(yearlyViews)} views`;
+
+  // 5-Tier Strip
+  if (elStripTodayViews) elStripTodayViews.textContent = formatNumber(todayViews);
+  if (elStripTodayVisitors) elStripTodayVisitors.textContent = formatNumber(todayVisitors);
+  if (elStripWeekViews) elStripWeekViews.textContent = formatNumber(weeklyViews);
+  if (elStripWeekVisitors) elStripWeekVisitors.textContent = formatNumber(weeklyVisitors);
+  if (elStripMonthViews) elStripMonthViews.textContent = formatNumber(monthlyViews);
+  if (elStripYearViews) elStripYearViews.textContent = formatNumber(yearlyViews);
+  if (elStripLifetimeViews) elStripLifetimeViews.textContent = formatNumber(lifetimePageviews);
+  if (elStripLifetimeVisitors) elStripLifetimeVisitors.textContent = formatNumber(lifetimeVisitors);
 
   // 2. Articles
   const arts = stats.articles || {};

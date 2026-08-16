@@ -443,6 +443,39 @@ module.exports = async function handler(req, res) {
     });
   }
 
+  // ── RESET ANALYTICS STORE (Admin Only) ─────────────────────────────────
+  if (action === 'reset_analytics' && req.method === 'POST') {
+    const session = verifySession(req);
+    if (!session) return res.status(401).json({ error: 'Unauthorized' });
+
+    const now = new Date();
+    const cleanStore = {
+      lifetime: { pageviews: 0, visitors: 0, sessions: 0 },
+      yearly: {},
+      monthly: {},
+      daily: {},
+      pages: {},
+      referrers: {},
+      devices: { desktop: 0, mobile: 0, tablet: 0 },
+      countries: {},
+      created_at: now.toISOString(),
+      updated_at: now.toISOString()
+    };
+
+    try {
+      await sb.from('sections').update({
+        name: JSON.stringify(cleanStore),
+        slug: '__site_analytics_store__',
+        display_order: 9999,
+        is_active: false,
+        locked: true,
+        is_deleted: true
+      }).eq('admin_id', '__site_analytics_store__');
+    } catch(e) {}
+
+    return res.status(200).json({ ok: true, message: 'Analytics reset to authentic 0' });
+  }
+
   // ── DASHBOARD STATS AGGREGATOR ─────────────────────────────────────────
   if (action === 'dashboard_stats') {
     const session = verifySession(req);
@@ -630,6 +663,9 @@ module.exports = async function handler(req, res) {
       });
     }
 
+    const weeklyPageviews = last7Days.reduce((acc, d) => acc + (d.pageviews || 0), 0);
+    const weeklyVisitors = last7Days.reduce((acc, d) => acc + (d.visitors || 0), 0);
+
     let activeSectionsCount = 0;
     let trashedSectionsCount = 0;
     try {
@@ -684,6 +720,9 @@ module.exports = async function handler(req, res) {
         todayPageviews: dailyPageviews,
         todayVisitors: dailyVisitors,
         todaySessions: dailySessions,
+        weekly: weeklyPageviews,
+        weeklyPageviews: weeklyPageviews,
+        weeklyVisitors: weeklyVisitors,
         monthly: monthlyViews,
         yearly: yearlyViews,
         lifetime: lifetimePageviews,

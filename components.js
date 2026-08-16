@@ -1631,8 +1631,24 @@
     initCloudflareAnalytics();
     if (typeof window === 'undefined' || !window.location) return;
     var pathname = window.location.pathname || '/';
-    // Ignore all admin and editor routes
+
+    // 1. Ignore all admin, editor, and authentication routes
     if (pathname.startsWith('/admin') || pathname.includes('admin-login') || pathname.includes('admin-article-editor')) return;
+
+    // 2. Ignore bot/crawler environments
+    if (navigator.webdriver || window.callPhantom || window._phantom || /bot|crawler|spider|headless|lighthouse/i.test(navigator.userAgent || '')) return;
+
+    // 3. Ignore logged-in admins/editors so site management does not inflate traffic
+    try {
+      if (
+        localStorage.getItem('privatian_admin_session') ||
+        localStorage.getItem('supabase.auth.token') ||
+        localStorage.getItem('sb-aenhajqjsgskimfzvlfr-auth-token') ||
+        sessionStorage.getItem('privatian_admin_session')
+      ) {
+        return;
+      }
+    } catch(e) {}
 
     try {
       var fullPath = pathname + (window.location.search || '');
@@ -1642,8 +1658,8 @@
       if (lastTrackStr) {
         try {
           var lastObj = JSON.parse(lastTrackStr);
-          // If same path was tracked within last 2 seconds, ignore rapid duplicate click
-          if (lastObj && lastObj.p === fullPath && (nowTs - lastObj.t) < 2000) {
+          // If same path was tracked within last 20 seconds, ignore rapid duplicate click
+          if (lastObj && lastObj.p === fullPath && (nowTs - lastObj.t) < 20000) {
             return;
           }
         } catch(e) {}
