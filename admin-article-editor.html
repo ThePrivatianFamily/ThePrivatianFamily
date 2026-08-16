@@ -2117,6 +2117,23 @@ function saveCurrentLangToBuffer() {
   };
 }
 
+function lsSave() {
+  try {
+    saveCurrentLangToBuffer();
+    const data = {
+      id: ART_ID,
+      status: STATUS,
+      langData: _langData,
+      currentLang: _currentEditLang,
+      section: g('sec-lbl') ? g('sec-lbl').textContent.trim() : '',
+      slug: (g('tb-slug')?.value || '').trim(),
+      hero_img_url: _featImgUrl,
+      updated_at: Date.now()
+    };
+    localStorage.setItem('privatian_art_draft_' + (ART_ID || 'new'), JSON.stringify(data));
+  } catch(e) {}
+}
+
 let _articleDateObj = new Date();
 
 function toBnDigits(num) {
