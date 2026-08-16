@@ -432,10 +432,10 @@
 
       <!-- OR Divider -->
       <div class="auth-divider">
-        <span>or sign in with magic link</span>
+        <span>or sign in with Email Code (OTP)</span>
       </div>
 
-      <!-- Magic Link Form -->
+      <!-- OTP / Magic Link Form -->
       <form id="magic-link-form" class="magic-form" onsubmit="handleMagicLinkSubmit(event)" novalidate>
         <div class="input-group">
           <label for="magic-email" class="input-label">Authorized Email Address</label>
@@ -452,7 +452,7 @@
             <line x1="22" y1="2" x2="11" y2="13"/>
             <polygon points="22 2 15 22 11 13 2 9 22 2"/>
           </svg>
-          <span>Send Magic Link</span>
+          <span>Send Login Code (OTP)</span>
         </button>
       </form>
 
@@ -470,14 +470,14 @@
         </svg>
       </div>
       <h2 class="sent-title">Check Your Inbox</h2>
-      <p class="sent-desc">We sent a sign-in email to <strong id="sent-email-target"></strong>. You can click the link in your email or enter the 6-digit code below.</p>
+      <p class="sent-desc">We sent a 6-digit verification code to <strong id="sent-email-target"></strong>. Enter the code below to log in immediately.</p>
       
       <!-- Direct 6-Digit OTP Code Verification -->
-      <div style="margin: 18px 0 22px; padding: 18px 16px; background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 12px; text-align: left;">
+      <div style="margin: 18px 0 20px; padding: 18px 16px; background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 12px; text-align: left;">
         <label for="otp-code-input" style="display:block; font-size:12px; font-weight:700; color:#334155; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:8px;">Enter 6-Digit Email Code</label>
         <div style="display:flex; gap:8px;">
-          <input type="text" id="otp-code-input" maxlength="6" inputmode="numeric" pattern="[0-9]*" placeholder="123456" style="flex:1; height:44px; text-align:center; font-size:20px; font-weight:700; letter-spacing:6px; border:1.5px solid #cbd5e1; border-radius:10px; font-family:monospace; background:#fff; outline:none; color:#0f172a;" oninput="this.value = this.value.replace(/[^0-9]/g, '')" onkeyup="if(event.key === 'Enter') verifyOtpCode()" />
-          <button type="button" id="btn-verify-otp" onclick="verifyOtpCode()" style="height:44px; padding:0 18px; background:var(--blue); color:#fff; border:none; border-radius:10px; font-size:13.5px; font-weight:600; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; gap:6px; transition:all .2s; font-family:inherit;">
+          <input type="text" id="otp-code-input" maxlength="6" inputmode="numeric" pattern="[0-9]*" placeholder="••••••" style="flex:1; height:44px; text-align:center; font-size:22px; font-weight:700; letter-spacing:8px; border:1.5px solid #cbd5e1; border-radius:10px; font-family:monospace; background:#fff; outline:none; color:#0f172a; transition:border-color .2s;" onfocus="this.style.borderColor='var(--blue)'" onblur="this.style.borderColor='#cbd5e1'" oninput="this.value = this.value.replace(/[^0-9]/g, ''); if(this.value.length === 6) verifyOtpCode();" onkeyup="if(event.key === 'Enter') verifyOtpCode()" />
+          <button type="button" id="btn-verify-otp" onclick="verifyOtpCode()" style="height:44px; padding:0 20px; background:var(--blue); color:#fff; border:none; border-radius:10px; font-size:13.5px; font-weight:600; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; gap:6px; transition:all .2s; font-family:inherit;">
             <span>Verify & Log In</span>
           </button>
         </div>
@@ -485,11 +485,11 @@
 
       <div class="sent-info-box">
         <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-        <span>The link and OTP code are valid for 1 hour. If you do not see it, please check your spam or junk folder.</span>
+        <span>The 6-digit code is valid for 1 hour. If you do not see the email, please check your spam/junk folder.</span>
       </div>
 
       <div class="sent-actions">
-        <button type="button" class="btn-resend" id="resend-btn" onclick="resendMagicLink()">Resend Magic Link</button>
+        <button type="button" class="btn-resend" id="resend-btn" onclick="resendMagicLink()">Resend Code</button>
         <button type="button" class="btn-back" onclick="resetToLoginForm()">Use a different email or Google</button>
       </div>
     </div>
@@ -648,8 +648,8 @@
 
         if (otpError) {
           submitBtn.disabled = false;
-          submitBtn.innerHTML = '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg><span>Send Magic Link</span>';
-          showMsg('error', otpError.message || 'Unable to send magic link. Please try again.');
+          submitBtn.innerHTML = '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg><span>Send Login Code (OTP)</span>';
+          showMsg('error', otpError.message || 'Unable to send code. Please try again.');
           return;
         }
 
@@ -661,13 +661,19 @@
 
         // Reset submit button state for future
         submitBtn.disabled = false;
-        submitBtn.innerHTML = '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg><span>Send Magic Link</span>';
+        submitBtn.innerHTML = '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg><span>Send Login Code (OTP)</span>';
+
+        const otpInp = document.getElementById('otp-code-input');
+        if (otpInp) {
+          otpInp.value = '';
+          setTimeout(() => otpInp.focus(), 150);
+        }
 
         startResendCountdown();
 
       } catch(err) {
         submitBtn.disabled = false;
-        submitBtn.innerHTML = '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg><span>Send Magic Link</span>';
+        submitBtn.innerHTML = '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg><span>Send Login Code (OTP)</span>';
         showMsg('error', 'An unexpected error occurred. Please check your internet connection.');
       }
     }
@@ -676,7 +682,7 @@
       const resendBtn = document.getElementById('resend-btn');
       _resendCountdown = 45;
       resendBtn.disabled = true;
-      resendBtn.textContent = `Resend in ${_resendCountdown}s`;
+      resendBtn.textContent = `Resend code in ${_resendCountdown}s`;
 
       if (_resendTimer) clearInterval(_resendTimer);
       _resendTimer = setInterval(() => {
@@ -684,9 +690,9 @@
         if (_resendCountdown <= 0) {
           clearInterval(_resendTimer);
           resendBtn.disabled = false;
-          resendBtn.textContent = 'Resend Magic Link';
+          resendBtn.textContent = 'Resend Code';
         } else {
-          resendBtn.textContent = `Resend in ${_resendCountdown}s`;
+          resendBtn.textContent = `Resend code in ${_resendCountdown}s`;
         }
       }, 1000);
     }
@@ -710,16 +716,16 @@
         });
 
         if (error) {
-          alert('Failed to resend link: ' + error.message);
+          alert('Failed to resend code: ' + error.message);
           resendBtn.disabled = false;
-          resendBtn.textContent = 'Resend Magic Link';
+          resendBtn.textContent = 'Resend Code';
         } else {
           startResendCountdown();
         }
       } catch(e) {
-        alert('Network error while resending link.');
+        alert('Network error while resending code.');
         resendBtn.disabled = false;
-        resendBtn.textContent = 'Resend Magic Link';
+        resendBtn.textContent = 'Resend Code';
       }
     }
 
