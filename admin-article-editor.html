@@ -1396,12 +1396,6 @@ button, input, select, textarea, [contenteditable] {
       <span id="tb-art-id-txt" style="font-family:monospace;font-size:11px;">...</span>
       <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
     </div>
-    
-    <!-- Live Database Sync Badge -->
-    <div id="art-sync-status-wrap" class="ed-sync-badge synced" title="Click to test live database connection" onclick="verifyEditorDbSync(true)">
-      <span class="ft-pulse-dot" id="art-status-dot"></span>
-      <span id="art-sync-status">Saved</span>
-    </div>
 
     <div class="tb-vr"></div>
 
@@ -2214,39 +2208,21 @@ function loadBufferToInputs(lang) {
   const indDot = g('ed-lang-pill-dot');
   if (indDot) indDot.style.background = isBn ? '#16a34a' : '#0a528e';
 
-  // Slug Locking: URLs & slugs are unified in the backend and defined strictly in English
+  // Slug remains manual and unlocked in all languages
   const tbSlug = g('tb-slug');
   const sdSlug = g('sd-slug-input');
   const slugLockNote = g('sd-slug-lock-note');
-  if (isBn) {
-    if (tbSlug) {
-      tbSlug.readOnly = true;
-      tbSlug.style.opacity = '0.5';
-      tbSlug.style.cursor = 'not-allowed';
-      tbSlug.title = 'URL Slug is unified in backend and defined strictly in English';
-    }
-    if (sdSlug) {
-      sdSlug.readOnly = true;
-      sdSlug.style.opacity = '0.5';
-      sdSlug.style.cursor = 'not-allowed';
-      sdSlug.title = 'URL Slug is unified in backend and defined strictly in English';
-    }
-    if (slugLockNote) slugLockNote.style.display = 'block';
-  } else {
-    if (tbSlug) {
-      tbSlug.readOnly = false;
-      tbSlug.style.opacity = '1';
-      tbSlug.style.cursor = '';
-      tbSlug.title = 'Article URL Slug';
-    }
-    if (sdSlug) {
-      sdSlug.readOnly = false;
-      sdSlug.style.opacity = '1';
-      sdSlug.style.cursor = '';
-      sdSlug.title = 'Article URL Slug';
-    }
-    if (slugLockNote) slugLockNote.style.display = 'none';
+  if (tbSlug) {
+    tbSlug.readOnly = false;
+    tbSlug.style.opacity = '1';
+    tbSlug.style.cursor = '';
   }
+  if (sdSlug) {
+    sdSlug.readOnly = false;
+    sdSlug.style.opacity = '1';
+    sdSlug.style.cursor = '';
+  }
+  if (slugLockNote) slugLockNote.style.display = 'none';
 
   updateMetrics();
   setSaveStatus();
@@ -2304,8 +2280,17 @@ window.addEventListener('privatian:ready', () => {
 });
 
 function initEmpty() {
+  if (!ART_ID) {
+    ART_ID = (typeof crypto !== 'undefined' && crypto.randomUUID)
+      ? crypto.randomUUID()
+      : 'art_' + Date.now().toString(36) + '_' + Math.random().toString(36).substr(2, 9);
+    const u = new URL(location.href);
+    u.searchParams.set('id', ART_ID);
+    history.replaceState({}, '', u.toString());
+  }
   _articleDateObj = new Date();
   refreshArticleIdDisplay();
+  setSaveStatus('Draft saved');
 }
 
 function refreshArticleIdDisplay() {
@@ -2541,22 +2526,14 @@ function bindInput() {
 function onInput(ev) {
   DIRTY = true;
   saveCurrentLangToBuffer();
-
-  if (ev && ev.target && ev.target.id === 'ed-headline') {
-    const tbSlug = g('tb-slug');
-    if (tbSlug && tbSlug.dataset.manual !== 'true' && (!tbSlug.value || !ART_ID)) {
-      const auto = slugify(gt('ed-headline'));
-      syncSlug(auto, 'auto');
-    }
-  }
   updateMetrics();
   setSaveStatus('Unsaved changes');
 
-  // Automatic real-time draft save after typing (600ms debounce)
+  // Instant real-time auto-save on any change (400ms debounce)
   clearTimeout(_srvTimer);
   _srvTimer = setTimeout(() => {
     if (DIRTY) saveArt(true);
-  }, 600);
+  }, 400);
 }
 
 function slugify(text) {
@@ -2594,19 +2571,17 @@ async function saveArt(silent = false) {
   if (SAVING) return;
 
   saveCurrentLangToBuffer();
-  const hasContent = _langData.en.title || _langData.en.deck || _langData.en.content_html || _langData.en.author ||
-                     _langData.bn.title || _langData.bn.deck || _langData.bn.content_html || _langData.bn.author ||
-                     _featImgUrl;
-
-  if (!hasContent && !ART_ID) {
-    return; // User has not typed anything yet
+  
+  // Always guarantee Unique ID is set
+  if (!ART_ID) {
+    initEmpty();
   }
 
   SAVING = true;
   setSaveStatus('Saving…');
 
   const payload = buildPayload();
-  payload.is_draft = true; // Protects published articles from accidental live overwrite
+  payload.is_draft = true;
   payload.status = STATUS || 'draft';
   let savedData = null;
 
@@ -3909,37 +3884,26 @@ function refreshPubBtn() {
 }
 
 function updateEditorSyncStatus(state = 'synced', text = 'Draft saved') {
-  const wrap = g('art-sync-status-wrap');
-  const dot  = g('art-status-dot');
-  const txt  = g('art-sync-status');
-  if (wrap) wrap.className = 'ed-sync-badge ' + state;
-  if (dot)  dot.className  = 'ft-pulse-dot' + (state !== 'synced' ? ' ' + state : '');
-  if (txt)  txt.textContent = text;
-
   const tbDot = g('tb-save-status-dot');
   const tbTxt = g('tb-save-status-text');
-  const isBn = _currentEditLang === 'bn';
 
   if (tbDot && tbTxt) {
     if (state === 'syncing') {
       tbDot.style.background = '#38bdf8';
       tbDot.style.boxShadow = '0 0 0 3px rgba(56,189,248,0.35)';
-      tbTxt.textContent = isBn ? 'ড্রাফট সেভ হচ্ছে…' : 'Saving draft…';
+      tbTxt.textContent = 'Saving draft…';
     } else if (state === 'unsaved') {
       tbDot.style.background = '#f59e0b';
       tbDot.style.boxShadow = '0 0 0 3px rgba(245,158,11,0.25)';
-      tbTxt.textContent = isBn ? 'অসংরক্ষিত পরিবর্তন…' : 'Unsaved changes…';
+      tbTxt.textContent = 'Unsaved changes';
     } else if (state === 'synced') {
       tbDot.style.background = '#10b981';
       tbDot.style.boxShadow = '0 0 0 3px rgba(16,185,129,0.25)';
-      const msg = STATUS === 'published' 
-        ? (isBn ? 'ড্রাফট হিসেবে সংরক্ষিত' : 'Changes saved as draft')
-        : (isBn ? 'ড্রাফট সংরক্ষিত' : 'Draft saved');
-      tbTxt.textContent = msg;
+      tbTxt.textContent = STATUS === 'published' ? 'Changes saved as draft' : 'Draft saved';
     } else if (state === 'error') {
       tbDot.style.background = '#ef4444';
       tbDot.style.boxShadow = '0 0 0 3px rgba(239,68,68,0.25)';
-      tbTxt.textContent = isBn ? 'সেভ ব্যর্থ হয়েছে' : 'Save failed';
+      tbTxt.textContent = 'Save failed';
     }
   }
 }
