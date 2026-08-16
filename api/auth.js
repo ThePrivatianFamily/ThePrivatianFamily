@@ -157,7 +157,7 @@ module.exports = async function handler(req, res) {
       // Tier 2 (2nd request): 60s (1 minute)
       // Tier 3 (3rd request): 600s (10 minutes)
       // Tier 4 (4th request): 3600s (1 hour)
-      // Tier 5 (5th+ request): 86400s (24 hours - MAX limit)
+      // Tier 5 (5th+ request): 86400s (24 hours - Maximum Limit)
       const now = new Date();
       const { data: rateRow } = await sb
         .from('otp_rate_limits')
@@ -169,6 +169,8 @@ module.exports = async function handler(req, res) {
         const lockedUntil = new Date(rateRow.locked_until);
         if (lockedUntil > now) {
           const remainingSec = Math.ceil((lockedUntil.getTime() - now.getTime()) / 1000);
+          const currentAttempts = rateRow.attempts || 1;
+          
           let durationText = '';
           if (remainingSec >= 3600) {
             const h = Math.ceil(remainingSec / 3600);
@@ -180,12 +182,26 @@ module.exports = async function handler(req, res) {
             durationText = `${remainingSec} second${remainingSec !== 1 ? 's' : ''}`;
           }
 
+          let lockoutMsg = '';
+          if (currentAttempts <= 2) {
+            lockoutMsg = `A code was already sent to your email recently. Please enter the 6-digit code below, or wait ${durationText} before requesting another code.`;
+          } else if (currentAttempts === 3) {
+            lockoutMsg = `Too many OTP requests (Attempt 3/5). Please enter the 6-digit code already sent to your email, or wait ${durationText} for a new code.`;
+          } else if (currentAttempts === 4) {
+            lockoutMsg = `Security Cooldown (Attempt 4/5): 1-hour lockout active. Enter the code already in your inbox below, or wait ${durationText}.`;
+          } else {
+            lockoutMsg = `Maximum limit reached (Attempt 5/5): 24-hour security lockout active. You can still enter your already received 6-digit code below to log in.`;
+          }
+
           return res.status(429).json({
             allowed: false,
             rateLimited: true,
+            email: admin.email,
+            attempts: currentAttempts,
+            maxAttempts: 5,
             lockoutRemaining: remainingSec,
-            error: `Too many OTP requests. For security, please wait ${durationText} before requesting another code, or enter the 6-digit code already sent to your email.`,
-            email: admin.email
+            cooldownSeconds: remainingSec,
+            error: lockoutMsg
           });
         }
       }
@@ -203,11 +219,11 @@ module.exports = async function handler(req, res) {
       // Calculate cooldown seconds
       let cooldownSec = 60;
       if (attempts <= 2) {
-        cooldownSec = 60; // 1 min
+        cooldownSec = 60;    // 1 min
       } else if (attempts === 3) {
-        cooldownSec = 600; // 10 min
+        cooldownSec = 600;   // 10 min
       } else if (attempts === 4) {
-        cooldownSec = 3600; // 1 hour
+        cooldownSec = 3600;  // 1 hour
       } else {
         cooldownSec = 86400; // 24 hours MAX limit
       }
@@ -225,7 +241,8 @@ module.exports = async function handler(req, res) {
         email: admin.email,
         role: admin.role,
         cooldownSeconds: cooldownSec,
-        attempts: attempts
+        attempts: attempts,
+        maxAttempts: 5
       });
     } catch(e) {
       console.error('[auth/check-whitelist]', e.message);

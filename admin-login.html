@@ -39,7 +39,7 @@
       padding: 24px 16px;
     }
 
-    /* Decorative background blobs */
+    /* Decorative background blur */
     body::before, body::after {
       content: '';
       position: fixed;
@@ -62,7 +62,7 @@
     .login-card {
       background: #fff;
       border-radius: 20px;
-      padding: 44px 38px;
+      padding: 40px 36px;
       width: 100%;
       max-width: 440px;
       box-shadow: var(--shadow);
@@ -83,7 +83,7 @@
       align-items: center;
       justify-content: center;
       gap: 10px;
-      margin-bottom: 24px;
+      margin-bottom: 22px;
     }
 
     .login-logo-icon {
@@ -121,8 +121,40 @@
     .login-divider {
       width: 40px; height: 1px;
       background: var(--border);
-      margin: 0 auto 22px;
+      margin: 0 auto 20px;
     }
+
+    /* Error / info / warning messages with pure SVG icons (Universal position) */
+    .msg-box {
+      border-radius: 10px;
+      padding: 12px 14px;
+      font-size: 13px;
+      margin-bottom: 18px;
+      line-height: 1.5;
+      display: none;
+      text-align: left;
+      align-items: flex-start;
+      gap: 10px;
+      animation: fadeIn .2s ease;
+    }
+    .msg-box.visible { display: flex; }
+    .msg-box.error   { background: #fef2f2; border: 1px solid #fecaca; color: #b91c1c; }
+    .msg-box.warning { background: #fffbeb; border: 1px solid #fde68a; color: #b45309; }
+    .msg-box.info    { background: #eff6ff; border: 1px solid #bfdbfe; color: #1d4ed8; }
+    .msg-box.success { background: #f0fdf4; border: 1px solid #bbf7d0; color: #15803d; }
+
+    /* Loading spinner */
+    .spinner {
+      display: none;
+      width: 22px; height: 22px;
+      border: 2.5px solid rgba(10,82,142,.2);
+      border-top-color: var(--blue);
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+      margin: 12px auto;
+    }
+    .spinner.visible { display: block; }
+    @keyframes spin { to { transform: rotate(360deg); } }
 
     .login-heading {
       font-family: 'Libre Baskerville', serif;
@@ -135,7 +167,7 @@
     .login-sub {
       font-size: 13.5px;
       color: var(--muted);
-      margin-bottom: 24px;
+      margin-bottom: 22px;
       line-height: 1.55;
     }
 
@@ -257,49 +289,18 @@
       margin-top: 12px;
     }
 
-    /* Error / info / warning messages with SVG icons */
-    .msg-box {
-      border-radius: 10px;
-      padding: 12px 14px;
-      font-size: 13px;
-      margin-bottom: 18px;
-      line-height: 1.5;
-      display: none;
-      text-align: left;
-      align-items: flex-start;
-      gap: 10px;
-    }
-    .msg-box.visible { display: flex; }
-    .msg-box.error   { background: #fef2f2; border: 1px solid #fecaca; color: #b91c1c; }
-    .msg-box.warning { background: #fffbeb; border: 1px solid #fde68a; color: #b45309; }
-    .msg-box.info    { background: #eff6ff; border: 1px solid #bfdbfe; color: #1d4ed8; }
-    .msg-box.success { background: #f0fdf4; border: 1px solid #bbf7d0; color: #15803d; }
-
-    /* Loading spinner */
-    .spinner {
-      display: none;
-      width: 22px; height: 22px;
-      border: 2.5px solid rgba(10,82,142,.2);
-      border-top-color: var(--blue);
-      border-radius: 50%;
-      animation: spin .7s linear infinite;
-      margin: 12px auto;
-    }
-    .spinner.visible { display: block; }
-    @keyframes spin { to { transform: rotate(360deg); } }
-
-    /* Confirmation screen */
+    /* Confirmation & OTP view */
     .email-sent-card {
       text-align: center;
       animation: fadeIn .3s ease;
-      padding: 6px 0;
+      padding: 4px 0;
     }
     @keyframes fadeIn {
       from { opacity: 0; transform: scale(.98); }
       to   { opacity: 1; transform: scale(1); }
     }
     .sent-icon-wrap {
-      width: 58px; height: 58px;
+      width: 54px; height: 54px;
       border-radius: 50%;
       background: #eff6ff;
       border: 2px solid #bfdbfe;
@@ -307,19 +308,19 @@
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      margin-bottom: 16px;
+      margin-bottom: 14px;
     }
     .sent-title {
       font-family: 'Libre Baskerville', serif;
       font-size: 20px;
       color: var(--text);
-      margin-bottom: 10px;
+      margin-bottom: 8px;
     }
     .sent-desc {
       font-size: 13.5px;
       color: #4b5563;
-      line-height: 1.6;
-      margin-bottom: 18px;
+      line-height: 1.55;
+      margin-bottom: 16px;
     }
     .sent-desc strong {
       color: var(--blue);
@@ -329,8 +330,8 @@
 
     /* Modern 6-Slot Segmented OTP Input */
     .otp-card-inner {
-      margin: 18px 0 20px;
-      padding: 20px 18px;
+      margin: 14px 0 18px;
+      padding: 18px 16px;
       background: #f8fafc;
       border: 1.5px solid #e2e8f0;
       border-radius: 14px;
@@ -425,7 +426,7 @@
       align-items: flex-start;
       gap: 8px;
       text-align: left;
-      margin-bottom: 20px;
+      margin-bottom: 18px;
     }
     .sent-info-box svg {
       flex-shrink: 0;
@@ -474,7 +475,7 @@
     }
 
     .login-footer {
-      margin-top: 24px;
+      margin-top: 22px;
       font-size: 11.5px;
       color: #aaa;
     }
@@ -494,12 +495,14 @@
 
     <div class="login-divider"></div>
 
+    <!-- Universal Message Alert Box (Visible across both screens) -->
+    <div id="msg-box" class="msg-box"></div>
+    <div id="spinner" class="spinner"></div>
+
+    <!-- Main Sign In View -->
     <div id="auth-main-wrap">
       <h1 class="login-heading">Secure Sign In</h1>
       <p class="login-sub">Sign in with your whitelisted email or authorized Google account to access the administration portal.</p>
-
-      <div id="msg-box" class="msg-box"></div>
-      <div id="spinner" class="spinner"></div>
 
       <!-- Google Sign In Button -->
       <div class="google-btn-wrap">
@@ -554,13 +557,13 @@
     <!-- Email Sent & 6-Digit Segmented OTP Verification View -->
     <div id="email-sent-wrap" class="email-sent-card" style="display:none;">
       <div class="sent-icon-wrap">
-        <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M22 12h-6l-2 3h-4l-2-3H2"/>
           <path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/>
         </svg>
       </div>
       <h2 class="sent-title">Enter Verification Code</h2>
-      <p class="sent-desc">We sent a 6-digit OTP code to <strong id="sent-email-target"></strong>.</p>
+      <p class="sent-desc">OTP code destination: <strong id="sent-email-target"></strong></p>
       
       <!-- Modern 6-Slot Segmented OTP Form -->
       <div class="otp-card-inner">
@@ -580,7 +583,7 @@
 
       <div class="sent-info-box">
         <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-        <span>The 6-digit code is valid for 1 hour. If you don't see it, check your spam/junk folder.</span>
+        <span>The 6-digit code is valid for 1 hour. If you don't see it in your inbox, check your spam/junk folder.</span>
       </div>
 
       <div class="sent-actions">
@@ -639,7 +642,7 @@
         .trim();
 
       let resolvedType = type || 'info';
-      if (/expire|inactivity|warn|rate limit|wait|security/i.test(cleanText) && resolvedType === 'info') {
+      if (/expire|inactivity|warn|rate limit|wait|security|lockout|attempt/i.test(cleanText) && resolvedType === 'info') {
         resolvedType = 'warning';
       }
 
@@ -690,7 +693,7 @@
       if (!err) return 'An unexpected error occurred. Please try again.';
       const msg = typeof err === 'string' ? err : err.message || '';
       if (/rate limit|over_email_send_rate_limit|security purposes|too many requests|seconds/i.test(msg)) {
-        return 'For security, please wait 1 minute before requesting another OTP code, or enter the 6-digit code already sent to your email.';
+        return 'A code was already sent recently. Please enter the 6-digit code below, or wait for the cooldown timer to request a new one.';
       }
       if (/invalid.*code|token.*expired|otp.*expired|invalid.*token/i.test(msg)) {
         return 'The 6-digit OTP code is incorrect or expired. Please check your inbox and try again.';
@@ -873,10 +876,19 @@
 
         const checkData = await checkRes.json();
 
+        // If rate limited, transition IMMEDIATELY to OTP screen so user can enter the already sent code
         if (checkRes.status === 429 || checkData.rateLimited) {
           submitBtn.disabled = false;
           submitBtn.innerHTML = '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg><span>Send 6-Digit Code (OTP)</span>';
+          
+          _lastSentEmail = checkData.email || email;
+          document.getElementById('sent-email-target').textContent = _lastSentEmail;
+          document.getElementById('auth-main-wrap').style.display = 'none';
+          document.getElementById('email-sent-wrap').style.display = 'block';
+
           showMsg('warning', checkData.error);
+          clearOtpSlots();
+          startResendCountdown(checkData.lockoutRemaining || checkData.cooldownSeconds || 60);
           return;
         }
 
@@ -905,7 +917,15 @@
         if (otpError) {
           submitBtn.disabled = false;
           submitBtn.innerHTML = '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg><span>Send 6-Digit Code (OTP)</span>';
+          
+          _lastSentEmail = checkData.email || email;
+          document.getElementById('sent-email-target').textContent = _lastSentEmail;
+          document.getElementById('auth-main-wrap').style.display = 'none';
+          document.getElementById('email-sent-wrap').style.display = 'block';
+
           showMsg('warning', formatSupabaseError(otpError));
+          clearOtpSlots();
+          startResendCountdown(checkData.cooldownSeconds || 60);
           return;
         }
 
