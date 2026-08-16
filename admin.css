@@ -5529,4 +5529,56 @@ body.modal-open {
   }
 }
 
+/* ==========================================================================
+   ADMIN SETTINGS & EMAIL STUDIO
+   ========================================================================== */
+.settings-tab-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary, #475569);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.settings-tab-btn:hover {
+  background: #f1f5f9;
+  color: var(--text-primary, #0f172a);
+}
+.settings-tab-btn.active {
+  background: #eff6ff;
+  color: var(--brand-navy, #0a528e);
+  border-color: #bfdbfe;
+}
+.tag-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: all 0.15s;
+}
+.tag-chip:hover {
+  background: #f1f5f9;
+  border-color: #94a3b8;
+}
+.tag-chip code {
+  color: #2563eb;
+  font-weight: 700;
+}
+@media (max-width: 1024px) {
+  .settings-studio-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
 
