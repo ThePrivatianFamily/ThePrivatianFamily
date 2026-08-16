@@ -1603,7 +1603,7 @@ async function initDashboardPage(forceRefresh = false) {
   if (refreshBtn) refreshBtn.disabled = true;
 
   try {
-    const res = await authFetch('/api/sections?action=dashboard_stats');
+    const res = await fetch('/api/sections?action=dashboard_stats', { headers: _authHeaders() });
     if (res.ok) {
       const data = await res.json();
       if (data && data.ok) {
