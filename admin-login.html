@@ -470,11 +470,22 @@
         </svg>
       </div>
       <h2 class="sent-title">Check Your Inbox</h2>
-      <p class="sent-desc">We sent a secure sign-in link to <strong id="sent-email-target"></strong>. Click the link in the email to log in instantly.</p>
+      <p class="sent-desc">We sent a sign-in email to <strong id="sent-email-target"></strong>. You can click the link in your email or enter the 6-digit code below.</p>
       
+      <!-- Direct 6-Digit OTP Code Verification -->
+      <div style="margin: 18px 0 22px; padding: 18px 16px; background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 12px; text-align: left;">
+        <label for="otp-code-input" style="display:block; font-size:12px; font-weight:700; color:#334155; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:8px;">Enter 6-Digit Email Code</label>
+        <div style="display:flex; gap:8px;">
+          <input type="text" id="otp-code-input" maxlength="6" inputmode="numeric" pattern="[0-9]*" placeholder="123456" style="flex:1; height:44px; text-align:center; font-size:20px; font-weight:700; letter-spacing:6px; border:1.5px solid #cbd5e1; border-radius:10px; font-family:monospace; background:#fff; outline:none; color:#0f172a;" oninput="this.value = this.value.replace(/[^0-9]/g, '')" onkeyup="if(event.key === 'Enter') verifyOtpCode()" />
+          <button type="button" id="btn-verify-otp" onclick="verifyOtpCode()" style="height:44px; padding:0 18px; background:var(--blue); color:#fff; border:none; border-radius:10px; font-size:13.5px; font-weight:600; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; gap:6px; transition:all .2s; font-family:inherit;">
+            <span>Verify & Log In</span>
+          </button>
+        </div>
+      </div>
+
       <div class="sent-info-box">
         <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-        <span>The link is valid for 1 hour. If you do not see it in your inbox, please check your spam or junk folder.</span>
+        <span>The link and OTP code are valid for 1 hour. If you do not see it, please check your spam or junk folder.</span>
       </div>
 
       <div class="sent-actions">
@@ -709,6 +720,91 @@
         alert('Network error while resending link.');
         resendBtn.disabled = false;
         resendBtn.textContent = 'Resend Magic Link';
+      }
+    }
+
+    async function verifyOtpCode() {
+      const otpInput = document.getElementById('otp-code-input');
+      const verifyBtn = document.getElementById('btn-verify-otp');
+      const code = (otpInput ? otpInput.value : '').trim();
+
+      if (!code || code.length < 6) {
+        showMsg('error', 'Please enter the 6-digit code sent to your email.');
+        if (otpInput) otpInput.focus();
+        return;
+      }
+
+      if (!_lastSentEmail) {
+        showMsg('error', 'Email address missing. Please request a new link.');
+        return;
+      }
+
+      hideMsg();
+      if (verifyBtn) {
+        verifyBtn.disabled = true;
+        verifyBtn.innerHTML = '<span class="spinner visible" style="width:14px;height:14px;margin:0;display:inline-block;border-width:2px;"></span> <span>Verifying...</span>';
+      }
+
+      try {
+        const sb = getSupabaseClient();
+        if (!sb) throw new Error('Supabase client unavailable');
+
+        // Attempt verify as email OTP
+        let { data, error } = await sb.auth.verifyOtp({
+          email: _lastSentEmail,
+          token: code,
+          type: 'email'
+        });
+
+        // Fallback attempt as magiclink type if needed
+        if (error || !data || !data.session) {
+          const res2 = await sb.auth.verifyOtp({
+            email: _lastSentEmail,
+            token: code,
+            type: 'magiclink'
+          });
+          if (!res2.error && res2.data && res2.data.session) {
+            data = res2.data;
+            error = null;
+          }
+        }
+
+        if (error || !data || !data.session || !data.session.access_token) {
+          if (verifyBtn) {
+            verifyBtn.disabled = false;
+            verifyBtn.innerHTML = '<span>Verify & Log In</span>';
+          }
+          showMsg('error', (error && error.message) || 'Invalid or expired 6-digit code. Please try again.');
+          return;
+        }
+
+        // Backend Whitelist Verification & 24h JWT issuance
+        showMsg('info', 'Code verified! Logging you in...');
+        const verifyRes = await fetch('/api/auth?action=verify-magic-link', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ access_token: data.session.access_token })
+        });
+
+        const verifyData = await verifyRes.json();
+        if (verifyRes.ok && verifyData.success && verifyData.token) {
+          localStorage.setItem(TOKEN_KEY, verifyData.token);
+          showMsg('success', 'Access granted! Welcome to the Admin Panel. Redirecting...');
+          setTimeout(function() { window.location.replace('/admin.html'); }, 500);
+        } else {
+          if (verifyBtn) {
+            verifyBtn.disabled = false;
+            verifyBtn.innerHTML = '<span>Verify & Log In</span>';
+          }
+          showMsg('error', verifyData.error || 'Authorization failed. This email is not authorized.');
+        }
+
+      } catch(e) {
+        if (verifyBtn) {
+          verifyBtn.disabled = false;
+          verifyBtn.innerHTML = '<span>Verify & Log In</span>';
+        }
+        showMsg('error', 'Error verifying code: ' + (e.message || 'Please try again.'));
       }
     }
 
