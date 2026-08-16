@@ -3,6 +3,25 @@ const fs = require('fs');
 const path = require('path');
 const url = require('url');
 
+// Simple .env parser
+['.env.production.local', '.env.local', '.env'].forEach(filename => {
+  const p = path.join(__dirname, filename);
+  if (fs.existsSync(p)) {
+    const content = fs.readFileSync(p, 'utf8');
+    content.split('\n').forEach(line => {
+      const trimmed = line.trim();
+      if (!trimmed || trimmed.startsWith('#')) return;
+      const eqIdx = trimmed.indexOf('=');
+      if (eqIdx !== -1) {
+        const key = trimmed.slice(0, eqIdx).trim();
+        let val = trimmed.slice(eqIdx + 1).trim();
+        if (val.startsWith('"') && val.endsWith('"')) val = val.slice(1, -1);
+        if (!process.env[key]) process.env[key] = val;
+      }
+    });
+  }
+});
+
 const PORT = 3000;
 const MIME_TYPES = {
   '.html': 'text/html; charset=utf-8',

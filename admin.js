@@ -9667,6 +9667,7 @@ var _galleryActiveFolder = 'all'; // 'all', '__root__', or folder name e.g. 'Art
 var _galleryTargetUploadFolder = '';
 var _galleryFilter = 'all';
 var _gallerySort = 'newest';
+var _galleryProviderFilter = 'all';
 var _gallerySearchQuery = '';
 var _galleryCurrentInspectorItem = null;
 var _galleryPickerCallback = null;
@@ -10150,8 +10151,15 @@ function _updateGalleryCounts(apiStorage = null, syncStatus = null) {
   const quotaFill = document.getElementById('gallery-quota-fill');
   const quotaPercentText = document.getElementById('gallery-quota-percent-text');
 
+  // Dual Quota elements
+  const r2QuotaStats = document.getElementById('gallery-r2-quota-stats');
+  const r2QuotaFill = document.getElementById('gallery-r2-quota-fill');
+  const b2QuotaStats = document.getElementById('gallery-b2-quota-stats');
+  const b2QuotaFill = document.getElementById('gallery-b2-quota-fill');
+
   // Sync badges
   const r2SyncText = document.getElementById('gallery-sync-r2-text');
+  const b2SyncText = document.getElementById('gallery-sync-b2-text');
   const dbSyncText = document.getElementById('gallery-sync-db-text');
 
   // Separate active and trash
@@ -10164,24 +10172,39 @@ function _updateGalleryCounts(apiStorage = null, syncStatus = null) {
 
   const photos = activeItems.filter(x => !x.mime_type?.includes('svg') && !x.filename?.toLowerCase().endsWith('.svg')).length;
   const svgs = activeItems.filter(x => x.mime_type?.includes('svg') || x.filename?.toLowerCase().endsWith('.svg')).length;
-  const totalBytes = apiStorage?.totalBytes ?? _rawGalleryList.reduce((acc, cur) => acc + (cur.file_size || 0), 0);
+
+  // Provider breakdown
+  const r2Items = _rawGalleryList.filter(x => x.provider === 'r2' || (!x.provider && !x.url?.includes('backblazeb2')));
+  const b2Items = _rawGalleryList.filter(x => x.provider === 'b2' || x.url?.includes('backblazeb2'));
+
+  const r2UsedBytes = apiStorage?.r2?.usedBytes ?? r2Items.reduce((acc, cur) => acc + (cur.file_size || 0), 0);
+  const b2UsedBytes = apiStorage?.b2?.usedBytes ?? b2Items.reduce((acc, cur) => acc + (cur.file_size || 0), 0);
+
+  const SINGLE_QUOTA_BYTES = 10 * 1024 * 1024 * 1024; // 10 GB
+  const TOTAL_QUOTA_BYTES = 20 * 1024 * 1024 * 1024;  // 20 GB
+
+  const totalBytes = apiStorage?.totalBytes ?? (r2UsedBytes + b2UsedBytes);
   const activeBytes = apiStorage?.activeBytes ?? activeItems.reduce((acc, cur) => acc + (cur.file_size || 0), 0);
 
-  // Cloudflare R2 standard free tier capacity: 10 GB (10,737,418,240 bytes)
-  const R2_CAPACITY_BYTES = 10 * 1024 * 1024 * 1024;
-  const freeBytes = Math.max(0, R2_CAPACITY_BYTES - totalBytes);
-  const usedPct = (totalBytes / R2_CAPACITY_BYTES) * 100;
+  const freeBytes = Math.max(0, TOTAL_QUOTA_BYTES - totalBytes);
+  const usedPct = (totalBytes / TOTAL_QUOTA_BYTES) * 100;
   const freePct = Math.max(0, 100 - usedPct);
+
+  const r2UsedPct = (r2UsedBytes / SINGLE_QUOTA_BYTES) * 100;
+  const b2UsedPct = (b2UsedBytes / SINGLE_QUOTA_BYTES) * 100;
 
   const avgBytes = activeCount > 0 ? Math.round(activeBytes / activeCount) : 0;
   const largestBytes = apiStorage?.largestFileSize ?? activeItems.reduce((max, cur) => Math.max(max, cur.file_size || 0), 0);
 
   // 1. Sync Status Badges
   if (r2SyncText) {
-    r2SyncText.textContent = `Synced with Cloudflare R2 (${total} ${total === 1 ? 'file' : 'files'} • ${_formatFileSize(totalBytes)})`;
+    r2SyncText.textContent = `Cloudflare R2 (${r2Items.length} files • ${_formatFileSize(r2UsedBytes)})`;
+  }
+  if (b2SyncText) {
+    b2SyncText.textContent = `Backblaze B2 (${b2Items.length} files • ${_formatFileSize(b2UsedBytes)})`;
   }
   if (dbSyncText) {
-    dbSyncText.textContent = `Synced with Database (${_galleryFolders.length} Folders)`;
+    dbSyncText.textContent = `Database Synced (${_galleryFolders.length} Folders)`;
   }
 
   // 2. Filter Tabs
@@ -10192,32 +10215,48 @@ function _updateGalleryCounts(apiStorage = null, syncStatus = null) {
 
   // 3. KPI Cards
   if (statTotalCount) statTotalCount.textContent = activeCount;
-  if (statBreakdown) statBreakdown.textContent = `${photos} ${photos === 1 ? 'Photo' : 'Photos'} • ${svgs} ${svgs === 1 ? 'SVG' : 'SVGs'}${trashCount > 0 ? ` • ${trashCount} in Trash` : ''}`;
+  if (statBreakdown) statBreakdown.textContent = `${photos} Photos • ${svgs} SVGs • ${r2Items.length} R2 / ${b2Items.length} B2`;
   if (statStorageUsed) statStorageUsed.textContent = _formatFileSize(totalBytes);
   if (statUsedPct) {
     const pctStr = usedPct < 0.01 && totalBytes > 0 ? '< 0.01%' : (usedPct.toFixed(2) + '%');
-    statUsedPct.textContent = `${pctStr} of 10 GB Free Tier`;
+    statUsedPct.textContent = `${pctStr} of 20 GB Total Free Tier`;
   }
   if (statStorageFree) statStorageFree.textContent = _formatFileSize(freeBytes);
   if (statFreePct) statFreePct.textContent = `${freePct.toFixed(1)}% capacity available`;
   if (statAvgSize) statAvgSize.textContent = activeCount > 0 ? _formatFileSize(avgBytes) : '0 B';
   if (statLargest) statLargest.textContent = largestBytes > 0 ? (`Max: ${_formatFileSize(largestBytes)}`) : 'Max: 0 B';
 
-  // 4. Visual Quota Bar
-  if (quotaUsedText) quotaUsedText.textContent = `${_formatFileSize(totalBytes)} / 10.00 GB`;
-  if (quotaFreeText) quotaFreeText.textContent = `${_formatFileSize(freeBytes)} Free`;
+  // 4. Quota Bars
+  if (quotaUsedText) quotaUsedText.textContent = `${_formatFileSize(totalBytes)} / 20.00 GB`;
+  if (quotaFreeText) quotaFreeText.textContent = `${_formatFileSize(freeBytes)} Available`;
   if (quotaFill) {
     const fillWidth = Math.min(100, Math.max(totalBytes > 0 ? 0.8 : 0.2, usedPct));
     quotaFill.style.width = fillWidth.toFixed(2) + '%';
   }
   if (quotaPercentText) {
     const pctDisplay = usedPct < 0.01 && totalBytes > 0 ? '< 0.01%' : (usedPct.toFixed(2) + '%');
-    quotaPercentText.textContent = `${pctDisplay} capacity used`;
+    quotaPercentText.textContent = `${pctDisplay} total capacity used`;
+  }
+
+  // Provider 1: R2 Quota Progress
+  if (r2QuotaStats) {
+    r2QuotaStats.textContent = `${_formatFileSize(r2UsedBytes)} / 10.00 GB (${r2UsedPct < 0.01 && r2UsedBytes > 0 ? '< 0.01%' : r2UsedPct.toFixed(2) + '%'} used)`;
+  }
+  if (r2QuotaFill) {
+    r2QuotaFill.style.width = Math.min(100, Math.max(r2UsedBytes > 0 ? 0.8 : 0.2, r2UsedPct)).toFixed(2) + '%';
+  }
+
+  // Provider 2: B2 Quota Progress
+  if (b2QuotaStats) {
+    b2QuotaStats.textContent = `${_formatFileSize(b2UsedBytes)} / 10.00 GB (${b2UsedPct < 0.01 && b2UsedBytes > 0 ? '< 0.01%' : b2UsedPct.toFixed(2) + '%'} used)`;
+  }
+  if (b2QuotaFill) {
+    b2QuotaFill.style.width = Math.min(100, Math.max(b2UsedBytes > 0 ? 0.8 : 0.2, b2UsedPct)).toFixed(2) + '%';
   }
 
   // 5. Footer Bar Summary
   if (footerText) {
-    footerText.textContent = `${activeCount} active items (${_formatFileSize(activeBytes)}) • ${trashCount} in trash (${_formatFileSize(totalBytes - activeBytes)}) • ${_formatFileSize(freeBytes)} free capacity remaining`;
+    footerText.textContent = `${activeCount} active items (${_formatFileSize(activeBytes)}) across R2 & B2 • ${trashCount} in trash • ${_formatFileSize(freeBytes)} free capacity remaining`;
   }
 }
 
@@ -10247,6 +10286,13 @@ function renderGalleryGrid() {
   } else {
     filtered = _rawGalleryList.filter(x => !x.is_deleted);
 
+    // Filter by storage provider
+    if (_galleryProviderFilter === 'r2') {
+      filtered = filtered.filter(x => x.provider === 'r2' || (!x.provider && !x.url?.includes('backblazeb2')));
+    } else if (_galleryProviderFilter === 'b2') {
+      filtered = filtered.filter(x => x.provider === 'b2' || x.url?.includes('backblazeb2'));
+    }
+
     // Filter by media type
     if (_galleryFilter === 'photos') {
       filtered = filtered.filter(x => !x.mime_type?.includes('svg') && !x.filename?.toLowerCase().endsWith('.svg'));
@@ -10270,6 +10316,7 @@ function renderGalleryGrid() {
       (x.unique_id && x.unique_id.toLowerCase().includes(q)) ||
       (x.title && x.title.toLowerCase().includes(q)) ||
       (x.folder && x.folder.toLowerCase().includes(q)) ||
+      (x.provider && x.provider.toLowerCase().includes(q)) ||
       (x.alt_text && x.alt_text.toLowerCase().includes(q)) ||
       (x.alt_text_bn && x.alt_text_bn.toLowerCase().includes(q)) ||
       (Array.isArray(x.tags) && x.tags.some(t => t.toLowerCase().includes(q)))
@@ -10307,7 +10354,7 @@ function renderGalleryGrid() {
             <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
           </div>
           <h3 style="margin:0;font-size:15px;color:var(--text-primary);">${_gallerySearchQuery ? 'No matching images found' : (_galleryActiveFolder !== 'all' ? `No images in "${_galleryActiveFolder}" folder` : 'No images uploaded yet')}</h3>
-          <p style="margin:0;font-size:12.5px;color:var(--text-muted);max-width:360px;">${_gallerySearchQuery ? 'Try searching for a different keyword or filename.' : 'Drag & drop images into the upload area above to store them in Cloudflare R2.'}</p>
+          <p style="margin:0;font-size:12.5px;color:var(--text-muted);max-width:360px;">${_gallerySearchQuery ? 'Try searching for a different keyword, filename, or storage provider.' : 'Drag & drop images into the upload area or click Upload Media to store in Cloudflare R2 or Backblaze B2.'}</p>
           ${!_gallerySearchQuery ? `<button class="btn btn--primary btn--sm" onclick="openGalleryUniversalUpload()" style="margin-top:4px;">Upload to this folder</button>` : ''}
         </div>
       `;
@@ -10319,13 +10366,18 @@ function renderGalleryGrid() {
     const ext = (item.filename && item.filename.split('.').pop()) || (item.mime_type ? item.mime_type.split('/').pop() : 'IMG');
     const sizeStr = _formatFileSize(item.file_size);
     const dateStr = _formatShortDate(item.created_at);
+    const provider = item.provider || (item.url?.includes('backblazeb2') ? 'b2' : 'r2');
+    const provBadge = provider === 'b2'
+      ? `<span class="gallery-badge-provider b2" title="Hosted on Backblaze B2 (10 GB Free)">B2</span>`
+      : `<span class="gallery-badge-provider r2" title="Hosted on Cloudflare R2 (10 GB Free)">R2</span>`;
 
     return `
       <div class="gallery-item-card ${item.is_deleted ? 'gallery-item-card--trashed' : ''}" data-id="${item.unique_id}">
         <div class="gallery-thumb-wrap" onclick="openMediaInspector('${item.unique_id}')" title="Click to inspect asset details">
-          <img src="${escapeHtml(item.url)}" alt="${escapeHtml(item.alt_text || item.title || item.filename)}" class="gallery-thumb-img" loading="lazy" decoding="async" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\\'http://www.w3.org/2000/svg\\' width=\\'100\\' height=\\'100\\' viewBox=\\'0 0 24 24\\' fill=\\'none\\' stroke=\\'%2364748b\\' stroke-width=\\'2\\'><rect x=\\'3\\' y=\\'3\\' width=\\'18\\' height=\\'18\\' rx=\\'2\\'/><circle cx=\\'8.5\\' cy=\\'8.5\\' r=\\'1.5\\'/><polyline points=\\'21 15 16 10 5 21\\'/></svg>'" />
+          <img src="${escapeHtml(item.url)}" alt="${escapeHtml(item.alt_text || item.title || item.filename)}" class="gallery-thumb-img" loading="lazy" decoding="async" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'100\' height=\'100\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'%2364748b\' stroke-width=\'2\'><rect x=\'3\' y=\'3\' width=\'18\' height=\'18\' rx=\'2\'/><circle cx=\'8.5\' cy=\'8.5\' r=\'1.5\'/><polyline points=\'21 15 16 10 5 21\'/></svg>'" />
           <span class="gallery-badge-format">${escapeHtml(ext.toUpperCase())}</span>
           <span class="gallery-badge-size">${sizeStr}</span>
+          ${provBadge}
           ${item.is_deleted ? `<span class="gallery-card-trash-badge" title="Trashed"><svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:2px;"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg>In Trash</span>` : (item.folder ? `<span class="gallery-card-folder-badge" title="Folder: ${escapeHtml(item.folder)}"><svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:3px;"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>${escapeHtml(item.folder)}</span>` : '')}
         </div>
         <div class="gallery-card-body">
@@ -10343,7 +10395,7 @@ function renderGalleryGrid() {
                 <button type="button" class="gallery-icon-btn success" onclick="_restoreAsset('${item.unique_id}')" title="Restore asset to gallery">
                   <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
                 </button>
-                <button type="button" class="gallery-icon-btn danger" onclick="_deletePermanentConfirm('${item.unique_id}', '${escapeHtml(item.filename || item.unique_id)}')" title="Permanently delete from Cloudflare R2">
+                <button type="button" class="gallery-icon-btn danger" onclick="_deletePermanentConfirm('${item.unique_id}', '${escapeHtml(item.filename || item.unique_id)}')" title="Permanently delete from cloud storage">
                   <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
                 </button>
               ` : `
@@ -10351,7 +10403,7 @@ function renderGalleryGrid() {
                   <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
                 </button>
                 <button type="button" class="gallery-icon-btn" onclick="openMediaInspector('${item.unique_id}')" title="Inspect &amp; Edit Metadata">
-                  <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                  <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
                 </button>
                 <button type="button" class="gallery-icon-btn danger" onclick="_trashAssetConfirm('${item.unique_id}', '${escapeHtml(item.filename || item.unique_id)}')" title="Move Asset to Trash">
                   <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
@@ -10497,6 +10549,12 @@ function _readFileAsBase64(file) {
 }
 
 // ── 6. Toolbar Handlers ──────────────────────────────────────────
+function _handleGalleryProviderFilter(val) {
+  _galleryProviderFilter = val || 'all';
+  renderGalleryGrid();
+}
+window._handleGalleryProviderFilter = _handleGalleryProviderFilter;
+
 function _setGalleryFilter(filter) {
   _galleryFilter = filter;
   document.querySelectorAll('.gallery-tab-pill').forEach(btn => {
@@ -10574,6 +10632,10 @@ function openMediaInspector(uniqueId) {
   const altBnInp = document.getElementById('media-insp-alt-bn-input');
   const currIdInp = document.getElementById('media-insp-current-id');
 
+  const subEl = document.getElementById('media-insp-meta-sub');
+  const provEl = document.getElementById('media-insp-provider');
+  const provider = item.provider || (item.url?.includes('backblazeb2') ? 'b2' : 'r2');
+
   if (imgEl) imgEl.src = item.url;
   if (filenameEl) filenameEl.textContent = item.filename || item.unique_id;
   const ext = (item.filename && item.filename.split('.').pop()) || 'IMG';
@@ -10587,6 +10649,15 @@ function openMediaInspector(uniqueId) {
   if (altInp) altInp.value = item.alt_text || '';
   if (altBnInp) altBnInp.value = item.alt_text_bn || '';
   if (currIdInp) currIdInp.value = item.unique_id;
+
+  if (subEl) {
+    subEl.textContent = provider === 'b2' ? 'Backblaze B2 Cloud Asset' : 'Cloudflare R2 Cloud Asset';
+  }
+  if (provEl) {
+    provEl.innerHTML = provider === 'b2'
+      ? '<span style="color:#e11d48;font-weight:800;">🔴 Backblaze B2 (10 GB)</span>'
+      : '<span style="color:#ea580c;font-weight:800;">🟠 Cloudflare R2 (10 GB)</span>';
+  }
 
   // Inspector footer action buttons depending on trash state
   const footerEl = modal.querySelector('.modal-footer');

@@ -529,32 +529,47 @@ module.exports = async function handler(req, res) {
     let svgsCount = 0;
 
     try {
-      const R2_ACCOUNT_ID = process.env.R2_ACCOUNT_ID || '44fa7e7d93ed3ba71fdc0ce85e2dd0ed';
-      const R2_BUCKET_NAME = process.env.R2_BUCKET_NAME || 'theprivatianfamily';
-      const R2_ACCESS_KEY_ID = process.env.R2_ACCESS_KEY_ID || '51b83c34bbe3d11ceabd3effda70ad02';
-      const R2_SECRET_ACCESS_KEY = process.env.R2_SECRET_ACCESS_KEY || '9f4544f5357f1ebd2c2a4860c8fb1100b59ef2e851ba424d3b4ff9db501a08ec';
-      const R2_ENDPOINT = process.env.R2_ENDPOINT || `https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com`;
-
       const { S3Client, ListObjectsV2Command } = require('@aws-sdk/client-s3');
+      
       const r2 = new S3Client({
         region: 'auto',
-        endpoint: R2_ENDPOINT,
+        endpoint: process.env.R2_ENDPOINT || 'https://44fa7e7d93ed3ba71fdc0ce85e2dd0ed.r2.cloudflarestorage.com',
         credentials: {
-          accessKeyId: R2_ACCESS_KEY_ID,
-          secretAccessKey: R2_SECRET_ACCESS_KEY,
+          accessKeyId: process.env.R2_ACCESS_KEY_ID || '51b83c34bbe3d11ceabd3effda70ad02',
+          secretAccessKey: process.env.R2_SECRET_ACCESS_KEY || '9f4544f5357f1ebd2c2a4860c8fb1100b59ef2e851ba424d3b4ff9db501a08ec',
         },
       });
 
-      const r2Res = await r2.send(new ListObjectsV2Command({ Bucket: R2_BUCKET_NAME }));
-      if (r2Res && r2Res.Contents && Array.isArray(r2Res.Contents)) {
-        const files = r2Res.Contents.filter(o => !o.Key.endsWith('/'));
-        totalMediaFiles = files.length;
-        totalMediaBytes = files.reduce((acc, o) => acc + (o.Size || 0), 0);
-        svgsCount = files.filter(o => o.Key.toLowerCase().endsWith('.svg')).length;
+      const b2 = new S3Client({
+        region: process.env.B2_REGION || 'eu-central-003',
+        endpoint: process.env.B2_ENDPOINT || 'https://s3.eu-central-003.backblazeb2.com',
+        credentials: {
+          accessKeyId: process.env.B2_KEY_ID || '003bacfa081e2ae0000000001',
+          secretAccessKey: process.env.B2_APPLICATION_KEY || 'K003lV8zhvkGSz6s6rt4MjoNPt2aAMQ',
+        },
+      });
+
+      const [r2Res, b2Res] = await Promise.allSettled([
+        r2.send(new ListObjectsV2Command({ Bucket: process.env.R2_BUCKET_NAME || 'theprivatianfamily' })),
+        b2.send(new ListObjectsV2Command({ Bucket: process.env.B2_BUCKET_NAME || 'ThePrivatianFamily' }))
+      ]);
+
+      let allFiles = [];
+      if (r2Res.status === 'fulfilled' && r2Res.value && Array.isArray(r2Res.value.Contents)) {
+        allFiles.push(...r2Res.value.Contents.filter(o => !o.Key.endsWith('/')));
+      }
+      if (b2Res.status === 'fulfilled' && b2Res.value && Array.isArray(b2Res.value.Contents)) {
+        allFiles.push(...b2Res.value.Contents.filter(o => !o.Key.endsWith('/')));
+      }
+
+      if (allFiles.length > 0) {
+        totalMediaFiles = allFiles.length;
+        totalMediaBytes = allFiles.reduce((acc, o) => acc + (o.Size || 0), 0);
+        svgsCount = allFiles.filter(o => o.Key.toLowerCase().endsWith('.svg')).length;
         photosCount = totalMediaFiles - svgsCount;
       }
-    } catch(r2Err) {
-      console.warn('[Dashboard stats R2 query error]:', r2Err.message);
+    } catch(err) {
+      console.warn('[Dashboard stats dual storage query error]:', err.message);
     }
 
     // Fallback or addition if Supabase store has items

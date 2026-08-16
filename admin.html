@@ -1779,6 +1779,59 @@
         </div>
 
       </div>
+
+      <!-- Storage Infrastructure & Provider Status Card -->
+      <div class="card" style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:20px;margin-top:24px;box-shadow:0 1px 3px rgba(0,0,0,0.03);">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:10px;">
+          <div>
+            <h3 style="font-size:15px;font-weight:700;color:var(--text-primary);margin:0 0 3px;display:flex;align-items:center;gap:8px;">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#0a528e" stroke-width="2"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/></svg>
+              <span>Dual-Cloud Storage Infrastructure (20 GB Total Capacity)</span>
+            </h3>
+            <p style="font-size:12.5px;color:var(--text-muted);margin:0;">Multi-cloud redundant storage architecture powering high-speed global media asset delivery.</p>
+          </div>
+          <span style="font-size:11px;font-weight:800;background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0;padding:4px 10px;border-radius:20px;display:inline-flex;align-items:center;gap:5px;">
+            <span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#16a34a;"></span>
+            Both Providers Active
+          </span>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+          <!-- Provider 1: Cloudflare R2 -->
+          <div style="background:#fff7ed;border:1px solid #ffedd5;border-radius:10px;padding:16px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+              <span style="font-size:13px;font-weight:700;color:#c2410c;display:flex;align-items:center;gap:6px;">
+                <span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:#f97316;"></span>
+                Cloudflare R2 Storage
+              </span>
+              <span style="font-size:11px;font-weight:700;background:#fff;color:#ea580c;padding:2px 7px;border-radius:4px;border:1px solid #fed7aa;">10 GB Free</span>
+            </div>
+            <div style="font-size:12px;color:#7c2d12;display:flex;flex-direction:column;gap:5px;">
+              <div><strong>Bucket:</strong> <code style="font-size:11.5px;background:#ffedd5;padding:1px 5px;border-radius:3px;">theprivatianfamily</code></div>
+              <div><strong>Region:</strong> Global Edge (Auto)</div>
+              <div><strong>Egress Bandwidth:</strong> $0.00 (Zero Egress Fees)</div>
+              <div><strong>Status:</strong> <span style="color:#16a34a;font-weight:700;">● Connected &amp; Operational</span></div>
+            </div>
+          </div>
+
+          <!-- Provider 2: Backblaze B2 -->
+          <div style="background:#fff1f2;border:1px solid #ffe4e6;border-radius:10px;padding:16px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+              <span style="font-size:13px;font-weight:700;color:#be123c;display:flex;align-items:center;gap:6px;">
+                <span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:#e11d48;"></span>
+                Backblaze B2 Cloud Storage
+              </span>
+              <span style="font-size:11px;font-weight:700;background:#fff;color:#be123c;padding:2px 7px;border-radius:4px;border:1px solid #fecdd3;">10 GB Free</span>
+            </div>
+            <div style="font-size:12px;color:#881337;display:flex;flex-direction:column;gap:5px;">
+              <div><strong>Bucket:</strong> <code style="font-size:11.5px;background:#ffe4e6;padding:1px 5px;border-radius:3px;">ThePrivatianFamily</code></div>
+              <div><strong>Endpoint:</strong> <code style="font-size:11.5px;background:#ffe4e6;padding:1px 5px;border-radius:3px;">s3.eu-central-003.backblazeb2.com</code></div>
+              <div><strong>Region:</strong> Europe Central (eu-central-003)</div>
+              <div><strong>Status:</strong> <span style="color:#16a34a;font-weight:700;">● Connected &amp; Operational</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
     </section>
 
     <!-- PAGE: ACTIVITY LOG & AUDIT TRAIL -->
@@ -2111,7 +2164,7 @@
       </div>
     </section>
 
-    <!-- ═══ PAGE: GALLERY (CLOUDFLARE R2 MEDIA MANAGEMENT & UNIQUE IDS) ═══ -->
+    <!-- ═══ PAGE: GALLERY (DUAL CLOUD STORAGE: R2 + B2 = 20 GB FREE) ═══ -->
     <section class="page" id="page-gallery">
       <!-- Gallery Hero / Header -->
       <div class="gallery-header-card">
@@ -2119,30 +2172,34 @@
           <div class="gallery-sync-badges-row">
             <div class="gallery-sync-chip r2 synced" id="gallery-sync-r2-badge" title="Live status with Cloudflare R2 Storage Bucket: theprivatianfamily">
               <span class="gallery-pulse-dot r2"></span>
-              <span id="gallery-sync-r2-text">Synced with Cloudflare R2</span>
+              <span id="gallery-sync-r2-text">Cloudflare R2 (10 GB)</span>
+            </div>
+            <div class="gallery-sync-chip b2 synced" id="gallery-sync-b2-badge" title="Live status with Backblaze B2 Storage Bucket: ThePrivatianFamily">
+              <span class="gallery-pulse-dot b2"></span>
+              <span id="gallery-sync-b2-text">Backblaze B2 (10 GB)</span>
             </div>
             <div class="gallery-sync-chip db synced" id="gallery-sync-db-badge" title="Live metadata synchronized with Supabase PostgreSQL Database">
               <span class="gallery-pulse-dot db"></span>
-              <span id="gallery-sync-db-text">Synced with Database</span>
+              <span id="gallery-sync-db-text">Database Synced</span>
             </div>
-            <span class="gallery-header-pill">Zero Egress CDN</span>
+            <span class="gallery-header-pill" style="background:#0f172a;color:#38bdf8;">20 GB Free Dual Cloud</span>
           </div>
-          <h2 class="gallery-header-title">Media Gallery &amp; Asset Library</h2>
-          <p class="gallery-header-desc">Upload, store, and manage high-resolution media with automated unique IDs (<code style="color:var(--brand);font-weight:700;">img_xxxxxxxx</code>) for instant insertion across all articles, sections, and site layouts.</p>
+          <h2 class="gallery-header-title">Media Gallery &amp; Multi-Cloud Asset Library</h2>
+          <p class="gallery-header-desc">Upload, store, and manage high-resolution media across <strong style="color:#f97316;">Cloudflare R2 (10 GB)</strong> and <strong style="color:#e11d48;">Backblaze B2 (10 GB)</strong> with automated unique IDs (<code style="color:var(--brand);font-weight:700;">img_xxxxxxxx</code>) for instant insertion across all articles, sections, and site layouts.</p>
         </div>
         <div class="gallery-header-actions">
-          <button class="btn btn--secondary btn--sm" id="gallery-btn-sync-trigger" onclick="syncGalleryAssets()" title="Force real-time scan and sync between Cloudflare R2 &amp; Database">
+          <button class="btn btn--secondary btn--sm" id="gallery-btn-sync-trigger" onclick="syncGalleryAssets()" title="Force real-time scan and sync between R2, B2 &amp; Database">
             <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
-            <span id="gallery-btn-sync-text">Sync with R2 &amp; DB</span>
+            <span id="gallery-btn-sync-text">Sync R2, B2 &amp; DB</span>
           </button>
           <button class="btn btn--primary btn--sm" id="gallery-btn-upload-trigger" onclick="openGalleryUniversalUpload()" title="Open Universal Media Uploader">
             <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-            <span>Upload Media (R2)</span>
+            <span>Upload Media</span>
           </button>
         </div>
       </div>
 
-      <!-- ══ STORAGE ANALYTICS & QUOTA DASHBOARD ══ -->
+      <!-- ══ STORAGE ANALYTICS & DUAL QUOTA DASHBOARD ══ -->
       <div class="gallery-analytics-wrap">
         <!-- 4 KPI Stat Cards -->
         <div class="gallery-kpi-grid">
@@ -2158,15 +2215,15 @@
             </div>
           </div>
 
-          <!-- KPI 2: Storage Used -->
+          <!-- KPI 2: Total Storage Used -->
           <div class="gallery-kpi-card">
             <div class="gallery-kpi-icon-wrap">
               <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
             </div>
             <div class="gallery-kpi-data">
-              <span class="gallery-kpi-label">Storage Used</span>
+              <span class="gallery-kpi-label">Total Storage Used</span>
               <div class="gallery-kpi-val" id="gallery-stat-storage-used">0 B</div>
-              <div class="gallery-kpi-sub" id="gallery-stat-used-pct">0.00% of 10 GB Free Tier</div>
+              <div class="gallery-kpi-sub" id="gallery-stat-used-pct">0.00% of 20 GB Total Free Tier</div>
             </div>
           </div>
 
@@ -2176,8 +2233,8 @@
               <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/><polyline points="9 13 12 10 15 13"/><line x1="12" y1="10" x2="12" y2="16"/></svg>
             </div>
             <div class="gallery-kpi-data">
-              <span class="gallery-kpi-label">Storage Free (R2)</span>
-              <div class="gallery-kpi-val" id="gallery-stat-storage-free">10.00 GB</div>
+              <span class="gallery-kpi-label">Total Storage Free</span>
+              <div class="gallery-kpi-val" id="gallery-stat-storage-free">20.00 GB</div>
               <div class="gallery-kpi-sub" id="gallery-stat-free-pct">100% capacity remaining</div>
             </div>
           </div>
@@ -2195,25 +2252,51 @@
           </div>
         </div>
 
-        <!-- Visual Quota & Capacity Bar -->
-        <div class="gallery-quota-card">
-          <div class="gallery-quota-header">
+        <!-- Visual Dual Quota & Capacity Bar -->
+        <div class="gallery-quota-card" style="padding:16px 20px;">
+          <div class="gallery-quota-header" style="margin-bottom:12px;">
             <div class="gallery-quota-title-wrap">
-              <span class="gallery-quota-title">Cloudflare R2 Storage Quota</span>
-              <span class="gallery-quota-badge">10 GB Standard Free Tier</span>
+              <span class="gallery-quota-title" style="font-size:14px;font-weight:700;">Dual-Cloud Storage Quotas (20 GB Total Capacity)</span>
+              <span class="gallery-quota-badge" style="background:#e0f2fe;color:#0369a1;">10 GB R2 + 10 GB B2 Free</span>
             </div>
             <div class="gallery-quota-numbers">
-              <span id="gallery-quota-used-text">0 B / 10 GB</span>
+              <span id="gallery-quota-used-text" style="font-weight:700;">0 B / 20.00 GB</span>
               <span class="gallery-quota-sep">•</span>
-              <span id="gallery-quota-free-text" style="color:#16a34a;font-weight:600;">10 GB Available</span>
+              <span id="gallery-quota-free-text" style="color:#16a34a;font-weight:700;">20.00 GB Available</span>
             </div>
           </div>
-          <div class="gallery-quota-track">
-            <div class="gallery-quota-fill" id="gallery-quota-fill" style="width: 0.2%;"></div>
+
+          <!-- Provider 1: Cloudflare R2 Progress Bar -->
+          <div style="margin-bottom:12px;background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:10px 14px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;font-size:12px;">
+              <span style="font-weight:700;color:#c2410c;display:flex;align-items:center;gap:5px;">
+                <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#f97316;"></span>
+                Cloudflare R2 Storage (10 GB Free Tier)
+              </span>
+              <span id="gallery-r2-quota-stats" style="font-weight:600;color:#64748b;">0 B / 10.00 GB (0.00% used)</span>
+            </div>
+            <div class="gallery-quota-track" style="height:7px;background:#f1f5f9;border-radius:4px;overflow:hidden;">
+              <div class="gallery-quota-fill" id="gallery-r2-quota-fill" style="width: 0.2%;background:linear-gradient(90deg, #f97316, #ea580c);"></div>
+            </div>
           </div>
-          <div class="gallery-quota-footer">
-            <span style="display:inline-flex;align-items:center;gap:6px;"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" style="color:#4f46e5;"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> High-speed global edge CDN distribution with <strong>Zero Egress Bandwidth Fees</strong>.</span>
-            <span id="gallery-quota-percent-text">0.00% capacity used</span>
+
+          <!-- Provider 2: Backblaze B2 Progress Bar -->
+          <div style="margin-bottom:12px;background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:10px 14px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;font-size:12px;">
+              <span style="font-weight:700;color:#be123c;display:flex;align-items:center;gap:5px;">
+                <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#e11d48;"></span>
+                Backblaze B2 Storage (10 GB Free Tier)
+              </span>
+              <span id="gallery-b2-quota-stats" style="font-weight:600;color:#64748b;">0 B / 10.00 GB (0.00% used)</span>
+            </div>
+            <div class="gallery-quota-track" style="height:7px;background:#f1f5f9;border-radius:4px;overflow:hidden;">
+              <div class="gallery-quota-fill" id="gallery-b2-quota-fill" style="width: 0.2%;background:linear-gradient(90deg, #e11d48, #be123c);"></div>
+            </div>
+          </div>
+
+          <div class="gallery-quota-footer" style="padding-top:4px;">
+            <span style="display:inline-flex;align-items:center;gap:6px;font-size:12px;"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" style="color:#4f46e5;"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> High-speed global edge distribution with <strong>Dual-Engine Zero-Egress Cloud Backup</strong>.</span>
+            <span id="gallery-quota-percent-text" style="font-weight:600;">0.00% total capacity used</span>
           </div>
         </div>
       </div>
@@ -2276,6 +2359,13 @@
               <input type="text" id="gallery-search-input" placeholder="Search by name, ID or tags..." oninput="_handleGallerySearch()" />
               <button id="gallery-search-clear" class="gallery-search-clear" onclick="_clearGallerySearch()" style="display:none;" aria-label="Clear search"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
             </div>
+
+            <!-- Provider Filter Dropdown -->
+            <select id="gallery-provider-select" class="gallery-sort-select" onchange="_handleGalleryProviderFilter(this.value)" title="Filter by Storage Provider">
+              <option value="all">☁️ All Storage (20 GB)</option>
+              <option value="r2">🟠 Cloudflare R2 (10 GB)</option>
+              <option value="b2">🔴 Backblaze B2 (10 GB)</option>
+            </select>
 
             <select id="gallery-sort-select" class="gallery-sort-select" onchange="_handleGallerySort()">
               <option value="newest">Newest First</option>
@@ -3149,16 +3239,16 @@
                   <code id="media-insp-unique-id" style="font-weight:700;color:#4f46e5;font-size:12.5px;">—</code>
                 </div>
                 <div>
+                  <span style="color:var(--text-muted);display:block;font-size:10.5px;text-transform:uppercase;font-weight:700;">Storage Cloud</span>
+                  <span id="media-insp-provider" style="font-weight:700;color:#0a528e;">Cloudflare R2</span>
+                </div>
+                <div>
                   <span style="color:var(--text-muted);display:block;font-size:10.5px;text-transform:uppercase;font-weight:700;">File Size</span>
                   <span id="media-insp-size" style="font-weight:600;color:var(--text-primary);">—</span>
                 </div>
                 <div>
                   <span style="color:var(--text-muted);display:block;font-size:10.5px;text-transform:uppercase;font-weight:700;">Uploaded On</span>
                   <span id="media-insp-date" style="color:var(--text-primary);">—</span>
-                </div>
-                <div>
-                  <span style="color:var(--text-muted);display:block;font-size:10.5px;text-transform:uppercase;font-weight:700;">Dimensions</span>
-                  <span id="media-insp-dims" style="color:var(--text-primary);">Auto-scaled</span>
                 </div>
               </div>
             </div>

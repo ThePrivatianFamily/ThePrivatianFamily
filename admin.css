@@ -3501,15 +3501,21 @@ body.modal-open {
 }
 
 .gallery-sync-chip.r2 {
-  background: #f8fafc;
-  border-color: #e2e8f0;
-  color: #334155;
+  background: #fff7ed;
+  border-color: #ffedd5;
+  color: #c2410c;
+}
+
+.gallery-sync-chip.b2 {
+  background: #fff1f2;
+  border-color: #ffe4e6;
+  color: #be123c;
 }
 
 .gallery-sync-chip.db {
-  background: #f8fafc;
-  border-color: #e2e8f0;
-  color: #334155;
+  background: #f0fdf4;
+  border-color: #dcfce7;
+  color: #15803d;
 }
 
 .gallery-pulse-dot {
@@ -3521,9 +3527,19 @@ body.modal-open {
   animation: ftPulse 1.8s infinite ease-in-out;
 }
 
+.gallery-pulse-dot.r2 {
+  background: #f97316;
+  box-shadow: 0 0 0 2px rgba(249, 115, 22, 0.25);
+}
+
+.gallery-pulse-dot.b2 {
+  background: #e11d48;
+  box-shadow: 0 0 0 2px rgba(225, 29, 72, 0.25);
+}
+
 .gallery-pulse-dot.db {
-  background: var(--brand, #0a528e);
-  box-shadow: 0 0 0 2px rgba(10, 82, 142, 0.2);
+  background: #16a34a;
+  box-shadow: 0 0 0 2px rgba(22, 163, 74, 0.2);
 }
 
 .gallery-header-title {
@@ -4397,6 +4413,32 @@ body.modal-open {
   padding: 2px 5px;
   border-radius: 4px;
   border: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+.gallery-badge-provider {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  font-size: 9px;
+  font-weight: 800;
+  padding: 1.5px 5.5px;
+  border-radius: 4px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  backdrop-filter: blur(4px);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+
+.gallery-badge-provider.r2 {
+  background: rgba(249, 115, 22, 0.92);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.gallery-badge-provider.b2 {
+  background: rgba(225, 29, 72, 0.92);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.3);
 }
 
 .gallery-card-trash-badge {

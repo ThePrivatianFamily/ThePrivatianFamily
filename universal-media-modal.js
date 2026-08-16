@@ -1,6 +1,7 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════
- * UNIVERSAL MEDIA MANAGER & UPLOADER MODAL (OPTIMIZED HIGH-SPEED EDITION)
+ * UNIVERSAL MEDIA MANAGER & UPLOADER MODAL (DUAL CLOUD STORAGE EDITION)
+ * Cloudflare R2 (10 GB) + Backblaze B2 (10 GB) = 20 GB Total Free Storage
  * The Privatian Family — Standardized Across All Admin Views & Article Editor
  * ═══════════════════════════════════════════════════════════════════════
  */
@@ -15,8 +16,11 @@
   let _selectedItem = null;
   let _activeTab = 'gallery'; // 'gallery' | 'upload'
   let _activeFolder = 'all';
+  let _activeProvider = 'all'; // 'all' | 'r2' | 'b2'
+  let _selectedUploadProvider = localStorage.getItem('privatian_default_upload_provider') || 'r2'; // 'r2' | 'b2' | 'auto'
   let _cachedList = [];
   let _cachedFolders = [];
+  let _cachedStats = null;
   let _searchDebounceTimer = null;
   let _lastSearchQuery = '';
 
@@ -51,11 +55,11 @@
         <div class="umm-header">
           <div class="umm-header-left">
             <div class="umm-header-badge" id="umm-header-badge">
-              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-              <span>Cloudflare R2 Media</span>
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/></svg>
+              <span>Dual Cloud: R2 + B2 (20 GB Free)</span>
             </div>
             <h2 class="umm-header-title" id="umm-header-title">Select or Upload Image</h2>
-            <p class="umm-header-sub" id="umm-header-sub">High-performance asset library with instant search</p>
+            <p class="umm-header-sub" id="umm-header-sub">High-performance multi-cloud asset library with instant search</p>
           </div>
           <button type="button" class="umm-close-btn" onclick="window.closeUniversalMediaModal()" title="Close (Esc)">
             <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
@@ -86,9 +90,16 @@
                   <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                 </button>
               </div>
-              <select id="umm-folder-select" class="umm-folder-select" onchange="window._ummOnFolderFilter(this.value)">
-                <option value="all">All Folders</option>
-              </select>
+              <div class="umm-filters-wrap" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+                <select id="umm-provider-select" class="umm-folder-select" style="min-width:130px;" onchange="window._ummOnProviderFilter(this.value)" title="Filter by Cloud Storage">
+                  <option value="all">☁️ All Storage (20 GB)</option>
+                  <option value="r2">🟠 Cloudflare R2 (10 GB)</option>
+                  <option value="b2">🔴 Backblaze B2 (10 GB)</option>
+                </select>
+                <select id="umm-folder-select" class="umm-folder-select" onchange="window._ummOnFolderFilter(this.value)">
+                  <option value="all">📁 All Folders</option>
+                </select>
+              </div>
             </div>
 
             <div id="umm-grid" class="umm-grid">
@@ -99,14 +110,31 @@
           <!-- ── TAB 2: UPLOAD FROM DEVICE / DRAG & DROP ── -->
           <div class="umm-tab-pane" id="umm-pane-upload">
             <div class="umm-uploader-card">
-              <div class="umm-dest-row">
-                <div class="umm-dest-left">
-                  <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" style="color:#0a528e;"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
-                  <span>Destination Folder:</span>
+              <!-- Destination Storage & Folder Options -->
+              <div class="umm-dest-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">
+                <!-- Storage Destination Provider -->
+                <div class="umm-dest-item" style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:8px 12px;display:flex;align-items:center;justify-content:space-between;gap:8px;">
+                  <div style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:#0f172a;">
+                    <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="#0a528e" stroke-width="2"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/></svg>
+                    <span>Target Cloud:</span>
+                  </div>
+                  <select id="umm-upload-provider-select" class="umm-folder-select" style="height:32px;font-size:11.5px;min-width:160px;" onchange="window._ummOnUploadProviderChange(this.value)">
+                    <option value="r2">🟠 Cloudflare R2 (10 GB)</option>
+                    <option value="b2">🔴 Backblaze B2 (10 GB)</option>
+                    <option value="auto">🔄 Auto (Smart Balance)</option>
+                  </select>
                 </div>
-                <select id="umm-upload-dest-select" class="umm-folder-select" style="min-width:180px;">
-                  <option value="">Root / All Media</option>
-                </select>
+
+                <!-- Destination Folder -->
+                <div class="umm-dest-item" style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:8px 12px;display:flex;align-items:center;justify-content:space-between;gap:8px;">
+                  <div style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:#0f172a;">
+                    <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="#0a528e" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                    <span>Folder:</span>
+                  </div>
+                  <select id="umm-upload-dest-select" class="umm-folder-select" style="height:32px;font-size:11.5px;min-width:160px;">
+                    <option value="">Root / All Media</option>
+                  </select>
+                </div>
               </div>
 
               <!-- Animated Drag & Drop Zone -->
@@ -116,7 +144,7 @@
                   <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
                 </div>
                 <h3 class="umm-dropzone-title">Drag &amp; drop images here, or <span class="umm-dropzone-link">browse files</span></h3>
-                <p class="umm-dropzone-sub">Direct high-speed upload to Cloudflare R2 with automatic unique ID generation</p>
+                <p class="umm-dropzone-sub">Direct upload to <strong id="umm-active-provider-label" style="color:#0a528e;">Cloudflare R2</strong> with instant automatic CDN delivery</p>
                 <div class="umm-dropzone-tags">
                   <span class="umm-dropzone-tag">JPG</span>
                   <span class="umm-dropzone-tag">PNG</span>
@@ -129,7 +157,7 @@
               </div>
 
               <!-- Real-time Upload Progress List -->
-              <div id="umm-upload-progress-list" style="display:none;flex-direction:column;gap:8px;"></div>
+              <div id="umm-upload-progress-list" style="display:none;flex-direction:column;gap:8px;margin-top:12px;"></div>
             </div>
           </div>
         </div>
@@ -213,6 +241,7 @@
         if (data && data.items) {
           _cachedList = Array.isArray(data.items) ? data.items : [];
           _cachedFolders = Array.isArray(data.folders) ? data.folders : [];
+          _cachedStats = data.storage || null;
           populateFolderDropdowns();
           return _cachedList;
         }
@@ -221,7 +250,6 @@
       console.warn('[UniversalMediaModal] Failed to fetch list from API:', err);
     }
 
-    // Fallback: check if parent window or global has _rawGalleryList
     if (window._rawGalleryList && Array.isArray(window._rawGalleryList)) {
       _cachedList = window._rawGalleryList;
     }
@@ -231,7 +259,7 @@
   const DEFAULT_STANDARD_FOLDERS = ['Articles', 'Hero Banners', 'Authors', 'Logos & Icons', 'Heritage & Archive'];
 
   /**
-   * Populates folder dropdowns with robust synchronization
+   * Populates folder dropdowns
    */
   function populateFolderDropdowns(preserveTargetFolder = '') {
     const folderFilter = document.getElementById('umm-folder-select');
@@ -253,7 +281,7 @@
     const previousUploadDest = uploadDest.value;
     const activeFilter = _activeFolder || folderFilter.value || 'all';
 
-    folderFilter.innerHTML = `<option value="all">All Folders</option><option value="__root__">Root / Uncategorized</option>` +
+    folderFilter.innerHTML = `<option value="all">📁 All Folders</option><option value="__root__">📂 Root / Uncategorized</option>` +
       sorted.map(f => `<option value="${esc(f)}">${esc(f)}</option>`).join('');
     folderFilter.value = activeFilter;
 
@@ -267,16 +295,28 @@
     } else if (activeFilter && activeFilter !== 'all' && activeFilter !== '__root__' && folderSet.has(activeFilter)) {
       uploadDest.value = activeFilter;
     }
+
+    const providerSelect = document.getElementById('umm-upload-provider-select');
+    if (providerSelect) {
+      providerSelect.value = _selectedUploadProvider || 'r2';
+    }
   }
 
   /**
-   * Render the 60FPS responsive gallery grid with performance optimizations
+   * Render the responsive gallery grid
    */
   function renderGalleryGrid(searchQuery = '') {
     const grid = document.getElementById('umm-grid');
     if (!grid) return;
 
     let items = _cachedList.filter(x => !x.is_deleted);
+
+    // Provider filter
+    if (_activeProvider === 'r2') {
+      items = items.filter(x => x.provider === 'r2' || (!x.provider && !x.url?.includes('backblazeb2')));
+    } else if (_activeProvider === 'b2') {
+      items = items.filter(x => x.provider === 'b2' || x.url?.includes('backblazeb2'));
+    }
 
     // Folder filter
     if (_activeFolder === '__root__') {
@@ -295,12 +335,12 @@
         (x.title && x.title.toLowerCase().includes(q)) ||
         (x.unique_id && x.unique_id.toLowerCase().includes(q)) ||
         (x.url && x.url.toLowerCase().includes(q)) ||
-        (x.folder && x.folder.toLowerCase().includes(q))
+        (x.folder && x.folder.toLowerCase().includes(q)) ||
+        (x.provider && x.provider.toLowerCase().includes(q))
       );
     }
 
     let extraHtml = '';
-    // If user pasted a direct URL that is not already in items, show a quick-insert card!
     if (isUrl && !items.some(x => x.url === searchQuery.trim())) {
       const customUrl = searchQuery.trim();
       const isCustomSel = _selectedItem && _selectedItem.url === customUrl;
@@ -326,7 +366,7 @@
         <div class="umm-empty-state">
           <svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="currentColor" stroke-width="1.5" style="margin-bottom:8px;color:#94a3b8;"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
           <p style="margin:0;font-weight:600;color:#64748b;">No matching images</p>
-          <p style="margin:4px 0 0;font-size:11.5px;color:#94a3b8;">${q ? 'Try searching another filename or ID, or upload a new file from the Upload tab.' : 'No images uploaded in this folder yet.'}</p>
+          <p style="margin:4px 0 0;font-size:11.5px;color:#94a3b8;">${q ? 'Try searching another filename or ID, or switch storage providers.' : 'No images uploaded in this view yet.'}</p>
         </div>
       `;
       return;
@@ -336,13 +376,19 @@
       const isSel = _selectedItem && (_selectedItem.unique_id === item.unique_id || _selectedItem.url === item.url);
       const name = item.title || item.filename || 'Image';
       const uid = item.unique_id || 'img';
+      const provider = item.provider || (item.url?.includes('backblazeb2') ? 'b2' : 'r2');
+      const provBadge = provider === 'b2'
+        ? `<span class="umm-provider-badge b2" title="Hosted on Backblaze B2 (10 GB Free)">B2</span>`
+        : `<span class="umm-provider-badge r2" title="Hosted on Cloudflare R2 (10 GB Free)">R2</span>`;
+
       return `
         <div class="umm-grid-item ${isSel ? 'selected' : ''}" 
              onclick="window._ummSelectItem('${esc(item.unique_id)}')" 
              ondblclick="window._ummConfirmSelection()" 
-             title="${esc(name)} (${esc(uid)})">
+             title="${esc(name)} (${esc(uid)}) [${provider.toUpperCase()}]">
           <div class="umm-thumb-wrap">
             <img src="${esc(item.url)}" alt="${esc(name)}" class="umm-thumb-img" loading="lazy" decoding="async" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\\'http://www.w3.org/2000/svg\\' width=\\'40\\' height=\\'40\\' viewBox=\\'0 0 24 24\\' fill=\\'none\\' stroke=\\'%2364748b\\' stroke-width=\\'2\\'><rect x=\\'3\\' y=\\'3\\' width=\\'18\\' height=\\'18\\' rx=\\'2\\'/><circle cx=\\'8.5\\' cy=\\'8.5\\' r=\\'1.5\\'/><polyline points=\\'21 15 16 10 5 21\\'/></svg>'" />
+            ${provBadge}
             ${item.folder ? `<span class="umm-item-folder-badge"><svg viewBox="0 0 24 24" width="8" height="8" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>${esc(item.folder)}</span>` : ''}
             <div class="umm-item-check">
               <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
@@ -357,12 +403,15 @@
   }
 
   /**
-   * Upload single or multiple files to Cloudflare R2 with non-blocking async execution
+   * Upload single or multiple files
    */
   async function uploadFiles(files) {
     if (!files || !files.length) return;
     const destSelect = document.getElementById('umm-upload-dest-select');
     const targetFolder = destSelect ? destSelect.value : '';
+    const provSelect = document.getElementById('umm-upload-provider-select');
+    const targetProvider = provSelect ? provSelect.value : (_selectedUploadProvider || 'r2');
+
     const progressList = document.getElementById('umm-upload-progress-list');
 
     if (progressList) {
@@ -372,6 +421,7 @@
 
     const tok = getAuthToken();
     let uploadedCount = 0;
+    const providerName = targetProvider === 'b2' ? 'Backblaze B2' : 'Cloudflare R2';
 
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
@@ -383,7 +433,7 @@
         itemEl.className = 'umm-progress-box';
         itemEl.innerHTML = `
           <div class="umm-progress-info">
-            <span>Uploading: <strong>${esc(file.name)}</strong> (${(file.size / (1024*1024)).toFixed(2)} MB)</span>
+            <span>Uploading to <strong>${esc(providerName)}</strong>: <strong>${esc(file.name)}</strong> (${(file.size / (1024*1024)).toFixed(2)} MB)</span>
             <span id="${progId}-pct" style="color:#0a528e;font-weight:700;">Preparing...</span>
           </div>
           <div class="umm-progress-bar-bg">
@@ -398,7 +448,7 @@
         const barEl = document.getElementById(`${progId}-bar`);
         const pctEl = document.getElementById(`${progId}-pct`);
         if (barEl) barEl.style.width = '65%';
-        if (pctEl) pctEl.textContent = 'Uploading to Cloudflare R2...';
+        if (pctEl) pctEl.textContent = `Uploading to ${providerName}...`;
 
         const res = await fetch('/api/media?action=upload', {
           method: 'POST',
@@ -411,7 +461,8 @@
             filename: file.name,
             mimeType: file.type || 'image/jpeg',
             fileSize: file.size,
-            folder: targetFolder
+            folder: targetFolder,
+            provider: targetProvider
           })
         });
 
@@ -421,15 +472,13 @@
         }
 
         if (barEl) { barEl.style.width = '100%'; barEl.style.background = '#16a34a'; }
-        if (pctEl) { pctEl.textContent = 'Upload Complete'; pctEl.style.color = '#16a34a'; }
+        if (pctEl) { pctEl.textContent = `Uploaded to ${data.media.provider_name || providerName}`; pctEl.style.color = '#16a34a'; }
 
-        // Prepend to cached list
         _cachedList.unshift(data.media);
         if (window._rawGalleryList && Array.isArray(window._rawGalleryList)) {
           window._rawGalleryList.unshift(data.media);
         }
 
-        // Set as selected item
         _selectedItem = data.media;
         updateSelectedSummary();
         uploadedCount++;
@@ -450,13 +499,9 @@
       if (typeof window.loadGalleryAssets === 'function') {
         try { window.loadGalleryAssets(); } catch(e) {}
       }
-
-      if (!_hideBrowseTab) {
-        setTimeout(() => {
-          window._ummSwitchTab('gallery');
-          renderGalleryGrid();
-        }, 500);
-      }
+      setTimeout(() => {
+        window._ummSwitchTab('gallery');
+      }, 1000);
     }
   }
 
@@ -469,96 +514,140 @@
     });
   }
 
-  /**
-   * Update the footer summary and confirm button state
-   */
   function updateSelectedSummary() {
-    const summaryEl = document.getElementById('umm-selected-summary');
+    const summary = document.getElementById('umm-selected-summary');
     const confirmBtn = document.getElementById('umm-btn-confirm');
-    if (!summaryEl || !confirmBtn) return;
+    if (!summary || !confirmBtn) return;
 
     if (_selectedItem) {
-      const title = _selectedItem.title || _selectedItem.filename || 'Image';
-      const id = _selectedItem.unique_id || 'Direct URL';
-      summaryEl.innerHTML = `Selected: <strong>${esc(title)}</strong> (<code style="color:#0a528e;font-weight:700;">${esc(id)}</code>)`;
+      const name = _selectedItem.title || _selectedItem.filename || 'Custom Image';
+      const uid = _selectedItem.unique_id || 'URL';
+      const provider = _selectedItem.provider ? _selectedItem.provider.toUpperCase() : 'R2';
+      summary.innerHTML = `Selected: <strong>${esc(name)}</strong> <span style="color:#0a528e;font-size:11px;font-weight:700;margin-left:4px;background:#e0f2fe;padding:2px 6px;border-radius:4px;">${esc(uid)}</span> <span style="font-size:10px;font-weight:800;color:#64748b;margin-left:4px;">[${provider}]</span>`;
       confirmBtn.disabled = false;
     } else {
-      summaryEl.textContent = 'No image selected';
+      summary.textContent = 'No image selected';
       confirmBtn.disabled = true;
     }
   }
 
-  // ── Global Window Handlers ─────────────────────────────────────────
+  // Window bridge functions
+  window.openUniversalMediaModal = function(options = {}) {
+    ensureModalDOM();
 
-  window._ummSwitchTab = function(tabName) {
-    _activeTab = tabName;
-    const btnGallery = document.getElementById('umm-tab-btn-gallery');
-    const btnUpload = document.getElementById('umm-tab-btn-upload');
-    const paneGallery = document.getElementById('umm-pane-gallery');
-    const paneUpload = document.getElementById('umm-pane-upload');
+    _modalCallback = options.onSelect || null;
+    _onUploadComplete = options.onUploadComplete || null;
+    _selectedItem = null;
+    _activeFolder = options.targetFolder || 'all';
+    _activeProvider = 'all';
 
-    if (btnGallery) btnGallery.classList.toggle('active', tabName === 'gallery');
-    if (btnUpload) btnUpload.classList.toggle('active', tabName === 'upload');
-    if (paneGallery) paneGallery.classList.toggle('active', tabName === 'gallery');
-    if (paneUpload) paneUpload.classList.toggle('active', tabName === 'upload');
+    const titleEl = document.getElementById('umm-header-title');
+    const subEl = document.getElementById('umm-header-sub');
+    if (titleEl && options.title) titleEl.textContent = options.title;
+    if (subEl && options.subtitle) subEl.textContent = options.subtitle;
 
-    if (tabName === 'upload') {
-      const uploadDest = document.getElementById('umm-upload-dest-select');
-      if (uploadDest && _activeFolder && _activeFolder !== 'all' && _activeFolder !== '__root__') {
-        uploadDest.value = _activeFolder;
-      }
-    } else if (tabName === 'gallery') {
-      const searchInp = document.getElementById('umm-search-input');
-      renderGalleryGrid(searchInp ? searchInp.value : '');
+    populateFolderDropdowns(options.targetFolder || '');
+
+    const initialTab = options.defaultTab === 'upload' ? 'upload' : 'gallery';
+    window._ummSwitchTab(initialTab);
+
+    const overlay = document.getElementById('universal-media-modal-overlay');
+    if (overlay) {
+      overlay.classList.add('show');
+    }
+
+    updateSelectedSummary();
+
+    fetchMediaList().then(() => {
+      renderGalleryGrid(_lastSearchQuery);
+    });
+  };
+
+  window.closeUniversalMediaModal = function() {
+    const overlay = document.getElementById('universal-media-modal-overlay');
+    if (overlay) overlay.classList.remove('show');
+    _modalCallback = null;
+    _onUploadComplete = null;
+    _selectedItem = null;
+  };
+
+  window._ummSwitchTab = function(tab) {
+    _activeTab = tab;
+    const btnGal = document.getElementById('umm-tab-btn-gallery');
+    const btnUp = document.getElementById('umm-tab-btn-upload');
+    const paneGal = document.getElementById('umm-pane-gallery');
+    const paneUp = document.getElementById('umm-pane-upload');
+
+    if (tab === 'gallery') {
+      if (btnGal) btnGal.classList.add('active');
+      if (btnUp) btnUp.classList.remove('active');
+      if (paneGal) paneGal.classList.add('active');
+      if (paneUp) paneUp.classList.remove('active');
+      renderGalleryGrid(_lastSearchQuery);
+    } else {
+      if (btnUp) btnUp.classList.add('active');
+      if (btnGal) btnGal.classList.remove('active');
+      if (paneUp) paneUp.classList.add('active');
+      if (paneGal) paneGal.classList.remove('active');
     }
   };
 
+  window._ummSelectItem = function(uniqueId) {
+    const found = _cachedList.find(x => x.unique_id === uniqueId || x.id === uniqueId);
+    if (found) {
+      _selectedItem = found;
+      renderGalleryGrid(_lastSearchQuery);
+      updateSelectedSummary();
+    }
+  };
+
+  window._ummSelectCustomUrl = function(url) {
+    _selectedItem = {
+      id: 'custom_url',
+      unique_id: 'custom_url',
+      url: url,
+      filename: url.split('/').pop() || 'external-image',
+      title: 'Direct URL Image',
+      provider: url.includes('backblazeb2') ? 'b2' : 'r2'
+    };
+    renderGalleryGrid(_lastSearchQuery);
+    updateSelectedSummary();
+  };
+
   window._ummOnSearch = function(val) {
+    _lastSearchQuery = val || '';
+    const clearBtn = document.getElementById('umm-search-clear');
+    if (clearBtn) clearBtn.style.display = _lastSearchQuery ? 'block' : 'none';
+
     clearTimeout(_searchDebounceTimer);
     _searchDebounceTimer = setTimeout(() => {
-      _lastSearchQuery = val || '';
-      const clearBtn = document.getElementById('umm-search-clear');
-      if (clearBtn) clearBtn.style.display = _lastSearchQuery ? 'block' : 'none';
       renderGalleryGrid(_lastSearchQuery);
-    }, 120);
+    }, 150);
   };
 
   window._ummClearSearch = function() {
     const input = document.getElementById('umm-search-input');
-    const clearBtn = document.getElementById('umm-search-clear');
     if (input) input.value = '';
-    if (clearBtn) clearBtn.style.display = 'none';
-    _lastSearchQuery = '';
-    renderGalleryGrid('');
+    window._ummOnSearch('');
   };
 
-  window._ummOnFolderFilter = function(folderVal) {
-    _activeFolder = folderVal || 'all';
-    const uploadDest = document.getElementById('umm-upload-dest-select');
-    if (uploadDest && folderVal && folderVal !== 'all' && folderVal !== '__root__') {
-      uploadDest.value = folderVal;
+  window._ummOnFolderFilter = function(val) {
+    _activeFolder = val || 'all';
+    renderGalleryGrid(_lastSearchQuery);
+  };
+
+  window._ummOnProviderFilter = function(val) {
+    _activeProvider = val || 'all';
+    renderGalleryGrid(_lastSearchQuery);
+  };
+
+  window._ummOnUploadProviderChange = function(val) {
+    _selectedUploadProvider = val || 'r2';
+    try { localStorage.setItem('privatian_default_upload_provider', _selectedUploadProvider); } catch(e) {}
+    const label = document.getElementById('umm-active-provider-label');
+    if (label) {
+      label.textContent = _selectedUploadProvider === 'b2' ? 'Backblaze B2' : 'Cloudflare R2';
     }
-    renderGalleryGrid(_lastSearchQuery);
-  };
-
-  window._ummSelectItem = function(uniqueId) {
-    const item = _cachedList.find(x => x.unique_id === uniqueId || x.id === uniqueId);
-    if (!item) return;
-    _selectedItem = item;
-    updateSelectedSummary();
-    renderGalleryGrid(_lastSearchQuery);
-  };
-
-  window._ummSelectCustomUrl = function(customUrl) {
-    _selectedItem = {
-      unique_id: 'custom_url',
-      url: customUrl,
-      title: 'Direct Image URL',
-      filename: customUrl.split('/').pop().split('?')[0] || 'image.jpg',
-      folder: ''
-    };
-    updateSelectedSummary();
-    renderGalleryGrid(_lastSearchQuery);
   };
 
   window._ummHandleFileInput = function(e) {
@@ -570,129 +659,11 @@
   };
 
   window._ummConfirmSelection = function() {
-    if (!_selectedItem || !_modalCallback) return;
-    try {
-      const payload = {
-        url: _selectedItem.url,
-        uniqueId: _selectedItem.unique_id || '',
-        unique_id: _selectedItem.unique_id || '',
-        id: _selectedItem.id || _selectedItem.unique_id || '',
-        r2_key: _selectedItem.r2_key || '',
-        title: _selectedItem.title || _selectedItem.filename || '',
-        altText: _selectedItem.alt_text || '',
-        altTextBn: _selectedItem.alt_text_bn || '',
-        filename: _selectedItem.filename || '',
-        mimeType: _selectedItem.mime_type || '',
-        folder: _selectedItem.folder || '',
-        ..._selectedItem
-      };
-      _modalCallback(payload);
-    } catch(err) {
-      console.error('[UniversalMediaModal] Callback error:', err);
+    if (!_selectedItem) return;
+    if (typeof _modalCallback === 'function') {
+      _modalCallback(_selectedItem);
     }
     window.closeUniversalMediaModal();
   };
-
-  /**
-   * Main Public Entry Point: openUniversalMediaModal(callbackOrOptions)
-   */
-  window.openUniversalMediaModal = async function(opts = {}) {
-    ensureModalDOM();
-
-    let callback = null;
-    let title = 'Select Image';
-    let subtitle = 'Cloudflare R2 Media Library';
-    let defaultTab = 'gallery';
-    let targetFolder = '';
-    let hideBrowseTab = false;
-    let onUploadComplete = null;
-
-    if (typeof opts === 'function') {
-      callback = opts;
-    } else if (opts && typeof opts === 'object') {
-      callback = opts.onSelect || opts.callback || null;
-      if (opts.title) title = opts.title;
-      if (opts.subtitle) subtitle = opts.subtitle;
-      if (opts.defaultTab) defaultTab = opts.defaultTab;
-      if (opts.targetFolder) targetFolder = opts.targetFolder;
-      if (opts.hideBrowseTab || opts.onlyUpload || opts.hideGalleryTab) hideBrowseTab = true;
-      if (opts.onUploadComplete) onUploadComplete = opts.onUploadComplete;
-    }
-
-    _modalCallback = callback;
-    _onUploadComplete = onUploadComplete;
-    _hideBrowseTab = hideBrowseTab;
-    _selectedItem = null;
-    _activeFolder = targetFolder || 'all';
-    _lastSearchQuery = '';
-
-    if (_hideBrowseTab) {
-      defaultTab = 'upload';
-      if (!opts.title) title = 'Upload Media to Cloudflare R2';
-      if (!opts.subtitle) subtitle = 'Direct high-speed upload to cloud storage';
-    }
-
-    populateFolderDropdowns(targetFolder);
-
-    const titleEl = document.getElementById('umm-header-title');
-    const subEl = document.getElementById('umm-header-sub');
-    const searchInp = document.getElementById('umm-search-input');
-    const clearBtn = document.getElementById('umm-search-clear');
-    const overlay = document.getElementById('universal-media-modal-overlay');
-    const tabsContainer = document.getElementById('umm-tabs-container');
-    const confirmBtn = document.getElementById('umm-btn-confirm');
-    const cancelBtn = document.querySelector('.umm-btn-cancel');
-    const summaryEl = document.getElementById('umm-selected-summary');
-    const folderFilter = document.getElementById('umm-folder-select');
-    const uploadDest = document.getElementById('umm-upload-dest-select');
-
-    if (titleEl) titleEl.textContent = title;
-    if (subEl) subEl.textContent = subtitle;
-    if (searchInp) searchInp.value = '';
-    if (clearBtn) clearBtn.style.display = 'none';
-
-    if (targetFolder) {
-      if (folderFilter) folderFilter.value = targetFolder;
-      if (uploadDest) uploadDest.value = targetFolder;
-    }
-
-    if (tabsContainer) {
-      tabsContainer.style.display = _hideBrowseTab ? 'none' : 'flex';
-    }
-    if (confirmBtn) {
-      confirmBtn.style.display = _hideBrowseTab ? 'none' : 'inline-flex';
-    }
-    if (cancelBtn) {
-      cancelBtn.textContent = _hideBrowseTab ? 'Close' : 'Cancel';
-    }
-    if (summaryEl) {
-      summaryEl.style.display = _hideBrowseTab ? 'none' : 'block';
-    }
-
-    updateSelectedSummary();
-    window._ummSwitchTab(defaultTab);
-
-    if (overlay) overlay.classList.add('show');
-
-    // Fetch latest and re-populate
-    await fetchMediaList();
-    if (targetFolder) {
-      if (folderFilter) folderFilter.value = targetFolder;
-      if (uploadDest) uploadDest.value = targetFolder;
-    }
-    renderGalleryGrid('');
-  };
-
-  window.closeUniversalMediaModal = function() {
-    const overlay = document.getElementById('universal-media-modal-overlay');
-    if (overlay) overlay.classList.remove('show');
-    _modalCallback = null;
-    _onUploadComplete = null;
-    _selectedItem = null;
-    _hideBrowseTab = false;
-  };
-
-  // Standard alias for legacy code
-  window.openGalleryPicker = window.openUniversalMediaModal;
 
 })();

@@ -1,11 +1,13 @@
 /**
- * /api/media — Full Cloudflare R2 Media Management & Metadata API
+ * /api/media — Dual-Cloud Storage (Cloudflare R2 + Backblaze B2) Management & Metadata API
+ *
+ * Total Capacity: 20 GB Free (10 GB Cloudflare R2 + 10 GB Backblaze B2)
  *
  * Endpoints:
- * GET  ?action=list                  Auth — List all uploaded media assets
- * POST ?action=upload                Auth — Upload single/multiple image files to R2
+ * GET  ?action=list                  Auth — List all uploaded media assets across R2 & B2
+ * POST ?action=upload                Auth — Upload image files to chosen provider (r2 / b2 / auto)
  * PUT  ?action=update&id=<id>        Auth — Update media metadata (title, alt text, tags)
- * DELETE ?action=delete&id=<id>      Auth — Delete file from R2 and remove metadata
+ * DELETE ?action=delete&id=<id>      Auth — Delete file from its cloud bucket and remove metadata
  */
 
 const { S3Client, ListObjectsV2Command, PutObjectCommand, DeleteObjectCommand, GetObjectCommand } = require('@aws-sdk/client-s3');
@@ -13,7 +15,7 @@ const { createClient } = require('@supabase/supabase-js');
 const { requireAuth } = require('./_lib/auth');
 const { logActivity } = require('./_lib/activity');
 
-// ── CLOUDFLARE R2 CONFIGURATION ──────────────────────────────────────────
+// ── 1. CLOUDFLARE R2 CONFIGURATION ───────────────────────────────────────
 const R2_ACCOUNT_ID = process.env.R2_ACCOUNT_ID || '44fa7e7d93ed3ba71fdc0ce85e2dd0ed';
 const R2_BUCKET_NAME = process.env.R2_BUCKET_NAME || 'theprivatianfamily';
 const R2_PUBLIC_URL = (process.env.R2_PUBLIC_URL || 'https://pub-1e6b79ea34c74adfa8dc145a3b5a4e5a.r2.dev').replace(/\/$/, '');
@@ -21,12 +23,29 @@ const R2_ACCESS_KEY_ID = process.env.R2_ACCESS_KEY_ID || '51b83c34bbe3d11ceabd3e
 const R2_SECRET_ACCESS_KEY = process.env.R2_SECRET_ACCESS_KEY || '9f4544f5357f1ebd2c2a4860c8fb1100b59ef2e851ba424d3b4ff9db501a08ec';
 const R2_ENDPOINT = process.env.R2_ENDPOINT || `https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com`;
 
-const s3 = new S3Client({
+const r2Client = new S3Client({
   region: 'auto',
   endpoint: R2_ENDPOINT,
   credentials: {
     accessKeyId: R2_ACCESS_KEY_ID,
     secretAccessKey: R2_SECRET_ACCESS_KEY,
+  },
+});
+
+// ── 2. BACKBLAZE B2 CONFIGURATION ────────────────────────────────────────
+const B2_KEY_ID = process.env.B2_KEY_ID || '003bacfa081e2ae0000000001';
+const B2_APPLICATION_KEY = process.env.B2_APPLICATION_KEY || 'K003lV8zhvkGSz6s6rt4MjoNPt2aAMQ';
+const B2_BUCKET_NAME = process.env.B2_BUCKET_NAME || 'ThePrivatianFamily';
+const B2_REGION = process.env.B2_REGION || 'eu-central-003';
+const B2_ENDPOINT = process.env.B2_ENDPOINT || `https://s3.${B2_REGION}.backblazeb2.com`;
+const B2_PUBLIC_URL = (process.env.B2_PUBLIC_URL || `https://f003.backblazeb2.com/file/${B2_BUCKET_NAME}`).replace(/\/$/, '');
+
+const b2Client = new S3Client({
+  region: B2_REGION,
+  endpoint: B2_ENDPOINT,
+  credentials: {
+    accessKeyId: B2_KEY_ID,
+    secretAccessKey: B2_APPLICATION_KEY,
   },
 });
 
@@ -69,7 +88,7 @@ function getExtFromMimeOrName(mimeType, filename) {
   return (match && match[1]) ? match[1].toLowerCase() : 'jpg';
 }
 
-// ── METADATA STORAGE HELPERS (with fallback to site_settings store) ───────
+// ── METADATA STORAGE HELPERS ─────────────────────────────────────────────
 const FALLBACK_STORE_KEY = 'privatian_media_library_items';
 const FALLBACK_FOLDERS_KEY = 'privatian_media_folders';
 const DEFAULT_FOLDERS = ['Articles', 'Hero Banners', 'Authors', 'Logos & Icons', 'Heritage & Archive'];
@@ -101,24 +120,29 @@ async function saveStoredFolderList(sb, folders) {
 }
 
 async function getStoredMediaList(sb) {
-  // Step 1: Scan Cloudflare R2 bucket directly for all objects
+  // Concurrently scan both Cloudflare R2 and Backblaze B2 buckets
+  const [r2Result, b2Result] = await Promise.allSettled([
+    r2Client.send(new ListObjectsV2Command({ Bucket: R2_BUCKET_NAME, MaxKeys: 1000 })),
+    b2Client.send(new ListObjectsV2Command({ Bucket: B2_BUCKET_NAME, MaxKeys: 1000 }))
+  ]);
+
   let r2Objects = [];
-  try {
-    const listRes = await s3.send(new ListObjectsV2Command({
-      Bucket: R2_BUCKET_NAME,
-      MaxKeys: 1000
-    }));
-    if (listRes.Contents && Array.isArray(listRes.Contents)) {
-      r2Objects = listRes.Contents.filter(o => !o.Key.endsWith('/'));
-    }
-  } catch(err) {
-    console.warn('[Media] Cloudflare R2 list error:', err.message);
+  if (r2Result.status === 'fulfilled' && r2Result.value && Array.isArray(r2Result.value.Contents)) {
+    r2Objects = r2Result.value.Contents.filter(o => !o.Key.endsWith('/'));
+  } else if (r2Result.status === 'rejected') {
+    console.warn('[Media] Cloudflare R2 list error:', r2Result.reason && r2Result.reason.message);
   }
 
-  // Step 2: Fetch metadata dictionary from Supabase
+  let b2Objects = [];
+  if (b2Result.status === 'fulfilled' && b2Result.value && Array.isArray(b2Result.value.Contents)) {
+    b2Objects = b2Result.value.Contents.filter(o => !o.Key.endsWith('/'));
+  } else if (b2Result.status === 'rejected') {
+    console.warn('[Media] Backblaze B2 list error:', b2Result.reason && b2Result.reason.message);
+  }
+
+  // Fetch metadata dictionary from Supabase
   let dbMetadataMap = new Map();
   if (sb) {
-    // Try sections table fallback store first
     try {
       const { data: secData } = await sb.from('sections').select('name').eq('admin_id', '__media_library_store__').maybeSingle();
       if (secData && secData.name) {
@@ -127,81 +151,94 @@ async function getStoredMediaList(sb) {
           parsed.forEach(item => {
             if (item.unique_id) dbMetadataMap.set(item.unique_id, item);
             if (item.id) dbMetadataMap.set(item.id, item);
+            if (item.storage_key) dbMetadataMap.set(item.storage_key, item);
             if (item.r2_key) dbMetadataMap.set(item.r2_key, item);
           });
         }
       }
     } catch(e) {}
 
-    // Try media_library table
     try {
       const { data, error } = await sb.from('media_library').select('*');
       if (!error && Array.isArray(data)) {
         data.forEach(item => {
           if (item.unique_id) dbMetadataMap.set(item.unique_id, item);
+          if (item.storage_key) dbMetadataMap.set(item.storage_key, item);
           if (item.r2_key) dbMetadataMap.set(item.r2_key, item);
         });
       }
     } catch(e) {}
 
-    // Try site_settings fallback
     try {
       const { data } = await sb.from('site_settings').select('value').eq('key', FALLBACK_STORE_KEY).maybeSingle();
       if (data && data.value && Array.isArray(data.value)) {
         data.value.forEach(item => {
           if (item.unique_id && !dbMetadataMap.has(item.unique_id)) dbMetadataMap.set(item.unique_id, item);
+          if (item.storage_key && !dbMetadataMap.has(item.storage_key)) dbMetadataMap.set(item.storage_key, item);
           if (item.r2_key && !dbMetadataMap.has(item.r2_key)) dbMetadataMap.set(item.r2_key, item);
         });
       }
     } catch(e) {}
   }
 
-  // Step 3: If R2 returned objects, build canonical list with merged metadata
-  if (r2Objects.length > 0) {
-    const canonicalList = r2Objects.map(obj => {
-      const parts = obj.Key.split('/');
-      const fname = parts[parts.length - 1];
-      const uidMatch = fname.match(/^(img_[a-z0-9]{8})_/);
-      const uniqueId = uidMatch ? uidMatch[1] : ('img_' + fname.slice(0, 8).replace(/[^a-z0-9]/g, 'x'));
-      const cleanName = fname.replace(/^img_[a-z0-9]{8}_/, '');
+  const mapObjectToItem = (obj, provider) => {
+    const parts = obj.Key.split('/');
+    const fname = parts[parts.length - 1];
+    const uidMatch = fname.match(/^(img_[a-z0-9]{8})_/);
+    const uniqueId = uidMatch ? uidMatch[1] : ('img_' + fname.slice(0, 8).replace(/[^a-z0-9]/g, 'x'));
+    const cleanName = fname.replace(/^img_[a-z0-9]{8}_/, '');
 
-      const dbMeta = dbMetadataMap.get(uniqueId) || dbMetadataMap.get(obj.Key) || {};
+    const dbMeta = dbMetadataMap.get(uniqueId) || dbMetadataMap.get(obj.Key) || {};
+    const publicUrl = provider === 'b2' ? `${B2_PUBLIC_URL}/${obj.Key}` : `${R2_PUBLIC_URL}/${obj.Key}`;
 
-      return {
-        id: uniqueId,
-        unique_id: uniqueId,
-        r2_key: obj.Key,
-        url: `${R2_PUBLIC_URL}/${obj.Key}`,
-        filename: dbMeta.filename || cleanName,
-        title: dbMeta.title || cleanName.replace(/\.[^/.]+$/, ''),
-        folder: dbMeta.folder || '',
-        alt_text: dbMeta.alt_text || '',
-        alt_text_bn: dbMeta.alt_text_bn || '',
-        mime_type: dbMeta.mime_type || (fname.endsWith('.svg') ? 'image/svg+xml' : (fname.endsWith('.png') ? 'image/png' : (fname.endsWith('.webp') ? 'image/webp' : 'image/jpeg'))),
-        file_size: obj.Size || dbMeta.file_size || 0,
-        tags: dbMeta.tags || [],
-        uploaded_by: dbMeta.uploaded_by || 'Admin',
-        is_deleted: dbMeta.is_deleted === true,
-        deleted_at: dbMeta.deleted_at || null,
-        created_at: obj.LastModified ? new Date(obj.LastModified).toISOString() : (dbMeta.created_at || new Date().toISOString()),
-        updated_at: dbMeta.updated_at || (obj.LastModified ? new Date(obj.LastModified).toISOString() : new Date().toISOString())
-      };
-    });
+    return {
+      id: uniqueId,
+      unique_id: uniqueId,
+      provider: provider, // 'r2' or 'b2'
+      provider_name: provider === 'b2' ? 'Backblaze B2' : 'Cloudflare R2',
+      storage_key: obj.Key,
+      r2_key: obj.Key, // backward compatibility
+      url: dbMeta.url || publicUrl,
+      filename: dbMeta.filename || cleanName,
+      title: dbMeta.title || cleanName.replace(/\.[^/.]+$/, ''),
+      folder: dbMeta.folder || '',
+      alt_text: dbMeta.alt_text || '',
+      alt_text_bn: dbMeta.alt_text_bn || '',
+      mime_type: dbMeta.mime_type || (fname.endsWith('.svg') ? 'image/svg+xml' : (fname.endsWith('.png') ? 'image/png' : (fname.endsWith('.webp') ? 'image/webp' : 'image/jpeg'))),
+      file_size: obj.Size || dbMeta.file_size || 0,
+      tags: dbMeta.tags || [],
+      uploaded_by: dbMeta.uploaded_by || 'Admin',
+      is_deleted: dbMeta.is_deleted === true,
+      deleted_at: dbMeta.deleted_at || null,
+      created_at: obj.LastModified ? new Date(obj.LastModified).toISOString() : (dbMeta.created_at || new Date().toISOString()),
+      updated_at: dbMeta.updated_at || (obj.LastModified ? new Date(obj.LastModified).toISOString() : new Date().toISOString())
+    };
+  };
 
-    // Sort newest first
-    canonicalList.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+  const allItems = [
+    ...r2Objects.map(o => mapObjectToItem(o, 'r2')),
+    ...b2Objects.map(o => mapObjectToItem(o, 'b2'))
+  ];
 
-    // Save canonical sync back to DB so DB is always 100% updated with R2
+  if (allItems.length > 0) {
+    allItems.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+
     if (sb) {
-      saveAllMediaItems(sb, canonicalList).catch(() => {});
+      saveAllMediaItems(sb, allItems).catch(() => {});
     }
 
-    return canonicalList;
+    return allItems;
   }
 
-  // If R2 scan failed or had 0 items, fallback to DB items
+  // Fallback to database store if both scans returned 0 or were offline
   if (dbMetadataMap.size > 0) {
     const list = Array.from(dbMetadataMap.values());
+    list.forEach(item => {
+      if (!item.provider) {
+        item.provider = item.url?.includes('backblazeb2') ? 'b2' : 'r2';
+        item.provider_name = item.provider === 'b2' ? 'Backblaze B2' : 'Cloudflare R2';
+      }
+    });
     list.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
     return list;
   }
@@ -213,6 +250,24 @@ function computeStorageStats(items) {
   const activeItems = items.filter(x => !x.is_deleted);
   const trashItems = items.filter(x => x.is_deleted);
 
+  const SINGLE_QUOTA_BYTES = 10 * 1024 * 1024 * 1024; // 10 GB per provider
+  const TOTAL_QUOTA_BYTES  = 20 * 1024 * 1024 * 1024; // 20 GB combined
+
+  // 1. Cloudflare R2 stats
+  const r2Items = items.filter(x => x.provider === 'r2' || (!x.provider && !x.url?.includes('backblazeb2')));
+  const r2Active = r2Items.filter(x => !x.is_deleted);
+  const r2UsedBytes = r2Items.reduce((acc, x) => acc + (x.file_size || 0), 0);
+  const r2FreeBytes = Math.max(0, SINGLE_QUOTA_BYTES - r2UsedBytes);
+  const r2UsedPct = (r2UsedBytes / SINGLE_QUOTA_BYTES) * 100;
+
+  // 2. Backblaze B2 stats
+  const b2Items = items.filter(x => x.provider === 'b2' || x.url?.includes('backblazeb2'));
+  const b2Active = b2Items.filter(x => !x.is_deleted);
+  const b2UsedBytes = b2Items.reduce((acc, x) => acc + (x.file_size || 0), 0);
+  const b2FreeBytes = Math.max(0, SINGLE_QUOTA_BYTES - b2UsedBytes);
+  const b2UsedPct = (b2UsedBytes / SINGLE_QUOTA_BYTES) * 100;
+
+  // 3. Combined Total stats
   const totalFiles = items.length;
   const activeFiles = activeItems.length;
   const trashFiles = trashItems.length;
@@ -221,15 +276,12 @@ function computeStorageStats(items) {
   const activeBytes = activeItems.reduce((acc, x) => acc + (x.file_size || 0), 0);
   const trashBytes = trashItems.reduce((acc, x) => acc + (x.file_size || 0), 0);
 
-  const R2_CAPACITY_BYTES = 10 * 1024 * 1024 * 1024; // 10 GB
-  const freeBytes = Math.max(0, R2_CAPACITY_BYTES - totalBytes);
-  const usedPct = (totalBytes / R2_CAPACITY_BYTES) * 100;
+  const freeBytes = Math.max(0, TOTAL_QUOTA_BYTES - totalBytes);
+  const usedPct = (totalBytes / TOTAL_QUOTA_BYTES) * 100;
   const freePct = Math.max(0, 100 - usedPct);
 
   const photos = activeItems.filter(x => !x.mime_type?.includes('svg') && !x.filename?.toLowerCase().endsWith('.svg'));
   const svgs = activeItems.filter(x => x.mime_type?.includes('svg') || x.filename?.toLowerCase().endsWith('.svg'));
-  const photosBytes = photos.reduce((acc, x) => acc + (x.file_size || 0), 0);
-  const svgsBytes = svgs.reduce((acc, x) => acc + (x.file_size || 0), 0);
 
   return {
     totalFiles,
@@ -238,29 +290,48 @@ function computeStorageStats(items) {
     totalBytes,
     activeBytes,
     trashBytes,
-    capacityBytes: R2_CAPACITY_BYTES,
+    capacityBytes: TOTAL_QUOTA_BYTES, // 20 GB
     freeBytes,
     usedPct,
     freePct,
     photosCount: photos.length,
-    photosBytes,
+    photosBytes: photos.reduce((acc, x) => acc + (x.file_size || 0), 0),
     svgsCount: svgs.length,
-    svgsBytes,
+    svgsBytes: svgs.reduce((acc, x) => acc + (x.file_size || 0), 0),
     avgFileSize: activeFiles > 0 ? Math.round(activeBytes / activeFiles) : 0,
-    largestFileSize: activeItems.reduce((max, x) => Math.max(max, x.file_size || 0), 0)
+    largestFileSize: activeItems.reduce((max, x) => Math.max(max, x.file_size || 0), 0),
+    // Provider breakdown metrics
+    r2: {
+      provider: 'r2',
+      name: 'Cloudflare R2',
+      capacityBytes: SINGLE_QUOTA_BYTES,
+      usedBytes: r2UsedBytes,
+      freeBytes: r2FreeBytes,
+      usedPct: r2UsedPct,
+      fileCount: r2Items.length,
+      activeCount: r2Active.length
+    },
+    b2: {
+      provider: 'b2',
+      name: 'Backblaze B2',
+      capacityBytes: SINGLE_QUOTA_BYTES,
+      usedBytes: b2UsedBytes,
+      freeBytes: b2FreeBytes,
+      usedPct: b2UsedPct,
+      fileCount: b2Items.length,
+      activeCount: b2Active.length
+    }
   };
 }
 
 async function saveMediaItemMetadata(sb, item) {
   if (!sb) return false;
 
-  // Try 1: direct table insert
   try {
     const { error } = await sb.from('media_library').insert(item);
     if (!error) return true;
   } catch(e) {}
 
-  // Try 2: fallback to array in site_settings
   try {
     const current = await getStoredMediaList(sb);
     const existingIdx = current.findIndex(x => x.unique_id === item.unique_id || x.id === item.id);
@@ -298,12 +369,10 @@ async function saveAllMediaItems(sb, items) {
 async function removeMediaItemMetadata(sb, uniqueId) {
   if (!sb) return false;
 
-  // Try 1: table delete
   try {
     await sb.from('media_library').delete().eq('unique_id', uniqueId);
   } catch(e) {}
 
-  // Try 2: fallback store
   try {
     const current = await getStoredMediaList(sb);
     const updated = current.filter(x => x.unique_id !== uniqueId && x.id !== uniqueId);
@@ -350,9 +419,18 @@ module.exports = async (req, res) => {
             status: 'synced',
             bucket: R2_BUCKET_NAME,
             region: 'auto',
-            endpoint: 'Cloudflare R2 Storage',
-            totalObjects: items.length,
-            totalBytes: storage.totalBytes,
+            endpoint: 'Cloudflare R2 Storage (10 GB Free)',
+            totalObjects: storage.r2.fileCount,
+            totalBytes: storage.r2.usedBytes,
+            syncedAt: new Date().toISOString()
+          },
+          b2: {
+            status: 'synced',
+            bucket: B2_BUCKET_NAME,
+            region: B2_REGION,
+            endpoint: 'Backblaze B2 Cloud Storage (10 GB Free)',
+            totalObjects: storage.b2.fileCount,
+            totalBytes: storage.b2.usedBytes,
             syncedAt: new Date().toISOString()
           },
           db: {
@@ -363,7 +441,8 @@ module.exports = async (req, res) => {
             syncedAt: new Date().toISOString()
           }
         },
-        publicUrlPrefix: R2_PUBLIC_URL
+        publicUrlPrefix: R2_PUBLIC_URL,
+        b2PublicUrlPrefix: B2_PUBLIC_URL
       });
     } catch(err) {
       console.error('[Media] List/Sync error:', err);
@@ -396,22 +475,30 @@ module.exports = async (req, res) => {
     if (!session) return;
 
     const id = (req.query.id || req.query.unique_id || '').trim();
-    const r2Key = (req.query.key || '').trim();
+    const storageKey = (req.query.key || '').trim();
 
     try {
-      let targetKey = r2Key;
+      let targetKey = storageKey;
+      let targetProvider = 'r2';
+
       if (!targetKey && id) {
         const items = await getStoredMediaList(sb);
         const item = items.find(x => x.unique_id === id || x.id === id || x.filename === id);
-        if (item && item.r2_key) targetKey = item.r2_key;
+        if (item) {
+          targetKey = item.storage_key || item.r2_key;
+          targetProvider = item.provider || (item.url?.includes('backblazeb2') ? 'b2' : 'r2');
+        }
       }
 
       if (!targetKey) {
         return res.status(400).json({ error: 'Valid id, unique_id, or key required.' });
       }
 
-      const getRes = await s3.send(new GetObjectCommand({
-        Bucket: R2_BUCKET_NAME,
+      const client = targetProvider === 'b2' ? b2Client : r2Client;
+      const bucket = targetProvider === 'b2' ? B2_BUCKET_NAME : R2_BUCKET_NAME;
+
+      const getRes = await client.send(new GetObjectCommand({
+        Bucket: bucket,
         Key: targetKey
       }));
 
@@ -427,7 +514,8 @@ module.exports = async (req, res) => {
       return res.status(200).json({
         ok: true,
         content: text,
-        contentType: getRes.ContentType || 'text/plain'
+        contentType: getRes.ContentType || 'text/plain',
+        provider: targetProvider
       });
     } catch(err) {
       console.error('[Media] read_text error:', err);
@@ -435,7 +523,7 @@ module.exports = async (req, res) => {
     }
   }
 
-  // ── 2. UPLOAD MEDIA TO CLOUDFLARE R2 (POST) ────────────────────────────
+  // ── 2. UPLOAD MEDIA TO CLOUD STORAGE (POST) ────────────────────────────
   if (req.method === 'POST' && action === 'upload') {
     const session = await requireAuth(req, res);
     if (!session) return;
@@ -443,14 +531,15 @@ module.exports = async (req, res) => {
     try {
       const body = req.body || {};
       const {
-        fileData,        // Base64 data string (data:image/png;base64,... or raw base64)
+        fileData,        // Base64 data string
         filename,        // Original filename
         mimeType,        // image/jpeg, image/png, etc.
-        folder,          // Target folder name (e.g. 'Articles')
+        folder,          // Target folder name
         title,           // Human title
         altText,         // Accessibility alt text
         altTextBn,       // Bengali alt text
-        tags             // Array or comma string
+        tags,            // Array or comma string
+        provider         // 'r2' | 'b2' | 'auto'
       } = body;
 
       if (!fileData) {
@@ -472,24 +561,32 @@ module.exports = async (req, res) => {
       const fileBuffer = Buffer.from(base64Clean, 'base64');
       const fileSize = fileBuffer.length;
 
-      // Validate size (max 25MB)
       if (fileSize > 25 * 1024 * 1024) {
         return res.status(400).json({ error: 'File size exceeds 25MB limit.' });
       }
 
-      // Generate Unique ID & File Key
-      const uniqueId = generateUniqueMediaId(); // e.g. 'img_7k9x2m4p'
+      // Determine Target Provider ('r2' or 'b2')
+      let targetProvider = (provider || 'r2').toLowerCase();
+      if (targetProvider !== 'b2' && targetProvider !== 'r2') {
+        targetProvider = 'r2'; // default
+      }
+
+      const uniqueId = generateUniqueMediaId();
       const ext = getExtFromMimeOrName(detectedMime, filename);
       const safeName = sanitizeFilename(filename);
       const datePath = new Date().toISOString().slice(0, 7).replace('-', '/'); // '2026/08'
       const targetFolder = (folder || '').trim();
-      const r2Key = `gallery/${datePath}/${uniqueId}_${safeName}.${ext}`;
-      const publicUrl = `${R2_PUBLIC_URL}/${r2Key}`;
+      const storageKey = `gallery/${datePath}/${uniqueId}_${safeName}.${ext}`;
 
-      // Upload to Cloudflare R2 via S3 PutObject
+      const client = targetProvider === 'b2' ? b2Client : r2Client;
+      const bucket = targetProvider === 'b2' ? B2_BUCKET_NAME : R2_BUCKET_NAME;
+      const publicUrl = targetProvider === 'b2'
+        ? `${B2_PUBLIC_URL}/${storageKey}`
+        : `${R2_PUBLIC_URL}/${storageKey}`;
+
       const uploadParams = {
-        Bucket: R2_BUCKET_NAME,
-        Key: r2Key,
+        Bucket: bucket,
+        Key: storageKey,
         Body: fileBuffer,
         ContentType: detectedMime,
         CacheControl: 'public, max-age=31536000, immutable',
@@ -501,14 +598,16 @@ module.exports = async (req, res) => {
         }
       };
 
-      await s3.send(new PutObjectCommand(uploadParams));
+      await client.send(new PutObjectCommand(uploadParams));
 
-      // Construct media record
       const mediaItem = {
         id: uniqueId,
         unique_id: uniqueId,
+        provider: targetProvider,
+        provider_name: targetProvider === 'b2' ? 'Backblaze B2' : 'Cloudflare R2',
         url: publicUrl,
-        r2_key: r2Key,
+        storage_key: storageKey,
+        r2_key: storageKey, // backward compatibility
         folder: targetFolder,
         filename: filename || `${uniqueId}.${ext}`,
         title: title || (filename ? filename.replace(/\.[^/.]+$/, '') : uniqueId),
@@ -524,38 +623,35 @@ module.exports = async (req, res) => {
         updated_at: new Date().toISOString()
       };
 
-      // Save to Supabase metadata store
       if (sb) {
         await saveMediaItemMetadata(sb, mediaItem);
       }
 
-      // Activity log
       try {
         await logActivity({
           actor: session,
           action: 'media.upload',
           category: 'media',
-          summary: `${session.name || session.email} uploaded image "${mediaItem.filename}" (ID: ${uniqueId}${targetFolder ? ' in ' + targetFolder : ''}) to R2 Gallery`,
+          summary: `${session.name || session.email} uploaded image "${mediaItem.filename}" (ID: ${uniqueId}) to ${mediaItem.provider_name}`,
           target_id: uniqueId,
           target_name: mediaItem.filename,
-          details: { unique_id: uniqueId, url: publicUrl, folder: targetFolder, size: fileSize, mime_type: detectedMime },
+          details: { unique_id: uniqueId, url: publicUrl, folder: targetFolder, size: fileSize, provider: targetProvider },
           req
         });
       } catch(e) {}
 
       return res.status(201).json({
         ok: true,
-        message: 'Image successfully uploaded to Cloudflare R2.',
+        message: `Image successfully uploaded to ${mediaItem.provider_name}.`,
         media: mediaItem
       });
     } catch(err) {
       console.error('[Media] Upload error:', err);
-      return res.status(500).json({ error: 'Failed to upload image to Cloudflare R2: ' + (err.message || 'Unknown error') });
+      return res.status(500).json({ error: 'Failed to upload image: ' + (err.message || 'Unknown error') });
     }
   }
 
   // ── 3. FOLDER ACTIONS ──────────────────────────────────────────────────
-  // 3a. CREATE FOLDER
   if (req.method === 'POST' && action === 'create_folder') {
     const session = await requireAuth(req, res);
     if (!session) return;
@@ -590,7 +686,6 @@ module.exports = async (req, res) => {
     }
   }
 
-  // 3b. RENAME FOLDER
   if (req.method === 'PUT' && action === 'rename_folder') {
     const session = await requireAuth(req, res);
     if (!session) return;
@@ -607,7 +702,6 @@ module.exports = async (req, res) => {
         await saveStoredFolderList(sb, folders);
       }
 
-      // Update all media items assigned to old folder
       const items = await getStoredMediaList(sb);
       let updatedCount = 0;
       items.forEach(item => {
@@ -640,7 +734,6 @@ module.exports = async (req, res) => {
     }
   }
 
-  // 3c. DELETE FOLDER
   if (req.method === 'DELETE' && action === 'delete_folder') {
     const session = await requireAuth(req, res);
     if (!session) return;
@@ -653,7 +746,6 @@ module.exports = async (req, res) => {
       folders = folders.filter(f => f !== name);
       await saveStoredFolderList(sb, folders);
 
-      // Re-assign media items inside deleted folder to Root ('')
       const items = await getStoredMediaList(sb);
       let updatedCount = 0;
       items.forEach(item => {
@@ -686,7 +778,6 @@ module.exports = async (req, res) => {
     }
   }
 
-  // 3d. MOVE ASSET(S) TO FOLDER
   if (req.method === 'PUT' && action === 'move') {
     const session = await requireAuth(req, res);
     if (!session) return;
@@ -777,7 +868,6 @@ module.exports = async (req, res) => {
   }
 
   // ── 5. TRASH & DELETION ACTIONS ────────────────────────────────────────
-  // 5a. MOVE TO TRASH (DELETE or POST with action=trash)
   if ((req.method === 'DELETE' || req.method === 'POST') && action === 'trash') {
     const session = await requireAuth(req, res);
     if (!session) return;
@@ -804,7 +894,7 @@ module.exports = async (req, res) => {
           summary: `${session.name || session.email} moved image "${item.filename}" to Trash Bin`,
           target_id: id,
           target_name: item.filename,
-          details: { id, r2_key: item.r2_key },
+          details: { id, storage_key: item.storage_key || item.r2_key, provider: item.provider },
           req
         });
       } catch(e) {}
@@ -816,7 +906,6 @@ module.exports = async (req, res) => {
     }
   }
 
-  // 5b. RESTORE FROM TRASH (POST with action=restore)
   if (req.method === 'POST' && action === 'restore') {
     const session = await requireAuth(req, res);
     if (!session) return;
@@ -843,7 +932,7 @@ module.exports = async (req, res) => {
           summary: `${session.name || session.email} restored image "${item.filename}" from Trash Bin`,
           target_id: id,
           target_name: item.filename,
-          details: { id, r2_key: item.r2_key },
+          details: { id, storage_key: item.storage_key || item.r2_key, provider: item.provider },
           req
         });
       } catch(e) {}
@@ -855,7 +944,6 @@ module.exports = async (req, res) => {
     }
   }
 
-  // 5c. PERMANENTLY DELETE MEDIA (DELETE with action=delete or delete_permanent)
   if (req.method === 'DELETE' && (action === 'delete' || action === 'delete_permanent')) {
     const session = await requireAuth(req, res);
     if (!session) return;
@@ -866,20 +954,21 @@ module.exports = async (req, res) => {
     try {
       const items = await getStoredMediaList(sb);
       const item = items.find(x => x.unique_id === id || x.id === id);
+      const key = item && (item.storage_key || item.r2_key);
+      const provider = (item && item.provider) || (item && item.url?.includes('backblazeb2') ? 'b2' : 'r2');
 
-      if (item && item.r2_key) {
-        // Delete from Cloudflare R2
-        try {
-          await s3.send(new DeleteObjectCommand({
-            Bucket: R2_BUCKET_NAME,
-            Key: item.r2_key
-          }));
-        } catch(s3Err) {
-          console.warn('[Media] S3 DeleteObject warning:', s3Err.message);
+      if (key) {
+        if (provider === 'b2') {
+          try {
+            await b2Client.send(new DeleteObjectCommand({ Bucket: B2_BUCKET_NAME, Key: key }));
+          } catch(e) {}
+        } else {
+          try {
+            await r2Client.send(new DeleteObjectCommand({ Bucket: R2_BUCKET_NAME, Key: key }));
+          } catch(e) {}
         }
       }
 
-      // Remove from metadata store
       await removeMediaItemMetadata(sb, id);
 
       try {
@@ -887,22 +976,21 @@ module.exports = async (req, res) => {
           actor: session,
           action: 'media.delete_permanent',
           category: 'media',
-          summary: `${session.name || session.email} permanently erased image "${(item && item.filename) || id}" from Cloudflare R2`,
+          summary: `${session.name || session.email} permanently erased image "${(item && item.filename) || id}" from ${provider === 'b2' ? 'Backblaze B2' : 'Cloudflare R2'}`,
           target_id: id,
           target_name: (item && item.filename) || id,
-          details: { id, r2_key: item && item.r2_key },
+          details: { id, storage_key: key, provider },
           req
         });
       } catch(e) {}
 
-      return res.status(200).json({ ok: true, message: 'Image permanently deleted from Cloudflare R2.' });
+      return res.status(200).json({ ok: true, message: 'Image permanently deleted from cloud storage.' });
     } catch(err) {
       console.error('[Media] Permanent delete error:', err);
       return res.status(500).json({ error: 'Failed to delete media asset.' });
     }
   }
 
-  // 5d. EMPTY TRASH BIN (POST or DELETE with action=empty_trash)
   if ((req.method === 'POST' || req.method === 'DELETE') && action === 'empty_trash') {
     const session = await requireAuth(req, res);
     if (!session) return;
@@ -912,13 +1000,15 @@ module.exports = async (req, res) => {
       const trashedItems = items.filter(x => x.is_deleted);
 
       for (const item of trashedItems) {
-        if (item.r2_key) {
-          try {
-            await s3.send(new DeleteObjectCommand({
-              Bucket: R2_BUCKET_NAME,
-              Key: item.r2_key
-            }));
-          } catch(e) {}
+        const key = item.storage_key || item.r2_key;
+        const provider = item.provider || (item.url?.includes('backblazeb2') ? 'b2' : 'r2');
+
+        if (key) {
+          if (provider === 'b2') {
+            try { await b2Client.send(new DeleteObjectCommand({ Bucket: B2_BUCKET_NAME, Key: key })); } catch(e) {}
+          } else {
+            try { await r2Client.send(new DeleteObjectCommand({ Bucket: R2_BUCKET_NAME, Key: key })); } catch(e) {}
+          }
         }
         await removeMediaItemMetadata(sb, item.unique_id || item.id);
       }
@@ -928,7 +1018,7 @@ module.exports = async (req, res) => {
           actor: session,
           action: 'media.empty_trash',
           category: 'media',
-          summary: `${session.name || session.email} emptied Trash Bin (${trashedItems.length} assets permanently erased from Cloudflare R2)`,
+          summary: `${session.name || session.email} emptied Trash Bin (${trashedItems.length} assets permanently erased)`,
           details: { deletedCount: trashedItems.length },
           req
         });
