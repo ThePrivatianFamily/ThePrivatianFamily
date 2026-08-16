@@ -2842,6 +2842,134 @@ function renderHeaderPreviewCanvas() {
   `;
 }
 
+// ── Browser Tab & Hover Card (SEO) ──────────────────────────────
+function renderHsTabCard(hs) {
+  const siteTitleInp = document.getElementById('hs-site-title-input');
+  const tabTaglineInp = document.getElementById('hs-tab-tagline-input');
+  const customTitleInp = document.getElementById('hs-tab-title-custom-input');
+  const metaDescInp = document.getElementById('hs-meta-desc-input');
+  const faviconInp = document.getElementById('hs-favicon-input');
+  const tabPreview = document.getElementById('browser-tab-preview-title');
+  const hoverPreview = document.getElementById('hover-card-preview-title');
+
+  const isBn = (_adminContentLang === 'bn');
+  const def = getHeaderDefaultSettings(_adminContentLang);
+
+  if (siteTitleInp) siteTitleInp.value = hs.siteTitle || def.siteTitle;
+  if (tabTaglineInp) tabTaglineInp.value = (hs.tabTagline !== undefined && hs.tabTagline !== null) ? hs.tabTagline : def.tabTagline;
+  if (customTitleInp) customTitleInp.value = hs.browserTabTitle || '';
+  if (metaDescInp) metaDescInp.value = hs.metaDescription || def.metaDescription;
+  if (faviconInp) faviconInp.value = hs.faviconUrl || '';
+
+  updateFaviconPreviews(hs.faviconUrl || '');
+
+  function refreshTabCardPreview() {
+    const brand = (siteTitleInp ? siteTitleInp.value.trim() : '') || def.siteTitle;
+    const tag = (tabTaglineInp ? tabTaglineInp.value.trim() : '');
+    const custom = customTitleInp ? customTitleInp.value.trim() : '';
+
+    const finalTitle = custom || (brand + (tag ? ' — ' + tag : ''));
+    if (tabPreview) tabPreview.textContent = finalTitle;
+    if (hoverPreview) hoverPreview.textContent = finalTitle;
+  }
+  refreshTabCardPreview();
+
+  if (siteTitleInp) {
+    siteTitleInp.oninput = () => {
+      hs.siteTitle = siteTitleInp.value.trim();
+      if (!customTitleInp.value.trim() || customTitleInp.dataset.manual !== 'true') {
+        const brand = hs.siteTitle || def.siteTitle;
+        const tag = (tabTaglineInp ? tabTaglineInp.value.trim() : '');
+        hs.browserTabTitle = brand + (tag ? ' — ' + tag : '');
+        if (customTitleInp) customTitleInp.placeholder = hs.browserTabTitle;
+      }
+      refreshTabCardPreview();
+      updateGlobalSyncStatus();
+      renderHeaderPreviewCanvas();
+    };
+  }
+
+  if (tabTaglineInp) {
+    tabTaglineInp.oninput = () => {
+      hs.tabTagline = tabTaglineInp.value.trim();
+      if (!customTitleInp.value.trim() || customTitleInp.dataset.manual !== 'true') {
+        const brand = (siteTitleInp ? siteTitleInp.value.trim() : '') || def.siteTitle;
+        const tag = hs.tabTagline;
+        hs.browserTabTitle = brand + (tag ? ' — ' + tag : '');
+        if (customTitleInp) customTitleInp.placeholder = hs.browserTabTitle;
+      }
+      refreshTabCardPreview();
+      updateGlobalSyncStatus();
+      renderHeaderPreviewCanvas();
+    };
+  }
+
+  if (customTitleInp) {
+    customTitleInp.oninput = () => {
+      customTitleInp.dataset.manual = customTitleInp.value.trim() ? 'true' : 'false';
+      hs.browserTabTitle = customTitleInp.value.trim();
+      refreshTabCardPreview();
+      updateGlobalSyncStatus();
+      renderHeaderPreviewCanvas();
+    };
+  }
+
+  if (metaDescInp) {
+    metaDescInp.oninput = () => {
+      hs.metaDescription = metaDescInp.value.trim();
+      updateGlobalSyncStatus();
+    };
+  }
+
+  if (faviconInp) {
+    faviconInp.oninput = () => {
+      hs.faviconUrl = faviconInp.value.trim();
+      updateFaviconPreviews(hs.faviconUrl);
+      updateGlobalSyncStatus();
+      renderHeaderPreviewCanvas();
+    };
+  }
+}
+
+async function saveHeaderSettings(hs) {
+  const currentLang = _adminContentLang || 'en';
+  hs.updatedAt = new Date().toISOString();
+  hs.lang = currentLang;
+
+  try {
+    localStorage.setItem(HEADER_SETTINGS_KEY + '_' + currentLang, JSON.stringify(hs));
+    // Also sync structural settings (enabledNavSections, subsections enabled, logo, etc.) into other language cache
+    const otherLang = (currentLang === 'bn') ? 'en' : 'bn';
+    const otherRaw = localStorage.getItem(HEADER_SETTINGS_KEY + '_' + otherLang);
+    if (otherRaw) {
+      const otherHs = JSON.parse(otherRaw);
+      otherHs.enabledNavSections = hs.enabledNavSections;
+      otherHs.logoHeight = hs.logoHeight;
+      otherHs.logoSvg = hs.logoSvg;
+      otherHs.faviconUrl = hs.faviconUrl;
+      if (Array.isArray(hs.subsections) && Array.isArray(otherHs.subsections)) {
+        otherHs.subsections = hs.subsections.map((srcSub, idx) => {
+          const match = otherHs.subsections.find(t => t.id === srcSub.id) || otherHs.subsections[idx] || {};
+          return {
+            ...match,
+            id: srcSub.id,
+            enabled: srcSub.enabled !== false,
+            icon: srcSub.icon !== undefined ? srcSub.icon : match.icon,
+            href: (currentLang === 'en') ? srcSub.href : (match.href || srcSub.href)
+          };
+        });
+      }
+      localStorage.setItem(HEADER_SETTINGS_KEY + '_' + otherLang, JSON.stringify(otherHs));
+    }
+  } catch(e) {}
+
+  try {
+    await _apiPost('/api/sections?action=header' + (currentLang === 'bn' ? '&lang=bn' : ''), hs);
+  } catch(err) {
+    console.warn('[Admin] saveHeaderSettings API error:', err.message);
+  }
+}
+
 // ── HEADER BRAND LOGO & LIVE PREVIEW (MATCHING FOOTER STYLE) ─────────────
 function handleHeaderSvgFileUpload(event) {
   const file = event.target.files && event.target.files[0];
