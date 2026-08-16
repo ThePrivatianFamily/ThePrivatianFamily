@@ -356,6 +356,25 @@ module.exports = async (req, res) => {
     }
   }
 
+  // ── 1b. GET SINGLE ASSET BY ID / UNIQUE_ID (GET) ──────────────────────
+  if (req.method === 'GET' && action === 'get') {
+    const session = await requireAuth(req, res);
+    if (!session) return;
+
+    const id = (req.query.id || req.query.unique_id || '').trim();
+    if (!id) return res.status(400).json({ error: 'id or unique_id is required.' });
+
+    try {
+      const items = await getStoredMediaList(sb);
+      const item = items.find(x => x.unique_id === id || x.id === id || x.filename === id);
+      if (!item) return res.status(404).json({ error: 'Media asset not found.' });
+      return res.status(200).json({ ok: true, media: item });
+    } catch(err) {
+      console.error('[Media] Get single asset error:', err);
+      return res.status(500).json({ error: 'Failed to retrieve asset.' });
+    }
+  }
+
   // ── 2. UPLOAD MEDIA TO CLOUDFLARE R2 (POST) ────────────────────────────
   if (req.method === 'POST' && action === 'upload') {
     const session = await requireAuth(req, res);

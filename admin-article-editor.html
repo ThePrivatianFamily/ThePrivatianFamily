@@ -9,6 +9,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Source+Sans+3:ital,wght@0,300;0,400;0,600;0,700;1,400&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
   <link rel="stylesheet" href="article.css" />
+  <link rel="stylesheet" href="universal-media-modal.css" />
   <style>
 /* ── RESET / VARS ─────────────────────────────── */
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -1784,7 +1785,7 @@ button, input, select, textarea, [contenteditable] {
   <!-- AUTHOR BIO -->
   <div id="ed-bio">
     <div class="bio-card">
-      <div id="author-photo-zone" onclick="document.getElementById('author-photo-inp').click()" title="Click to upload author photo">
+      <div id="author-photo-zone" onclick="trigAuthorPhoto()" title="Click to choose or upload author photo">
         <svg id="author-photo-svg" width="64" height="64" viewBox="0 0 64 64" fill="none">
           <circle cx="32" cy="32" r="32" fill="#e8f1f9"/>
           <circle cx="32" cy="25" r="11" fill="#0a528e" opacity=".28"/>
@@ -2060,6 +2061,7 @@ button, input, select, textarea, [contenteditable] {
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="supabase-config.js"></script>
 <script src="admin-auth.js"></script>
+<script src="universal-media-modal.js"></script>
 <script>
 /* ════════════════════════════════════════════════════════════
    The Privatian Family — Article Editor v5
@@ -3183,7 +3185,27 @@ function syncFeatMeta(src, val) {
 }
 
 function trigFeatImg() {
-  g('feat-img-inp').value = ''; g('feat-img-inp').click();
+  if (typeof window.openUniversalMediaModal === 'function') {
+    window.openUniversalMediaModal({
+      title: 'Featured Image',
+      subtitle: 'Article Hero & Card Banner (Required for Publishing)',
+      defaultTab: 'gallery',
+      allowIdInput: true,
+      onSelect: item => {
+        _featImgUrl = item.url;
+        showFeatPreview(item.url);
+        if (item.title && g('sd-feat-alt') && !g('sd-feat-alt').value) {
+          g('sd-feat-alt').value = item.title;
+        }
+        DIRTY = true;
+        setSaveStatus('Unsaved changes');
+        lsSave();
+        toast(`Featured image set (${item.uniqueId || 'R2'})`, 'ok');
+      }
+    });
+  } else {
+    g('feat-img-inp').value = ''; g('feat-img-inp').click();
+  }
 }
 async function handleFeatImgFile(input) {
   const file = input.files[0]; if (!file) return;
@@ -3456,11 +3478,26 @@ function syncFmt() {
 
 // ── IMAGE INSERT AT CURSOR ────────────────────────────────────
 function trigImg(ev) {
-  ev.preventDefault();
+  if (ev) ev.preventDefault();
   const sel = getSelection();
-  if (sel.rangeCount) _SEL = sel.getRangeAt(0).cloneRange();
-  g('img-inp').value = '';
-  g('img-inp').click();
+  if (sel && sel.rangeCount) _SEL = sel.getRangeAt(0).cloneRange();
+  if (typeof window.openUniversalMediaModal === 'function') {
+    window.openUniversalMediaModal({
+      title: 'Insert Image into Article',
+      subtitle: 'Positioned at current cursor location in article body',
+      defaultTab: 'gallery',
+      allowIdInput: true,
+      onSelect: item => {
+        insertImgAtCursor(item.url);
+        DIRTY = true;
+        lsSave();
+        toast(`Image inserted (${item.uniqueId || 'R2'})`, 'ok');
+      }
+    });
+  } else {
+    g('img-inp').value = '';
+    g('img-inp').click();
+  }
 }
 
 async function handleImgFile(input) {
@@ -3811,6 +3848,27 @@ function hideLinkPopup() {
 }
 
 // ── AUTHOR PHOTO ─────────────────────────────────────────────
+function trigAuthorPhoto() {
+  if (typeof window.openUniversalMediaModal === 'function') {
+    window.openUniversalMediaModal({
+      title: 'Author Profile Photo',
+      subtitle: 'Avatar displayed in author byline & biography',
+      defaultTab: 'gallery',
+      allowIdInput: true,
+      onSelect: item => {
+        showAuthorPhoto(item.url);
+        DIRTY = true;
+        setSaveStatus('Unsaved changes');
+        lsSave();
+        toast(`Author photo set (${item.uniqueId || 'R2'})`, 'ok');
+      }
+    });
+  } else {
+    const inp = g('author-photo-inp');
+    if (inp) { inp.value = ''; inp.click(); }
+  }
+}
+
 async function handleAuthorPhoto(input) {
   const file = input.files[0]; if (!file) return;
   // Show preview immediately

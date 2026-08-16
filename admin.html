@@ -8,6 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@300;400;600;700&family=Libre+Baskerville:wght@400;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="admin.css" />
+  <link rel="stylesheet" href="universal-media-modal.css" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="supabase-config.js"></script>
 </head>
@@ -1587,6 +1588,10 @@
             </div>
           </div>
           <div class="gallery-folders-actions">
+            <button type="button" class="btn btn--primary btn--sm" onclick="openUniversalMediaModal({ allowIdInput: false, defaultTab: 'upload', title: 'Upload New Asset to Cloudflare R2' })" title="Upload new image with popup uploader">
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+              <span>Upload Asset</span>
+            </button>
             <button type="button" class="btn btn--secondary btn--sm" onclick="openAllFoldersModal()" title="View and manage all folders">
               <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
               <span>See All Folders</span>
@@ -2241,11 +2246,6 @@
             <span style="font-size:11px;color:var(--text-muted);">Slot image preview</span>
           </div>
         </div>
-          <div style="margin-top:8px;display:flex;align-items:center;gap:10px;">
-            <img id="hp-slot-image-preview" src="img1.png" alt="Preview" style="width:68px;height:46px;object-fit:cover;border-radius:4px;border:1px solid var(--border);" onerror="this.style.display='none'" onload="this.style.display='block'" />
-            <span style="font-size:11px;color:var(--text-muted);">Slot image preview</span>
-          </div>
-        </div>
 
         <div class="form-group" id="hp-slot-tag-group" style="margin-top:12px;">
           <label class="form-label" for="hp-slot-tag-input">Tag / Category Badge (Optional)</label>
@@ -2730,6 +2730,7 @@
 
   <div class="toast-container" id="toast-container" aria-live="polite"></div>
 
+  <script src="universal-media-modal.js"></script>
   <script src="admin.js"></script>
 </body>
 </html>

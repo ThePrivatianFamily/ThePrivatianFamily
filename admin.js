@@ -9471,6 +9471,10 @@ function _emptyTrashConfirm() {
 
 // ── 10. Universal Gallery Picker Modal (for Articles / Sections) ───
 function openGalleryPicker(callback) {
+  if (typeof window.openUniversalMediaModal === 'function') {
+    window.openUniversalMediaModal(callback);
+    return;
+  }
   _galleryPickerCallback = callback;
   _galleryPickerSelectedItem = null;
   _galleryPickerActiveFolder = 'all';
@@ -9495,6 +9499,10 @@ function openGalleryPicker(callback) {
 }
 
 function closeGalleryPicker() {
+  if (typeof window.closeUniversalMediaModal === 'function') {
+    window.closeUniversalMediaModal();
+    return;
+  }
   const modal = document.getElementById('modal-gallery-picker');
   if (modal) modal.hidden = true;
   _galleryPickerCallback = null;
