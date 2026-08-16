@@ -122,7 +122,7 @@ module.exports = async function handler(req, res) {
     }
   }
 
-  // ── CHECK WHITELIST & PROGRESSIVE OTP RATE LIMIT ────────────────
+  // ── CHECK WHITELIST & RATE LIMIT STATUS ──────────────────────────
   if (action === 'check-whitelist' && req.method === 'POST') {
     const { email } = req.body || {};
     if (!email || typeof email !== 'string') {
@@ -152,12 +152,7 @@ module.exports = async function handler(req, res) {
         });
       }
 
-      // Check progressive rate limits
-      // Tier 1 (1st request): 60s (1 minute)
-      // Tier 2 (2nd request): 60s (1 minute)
-      // Tier 3 (3rd request): 600s (10 minutes)
-      // Tier 4 (4th request): 3600s (1 hour)
-      // Tier 5 (5th+ request): 86400s (24 hours - Maximum Limit)
+      // Check current rate limit lock status
       const now = new Date();
       const { data: rateRow } = await sb
         .from('otp_rate_limits')
@@ -184,7 +179,7 @@ module.exports = async function handler(req, res) {
 
           let lockoutMsg = '';
           if (currentAttempts <= 2) {
-            lockoutMsg = `A code was already sent to your email recently. Please enter the 6-digit code below, or wait ${durationText} before requesting another code.`;
+            lockoutMsg = `A code was already sent to your email recently. Please enter that 6-digit code below, or wait ${durationText} before requesting another code.`;
           } else if (currentAttempts === 3) {
             lockoutMsg = `Too many OTP requests (Attempt 3/5). Please enter the 6-digit code already sent to your email, or wait ${durationText} for a new code.`;
           } else if (currentAttempts === 4) {
@@ -206,6 +201,34 @@ module.exports = async function handler(req, res) {
         }
       }
 
+      return res.status(200).json({
+        allowed: true,
+        email: admin.email,
+        role: admin.role,
+        currentAttempts: rateRow ? (rateRow.attempts || 0) : 0
+      });
+    } catch(e) {
+      console.error('[auth/check-whitelist]', e.message);
+      return res.status(500).json({ error: 'Failed to verify authorization. Please try again.' });
+    }
+  }
+
+  // ── RECORD OTP SENT (Called ONLY when Supabase sends OTP email) ───
+  if (action === 'record-otp-sent' && req.method === 'POST') {
+    const { email } = req.body || {};
+    if (!email) return res.status(400).json({ error: 'Email required' });
+
+    try {
+      const sb = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
+      const emailNorm = email.trim().toLowerCase();
+      const now = new Date();
+
+      const { data: rateRow } = await sb
+        .from('otp_rate_limits')
+        .select('*')
+        .eq('email', emailNorm)
+        .single();
+
       let attempts = 1;
       if (rateRow && rateRow.last_requested_at) {
         const lastReq = new Date(rateRow.last_requested_at);
@@ -216,37 +239,39 @@ module.exports = async function handler(req, res) {
         }
       }
 
-      // Calculate cooldown seconds
+      // Progressive Cooldown Tiers:
+      // Attempts 1-2: 60s (1 min)
+      // Attempt 3: 600s (10 mins)
+      // Attempt 4: 3600s (1 hour)
+      // Attempt 5+: 86400s (24 hours MAX limit)
       let cooldownSec = 60;
       if (attempts <= 2) {
-        cooldownSec = 60;    // 1 min
+        cooldownSec = 60;
       } else if (attempts === 3) {
-        cooldownSec = 600;   // 10 min
+        cooldownSec = 600;
       } else if (attempts === 4) {
-        cooldownSec = 3600;  // 1 hour
+        cooldownSec = 3600;
       } else {
-        cooldownSec = 86400; // 24 hours MAX limit
+        cooldownSec = 86400;
       }
 
       const nextLockedUntil = new Date(now.getTime() + cooldownSec * 1000);
       await sb.from('otp_rate_limits').upsert({
-        email: admin.email,
+        email: emailNorm,
         attempts: attempts,
         last_requested_at: now.toISOString(),
         locked_until: nextLockedUntil.toISOString()
       });
 
       return res.status(200).json({
-        allowed: true,
-        email: admin.email,
-        role: admin.role,
-        cooldownSeconds: cooldownSec,
-        attempts: attempts,
-        maxAttempts: 5
+        success: true,
+        attempts,
+        maxAttempts: 5,
+        cooldownSeconds: cooldownSec
       });
     } catch(e) {
-      console.error('[auth/check-whitelist]', e.message);
-      return res.status(500).json({ error: 'Failed to verify authorization. Please try again.' });
+      console.error('[auth/record-otp-sent]', e.message);
+      return res.status(500).json({ error: 'Failed to record OTP send' });
     }
   }
 

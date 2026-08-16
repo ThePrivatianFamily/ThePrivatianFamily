@@ -124,7 +124,7 @@
       margin: 0 auto 20px;
     }
 
-    /* Error / info / warning messages with pure SVG icons (Universal position) */
+    /* Universal Message Alert Box */
     .msg-box {
       border-radius: 10px;
       padding: 12px 14px;
@@ -562,8 +562,8 @@
           <path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/>
         </svg>
       </div>
-      <h2 class="sent-title">Enter Verification Code</h2>
-      <p class="sent-desc">OTP code destination: <strong id="sent-email-target"></strong></p>
+      <h2 class="sent-title" id="sent-view-title">Enter Verification Code</h2>
+      <p class="sent-desc" id="sent-view-desc">Verification code for: <strong id="sent-email-target"></strong></p>
       
       <!-- Modern 6-Slot Segmented OTP Form -->
       <div class="otp-card-inner">
@@ -693,10 +693,10 @@
       if (!err) return 'An unexpected error occurred. Please try again.';
       const msg = typeof err === 'string' ? err : err.message || '';
       if (/rate limit|over_email_send_rate_limit|security purposes|too many requests|seconds/i.test(msg)) {
-        return 'A code was already sent recently. Please enter the 6-digit code below, or wait for the cooldown timer to request a new one.';
+        return 'A code was already sent recently. Please enter that 6-digit code below, or wait 1 minute to request a new one.';
       }
-      if (/invalid.*code|token.*expired|otp.*expired|invalid.*token/i.test(msg)) {
-        return 'The 6-digit OTP code is incorrect or expired. Please check your inbox and try again.';
+      if (/invalid.*code|token.*expired|otp.*expired|invalid.*token|token is expired/i.test(msg)) {
+        return 'The 6-digit OTP code is incorrect or expired. Please check your latest email and try again.';
       }
       if (/user not found/i.test(msg)) {
         return 'This email is not authorized on the access whitelist.';
@@ -867,7 +867,7 @@
       submitBtn.innerHTML = '<span class="spinner visible" style="width:16px;height:16px;margin:0;display:inline-block;vertical-align:middle;border-width:2px;"></span> <span>Checking Authorization...</span>';
 
       try {
-        // Step 1: Pre-validate against whitelist API + Progressive Rate Limit Check
+        // Step 1: Pre-validate against whitelist API & Lockout Check
         const checkRes = await fetch('/api/auth?action=check-whitelist', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -876,13 +876,15 @@
 
         const checkData = await checkRes.json();
 
-        // If rate limited, transition IMMEDIATELY to OTP screen so user can enter the already sent code
+        // If currently locked out / rate limited:
         if (checkRes.status === 429 || checkData.rateLimited) {
           submitBtn.disabled = false;
           submitBtn.innerHTML = '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg><span>Send 6-Digit Code (OTP)</span>';
           
           _lastSentEmail = checkData.email || email;
           document.getElementById('sent-email-target').textContent = _lastSentEmail;
+          document.getElementById('sent-view-title').textContent = 'Enter Existing Verification Code';
+          document.getElementById('sent-view-desc').innerHTML = 'A code was already sent to: <strong id="sent-email-target">' + _lastSentEmail + '</strong>';
           document.getElementById('auth-main-wrap').style.display = 'none';
           document.getElementById('email-sent-wrap').style.display = 'block';
 
@@ -899,7 +901,7 @@
           return;
         }
 
-        // Step 2: Trigger Supabase 6-Digit OTP Email
+        // Step 2: Dispatch 6-Digit OTP Email via Supabase
         submitBtn.innerHTML = '<span class="spinner visible" style="width:16px;height:16px;margin:0;display:inline-block;vertical-align:middle;border-width:2px;"></span> <span>Sending 6-Digit Code...</span>';
 
         const sb = getSupabaseClient();
@@ -920,26 +922,43 @@
           
           _lastSentEmail = checkData.email || email;
           document.getElementById('sent-email-target').textContent = _lastSentEmail;
+          document.getElementById('sent-view-title').textContent = 'Enter Existing Verification Code';
+          document.getElementById('sent-view-desc').innerHTML = 'A code was already sent to: <strong id="sent-email-target">' + _lastSentEmail + '</strong>';
           document.getElementById('auth-main-wrap').style.display = 'none';
           document.getElementById('email-sent-wrap').style.display = 'block';
 
           showMsg('warning', formatSupabaseError(otpError));
           clearOtpSlots();
-          startResendCountdown(checkData.cooldownSeconds || 60);
+          startResendCountdown(60);
           return;
         }
 
-        // Step 3: Success! Switch to 6-digit OTP confirmation view
+        // Step 3: Record successfully sent OTP to update progressive rate limit tracking
         _lastSentEmail = checkData.email || email;
+        let cooldownSec = 60;
+        try {
+          const recRes = await fetch('/api/auth?action=record-otp-sent', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: _lastSentEmail })
+          });
+          const recData = await recRes.json();
+          if (recData && recData.cooldownSeconds) cooldownSec = recData.cooldownSeconds;
+        } catch(recErr) {}
+
+        // Transition to OTP verification screen
         document.getElementById('sent-email-target').textContent = _lastSentEmail;
+        document.getElementById('sent-view-title').textContent = 'Code Sent to Your Email';
+        document.getElementById('sent-view-desc').innerHTML = 'We just sent a fresh 6-digit OTP code to: <strong id="sent-email-target">' + _lastSentEmail + '</strong>';
         document.getElementById('auth-main-wrap').style.display = 'none';
         document.getElementById('email-sent-wrap').style.display = 'block';
 
         submitBtn.disabled = false;
         submitBtn.innerHTML = '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg><span>Send 6-Digit Code (OTP)</span>';
 
+        showMsg('success', 'A 6-digit verification code has been sent to your email.');
         clearOtpSlots();
-        startResendCountdown(checkData.cooldownSeconds || 60);
+        startResendCountdown(cooldownSec);
 
       } catch(err) {
         submitBtn.disabled = false;
@@ -955,7 +974,7 @@
       resendBtn.textContent = 'Sending...';
 
       try {
-        // Check whitelist and progressive rate limits
+        // Check whitelist & lockout
         const checkRes = await fetch('/api/auth?action=check-whitelist', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -989,11 +1008,23 @@
 
         if (error) {
           showMsg('warning', formatSupabaseError(error));
-          startResendCountdown(checkData.cooldownSeconds || 60);
+          startResendCountdown(60);
         } else {
+          let cooldownSec = 60;
+          try {
+            const recRes = await fetch('/api/auth?action=record-otp-sent', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ email: _lastSentEmail })
+            });
+            const recData = await recRes.json();
+            if (recData && recData.cooldownSeconds) cooldownSec = recData.cooldownSeconds;
+          } catch(recErr) {}
+
+          document.getElementById('sent-view-title').textContent = 'Code Sent to Your Email';
           showMsg('success', 'A fresh 6-digit verification code has been sent to your email.');
           clearOtpSlots();
-          startResendCountdown(checkData.cooldownSeconds || 60);
+          startResendCountdown(cooldownSec);
         }
       } catch(e) {
         showMsg('error', 'Network error while resending code.');
@@ -1002,7 +1033,7 @@
       }
     }
 
-    // ── 6-DIGIT OTP VERIFY HANDLER ────────────────────────────────────
+    // ── 6-DIGIT OTP VERIFY HANDLER (With Full Fallbacks) ─────────────
     async function verifyOtpCode() {
       const code = getOtpCode();
       const verifyBtn = document.getElementById('btn-verify-otp');
@@ -1027,19 +1058,43 @@
         const sb = getSupabaseClient();
         if (!sb) throw new Error('Supabase client unavailable');
 
-        // Verify with Supabase Email OTP
-        let { data, error } = await sb.auth.verifyOtp({
+        // Attempt 1: Verify with type 'email'
+        let otpRes = await sb.auth.verifyOtp({
           email: _lastSentEmail,
           token: code,
           type: 'email'
         });
 
-        if (error || !data || !data.session || !data.session.access_token) {
+        // Attempt 2: If type 'email' returned token invalid/error, try type 'magiclink'
+        if ((otpRes.error || !otpRes.data?.session?.access_token) && !otpRes.data?.user?.email) {
+          const mRes = await sb.auth.verifyOtp({
+            email: _lastSentEmail,
+            token: code,
+            type: 'magiclink'
+          });
+          if (!mRes.error && mRes.data?.session?.access_token) {
+            otpRes = mRes;
+          }
+        }
+
+        // Attempt 3: If still error, try type 'signup'
+        if ((otpRes.error || !otpRes.data?.session?.access_token) && !otpRes.data?.user?.email) {
+          const sRes = await sb.auth.verifyOtp({
+            email: _lastSentEmail,
+            token: code,
+            type: 'signup'
+          });
+          if (!sRes.error && sRes.data?.session?.access_token) {
+            otpRes = sRes;
+          }
+        }
+
+        if (otpRes.error || !otpRes.data || !otpRes.data.session || !otpRes.data.session.access_token) {
           if (verifyBtn) {
             verifyBtn.disabled = false;
             verifyBtn.innerHTML = '<span>Verify & Log In</span>';
           }
-          showMsg('error', formatSupabaseError(error));
+          showMsg('error', formatSupabaseError(otpRes.error));
           return;
         }
 
@@ -1048,7 +1103,7 @@
         const verifyRes = await fetch('/api/auth?action=verify-otp', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ access_token: data.session.access_token })
+          body: JSON.stringify({ access_token: otpRes.data.session.access_token })
         });
 
         const verifyData = await verifyRes.json();
