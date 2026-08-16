@@ -195,6 +195,236 @@
       </div>
     </header>
 
+    <!-- PAGE: DASHBOARD -->
+    <section class="page active" id="page-dashboard">
+      <!-- Dashboard Top Header -->
+      <div class="db-header-wrap" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:12px;">
+        <div class="db-title-group">
+          <h1 class="page-title" style="font-size:22px;font-weight:700;color:var(--text-primary);margin:0 0 4px;">Executive Dashboard</h1>
+          <p class="page-subtitle" style="font-size:13px;color:var(--text-muted);margin:0;">Real-time overview of publication metrics, traffic analytics, assets, and staff.</p>
+        </div>
+        <div class="db-header-actions" style="display:flex;align-items:center;gap:10px;">
+          <span class="db-live-indicator" style="display:inline-flex;align-items:center;gap:6px;background:var(--card-bg);border:1px solid var(--border);padding:6px 12px;border-radius:20px;font-size:12px;font-weight:600;color:var(--text-secondary);">
+            <span class="db-live-dot" style="width:8px;height:8px;border-radius:50%;background:#10b981;box-shadow:0 0 0 3px rgba(16,185,129,0.2);"></span>
+            <span id="db-last-updated-text">Live</span>
+          </span>
+          <button type="button" class="btn btn--secondary btn--sm" id="db-refresh-btn" onclick="refreshDashboardMetrics()" title="Synchronize metrics with database" style="display:inline-flex;align-items:center;gap:6px;">
+            <svg id="db-refresh-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
+              <polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+            </svg>
+            <span>Sync Live</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- 4 Primary Metric Cards Grid -->
+      <div class="db-metrics-grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px;">
+        <!-- 1. Articles Card -->
+        <div class="card db-card" style="padding:18px;display:flex;flex-direction:column;justify-content:space-between;border:1px solid var(--border);border-radius:var(--radius);background:var(--card-bg);">
+          <div class="db-card-head" style="display:flex;align-items:center;gap:14px;margin-bottom:14px;">
+            <div class="db-card-icon-wrap" style="width:42px;height:42px;border-radius:10px;background:rgba(10,82,142,0.1);color:#0a528e;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>
+              </svg>
+            </div>
+            <div class="db-card-meta">
+              <span class="db-card-label" style="font-size:12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.04em;">Articles</span>
+              <h3 class="db-card-value" id="db-stat-articles-total" style="font-size:24px;font-weight:800;color:var(--text-primary);line-height:1.1;margin:2px 0 0;">0</h3>
+            </div>
+          </div>
+          <div class="db-card-body" style="border-top:1px solid var(--border);padding-top:12px;display:flex;flex-direction:column;gap:6px;font-size:12.5px;">
+            <div class="db-stat-row" style="display:flex;justify-content:space-between;align-items:center;">
+              <span class="db-stat-k" style="color:var(--text-secondary);display:inline-flex;align-items:center;gap:6px;"><span class="db-status-dot" style="width:6px;height:6px;border-radius:50%;background:#10b981;"></span> Published</span>
+              <strong class="db-stat-v" id="db-stat-articles-pub" style="font-weight:700;color:var(--text-primary);">0</strong>
+            </div>
+            <div class="db-stat-row" style="display:flex;justify-content:space-between;align-items:center;">
+              <span class="db-stat-k" style="color:var(--text-secondary);display:inline-flex;align-items:center;gap:6px;"><span class="db-status-dot" style="width:6px;height:6px;border-radius:50%;background:#f59e0b;"></span> Drafts</span>
+              <strong class="db-stat-v" id="db-stat-articles-draft" style="font-weight:700;color:var(--text-primary);">0</strong>
+            </div>
+            <div class="db-stat-row" style="display:flex;justify-content:space-between;align-items:center;">
+              <span class="db-stat-k" style="color:var(--text-secondary);display:inline-flex;align-items:center;gap:6px;"><span class="db-status-dot" style="width:6px;height:6px;border-radius:50%;background:#ef4444;"></span> Trash</span>
+              <strong class="db-stat-v" id="db-stat-articles-trash" style="font-weight:700;color:var(--text-primary);">0</strong>
+            </div>
+          </div>
+          <div class="db-card-foot" style="margin-top:14px;padding-top:10px;border-top:1px dashed var(--border);">
+            <a href="admin-article-editor.html" class="db-card-link" style="font-size:12px;font-weight:700;color:var(--brand);text-decoration:none;display:inline-flex;align-items:center;gap:4px;">
+              <span>Write Story</span>
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+            </a>
+          </div>
+        </div>
+
+        <!-- 2. Team & Staff Card -->
+        <div class="card db-card" style="padding:18px;display:flex;flex-direction:column;justify-content:space-between;border:1px solid var(--border);border-radius:var(--radius);background:var(--card-bg);">
+          <div class="db-card-head" style="display:flex;align-items:center;gap:14px;margin-bottom:14px;">
+            <div class="db-card-icon-wrap" style="width:42px;height:42px;border-radius:10px;background:rgba(99,102,241,0.1);color:#6366f1;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+              </svg>
+            </div>
+            <div class="db-card-meta">
+              <span class="db-card-label" style="font-size:12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.04em;">Users & Roles</span>
+              <h3 class="db-card-value" id="db-stat-team-total" style="font-size:24px;font-weight:800;color:var(--text-primary);line-height:1.1;margin:2px 0 0;">0</h3>
+            </div>
+          </div>
+          <div class="db-card-body" style="border-top:1px solid var(--border);padding-top:12px;display:flex;flex-direction:column;gap:6px;font-size:12.5px;">
+            <div class="db-stat-row" style="display:flex;justify-content:space-between;align-items:center;">
+              <span class="db-stat-k" style="color:var(--text-secondary);display:inline-flex;align-items:center;gap:6px;"><span class="db-status-dot" style="width:6px;height:6px;border-radius:50%;background:#3b82f6;"></span> Admins</span>
+              <strong class="db-stat-v" id="db-stat-team-admins" style="font-weight:700;color:var(--text-primary);">0</strong>
+            </div>
+            <div class="db-stat-row" style="display:flex;justify-content:space-between;align-items:center;">
+              <span class="db-stat-k" style="color:var(--text-secondary);display:inline-flex;align-items:center;gap:6px;"><span class="db-status-dot" style="width:6px;height:6px;border-radius:50%;background:#8b5cf6;"></span> Moderators</span>
+              <strong class="db-stat-v" id="db-stat-team-mods" style="font-weight:700;color:var(--text-primary);">0</strong>
+            </div>
+            <div class="db-stat-row" style="display:flex;justify-content:space-between;align-items:center;">
+              <span class="db-stat-k" style="color:var(--text-secondary);">Auth Security</span>
+              <strong class="db-stat-v" style="color:#10b981;font-weight:700;">Active ✓</strong>
+            </div>
+          </div>
+          <div class="db-card-foot" style="margin-top:14px;padding-top:10px;border-top:1px dashed var(--border);">
+            <a href="#" onclick="navigateTo('access');return false;" class="db-card-link" style="font-size:12px;font-weight:700;color:#6366f1;text-decoration:none;display:inline-flex;align-items:center;gap:4px;">
+              <span>Manage Access</span>
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+            </a>
+          </div>
+        </div>
+
+        <!-- 3. Media & Assets Card -->
+        <div class="card db-card" style="padding:18px;display:flex;flex-direction:column;justify-content:space-between;border:1px solid var(--border);border-radius:var(--radius);background:var(--card-bg);">
+          <div class="db-card-head" style="display:flex;align-items:center;gap:14px;margin-bottom:14px;">
+            <div class="db-card-icon-wrap" style="width:42px;height:42px;border-radius:10px;background:rgba(245,158,11,0.1);color:#f59e0b;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                <circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/>
+              </svg>
+            </div>
+            <div class="db-card-meta">
+              <span class="db-card-label" style="font-size:12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.04em;">Media Assets</span>
+              <h3 class="db-card-value" id="db-stat-media-total" style="font-size:24px;font-weight:800;color:var(--text-primary);line-height:1.1;margin:2px 0 0;">0</h3>
+            </div>
+          </div>
+          <div class="db-card-body" style="border-top:1px solid var(--border);padding-top:12px;display:flex;flex-direction:column;gap:6px;font-size:12.5px;">
+            <div class="db-stat-row" style="display:flex;justify-content:space-between;align-items:center;">
+              <span class="db-stat-k" style="color:var(--text-secondary);">Photos (PNG/JPG)</span>
+              <strong class="db-stat-v" id="db-stat-media-photos" style="font-weight:700;color:var(--text-primary);">0</strong>
+            </div>
+            <div class="db-stat-row" style="display:flex;justify-content:space-between;align-items:center;">
+              <span class="db-stat-k" style="color:var(--text-secondary);">Vector SVGs</span>
+              <strong class="db-stat-v" id="db-stat-media-svgs" style="font-weight:700;color:var(--text-primary);">0</strong>
+            </div>
+            <div class="db-stat-row" style="display:flex;justify-content:space-between;align-items:center;">
+              <span class="db-stat-k" style="color:var(--text-secondary);">Storage (R2)</span>
+              <strong class="db-stat-v" id="db-stat-media-size" style="font-weight:700;color:var(--text-primary);">0 B</strong>
+            </div>
+          </div>
+          <div class="db-card-foot" style="margin-top:14px;padding-top:10px;border-top:1px dashed var(--border);">
+            <a href="#" onclick="navigateTo('gallery');return false;" class="db-card-link" style="font-size:12px;font-weight:700;color:#f59e0b;text-decoration:none;display:inline-flex;align-items:center;gap:4px;">
+              <span>Open Gallery</span>
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+            </a>
+          </div>
+        </div>
+
+        <!-- 4. Traffic & Views Card -->
+        <div class="card db-card" style="padding:18px;display:flex;flex-direction:column;justify-content:space-between;border:1px solid var(--border);border-radius:var(--radius);background:var(--card-bg);">
+          <div class="db-card-head" style="display:flex;align-items:center;gap:14px;margin-bottom:14px;">
+            <div class="db-card-icon-wrap" style="width:42px;height:42px;border-radius:10px;background:rgba(16,185,129,0.1);color:#10b981;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+              </svg>
+            </div>
+            <div class="db-card-meta">
+              <span class="db-card-label" style="font-size:12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.04em;">Lifetime Views</span>
+              <h3 class="db-card-value" id="db-stat-views-lifetime" style="font-size:24px;font-weight:800;color:var(--text-primary);line-height:1.1;margin:2px 0 0;">0</h3>
+            </div>
+          </div>
+          <div class="db-card-body" style="border-top:1px solid var(--border);padding-top:12px;display:flex;flex-direction:column;gap:6px;font-size:12.5px;">
+            <div class="db-stat-row" style="display:flex;justify-content:space-between;align-items:center;">
+              <span class="db-stat-k" style="color:var(--text-secondary);">Today Views</span>
+              <strong class="db-stat-v" id="db-stat-views-today" style="font-weight:700;color:var(--text-primary);">0 views</strong>
+            </div>
+            <div class="db-stat-row" style="display:flex;justify-content:space-between;align-items:center;">
+              <span class="db-stat-k" style="color:var(--text-secondary);">Unique Visitors</span>
+              <strong class="db-stat-v" id="db-stat-visitors-today" style="font-weight:700;color:var(--text-primary);">0</strong>
+            </div>
+            <div class="db-stat-row" style="display:flex;justify-content:space-between;align-items:center;">
+              <span class="db-stat-k" style="color:var(--text-secondary);">Month / Year</span>
+              <strong class="db-stat-v" style="font-weight:700;color:var(--text-primary);"><span id="db-stat-views-month">0</span> / <span id="db-stat-views-year">0</span></strong>
+            </div>
+          </div>
+          <div class="db-card-foot" style="margin-top:14px;padding-top:10px;border-top:1px dashed var(--border);display:flex;justify-content:space-between;align-items:center;">
+            <span style="font-size:11px;color:var(--text-muted);font-weight:600;">W3C / IAB Standard</span>
+            <button type="button" class="btn btn--ghost btn--xs" onclick="resetAnalyticsStoreToZero()" style="color:#ef4444;font-size:11px;padding:2px 6px;border:none;cursor:pointer;" title="Reset traffic history to authentic 0">Reset</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 7-Day Traffic Trend Bar Visualization -->
+      <div class="card db-chart-card" style="margin-bottom:24px;padding:20px;border:1px solid var(--border);border-radius:var(--radius);background:var(--card-bg);">
+        <div class="db-chart-head" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:12px;">
+          <div>
+            <h2 style="font-size:15px;font-weight:700;color:var(--text-primary);margin:0 0 2px;">7-Day Web Traffic Trend (Authentic Real-Time)</h2>
+            <p style="font-size:12px;color:var(--text-muted);margin:0;">Standardized pageviews & unique visitors distribution</p>
+          </div>
+          <div class="db-chart-legend" style="display:flex;align-items:center;gap:14px;">
+            <span class="db-legend-item" style="font-size:12px;color:var(--text-secondary);display:inline-flex;align-items:center;gap:6px;">
+              <span class="db-legend-dot" style="width:8px;height:8px;border-radius:2px;background:#0a528e;display:inline-block;"></span> Daily Pageviews
+            </span>
+            <span class="db-avg-daily" id="db-avg-daily-val" style="font-size:12px;font-weight:700;color:var(--text-primary);background:var(--content-bg);padding:3px 8px;border-radius:4px;border:1px solid var(--border);">0 / day</span>
+          </div>
+        </div>
+        <div class="db-chart-body" id="db-chart-bars" style="display:flex;align-items:flex-end;justify-content:space-between;gap:12px;height:160px;padding-top:15px;border-bottom:1px solid var(--border);">
+          <!-- dynamically rendered bars -->
+        </div>
+      </div>
+
+      <!-- 2-Column Split: Recent Articles & Activity Logs -->
+      <div class="db-lower-grid" style="display:grid;grid-template-columns:1.2fr 1fr;gap:20px;">
+        <!-- Left: Recent Articles -->
+        <div class="card db-lower-card" style="padding:20px;border:1px solid var(--border);border-radius:var(--radius);background:var(--card-bg);">
+          <div class="db-lower-card-head" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+            <div style="display:flex;align-items:center;gap:8px;">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+              <h3 style="font-size:14px;font-weight:700;color:var(--text-primary);margin:0;">Recent Publication Stories</h3>
+            </div>
+            <a href="#" onclick="navigateTo('articles');return false;" class="btn btn--ghost btn--xs" style="font-size:11.5px;text-decoration:none;padding:4px 8px;">View All Articles →</a>
+          </div>
+          <div class="db-table-responsive" style="overflow-x:auto;">
+            <table class="data-table db-mini-table" style="width:100%;font-size:12.5px;">
+              <thead>
+                <tr>
+                  <th>Title</th>
+                  <th>Section</th>
+                  <th>Author</th>
+                  <th>Status</th>
+                  <th class="tar">Action</th>
+                </tr>
+              </thead>
+              <tbody id="db-recent-articles-tbody">
+                <!-- injected by JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Right: Recent Activity Log -->
+        <div class="card db-lower-card" style="padding:20px;border:1px solid var(--border);border-radius:var(--radius);background:var(--card-bg);">
+          <div class="db-lower-card-head" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+            <div style="display:flex;align-items:center;gap:8px;">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+              <h3 style="font-size:14px;font-weight:700;color:var(--text-primary);margin:0;">Recent Admin Activities</h3>
+            </div>
+            <a href="#" onclick="navigateTo('activity');return false;" class="btn btn--ghost btn--xs" style="font-size:11.5px;text-decoration:none;padding:4px 8px;">Full Log →</a>
+          </div>
+          <div class="db-activity-feed-wrap" id="db-activity-feed" style="display:flex;flex-direction:column;gap:10px;">
+            <!-- injected by JS -->
+          </div>
+        </div>
+      </div>
+    </section>
+
     <!-- PAGE: SECTIONS -->
     <section class="page" id="page-sections">
 

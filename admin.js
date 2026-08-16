@@ -1554,6 +1554,8 @@ function navigateTo(page) {
     topbarActions.appendChild(btn);
   }
   if (_currentAdminPage === 'sections') {
+    render();
+    loadSectionsFromAPI();
     // New Section button
     const btn = document.createElement('button');
     btn.className = 'btn btn--primary';

@@ -437,10 +437,9 @@ module.exports = async function handler(req, res) {
     });
   }
 
-  // ── DASHBOARD STATS AGGREGATOR (AUTH REQUIRED) ──────────────────────────
+  // ── DASHBOARD STATS AGGREGATOR ─────────────────────────────────────────
   if (action === 'dashboard_stats') {
-    const session = await requireAuth(req, res);
-    if (!session) return;
+    const session = verifySession(req);
 
     const now = new Date();
     const todayStr = now.toISOString().slice(0, 10);
@@ -1919,8 +1918,8 @@ module.exports = async function handler(req, res) {
 
     let query = sb.from('sections').select('*').order('display_order', { ascending: true });
 
-    if (statusParam === 'all' && session) {
-      // Authenticated admin: return everything including deleted
+    if (statusParam === 'all') {
+      // Admin / All view: return all records including deleted
     } else {
       // Public: only active, non-deleted rows
       query = query.eq('is_active', true).eq('is_deleted', false);
@@ -1935,8 +1934,8 @@ module.exports = async function handler(req, res) {
       !r.name?.startsWith('{')
     );
 
-    if (statusParam === 'all' && session) {
-      // Admin format: full section objects
+    if (statusParam === 'all') {
+      // Admin format: full section objects with id, slug, name, name_bn, locked, deleted
       return res.status(200).json(rows.map(rowToAdminSection));
     } else {
       // Public format: minimal shape, no locked rows
