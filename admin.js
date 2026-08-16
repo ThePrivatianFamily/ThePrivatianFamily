@@ -2421,6 +2421,177 @@ async function loadHeaderSettings() {
   return Object.assign({}, DEFAULT_HEADER_SETTINGS);
 }
 
+// ── Header Segmented Tabs Switcher ───────────────────────────────
+function switchHeaderTab(tabKey) {
+  const tabs = ['tabcard', 'logo', 'nav', 'sub', 'preview'];
+  tabs.forEach(t => {
+    const btn = document.getElementById('tab-hs-' + t);
+    const panel = document.getElementById('panel-hs-' + t);
+    if (btn) btn.classList.toggle('active', t === tabKey);
+    if (panel) panel.style.display = (t === tabKey) ? 'block' : 'none';
+  });
+  if (tabKey === 'preview') {
+    renderHeaderPreviewCanvas();
+  }
+}
+
+// ── Favicon Studio Helpers ───────────────────────────────────────
+function updateFaviconPreviews(url) {
+  const p16 = document.getElementById('hs-favicon-preview-16');
+  const p32 = document.getElementById('hs-favicon-preview-32');
+  const p48 = document.getElementById('hs-favicon-preview-48');
+  const simTab = document.getElementById('browser-tab-sim-favicon');
+  const simHover = document.getElementById('hover-card-sim-favicon');
+
+  const cleanUrl = (url || '').trim();
+
+  const setImgOrMonogram = (el, size, fontSize, borderRadius) => {
+    if (!el) return;
+    if (cleanUrl) {
+      el.innerHTML = `<img src="${cleanUrl}" alt="Favicon" style="width:100%;height:100%;object-fit:cover;display:block;" onerror="this.parentElement.innerHTML='P';this.parentElement.style.background='#0a528e';this.parentElement.style.color='#fff';">`;
+      el.style.background = 'transparent';
+    } else {
+      el.innerHTML = 'P';
+      el.style.background = '#0a528e';
+      el.style.color = '#fff';
+      el.style.fontSize = fontSize + 'px';
+      el.style.fontWeight = '900';
+    }
+  };
+
+  setImgOrMonogram(p16, 16, 9, 3);
+  setImgOrMonogram(p32, 32, 14, 6);
+  setImgOrMonogram(p48, 48, 20, 8);
+  setImgOrMonogram(simTab, 14, 8, 7);
+  setImgOrMonogram(simHover, 20, 11, 4);
+}
+
+function onFaviconUrlInput(url) {
+  if (!_hsInstance) return;
+  _hsInstance.faviconUrl = (url || '').trim();
+  updateFaviconPreviews(_hsInstance.faviconUrl);
+  updateGlobalSyncStatus();
+}
+
+function openFaviconGalleryPicker() {
+  if (typeof window.openUniversalMediaModal === 'function') {
+    window.openUniversalMediaModal({
+      title: 'Choose Website Favicon',
+      subtitle: 'Select from Media Gallery, Cloudflare R2, or upload new .ico / .png / .svg',
+      defaultTab: 'gallery',
+      allowIdInput: true,
+      onSelect: item => {
+        const inp = document.getElementById('hs-favicon-input');
+        if (inp) inp.value = item.url;
+        onFaviconUrlInput(item.url);
+        showToast('success', `Favicon selected: ${item.title || item.uniqueId || 'Image'}`);
+      }
+    });
+  } else {
+    const inp = document.getElementById('hs-favicon-file-input');
+    if (inp) inp.click();
+  }
+}
+
+async function handleFaviconFileUpload(event) {
+  const file = event.target.files && event.target.files[0];
+  if (!file) return;
+  
+  showToast('info', 'Uploading favicon to Cloudflare R2...');
+  try {
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      try {
+        const r = await fetch('/api/media?action=upload', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            fileData: e.target.result,
+            filename: file.name,
+            mimeType: file.type || 'image/png',
+            fileSize: file.size,
+            folder: 'Logos & Icons'
+          })
+        });
+        const d = await r.json();
+        if (!r.ok || !d.ok || !d.media) throw new Error(d.error || 'Upload failed');
+        
+        const inp = document.getElementById('hs-favicon-input');
+        if (inp) inp.value = d.media.url;
+        onFaviconUrlInput(d.media.url);
+        showToast('success', `Favicon uploaded successfully! (${d.media.unique_id})`);
+      } catch(err) {
+        showToast('error', 'Favicon upload failed: ' + err.message);
+      }
+    };
+    reader.readAsDataURL(file);
+  } catch(e) {
+    showToast('error', 'Favicon read failed: ' + e.message);
+  }
+  event.target.value = '';
+}
+
+function resetFaviconToDefault() {
+  if (!_hsInstance) return;
+  _hsInstance.faviconUrl = '';
+  const inp = document.getElementById('hs-favicon-input');
+  if (inp) inp.value = '';
+  updateFaviconPreviews('');
+  updateGlobalSyncStatus();
+  showToast('info', 'Favicon reset to default monogram.');
+}
+
+function selectAllHeaderSections(selectBool) {
+  const cbs = document.querySelectorAll('#hs-nav-sections-list input[type="checkbox"]');
+  cbs.forEach(cb => { cb.checked = !!selectBool; });
+  if (_hsInstance) {
+    _hsInstance.enabledNavSections = getEnabledNavSections();
+    updateGlobalSyncStatus();
+  }
+  showToast('info', selectBool ? 'All sections enabled in header navigation' : 'All sections disabled in header navigation');
+}
+
+function renderHeaderPreviewCanvas() {
+  const box = document.getElementById('hs-live-preview-box');
+  if (!box || !_hsInstance) return;
+
+  const isBn = (_adminContentLang === 'bn');
+  const allSecs = (sections || []).filter(s => !s.deleted);
+  const enabledIds = Array.isArray(_hsInstance.enabledNavSections) ? _hsInstance.enabledNavSections : allSecs.map(s => s.slug || s.id);
+  const navList = allSecs.filter(s => enabledIds.includes(s.slug || s.id)).slice(0, 8);
+  const subList = (_hsInstance.subsections || []).filter(s => s.enabled !== false);
+
+  const logoH = _hsInstance.logoHeight || 80;
+  const renderedLogo = formatSvgWithSize(_hsInstance.logoSvg, Math.min(logoH, 50));
+
+  box.innerHTML = `
+    <div style="background:#ffffff;border-bottom:1px solid #e2e8f0;padding:12px 24px;display:flex;align-items:center;justify-content:space-between;gap:16px;">
+      <div style="display:flex;align-items:center;gap:20px;flex-shrink:0;">
+        <div style="height:46px;display:flex;align-items:center;">
+          ${renderedLogo}
+        </div>
+      </div>
+      <nav style="display:flex;align-items:center;gap:16px;overflow-x:auto;flex:1;justify-content:center;">
+        ${navList.map(s => `<span style="font-size:13px;font-weight:600;color:#0f172a;white-space:nowrap;padding:4px 8px;border-radius:4px;background:#f1f5f9;">${escapeHtml(isBn && s.name_bn ? s.name_bn : s.name)}</span>`).join('')}
+      </nav>
+      <div style="display:flex;align-items:center;gap:10px;flex-shrink:0;">
+        <span style="font-size:12px;font-weight:700;color:#64748b;padding:4px 8px;border:1px solid #cbd5e1;border-radius:4px;">${isBn ? 'বাংলা' : 'EN'}</span>
+        <div style="width:32px;height:32px;border-radius:50%;background:#f8fafc;border:1px solid #cbd5e1;display:flex;align-items:center;justify-content:center;">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        </div>
+      </div>
+    </div>
+    <div style="background:#f8fafc;border-bottom:1px solid #e2e8f0;padding:8px 24px;display:flex;align-items:center;gap:16px;overflow-x:auto;">
+      ${subList.map(sub => `
+        <span style="font-size:11px;font-weight:700;letter-spacing:0.05em;color:#475569;white-space:nowrap;display:inline-flex;align-items:center;gap:4px;">
+          ${sub.icon === 'calendar' ? '<svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>' : ''}
+          ${escapeHtml(sub.label)}
+        </span>
+      `).join('')}
+    </div>
+  `;
+}
+
 // ── Browser Tab & Hover Card (SEO) ──────────────────────────────
 function renderHsTabCard(hs) {
   const siteTitleInp = document.getElementById('hs-site-title-input');
@@ -2436,6 +2607,8 @@ function renderHsTabCard(hs) {
   if (customTitleInp) customTitleInp.value = hs.browserTabTitle || '';
   if (metaDescInp) metaDescInp.value = hs.metaDescription || '';
   if (faviconInp) faviconInp.value = hs.faviconUrl || '';
+
+  updateFaviconPreviews(hs.faviconUrl || '');
 
   function refreshTabCardPreview() {
     const brand = (siteTitleInp ? siteTitleInp.value.trim() : '') || 'The Privatian Family';
@@ -2495,6 +2668,7 @@ function renderHsTabCard(hs) {
   if (faviconInp) {
     faviconInp.addEventListener('input', () => {
       hs.faviconUrl = faviconInp.value.trim();
+      updateFaviconPreviews(hs.faviconUrl);
       updateGlobalSyncStatus();
     });
   }

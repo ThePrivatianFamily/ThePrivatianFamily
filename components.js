@@ -492,6 +492,54 @@
 
   // ── 3. POPULATE SECTIONS IN NAV & FOOTER ──────────────────────────
 
+  function formatSvgWithSize(svgCode, height) {
+    if (!svgCode || typeof svgCode !== 'string' || !svgCode.trim()) {
+      return HEADER_LOGO_SVG;
+    }
+    var clean = svgCode.trim();
+    if (clean.indexOf('<svg') === -1) return clean;
+    var h = parseInt(height) || 80;
+    clean = clean.replace(/height="[^"]*"/gi, `height="${h}px"`).replace(/height:\s*[^;"]+;?/gi, `height:${h}px;`);
+    if (!/style="[^"]*height/i.test(clean)) {
+      clean = clean.replace(/<svg\b/i, `<svg style="height:${h}px;width:auto;display:block;" `);
+    }
+    return clean;
+  }
+
+  function applyFaviconSettings(faviconUrl) {
+    if (!faviconUrl || typeof faviconUrl !== 'string' || !faviconUrl.trim()) return;
+    var clean = faviconUrl.trim();
+    
+    var iconLink = document.querySelector("link[rel='icon']") || document.querySelector("link[rel='shortcut icon']");
+    if (!iconLink) {
+      iconLink = document.createElement('link');
+      iconLink.rel = 'shortcut icon';
+      document.head.appendChild(iconLink);
+    }
+    iconLink.href = clean;
+
+    var appleLink = document.querySelector("link[rel='apple-touch-icon']");
+    if (!appleLink) {
+      appleLink = document.createElement('link');
+      appleLink.rel = 'apple-touch-icon';
+      document.head.appendChild(appleLink);
+    }
+    appleLink.href = clean;
+  }
+
+  function applyLogoSettings() {
+    var hs = getHeaderSettings();
+    if (!hs) return;
+    if (hs.faviconUrl) {
+      applyFaviconSettings(hs.faviconUrl);
+    }
+    var logoWrap = document.getElementById('site-logo-link');
+    if (logoWrap && hs.logoSvg) {
+      var h = hs.logoHeight || 80;
+      logoWrap.innerHTML = formatSvgWithSize(hs.logoSvg, h);
+    }
+  }
+
   // -- 2b. POPULATE SUB-HEADER TABS DYNAMICALLY
   function populateSubHeader() {
     var inner = document.getElementById('sub-header-inner');
