@@ -1598,18 +1598,71 @@
   fetchHeaderSettingsFromAPI();
   fetchMenuFromAPI();
   fetchFooterFromAPI();
-
-  // Non-blocking Page View Tracking for Analytics
+  // ── International Standard W3C/IAB Real-Time Traffic Beacon ─────────────
   function trackPageView() {
     if (typeof window === 'undefined' || !window.location) return;
-    if (window.location.pathname.startsWith('/admin') || window.location.pathname.startsWith('/admin-')) return;
+    var pathname = window.location.pathname || '/';
+    // Ignore all admin and editor routes
+    if (pathname.startsWith('/admin') || pathname.includes('admin-login') || pathname.includes('admin-article-editor')) return;
+
     try {
-      var currentPath = window.location.pathname || '/';
-      var trackUrl = '/api/sections?action=track_view&path=' + encodeURIComponent(currentPath);
+      var fullPath = pathname + (window.location.search || '');
+      var nowTs = Date.now();
+      var lastTrackKey = '_pf_last_track';
+      var lastTrackStr = window.sessionStorage.getItem(lastTrackKey);
+      if (lastTrackStr) {
+        try {
+          var lastObj = JSON.parse(lastTrackStr);
+          // If same path was tracked within last 8 seconds, ignore rapid duplicate/refresh
+          if (lastObj && lastObj.p === fullPath && (nowTs - lastObj.t) < 8000) {
+            return;
+          }
+        } catch(e) {}
+      }
+
+      // Anonymous Persistent Visitor ID
+      var vid = window.localStorage.getItem('_pf_vid');
+      if (!vid) {
+        vid = 'v_' + Math.random().toString(36).substring(2, 10) + Date.now().toString(36);
+        window.localStorage.setItem('_pf_vid', vid);
+      }
+
+      // Session ID (30-min window)
+      var sid = window.sessionStorage.getItem('_pf_sid');
+      var sidExp = Number(window.sessionStorage.getItem('_pf_sid_exp') || 0);
+      if (!sid || nowTs > sidExp) {
+        sid = 's_' + Math.random().toString(36).substring(2, 10) + Date.now().toString(36);
+        window.sessionStorage.setItem('_pf_sid', sid);
+      }
+      // Extend session expiry by 30 mins
+      window.sessionStorage.setItem('_pf_sid_exp', String(nowTs + 30 * 60 * 1000));
+      window.sessionStorage.setItem(lastTrackKey, JSON.stringify({ p: fullPath, t: nowTs }));
+
+      // Screen & Device
+      var screenW = (window.screen && window.screen.width) || window.innerWidth || 1024;
+      var deviceType = screenW < 768 ? 'mobile' : (screenW <= 1024 ? 'tablet' : 'desktop');
+
+      var payload = {
+        path: fullPath,
+        title: document.title || '',
+        referrer: document.referrer || '',
+        visitor_id: vid,
+        session_id: sid,
+        device_type: deviceType,
+        screen: screenW + 'x' + ((window.screen && window.screen.height) || window.innerHeight || 768),
+        lang: (navigator.language || navigator.userLanguage || 'en').toLowerCase()
+      };
+
+      var payloadBlob = new Blob([JSON.stringify(payload)], { type: 'application/json' });
       if (navigator.sendBeacon) {
-        navigator.sendBeacon(trackUrl);
+        navigator.sendBeacon('/api/analytics', payloadBlob);
       } else {
-        fetch(trackUrl, { method: 'POST', keepalive: true }).catch(function() {});
+        fetch('/api/analytics', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+          keepalive: true
+        }).catch(function() {});
       }
     } catch(e) {}
   }
@@ -1625,4 +1678,5 @@
   }
 
 })();
+
 

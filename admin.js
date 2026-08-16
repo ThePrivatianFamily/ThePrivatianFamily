@@ -1633,10 +1633,23 @@ function renderDashboardUI(stats) {
   const views = stats.views || {};
   const elLifetime = document.getElementById('db-stat-views-lifetime');
   const elToday = document.getElementById('db-stat-views-today');
+  const elVisitorsToday = document.getElementById('db-stat-visitors-today');
   const elMonth = document.getElementById('db-stat-views-month');
   const elYear = document.getElementById('db-stat-views-year');
-  if (elLifetime) elLifetime.textContent = formatNumber(views.lifetime || 0);
-  if (elToday) elToday.textContent = formatNumber(views.daily || 0);
+
+  const lifetimePageviews = typeof views.lifetime === 'object'
+    ? (views.lifetime.pageviews || 0)
+    : (Number(views.lifetime) || 0);
+  const todayViews = typeof views.todayPageviews === 'number'
+    ? views.todayPageviews
+    : (Number(views.daily) || 0);
+  const todayVisitors = typeof views.todayVisitors === 'number'
+    ? views.todayVisitors
+    : 0;
+
+  if (elLifetime) elLifetime.textContent = formatNumber(lifetimePageviews);
+  if (elToday) elToday.textContent = `${formatNumber(todayViews)} views`;
+  if (elVisitorsToday) elVisitorsToday.textContent = formatNumber(todayVisitors);
   if (elMonth) elMonth.textContent = formatNumber(views.monthly || 0);
   if (elYear) elYear.textContent = formatNumber(views.yearly || 0);
 
@@ -1697,22 +1710,26 @@ function render7DayChart(daysArray) {
     return;
   }
 
-  const maxViews = Math.max(...daysArray.map(d => d.views || 0), 10);
-  const totalViews = daysArray.reduce((acc, d) => acc + (d.views || 0), 0);
+  const rawMax = Math.max(...daysArray.map(d => (d.pageviews !== undefined ? d.pageviews : (d.views || 0))), 0);
+  const maxViews = rawMax > 0 ? rawMax : 10;
+  const totalViews = daysArray.reduce((acc, d) => acc + (d.pageviews !== undefined ? d.pageviews : (d.views || 0)), 0);
   const avgDaily = Math.round(totalViews / daysArray.length);
 
   const avgEl = document.getElementById('db-avg-daily-val');
   if (avgEl) avgEl.textContent = `${formatNumber(avgDaily)} / day`;
 
   container.innerHTML = daysArray.map(d => {
-    const v = d.views || 0;
-    const pct = Math.max(8, Math.round((v / maxViews) * 100));
+    const v = d.pageviews !== undefined ? d.pageviews : (d.views || 0);
+    const visitors = d.visitors || 0;
+    const pct = rawMax > 0 ? Math.round((v / maxViews) * 100) : 0;
     const formattedDate = d.date ? d.date.slice(5) : ''; // MM-DD
+    const tooltip = `${escapeHtml(d.day || '')} (${escapeHtml(d.date || '')}): ${formatNumber(v)} pageviews • ${formatNumber(visitors)} unique visitors`;
+
     return `
       <div class="db-bar-col">
-        <div class="db-bar-wrap" title="${escapeHtml(d.day)} (${escapeHtml(d.date)}): ${formatNumber(v)} views">
+        <div class="db-bar-wrap" title="${tooltip}">
           <div class="db-bar-val-badge">${formatNumber(v)} views</div>
-          <div class="db-bar-fill" style="height:${pct}%;"></div>
+          <div class="db-bar-fill" style="height:${pct > 0 ? Math.max(8, pct) : 0}%;opacity:${v > 0 ? '1' : '0.2'};"></div>
         </div>
         <span class="db-bar-day">${escapeHtml(d.day || '')}</span>
         <span class="db-bar-date">${escapeHtml(formattedDate)}</span>
@@ -1720,6 +1737,28 @@ function render7DayChart(daysArray) {
     `;
   }).join('');
 }
+
+async function resetAnalyticsStoreToZero() {
+  if (!confirm('Are you sure you want to reset all analytics and traffic history to 0? This will clear old mock/test counts and start fresh real-time tracking.')) {
+    return;
+  }
+  try {
+    const res = await fetch('/api/analytics?action=reset', {
+      method: 'POST',
+      headers: _authHeaders()
+    });
+    const data = await res.json();
+    if (res.ok && data.ok) {
+      showToast('success', 'Analytics store reset to authentic 0 ✓');
+      initDashboardPage(true);
+    } else {
+      showToast('error', data.error || 'Failed to reset analytics');
+    }
+  } catch (e) {
+    showToast('error', 'Network error while resetting analytics');
+  }
+}
+window.resetAnalyticsStoreToZero = resetAnalyticsStoreToZero;
 
 function renderRecentArticlesTable(recentList) {
   const tbody = document.getElementById('db-recent-articles-tbody');

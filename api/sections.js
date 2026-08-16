@@ -368,27 +368,43 @@ module.exports = async function handler(req, res) {
       } catch(e) {}
     }
 
-    if (!store) {
+    if (!store || typeof store !== 'object') {
       store = {
-        lifetime: 1420,
-        yearly: { [yearStr]: 1420 },
-        monthly: { [monthStr]: 842 },
-        daily: { [todayStr]: 128 },
-        paths: { '/': 820 },
-        lastUpdated: now.toISOString()
+        lifetime: { pageviews: 0, visitors: 0, sessions: 0 },
+        yearly: {},
+        monthly: {},
+        daily: {},
+        pages: {},
+        referrers: {},
+        devices: { desktop: 0, mobile: 0, tablet: 0 },
+        countries: {},
+        created_at: now.toISOString(),
+        updated_at: now.toISOString()
       };
     }
 
-    store.lifetime = (store.lifetime || 0) + 1;
-    store.yearly = store.yearly || {};
-    store.yearly[yearStr] = (store.yearly[yearStr] || 0) + 1;
-    store.monthly = store.monthly || {};
+    if (typeof store.lifetime === 'number') {
+      store.lifetime = { pageviews: store.lifetime, visitors: 0, sessions: 0 };
+    }
+    if (!store.lifetime) store.lifetime = { pageviews: 0, visitors: 0, sessions: 0 };
+    if (!store.daily) store.daily = {};
+    if (!store.monthly) store.monthly = {};
+    if (!store.yearly) store.yearly = {};
+    if (!store.pages) store.pages = {};
+
+    if (!store.daily[todayStr]) {
+      store.daily[todayStr] = { pageviews: 0, visitors: 0, sessions: 0, hourly: new Array(24).fill(0), visitor_hashes: [], session_ids: [] };
+    }
+
+    const todayObj = store.daily[todayStr];
+    todayObj.pageviews = (todayObj.pageviews || 0) + 1;
+    store.lifetime.pageviews = (store.lifetime.pageviews || 0) + 1;
     store.monthly[monthStr] = (store.monthly[monthStr] || 0) + 1;
-    store.daily = store.daily || {};
-    store.daily[todayStr] = (store.daily[todayStr] || 0) + 1;
-    store.paths = store.paths || {};
-    store.paths[path] = (store.paths[path] || 0) + 1;
-    store.lastUpdated = now.toISOString();
+    store.yearly[yearStr] = (store.yearly[yearStr] || 0) + 1;
+
+    if (!store.pages[path]) store.pages[path] = { pageviews: 0, visitors: 0 };
+    store.pages[path].pageviews = (store.pages[path].pageviews || 0) + 1;
+    store.updated_at = now.toISOString();
 
     try {
       await sb.from('site_settings').upsert({
@@ -413,10 +429,10 @@ module.exports = async function handler(req, res) {
     return res.status(200).json({
       ok: true,
       views: {
-        daily: store.daily[todayStr] || 1,
-        monthly: store.monthly[monthStr] || 1,
-        yearly: store.yearly[yearStr] || 1,
-        lifetime: store.lifetime || 1
+        daily: todayObj.pageviews,
+        monthly: store.monthly[monthStr] || 0,
+        yearly: store.yearly[yearStr] || 0,
+        lifetime: store.lifetime.pageviews || 0
       }
     });
   }
@@ -508,20 +524,42 @@ module.exports = async function handler(req, res) {
       } catch(e) {}
     }
 
-    if (!analyticsStore) {
+    if (!analyticsStore || typeof analyticsStore !== 'object') {
       analyticsStore = {
-        lifetime: 1420,
-        yearly: { [yearStr]: 1420 },
-        monthly: { [monthStr]: 842 },
-        daily: { [todayStr]: 128 },
-        paths: { '/': 820 }
+        lifetime: { pageviews: 0, visitors: 0, sessions: 0 },
+        yearly: {},
+        monthly: {},
+        daily: {},
+        pages: {},
+        referrers: {},
+        devices: { desktop: 0, mobile: 0, tablet: 0 },
+        countries: {}
       };
     }
 
-    const lifetimeViews = analyticsStore.lifetime || 1420;
-    const yearlyViews = (analyticsStore.yearly && analyticsStore.yearly[yearStr]) || lifetimeViews;
-    const monthlyViews = (analyticsStore.monthly && analyticsStore.monthly[monthStr]) || 842;
-    const dailyViews = (analyticsStore.daily && analyticsStore.daily[todayStr]) || 128;
+    const lifetimePageviews = typeof analyticsStore.lifetime === 'object'
+      ? (analyticsStore.lifetime.pageviews || 0)
+      : (Number(analyticsStore.lifetime) || 0);
+    const lifetimeVisitors = typeof analyticsStore.lifetime === 'object'
+      ? (analyticsStore.lifetime.visitors || 0)
+      : 0;
+    const lifetimeSessions = typeof analyticsStore.lifetime === 'object'
+      ? (analyticsStore.lifetime.sessions || 0)
+      : 0;
+
+    const yearlyViews = (analyticsStore.yearly && analyticsStore.yearly[yearStr]) || 0;
+    const monthlyViews = (analyticsStore.monthly && analyticsStore.monthly[monthStr]) || 0;
+    
+    const todayData = (analyticsStore.daily && analyticsStore.daily[todayStr]) || null;
+    const dailyPageviews = todayData
+      ? (typeof todayData === 'object' ? (todayData.pageviews || 0) : (Number(todayData) || 0))
+      : 0;
+    const dailyVisitors = todayData && typeof todayData === 'object'
+      ? (todayData.visitors || (Array.isArray(todayData.visitor_hashes) ? todayData.visitor_hashes.length : 0))
+      : 0;
+    const dailySessions = todayData && typeof todayData === 'object'
+      ? (todayData.sessions || (Array.isArray(todayData.session_ids) ? todayData.session_ids.length : 0))
+      : 0;
 
     const last7Days = [];
     const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -530,11 +568,24 @@ module.exports = async function handler(req, res) {
       d.setDate(d.getDate() - i);
       const dateStr = d.toISOString().slice(0, 10);
       const dayName = dayNames[d.getDay()];
-      const views = (analyticsStore.daily && analyticsStore.daily[dateStr]) || (i === 0 ? dailyViews : Math.max(12, Math.floor(dailyViews * (0.6 + (i * 0.08)))));
+      const dayItem = (analyticsStore.daily && analyticsStore.daily[dateStr]) || null;
+      const pviews = dayItem
+        ? (typeof dayItem === 'object' ? (dayItem.pageviews || 0) : (Number(dayItem) || 0))
+        : 0;
+      const vcount = dayItem && typeof dayItem === 'object'
+        ? (dayItem.visitors || (Array.isArray(dayItem.visitor_hashes) ? dayItem.visitor_hashes.length : 0))
+        : 0;
+      const scount = dayItem && typeof dayItem === 'object'
+        ? (dayItem.sessions || (Array.isArray(dayItem.session_ids) ? dayItem.session_ids.length : 0))
+        : 0;
+
       last7Days.push({
         date: dateStr,
         day: dayName,
-        views
+        views: pviews,
+        pageviews: pviews,
+        visitors: vcount,
+        sessions: scount
       });
     }
 
@@ -556,6 +607,15 @@ module.exports = async function handler(req, res) {
         recentLogs = logRow.value.slice(0, 5);
       }
     } catch(e) {}
+
+    const topPaths = Object.entries(analyticsStore.pages || {})
+      .map(([p, pData]) => ({
+        path: p,
+        count: typeof pData === 'object' ? (pData.pageviews || 0) : (Number(pData) || 0),
+        visitors: typeof pData === 'object' ? (pData.visitors || 0) : 0
+      }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 5);
 
     return res.status(200).json({
       ok: true,
@@ -579,15 +639,17 @@ module.exports = async function handler(req, res) {
         svgs: svgsCount
       },
       views: {
-        daily: dailyViews,
+        daily: dailyPageviews,
+        todayPageviews: dailyPageviews,
+        todayVisitors: dailyVisitors,
+        todaySessions: dailySessions,
         monthly: monthlyViews,
         yearly: yearlyViews,
-        lifetime: lifetimeViews,
+        lifetime: lifetimePageviews,
+        lifetimeVisitors: lifetimeVisitors,
+        lifetimeSessions: lifetimeSessions,
         last7Days,
-        topPaths: Object.entries(analyticsStore.paths || {})
-          .map(([path, count]) => ({ path, count }))
-          .sort((a, b) => b.count - a.count)
-          .slice(0, 5)
+        topPaths
       },
       sections: {
         active: activeSectionsCount,

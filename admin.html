@@ -1192,7 +1192,7 @@
 
       <!-- KPI Metric Cards Grid (4 Columns) -->
       <div class="db-kpi-grid">
-        <!-- KPI 1: Website Views -->
+        <!-- KPI 1: Website Views & Traffic -->
         <div class="db-kpi-card db-kpi-card--views" id="db-card-views">
           <div class="db-kpi-top">
             <div class="db-kpi-icon-wrap db-kpi-icon-wrap--blue">
@@ -1200,25 +1200,28 @@
                 <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
               </svg>
             </div>
-            <div class="db-kpi-tag">Audience Reach</div>
+            <div class="db-kpi-tag" style="display:flex;align-items:center;gap:4px;">
+              <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#10b981;"></span>
+              <span>Real Traffic</span>
+            </div>
           </div>
-          <div class="db-kpi-label">Website Views</div>
-          <div class="db-kpi-value-row">
-            <span class="db-kpi-val" id="db-stat-views-lifetime">--</span>
-            <span class="db-kpi-val-sub">Lifetime</span>
+          <div class="db-kpi-label">Audience Traffic &amp; Pageviews</div>
+          <div class="db-kpi-value-row" style="align-items:baseline;gap:8px;">
+            <span class="db-kpi-val" id="db-stat-views-lifetime">0</span>
+            <span class="db-kpi-val-sub">Total Pageviews</span>
           </div>
           <div class="db-kpi-breakdown">
-            <div class="db-kpi-pill">
+            <div class="db-kpi-pill" title="Today's total page views and distinct unique visitors">
               <span class="db-kpi-pill-lbl">Today</span>
-              <strong class="db-kpi-pill-val" id="db-stat-views-today">--</strong>
+              <strong class="db-kpi-pill-val" id="db-stat-views-today">0 views</strong>
             </div>
-            <div class="db-kpi-pill">
+            <div class="db-kpi-pill" title="Unique visitors recorded today">
+              <span class="db-kpi-pill-lbl">Unique Visitors</span>
+              <strong class="db-kpi-pill-val" id="db-stat-visitors-today">0</strong>
+            </div>
+            <div class="db-kpi-pill" title="This month's pageviews">
               <span class="db-kpi-pill-lbl">This Month</span>
-              <strong class="db-kpi-pill-val" id="db-stat-views-month">--</strong>
-            </div>
-            <div class="db-kpi-pill">
-              <span class="db-kpi-pill-lbl">This Year</span>
-              <strong class="db-kpi-pill-val" id="db-stat-views-year">--</strong>
+              <strong class="db-kpi-pill-val" id="db-stat-views-month">0</strong>
             </div>
           </div>
         </div>
