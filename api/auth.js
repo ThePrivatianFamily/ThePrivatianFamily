@@ -122,5 +122,121 @@ module.exports = async function handler(req, res) {
     }
   }
 
+  // ── CHECK WHITELIST (Pre-send check for Magic Link) ───────────────
+  if (action === 'check-whitelist' && req.method === 'POST') {
+    const { email } = req.body || {};
+    if (!email || typeof email !== 'string') {
+      return res.status(400).json({ error: 'Please enter a valid email address.' });
+    }
+
+    const emailNorm = email.trim().toLowerCase();
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(emailNorm)) {
+      return res.status(400).json({ error: 'Invalid email address format.' });
+    }
+
+    try {
+      const sb = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
+      const { data: admin, error } = await sb
+        .from('allowed_admins')
+        .select('*')
+        .ilike('email', emailNorm)
+        .eq('status', 'active')
+        .single();
+
+      if (error || !admin) {
+        return res.status(403).json({
+          allowed: false,
+          error: 'This email is not authorized to access the admin panel. Contact an administrator to request access.',
+          email: emailNorm
+        });
+      }
+
+      return res.status(200).json({
+        allowed: true,
+        email: admin.email,
+        role: admin.role
+      });
+    } catch(e) {
+      console.error('[auth/check-whitelist]', e.message);
+      return res.status(500).json({ error: 'Failed to verify authorization. Please try again.' });
+    }
+  }
+
+  // ── VERIFY MAGIC LINK (Supabase OTP Callback) ───────────────────
+  if (action === 'verify-magic-link' && req.method === 'POST') {
+    const { access_token } = req.body || {};
+    if (!access_token || typeof access_token !== 'string') {
+      return res.status(400).json({ error: 'No access token provided.' });
+    }
+
+    try {
+      const sb = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
+      const { data: { user }, error: userErr } = await sb.auth.getUser(access_token);
+
+      if (userErr || !user || !user.email) {
+        return res.status(401).json({
+          error: 'The login link is invalid, expired, or has already been used. Please request a new magic link.'
+        });
+      }
+
+      const email = user.email.toLowerCase();
+
+      // Live whitelist verification
+      const { data: admin, error: adminErr } = await sb
+        .from('allowed_admins')
+        .select('*')
+        .ilike('email', email)
+        .eq('status', 'active')
+        .single();
+
+      if (adminErr || !admin) {
+        return res.status(403).json({
+          error: 'This email is not authorized to access the admin panel.',
+          email
+        });
+      }
+
+      const name    = user.user_metadata?.full_name || user.user_metadata?.name || admin.name || email.split('@')[0];
+      const picture = user.user_metadata?.avatar_url || user.user_metadata?.picture || '';
+
+      const token = jwt.sign(
+        { email: admin.email, role: admin.role, name, picture },
+        process.env.SESSION_SECRET,
+        { expiresIn: '24h' }
+      );
+
+      res.setHeader('Set-Cookie',
+        `privatian_session=${token}; HttpOnly; Secure; SameSite=Strict; Max-Age=86400; Path=/`
+      );
+
+      // Record Activity Log for Magic Link login
+      try {
+        await logActivity({
+          actor: { email: admin.email, name, role: admin.role },
+          action: 'auth.login',
+          category: 'auth',
+          summary: `${name} (${admin.email}) logged in successfully via Magic Link`,
+          target_id: admin.id || admin.email,
+          target_name: admin.email,
+          details: { method: 'Magic Link (Supabase Auth)', role: admin.role },
+          req
+        });
+      } catch(logErr) {
+        console.warn('[auth/verify-magic-link log error]:', logErr.message);
+      }
+
+      return res.status(200).json({
+        success: true,
+        token,
+        user: { email: admin.email, role: admin.role, name, picture }
+      });
+
+    } catch(e) {
+      console.error('[auth/verify-magic-link]', e.message);
+      return res.status(500).json({ error: 'Authentication failed. Please try again.' });
+    }
+  }
+
   return res.status(400).json({ error: 'Unknown action' });
 };

@@ -8,6 +8,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@300;400;600;700&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet" />
   <script src="https://accounts.google.com/gsi/client?hl=en" async defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/supabase-config.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -20,6 +22,7 @@
       --muted:   #6b7280;
       --border:  rgba(0,0,0,.1);
       --red:     #dc2626;
+      --green:   #16a34a;
       --shadow:  0 25px 60px rgba(0,0,0,.18);
     }
 
@@ -32,7 +35,8 @@
       justify-content: center;
       min-height: 100vh;
       position: relative;
-      overflow: hidden;
+      overflow-x: hidden;
+      padding: 24px 16px;
     }
 
     /* Decorative background blobs */
@@ -58,9 +62,9 @@
     .login-card {
       background: #fff;
       border-radius: 20px;
-      padding: 52px 44px;
+      padding: 44px 38px;
       width: 100%;
-      max-width: 420px;
+      max-width: 440px;
       box-shadow: var(--shadow);
       border: 1px solid var(--border);
       position: relative;
@@ -79,7 +83,7 @@
       align-items: center;
       justify-content: center;
       gap: 10px;
-      margin-bottom: 32px;
+      margin-bottom: 24px;
     }
 
     .login-logo-icon {
@@ -94,6 +98,7 @@
       font-size: 22px;
       font-weight: 700;
       flex-shrink: 0;
+      box-shadow: 0 4px 12px rgba(10,82,142,.25);
     }
 
     .login-logo-text { text-align: left; }
@@ -116,7 +121,7 @@
     .login-divider {
       width: 40px; height: 1px;
       background: var(--border);
-      margin: 0 auto 28px;
+      margin: 0 auto 22px;
     }
 
     .login-heading {
@@ -128,35 +133,136 @@
     }
 
     .login-sub {
-      font-size: 14px;
+      font-size: 13.5px;
       color: var(--muted);
-      margin-bottom: 32px;
-      line-height: 1.6;
+      margin-bottom: 24px;
+      line-height: 1.55;
     }
 
-    /* Google button container — center it */
+    /* Google button container */
     .google-btn-wrap {
       display: flex;
       justify-content: center;
-      margin-bottom: 20px;
+      margin-bottom: 18px;
       min-height: 44px;
+    }
+
+    /* Divider between OAuth & Magic Link */
+    .auth-divider {
+      display: flex;
+      align-items: center;
+      text-align: center;
+      margin: 20px 0;
+      color: var(--muted);
+      font-size: 11.5px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+    }
+    .auth-divider::before, .auth-divider::after {
+      content: '';
+      flex: 1;
+      border-bottom: 1px solid rgba(0,0,0,.08);
+    }
+    .auth-divider span {
+      padding: 0 12px;
+    }
+
+    /* Magic Form */
+    .magic-form {
+      text-align: left;
+      margin-bottom: 16px;
+    }
+    .input-group {
+      margin-bottom: 14px;
+    }
+    .input-label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 6px;
+    }
+    .input-wrap {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+    .input-icon {
+      position: absolute;
+      left: 12px;
+      color: var(--muted);
+      pointer-events: none;
+    }
+    .magic-input {
+      width: 100%;
+      height: 44px;
+      padding: 0 14px 0 38px;
+      font-size: 14px;
+      font-family: inherit;
+      color: var(--text);
+      background: #fafaf9;
+      border: 1px solid #d6d3d1;
+      border-radius: 10px;
+      outline: none;
+      transition: all .2s ease;
+    }
+    .magic-input:focus {
+      background: #fff;
+      border-color: var(--blue);
+      box-shadow: 0 0 0 3px rgba(10,82,142,.12);
+    }
+    .magic-input::placeholder {
+      color: #a8a29e;
+    }
+
+    .magic-submit-btn {
+      width: 100%;
+      height: 44px;
+      background: var(--blue);
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      font-size: 13.5px;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: all .2s ease;
+      box-shadow: 0 4px 14px rgba(10,82,142,.22);
+    }
+    .magic-submit-btn:hover:not(:disabled) {
+      background: var(--blue-d);
+      transform: translateY(-1px);
+      box-shadow: 0 6px 18px rgba(10,82,142,.3);
+    }
+    .magic-submit-btn:active:not(:disabled) {
+      transform: translateY(0);
+    }
+    .magic-submit-btn:disabled {
+      opacity: .7;
+      cursor: not-allowed;
+      transform: none;
     }
 
     .login-notice {
       font-size: 12px;
       color: var(--muted);
       line-height: 1.6;
-      padding-top: 20px;
+      padding-top: 16px;
       border-top: 1px solid var(--border);
-      margin-top: 8px;
+      margin-top: 12px;
     }
 
     /* Error / info messages */
     .msg-box {
       border-radius: 10px;
       padding: 12px 16px;
-      font-size: 13.5px;
-      margin-bottom: 20px;
+      font-size: 13px;
+      margin-bottom: 18px;
       line-height: 1.5;
       display: none;
       text-align: left;
@@ -164,11 +270,12 @@
     .msg-box.visible { display: block; }
     .msg-box.error { background: #fef2f2; border: 1px solid #fecaca; color: var(--red); }
     .msg-box.info  { background: #eff6ff; border: 1px solid #bfdbfe; color: var(--blue); }
+    .msg-box.success { background: #f0fdf4; border: 1px solid #bbf7d0; color: var(--green); }
 
     /* Loading spinner */
     .spinner {
       display: none;
-      width: 20px; height: 20px;
+      width: 22px; height: 22px;
       border: 2.5px solid rgba(10,82,142,.2);
       border-top-color: var(--blue);
       border-radius: 50%;
@@ -177,6 +284,104 @@
     }
     .spinner.visible { display: block; }
     @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Confirmation screen */
+    .email-sent-card {
+      text-align: center;
+      animation: fadeIn .3s ease;
+      padding: 6px 0;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: scale(.98); }
+      to   { opacity: 1; transform: scale(1); }
+    }
+    .sent-icon-wrap {
+      width: 58px; height: 58px;
+      border-radius: 50%;
+      background: #eff6ff;
+      border: 2px solid #bfdbfe;
+      color: var(--blue);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 16px;
+    }
+    .sent-title {
+      font-family: 'Libre Baskerville', serif;
+      font-size: 20px;
+      color: var(--text);
+      margin-bottom: 10px;
+    }
+    .sent-desc {
+      font-size: 13.5px;
+      color: #4b5563;
+      line-height: 1.6;
+      margin-bottom: 18px;
+    }
+    .sent-desc strong {
+      color: var(--blue);
+      font-weight: 600;
+      word-break: break-all;
+    }
+    .sent-info-box {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 10px 14px;
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.5;
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      text-align: left;
+      margin-bottom: 20px;
+    }
+    .sent-info-box svg {
+      flex-shrink: 0;
+      color: var(--blue);
+      margin-top: 2px;
+    }
+    .sent-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .btn-resend {
+      width: 100%;
+      height: 42px;
+      background: #f1f5f9;
+      color: #334155;
+      border: 1px solid #cbd5e1;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      transition: all .2s;
+    }
+    .btn-resend:hover:not(:disabled) {
+      background: #e2e8f0;
+      color: #0f172a;
+    }
+    .btn-resend:disabled {
+      opacity: .6;
+      cursor: not-allowed;
+    }
+    .btn-back {
+      background: none;
+      border: none;
+      color: var(--blue);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      padding: 6px;
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
+    .btn-back:hover {
+      color: var(--blue-d);
+    }
 
     .login-footer {
       margin-top: 24px;
@@ -199,39 +404,107 @@
 
     <div class="login-divider"></div>
 
-    <h1 class="login-heading">Secure Sign In</h1>
-    <p class="login-sub">Only authorized Google accounts can access this panel. Sign in with your whitelisted Gmail to continue.</p>
+    <div id="auth-main-wrap">
+      <h1 class="login-heading">Secure Sign In</h1>
+      <p class="login-sub">Sign in with your whitelisted email or authorized Google account to access the administration portal.</p>
 
-    <div id="msg-box" class="msg-box"></div>
-    <div id="spinner" class="spinner"></div>
+      <div id="msg-box" class="msg-box"></div>
+      <div id="spinner" class="spinner"></div>
 
-    <div class="google-btn-wrap">
-      <div id="g_id_onload"
-           data-client_id="969711915910-n5bdco306c592hmssev3ns9efn53fnoo.apps.googleusercontent.com"
-           data-callback="handleCredentialResponse"
-           data-auto_prompt="false">
+      <!-- Google Sign In Button -->
+      <div class="google-btn-wrap">
+        <div id="g_id_onload"
+             data-client_id="969711915910-n5bdco306c592hmssev3ns9efn53fnoo.apps.googleusercontent.com"
+             data-callback="handleCredentialResponse"
+             data-auto_prompt="false">
+        </div>
+        <div class="g_id_signin"
+             data-type="standard"
+             data-size="large"
+             data-theme="outline"
+             data-text="sign_in_with"
+             data-shape="rectangular"
+             data-logo_alignment="left"
+             data-locale="en"
+             data-width="360">
+        </div>
       </div>
-      <div class="g_id_signin"
-           data-type="standard"
-           data-size="large"
-           data-theme="outline"
-           data-text="sign_in_with"
-           data-shape="rectangular"
-           data-logo_alignment="left"
-           data-locale="en"
-           data-width="340">
+
+      <!-- OR Divider -->
+      <div class="auth-divider">
+        <span>or sign in with magic link</span>
       </div>
+
+      <!-- Magic Link Form -->
+      <form id="magic-link-form" class="magic-form" onsubmit="handleMagicLinkSubmit(event)" novalidate>
+        <div class="input-group">
+          <label for="magic-email" class="input-label">Authorized Email Address</label>
+          <div class="input-wrap">
+            <svg class="input-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+              <polyline points="22,6 12,13 2,6"/>
+            </svg>
+            <input type="email" id="magic-email" class="magic-input" placeholder="admin@domain.com" required autocomplete="email" />
+          </div>
+        </div>
+        <button type="submit" id="magic-submit-btn" class="magic-submit-btn">
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="22" y1="2" x2="11" y2="13"/>
+            <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+          </svg>
+          <span>Send Magic Link</span>
+        </button>
+      </form>
+
+      <p class="login-notice">
+        Access is restricted to approved team members only. If you believe you should have access, contact the site administrator.
+      </p>
     </div>
 
-    <p class="login-notice">
-      Access is restricted to approved team members only. If you believe you should have access, contact the site administrator.
-    </p>
+    <!-- Email Sent Confirmation View -->
+    <div id="email-sent-wrap" class="email-sent-card" style="display:none;">
+      <div class="sent-icon-wrap">
+        <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M22 12h-6l-2 3h-4l-2-3H2"/>
+          <path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/>
+        </svg>
+      </div>
+      <h2 class="sent-title">Check Your Inbox</h2>
+      <p class="sent-desc">We sent a secure sign-in link to <strong id="sent-email-target"></strong>. Click the link in the email to log in instantly.</p>
+      
+      <div class="sent-info-box">
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+        <span>The link is valid for 1 hour. If you do not see it in your inbox, please check your spam or junk folder.</span>
+      </div>
+
+      <div class="sent-actions">
+        <button type="button" class="btn-resend" id="resend-btn" onclick="resendMagicLink()">Resend Magic Link</button>
+        <button type="button" class="btn-back" onclick="resetToLoginForm()">Use a different email or Google</button>
+      </div>
+    </div>
 
     <div class="login-footer">The Privatian Family &mdash; Private Administration</div>
   </div>
 
   <script>
     const TOKEN_KEY = 'privatian_token';
+    let _lastSentEmail = '';
+    let _resendCountdown = 0;
+    let _resendTimer = null;
+
+    // Helper: Initialize or get Supabase Client
+    function getSupabaseClient() {
+      if (window._sb) return window._sb;
+      if (typeof initSupabaseClient === 'function') {
+        const client = initSupabaseClient();
+        if (client) return client;
+      }
+      if (window.supabase && window.supabase.createClient && typeof PRIVATIAN_SUPABASE_URL !== 'undefined') {
+        window._sb = window.supabase.createClient(PRIVATIAN_SUPABASE_URL, PRIVATIAN_SUPABASE_KEY);
+        return window._sb;
+      }
+      return null;
+    }
 
     // If already logged in, redirect directly
     (async function () {
@@ -243,7 +516,7 @@
       } catch(e) {}
     })();
 
-    // Show any session-expired message
+    // Show any session-expired message from sessionStorage
     const loginMsg = sessionStorage.getItem('login_message');
     if (loginMsg) {
       showMsg('info', loginMsg);
@@ -256,13 +529,28 @@
       box.textContent = text;
     }
 
+    function hideMsg() {
+      const box = document.getElementById('msg-box');
+      box.className = 'msg-box';
+      box.textContent = '';
+    }
+
     function setLoading(on) {
       document.getElementById('spinner').className = 'spinner' + (on ? ' visible' : '');
     }
 
+    function resetToLoginForm() {
+      document.getElementById('auth-main-wrap').style.display = 'block';
+      document.getElementById('email-sent-wrap').style.display = 'none';
+      hideMsg();
+      const emailInput = document.getElementById('magic-email');
+      if (emailInput) emailInput.focus();
+    }
+
+    // ── GOOGLE OAUTH HANDLER ──────────────────────────────────────────
     async function handleCredentialResponse(response) {
       setLoading(true);
-      showMsg('info', 'Verifying your identity...');
+      showMsg('info', 'Verifying Google credentials...');
 
       try {
         const res = await fetch('/api/auth?action=verify', {
@@ -276,7 +564,7 @@
 
         if (data.success && data.token) {
           localStorage.setItem(TOKEN_KEY, data.token);
-          showMsg('info', 'Access granted! Redirecting...');
+          showMsg('success', 'Access granted! Redirecting to admin panel...');
           setTimeout(function() { window.location.replace('/admin.html'); }, 600);
         } else {
           showMsg('error', data.error || 'Authentication failed. Please try again.');
@@ -287,6 +575,228 @@
         showMsg('error', 'Network error. Please check your connection and try again.');
       }
     }
+
+    // ── MAGIC LINK FORM SUBMIT HANDLER ────────────────────────────────
+    async function handleMagicLinkSubmit(e) {
+      if (e) e.preventDefault();
+      hideMsg();
+
+      const emailInput = document.getElementById('magic-email');
+      const submitBtn = document.getElementById('magic-submit-btn');
+      const email = (emailInput.value || '').trim();
+
+      if (!email) {
+        showMsg('error', 'Please enter your email address.');
+        emailInput.focus();
+        return;
+      }
+
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        showMsg('error', 'Please enter a valid email address format.');
+        emailInput.focus();
+        return;
+      }
+
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = '<span class="spinner visible" style="width:16px;height:16px;margin:0;display:inline-block;vertical-align:middle;border-width:2px;"></span> <span>Checking Authorization...</span>';
+
+      try {
+        // Step 1: Pre-validate against whitelist API before sending OTP
+        const checkRes = await fetch('/api/auth?action=check-whitelist', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email })
+        });
+
+        const checkData = await checkRes.json();
+
+        if (!checkRes.ok || !checkData.allowed) {
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg><span>Send Magic Link</span>';
+          showMsg('error', checkData.error || 'This email is not authorized on the access whitelist.');
+          return;
+        }
+
+        // Step 2: Trigger Supabase Magic Link OTP
+        submitBtn.innerHTML = '<span class="spinner visible" style="width:16px;height:16px;margin:0;display:inline-block;vertical-align:middle;border-width:2px;"></span> <span>Sending Magic Link...</span>';
+
+        const sb = getSupabaseClient();
+        if (!sb) {
+          throw new Error('Supabase client failed to initialize.');
+        }
+
+        const redirectUrl = window.location.origin + '/admin-login.html';
+        const { data: otpData, error: otpError } = await sb.auth.signInWithOtp({
+          email: checkData.email || email,
+          options: {
+            emailRedirectTo: redirectUrl,
+            shouldCreateUser: true
+          }
+        });
+
+        if (otpError) {
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg><span>Send Magic Link</span>';
+          showMsg('error', otpError.message || 'Unable to send magic link. Please try again.');
+          return;
+        }
+
+        // Step 3: Success! Switch to confirmation view
+        _lastSentEmail = checkData.email || email;
+        document.getElementById('sent-email-target').textContent = _lastSentEmail;
+        document.getElementById('auth-main-wrap').style.display = 'none';
+        document.getElementById('email-sent-wrap').style.display = 'block';
+
+        // Reset submit button state for future
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg><span>Send Magic Link</span>';
+
+        startResendCountdown();
+
+      } catch(err) {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg><span>Send Magic Link</span>';
+        showMsg('error', 'An unexpected error occurred. Please check your internet connection.');
+      }
+    }
+
+    function startResendCountdown() {
+      const resendBtn = document.getElementById('resend-btn');
+      _resendCountdown = 45;
+      resendBtn.disabled = true;
+      resendBtn.textContent = `Resend in ${_resendCountdown}s`;
+
+      if (_resendTimer) clearInterval(_resendTimer);
+      _resendTimer = setInterval(() => {
+        _resendCountdown--;
+        if (_resendCountdown <= 0) {
+          clearInterval(_resendTimer);
+          resendBtn.disabled = false;
+          resendBtn.textContent = 'Resend Magic Link';
+        } else {
+          resendBtn.textContent = `Resend in ${_resendCountdown}s`;
+        }
+      }, 1000);
+    }
+
+    async function resendMagicLink() {
+      if (!_lastSentEmail) return;
+      const resendBtn = document.getElementById('resend-btn');
+      resendBtn.disabled = true;
+      resendBtn.textContent = 'Sending...';
+
+      try {
+        const sb = getSupabaseClient();
+        if (!sb) throw new Error('Supabase client unavailable');
+
+        const { error } = await sb.auth.signInWithOtp({
+          email: _lastSentEmail,
+          options: {
+            emailRedirectTo: window.location.origin + '/admin-login.html',
+            shouldCreateUser: true
+          }
+        });
+
+        if (error) {
+          alert('Failed to resend link: ' + error.message);
+          resendBtn.disabled = false;
+          resendBtn.textContent = 'Resend Magic Link';
+        } else {
+          startResendCountdown();
+        }
+      } catch(e) {
+        alert('Network error while resending link.');
+        resendBtn.disabled = false;
+        resendBtn.textContent = 'Resend Magic Link';
+      }
+    }
+
+    // ── MAGIC LINK CALLBACK & SESSION DETECTION ───────────────────────
+    (async function checkMagicLinkCallback() {
+      const hash = window.location.hash || '';
+      const search = window.location.search || '';
+
+      // 1. Check for error in hash (e.g. otp_expired, access_denied)
+      if (hash.includes('error=')) {
+        const params = new URLSearchParams(hash.replace(/^#/, ''));
+        const errDesc = params.get('error_description') || params.get('error') || 'The login link is invalid or has expired.';
+        showMsg('error', decodeURIComponent(errDesc.replace(/\+/g, ' ')) + ' Please request a new magic link.');
+        window.history.replaceState(null, '', window.location.pathname);
+        return;
+      }
+
+      // 2. Check for session tokens in hash or PKCE code in query
+      if (hash.includes('access_token=') || search.includes('code=')) {
+        setLoading(true);
+        showMsg('info', 'Verifying magic link session...');
+
+        try {
+          const sb = getSupabaseClient();
+          if (!sb) throw new Error('Supabase client failed to load.');
+
+          // Give Supabase client a moment to parse the hash/code
+          let session = null;
+          const { data: sessionData } = await sb.auth.getSession();
+          session = sessionData ? sessionData.session : null;
+
+          if (!session && hash.includes('access_token=')) {
+            // Direct extraction from hash if getSession was async-delayed
+            const hashParams = new URLSearchParams(hash.replace(/^#/, ''));
+            const directAccessToken = hashParams.get('access_token');
+            if (directAccessToken) {
+              session = { access_token: directAccessToken };
+            }
+          }
+
+          if (!session || !session.access_token) {
+            // Listen for auth state change event
+            const sessionPromise = new Promise((resolve) => {
+              const { data: authListener } = sb.auth.onAuthStateChange((event, s) => {
+                if (s && s.access_token) {
+                  if (authListener && authListener.subscription) authListener.subscription.unsubscribe();
+                  resolve(s);
+                }
+              });
+              setTimeout(() => resolve(null), 3500);
+            });
+            session = await sessionPromise;
+          }
+
+          if (!session || !session.access_token) {
+            setLoading(false);
+            showMsg('error', 'Failed to retrieve session from login link. Please try sending a new magic link.');
+            window.history.replaceState(null, '', window.location.pathname);
+            return;
+          }
+
+          // Step 3: Verify with our backend and issue 24h admin JWT
+          const verifyRes = await fetch('/api/auth?action=verify-magic-link', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ access_token: session.access_token })
+          });
+
+          const verifyData = await verifyRes.json();
+          setLoading(false);
+
+          if (verifyRes.ok && verifyData.success && verifyData.token) {
+            localStorage.setItem(TOKEN_KEY, verifyData.token);
+            showMsg('success', 'Access granted! Welcome to the Admin Panel. Redirecting...');
+            window.history.replaceState(null, '', window.location.pathname);
+            setTimeout(function() { window.location.replace('/admin.html'); }, 600);
+          } else {
+            showMsg('error', verifyData.error || 'Authorization failed. This account may not be on the active whitelist.');
+            window.history.replaceState(null, '', window.location.pathname);
+          }
+
+        } catch(err) {
+          setLoading(false);
+          showMsg('error', 'Error authenticating with magic link: ' + (err.message || 'Please try again.'));
+          window.history.replaceState(null, '', window.location.pathname);
+        }
+      }
+    })();
   </script>
 </body>
 </html>
