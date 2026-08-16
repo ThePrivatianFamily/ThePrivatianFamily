@@ -122,7 +122,7 @@ module.exports = async function handler(req, res) {
     }
   }
 
-  // ── CHECK WHITELIST (Pre-send check for Magic Link) ───────────────
+  // ── CHECK WHITELIST & PROGRESSIVE OTP RATE LIMIT ────────────────
   if (action === 'check-whitelist' && req.method === 'POST') {
     const { email } = req.body || {};
     if (!email || typeof email !== 'string') {
@@ -152,10 +152,80 @@ module.exports = async function handler(req, res) {
         });
       }
 
+      // Check progressive rate limits
+      // Tier 1 (1st request): 60s (1 minute)
+      // Tier 2 (2nd request): 60s (1 minute)
+      // Tier 3 (3rd request): 600s (10 minutes)
+      // Tier 4 (4th request): 3600s (1 hour)
+      // Tier 5 (5th+ request): 86400s (24 hours - MAX limit)
+      const now = new Date();
+      const { data: rateRow } = await sb
+        .from('otp_rate_limits')
+        .select('*')
+        .eq('email', admin.email)
+        .single();
+
+      if (rateRow && rateRow.locked_until) {
+        const lockedUntil = new Date(rateRow.locked_until);
+        if (lockedUntil > now) {
+          const remainingSec = Math.ceil((lockedUntil.getTime() - now.getTime()) / 1000);
+          let durationText = '';
+          if (remainingSec >= 3600) {
+            const h = Math.ceil(remainingSec / 3600);
+            durationText = `${h} hour${h > 1 ? 's' : ''}`;
+          } else if (remainingSec >= 60) {
+            const m = Math.ceil(remainingSec / 60);
+            durationText = `${m} minute${m > 1 ? 's' : ''}`;
+          } else {
+            durationText = `${remainingSec} second${remainingSec !== 1 ? 's' : ''}`;
+          }
+
+          return res.status(429).json({
+            allowed: false,
+            rateLimited: true,
+            lockoutRemaining: remainingSec,
+            error: `Too many OTP requests. For security, please wait ${durationText} before requesting another code, or enter the 6-digit code already sent to your email.`,
+            email: admin.email
+          });
+        }
+      }
+
+      let attempts = 1;
+      if (rateRow && rateRow.last_requested_at) {
+        const lastReq = new Date(rateRow.last_requested_at);
+        const diffMs = now.getTime() - lastReq.getTime();
+        // Reset streak if inactive for > 24 hours
+        if (diffMs < 24 * 60 * 60 * 1000) {
+          attempts = (rateRow.attempts || 0) + 1;
+        }
+      }
+
+      // Calculate cooldown seconds
+      let cooldownSec = 60;
+      if (attempts <= 2) {
+        cooldownSec = 60; // 1 min
+      } else if (attempts === 3) {
+        cooldownSec = 600; // 10 min
+      } else if (attempts === 4) {
+        cooldownSec = 3600; // 1 hour
+      } else {
+        cooldownSec = 86400; // 24 hours MAX limit
+      }
+
+      const nextLockedUntil = new Date(now.getTime() + cooldownSec * 1000);
+      await sb.from('otp_rate_limits').upsert({
+        email: admin.email,
+        attempts: attempts,
+        last_requested_at: now.toISOString(),
+        locked_until: nextLockedUntil.toISOString()
+      });
+
       return res.status(200).json({
         allowed: true,
         email: admin.email,
-        role: admin.role
+        role: admin.role,
+        cooldownSeconds: cooldownSec,
+        attempts: attempts
       });
     } catch(e) {
       console.error('[auth/check-whitelist]', e.message);
@@ -209,6 +279,13 @@ module.exports = async function handler(req, res) {
       res.setHeader('Set-Cookie',
         `privatian_session=${token}; HttpOnly; Secure; SameSite=Strict; Max-Age=86400; Path=/`
       );
+
+      // Reset rate limit streak on successful login
+      try {
+        await sb.from('otp_rate_limits').delete().eq('email', admin.email);
+      } catch(rateClearErr) {
+        console.warn('[auth/clear-rate-limit]', rateClearErr.message);
+      }
 
       // Record Activity Log for OTP login
       try {

@@ -147,7 +147,7 @@
       min-height: 44px;
     }
 
-    /* Divider between OAuth & Magic Link */
+    /* Divider between OAuth & Email OTP */
     .auth-divider {
       display: flex;
       align-items: center;
@@ -168,7 +168,7 @@
       padding: 0 12px;
     }
 
-    /* Magic Form */
+    /* Form */
     .magic-form {
       text-align: left;
       margin-bottom: 16px;
@@ -671,11 +671,26 @@
       if (sp) sp.className = 'spinner' + (on ? ' visible' : '');
     }
 
+    function formatDuration(totalSeconds) {
+      if (totalSeconds <= 0) return '0s';
+      if (totalSeconds >= 3600) {
+        const hours = Math.floor(totalSeconds / 3600);
+        const mins = Math.ceil((totalSeconds % 3600) / 60);
+        return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
+      }
+      if (totalSeconds >= 60) {
+        const mins = Math.floor(totalSeconds / 60);
+        const secs = totalSeconds % 60;
+        return secs > 0 ? `${mins}m ${secs}s` : `${mins}m`;
+      }
+      return `${totalSeconds}s`;
+    }
+
     function formatSupabaseError(err) {
       if (!err) return 'An unexpected error occurred. Please try again.';
       const msg = typeof err === 'string' ? err : err.message || '';
       if (/rate limit|over_email_send_rate_limit|security purposes|too many requests|seconds/i.test(msg)) {
-        return 'For security, please wait 15 seconds before requesting another OTP code, or enter the 6-digit code already sent to your email.';
+        return 'For security, please wait 1 minute before requesting another OTP code, or enter the 6-digit code already sent to your email.';
       }
       if (/invalid.*code|token.*expired|otp.*expired|invalid.*token/i.test(msg)) {
         return 'The 6-digit OTP code is incorrect or expired. Please check your inbox and try again.';
@@ -797,6 +812,32 @@
       }
     }
 
+    // ── PROGRESSIVE COOLDOWN COUNTDOWN TIMER ─────────────────────────
+    function startResendCountdown(seconds) {
+      const resendBtn = document.getElementById('resend-btn');
+      _resendCountdown = Number(seconds) || 60;
+      if (resendBtn) {
+        resendBtn.disabled = true;
+        resendBtn.textContent = `Resend Code in ${formatDuration(_resendCountdown)}`;
+      }
+
+      if (_resendTimer) clearInterval(_resendTimer);
+      _resendTimer = setInterval(() => {
+        _resendCountdown--;
+        if (_resendCountdown <= 0) {
+          clearInterval(_resendTimer);
+          if (resendBtn) {
+            resendBtn.disabled = false;
+            resendBtn.textContent = 'Resend Code';
+          }
+        } else {
+          if (resendBtn) {
+            resendBtn.textContent = `Resend Code in ${formatDuration(_resendCountdown)}`;
+          }
+        }
+      }, 1000);
+    }
+
     // ── EMAIL OTP SUBMIT HANDLER ──────────────────────────────────────
     async function handleOtpSubmit(e) {
       if (e) e.preventDefault();
@@ -823,7 +864,7 @@
       submitBtn.innerHTML = '<span class="spinner visible" style="width:16px;height:16px;margin:0;display:inline-block;vertical-align:middle;border-width:2px;"></span> <span>Checking Authorization...</span>';
 
       try {
-        // Step 1: Pre-validate against whitelist API before sending OTP
+        // Step 1: Pre-validate against whitelist API + Progressive Rate Limit Check
         const checkRes = await fetch('/api/auth?action=check-whitelist', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -831,6 +872,13 @@
         });
 
         const checkData = await checkRes.json();
+
+        if (checkRes.status === 429 || checkData.rateLimited) {
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg><span>Send 6-Digit Code (OTP)</span>';
+          showMsg('warning', checkData.error);
+          return;
+        }
 
         if (!checkRes.ok || !checkData.allowed) {
           submitBtn.disabled = false;
@@ -871,32 +919,13 @@
         submitBtn.innerHTML = '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg><span>Send 6-Digit Code (OTP)</span>';
 
         clearOtpSlots();
-        startResendCountdown();
+        startResendCountdown(checkData.cooldownSeconds || 60);
 
       } catch(err) {
         submitBtn.disabled = false;
         submitBtn.innerHTML = '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg><span>Send 6-Digit Code (OTP)</span>';
         showMsg('error', 'An unexpected error occurred. Please check your internet connection.');
       }
-    }
-
-    function startResendCountdown() {
-      const resendBtn = document.getElementById('resend-btn');
-      _resendCountdown = 15;
-      resendBtn.disabled = true;
-      resendBtn.textContent = `Resend Code in ${_resendCountdown}s`;
-
-      if (_resendTimer) clearInterval(_resendTimer);
-      _resendTimer = setInterval(() => {
-        _resendCountdown--;
-        if (_resendCountdown <= 0) {
-          clearInterval(_resendTimer);
-          resendBtn.disabled = false;
-          resendBtn.textContent = 'Resend Code';
-        } else {
-          resendBtn.textContent = `Resend Code in ${_resendCountdown}s`;
-        }
-      }, 1000);
     }
 
     async function resendOtpCode() {
@@ -906,6 +935,28 @@
       resendBtn.textContent = 'Sending...';
 
       try {
+        // Check whitelist and progressive rate limits
+        const checkRes = await fetch('/api/auth?action=check-whitelist', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: _lastSentEmail })
+        });
+
+        const checkData = await checkRes.json();
+
+        if (checkRes.status === 429 || checkData.rateLimited) {
+          showMsg('warning', checkData.error);
+          startResendCountdown(checkData.lockoutRemaining || 60);
+          return;
+        }
+
+        if (!checkRes.ok || !checkData.allowed) {
+          showMsg('error', checkData.error || 'Email authorization failed.');
+          resendBtn.disabled = false;
+          resendBtn.textContent = 'Resend Code';
+          return;
+        }
+
         const sb = getSupabaseClient();
         if (!sb) throw new Error('Supabase client unavailable');
 
@@ -918,12 +969,11 @@
 
         if (error) {
           showMsg('warning', formatSupabaseError(error));
-          resendBtn.disabled = false;
-          resendBtn.textContent = 'Resend Code';
+          startResendCountdown(checkData.cooldownSeconds || 60);
         } else {
           showMsg('success', 'A fresh 6-digit verification code has been sent to your email.');
           clearOtpSlots();
-          startResendCountdown();
+          startResendCountdown(checkData.cooldownSeconds || 60);
         }
       } catch(e) {
         showMsg('error', 'Network error while resending code.');
