@@ -3307,6 +3307,12 @@ function renderHsTabCard(hs) {
     cfTokenInp.value = hs.cloudflareAnalyticsToken || '';
     if (cfStatusEl) {
       cfStatusEl.textContent = hs.cloudflareAnalyticsToken ? 'Active & Tracking' : 'Not configured';
+      cfStatusEl.style.color = hs.cloudflareAnalyticsToken ? '#10b981' : '#64748b';
+    }
+    cfTokenInp.oninput = () => {
+      hs.cloudflareAnalyticsToken = cfTokenInp.value.trim();
+      if (cfStatusEl) {
+        cfStatusEl.textContent = hs.cloudflareAnalyticsToken ? 'Active & Tracking' : 'Not configured';
         cfStatusEl.style.color = hs.cloudflareAnalyticsToken ? '#10b981' : '#64748b';
       }
       updateGlobalSyncStatus();
