@@ -31,8 +31,8 @@ const s3 = new S3Client({
 });
 
 // ── SUPABASE CLIENT ──────────────────────────────────────────────────────
-const supabaseUrl = process.env.PRIVATIAN_SUPABASE_URL || process.env.SUPABASE_URL || 'https://aeydfqdxdfwbbwuhhgyp.supabase.co';
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.PRIVATIAN_SUPABASE_KEY || process.env.SUPABASE_KEY;
+const supabaseUrl = process.env.SUPABASE_URL || process.env.PRIVATIAN_SUPABASE_URL || 'https://aenhajqjsgskimfzvlfr.supabase.co';
+const supabaseKey = process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.PRIVATIAN_SUPABASE_KEY || process.env.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFlbmhhanFqc2dza2ltZnp2bGZyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY2MDc1MDUsImV4cCI6MjEwMjE4MzUwNX0.q0wmF77hpsb8M7CQOYMq8GrDuQJ32vn1NcWFXTc5UAY';
 
 function getSupabase() {
   if (!supabaseUrl || !supabaseKey) return null;
@@ -118,7 +118,22 @@ async function getStoredMediaList(sb) {
   // Step 2: Fetch metadata dictionary from Supabase
   let dbMetadataMap = new Map();
   if (sb) {
-    // Try table
+    // Try sections table fallback store first
+    try {
+      const { data: secData } = await sb.from('sections').select('name').eq('admin_id', '__media_library_store__').maybeSingle();
+      if (secData && secData.name) {
+        const parsed = JSON.parse(secData.name);
+        if (Array.isArray(parsed)) {
+          parsed.forEach(item => {
+            if (item.unique_id) dbMetadataMap.set(item.unique_id, item);
+            if (item.id) dbMetadataMap.set(item.id, item);
+            if (item.r2_key) dbMetadataMap.set(item.r2_key, item);
+          });
+        }
+      }
+    } catch(e) {}
+
+    // Try media_library table
     try {
       const { data, error } = await sb.from('media_library').select('*');
       if (!error && Array.isArray(data)) {

@@ -228,24 +228,45 @@
     return _cachedList;
   }
 
+  const DEFAULT_STANDARD_FOLDERS = ['Articles', 'Hero Banners', 'Authors', 'Logos & Icons', 'Heritage & Archive'];
+
   /**
-   * Populates folder dropdowns
+   * Populates folder dropdowns with robust synchronization
    */
-  function populateFolderDropdowns() {
+  function populateFolderDropdowns(preserveTargetFolder = '') {
     const folderFilter = document.getElementById('umm-folder-select');
     const uploadDest = document.getElementById('umm-upload-dest-select');
     if (!folderFilter || !uploadDest) return;
 
-    const folderSet = new Set(_cachedFolders);
-    _cachedList.forEach(x => { if (x.folder) folderSet.add(x.folder); });
+    const folderSet = new Set(DEFAULT_STANDARD_FOLDERS);
+    if (Array.isArray(_cachedFolders)) {
+      _cachedFolders.forEach(f => { if (f && typeof f === 'string' && f.trim()) folderSet.add(f.trim()); });
+    }
+    if (Array.isArray(_cachedList)) {
+      _cachedList.forEach(x => { if (x.folder && typeof x.folder === 'string' && x.folder.trim()) folderSet.add(x.folder.trim()); });
+    }
+    if (preserveTargetFolder) {
+      folderSet.add(preserveTargetFolder);
+    }
     const sorted = Array.from(folderSet).sort();
+
+    const previousUploadDest = uploadDest.value;
+    const activeFilter = _activeFolder || folderFilter.value || 'all';
 
     folderFilter.innerHTML = `<option value="all">All Folders</option><option value="__root__">Root / Uncategorized</option>` +
       sorted.map(f => `<option value="${esc(f)}">${esc(f)}</option>`).join('');
-    folderFilter.value = _activeFolder;
+    folderFilter.value = activeFilter;
 
     uploadDest.innerHTML = `<option value="">Root / All Media</option>` +
       sorted.map(f => `<option value="${esc(f)}">${esc(f)}</option>`).join('');
+
+    if (preserveTargetFolder && folderSet.has(preserveTargetFolder)) {
+      uploadDest.value = preserveTargetFolder;
+    } else if (previousUploadDest && folderSet.has(previousUploadDest)) {
+      uploadDest.value = previousUploadDest;
+    } else if (activeFilter && activeFilter !== 'all' && activeFilter !== '__root__' && folderSet.has(activeFilter)) {
+      uploadDest.value = activeFilter;
+    }
   }
 
   /**
@@ -481,7 +502,12 @@
     if (paneGallery) paneGallery.classList.toggle('active', tabName === 'gallery');
     if (paneUpload) paneUpload.classList.toggle('active', tabName === 'upload');
 
-    if (tabName === 'gallery') {
+    if (tabName === 'upload') {
+      const uploadDest = document.getElementById('umm-upload-dest-select');
+      if (uploadDest && _activeFolder && _activeFolder !== 'all' && _activeFolder !== '__root__') {
+        uploadDest.value = _activeFolder;
+      }
+    } else if (tabName === 'gallery') {
       const searchInp = document.getElementById('umm-search-input');
       renderGalleryGrid(searchInp ? searchInp.value : '');
     }
@@ -508,6 +534,10 @@
 
   window._ummOnFolderFilter = function(folderVal) {
     _activeFolder = folderVal || 'all';
+    const uploadDest = document.getElementById('umm-upload-dest-select');
+    if (uploadDest && folderVal && folderVal !== 'all' && folderVal !== '__root__') {
+      uploadDest.value = folderVal;
+    }
     renderGalleryGrid(_lastSearchQuery);
   };
 
@@ -602,6 +632,8 @@
       if (!opts.subtitle) subtitle = 'Direct high-speed upload to cloud storage';
     }
 
+    populateFolderDropdowns(targetFolder);
+
     const titleEl = document.getElementById('umm-header-title');
     const subEl = document.getElementById('umm-header-sub');
     const searchInp = document.getElementById('umm-search-input');
@@ -611,11 +643,18 @@
     const confirmBtn = document.getElementById('umm-btn-confirm');
     const cancelBtn = document.querySelector('.umm-btn-cancel');
     const summaryEl = document.getElementById('umm-selected-summary');
+    const folderFilter = document.getElementById('umm-folder-select');
+    const uploadDest = document.getElementById('umm-upload-dest-select');
 
     if (titleEl) titleEl.textContent = title;
     if (subEl) subEl.textContent = subtitle;
     if (searchInp) searchInp.value = '';
     if (clearBtn) clearBtn.style.display = 'none';
+
+    if (targetFolder) {
+      if (folderFilter) folderFilter.value = targetFolder;
+      if (uploadDest) uploadDest.value = targetFolder;
+    }
 
     if (tabsContainer) {
       tabsContainer.style.display = _hideBrowseTab ? 'none' : 'flex';
@@ -635,11 +674,9 @@
 
     if (overlay) overlay.classList.add('show');
 
-    // Fetch and render list
+    // Fetch latest and re-populate
     await fetchMediaList();
     if (targetFolder) {
-      const folderFilter = document.getElementById('umm-folder-select');
-      const uploadDest = document.getElementById('umm-upload-dest-select');
       if (folderFilter) folderFilter.value = targetFolder;
       if (uploadDest) uploadDest.value = targetFolder;
     }

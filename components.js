@@ -510,14 +510,34 @@
     if (!faviconUrl || typeof faviconUrl !== 'string' || !faviconUrl.trim()) return;
     var clean = faviconUrl.trim();
     
-    var iconLink = document.querySelector("link[rel='icon']") || document.querySelector("link[rel='shortcut icon']");
+    // Determine appropriate MIME type
+    var mimeType = 'image/x-icon';
+    if (clean.endsWith('.svg') || clean.includes('.svg')) mimeType = 'image/svg+xml';
+    else if (clean.endsWith('.png')) mimeType = 'image/png';
+    else if (clean.endsWith('.webp')) mimeType = 'image/webp';
+    else if (clean.endsWith('.gif')) mimeType = 'image/gif';
+
+    // 1. Standard icon
+    var iconLink = document.querySelector("link[rel='icon']");
     if (!iconLink) {
       iconLink = document.createElement('link');
-      iconLink.rel = 'shortcut icon';
+      iconLink.rel = 'icon';
       document.head.appendChild(iconLink);
     }
+    iconLink.type = mimeType;
     iconLink.href = clean;
 
+    // 2. Shortcut icon
+    var shortcutLink = document.querySelector("link[rel='shortcut icon']");
+    if (!shortcutLink) {
+      shortcutLink = document.createElement('link');
+      shortcutLink.rel = 'shortcut icon';
+      document.head.appendChild(shortcutLink);
+    }
+    shortcutLink.type = mimeType;
+    shortcutLink.href = clean;
+
+    // 3. Apple Touch Icon
     var appleLink = document.querySelector("link[rel='apple-touch-icon']");
     if (!appleLink) {
       appleLink = document.createElement('link');
@@ -525,19 +545,6 @@
       document.head.appendChild(appleLink);
     }
     appleLink.href = clean;
-  }
-
-  function applyLogoSettings() {
-    var hs = getHeaderSettings();
-    if (!hs) return;
-    if (hs.faviconUrl) {
-      applyFaviconSettings(hs.faviconUrl);
-    }
-    var logoWrap = document.getElementById('site-logo-link');
-    if (logoWrap && hs.logoSvg) {
-      var h = hs.logoHeight || 80;
-      logoWrap.innerHTML = formatSvgWithSize(hs.logoSvg, h);
-    }
   }
 
   // -- 2b. POPULATE SUB-HEADER TABS DYNAMICALLY
@@ -758,6 +765,11 @@
   function applyLogoSettings() {
     var settings = getHeaderSettings();
     if (!settings) return;
+    
+    if (settings.faviconUrl) {
+      applyFaviconSettings(settings.faviconUrl);
+    }
+
     var height = settings.logoHeight || 80;
     if (settings.logoSvg) {
       var logoLink = document.querySelector('.site-logo');
