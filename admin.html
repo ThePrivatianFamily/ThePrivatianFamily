@@ -1594,22 +1594,18 @@
       </div>
     </section>
 
-        <!-- PAGE: SETTINGS (Admin & Email Template Management Studio) -->
+        <!-- PAGE: SETTINGS (Admin Login Verification Email Studio) -->
     <section class="page" id="page-settings">
       <!-- Settings Header -->
       <div class="menu-mgr-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:12px;">
         <div class="menu-mgr-title-wrap">
           <h1 class="page-title" style="font-size:22px;font-weight:700;color:var(--text-primary);margin:0 0 4px;display:flex;align-items:center;gap:8px;">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="22" height="22" style="color:var(--brand-navy,#0a528e);"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-            <span>Admin Settings &amp; Email Studio</span>
+            <span>Login Verification Email Settings</span>
           </h1>
-          <p class="page-subtitle" style="font-size:13px;color:var(--text-muted);margin:0;">Customize login verification emails (OTP / Magic Link), sender identity, token expiration, and view live rendered previews.</p>
+          <p class="page-subtitle" style="font-size:13px;color:var(--text-muted);margin:0;">Configure the OTP verification email layout, subject line, sender name, passcode expiration, and view live inbox previews.</p>
         </div>
         <div class="menu-mgr-actions" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-          <button type="button" class="btn btn--ghost btn--sm" onclick="promptSendTestEmail()" style="font-size:12.5px;padding:6px 14px;display:inline-flex;align-items:center;gap:6px;border:1px solid #cbd5e1;border-radius:6px;font-weight:600;" title="Send a live test verification email to your inbox">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-            Send Test Email
-          </button>
           <button type="button" class="btn btn--ghost btn--sm" onclick="resetEmailTemplateToDefault()" style="font-size:12.5px;padding:6px 14px;display:inline-flex;align-items:center;gap:6px;border:1px solid #cbd5e1;border-radius:6px;" title="Reset template back to system default">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
             Reset Default
@@ -1619,22 +1615,6 @@
             Save Settings
           </button>
         </div>
-      </div>
-
-      <!-- Settings Sub-Tabs -->
-      <div class="settings-nav-strip" style="display:flex;gap:8px;border-bottom:1px solid #e2e8f0;padding-bottom:10px;margin-bottom:20px;">
-        <button type="button" class="settings-tab-btn active" id="set-tab-magic-link" onclick="switchSettingsEmailTab('magic_link')">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-          <span>Login Verification (OTP Email)</span>
-        </button>
-        <button type="button" class="settings-tab-btn" id="set-tab-invite" onclick="switchSettingsEmailTab('invite')">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
-          <span>Staff Invitation Email</span>
-        </button>
-        <button type="button" class="settings-tab-btn" id="set-tab-recovery" onclick="switchSettingsEmailTab('recovery')">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M1 4v6h6"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
-          <span>Password Recovery Email</span>
-        </button>
       </div>
 
       <!-- Main Studio Layout: 2 Columns (Editor vs Live Preview) -->
@@ -1647,7 +1627,7 @@
           <div style="display:flex;flex-direction:column;gap:14px;margin-bottom:18px;">
             <div class="form-group" style="margin:0;">
               <label style="display:block;font-size:12px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.04em;margin-bottom:6px;">Email Subject Line</label>
-              <input type="text" id="email-subject-input" class="form-input" style="width:100%;font-size:13.5px;padding:9px 12px;border:1px solid #cbd5e1;border-radius:7px;" placeholder="e.g. Your 6-Digit Admin Verification Code (OTP) - The Privatian Family" oninput="onEmailFieldChange()">
+              <input type="text" id="email-subject-input" class="form-input" style="width:100%;font-size:13.5px;padding:9px 12px;border:1px solid #cbd5e1;border-radius:7px;" placeholder="Your 6-Digit Admin Verification Code (OTP) — The Privatian Family" oninput="onEmailFieldChange()">
             </div>
 
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
@@ -1670,7 +1650,7 @@
 
           <!-- Mode Switcher (Visual Customizer vs Raw HTML) -->
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;border-top:1px solid #f1f5f9;padding-top:14px;">
-            <span style="font-size:12px;font-weight:700;color:var(--text-primary);text-transform:uppercase;letter-spacing:0.04em;">Template Customizer</span>
+            <span style="font-size:12px;font-weight:700;color:var(--text-primary);text-transform:uppercase;letter-spacing:0.04em;">Template Editor</span>
             <div class="btn-group" style="display:inline-flex;border:1px solid #cbd5e1;border-radius:6px;overflow:hidden;">
               <button type="button" class="btn btn--sm active" id="btn-mode-visual" onclick="switchEmailEditorMode('visual')" style="font-size:11.5px;padding:4px 10px;border:none;background:var(--brand-navy,#0a528e);color:#fff;cursor:pointer;">Visual Builder</button>
               <button type="button" class="btn btn--sm" id="btn-mode-html" onclick="switchEmailEditorMode('html')" style="font-size:11.5px;padding:4px 10px;border:none;background:#f8fafc;color:var(--text-secondary);cursor:pointer;">Raw HTML</button>
@@ -1680,45 +1660,34 @@
           <!-- Mode A: Visual Builder Fields -->
           <div id="email-visual-builder-panel" style="display:flex;flex-direction:column;gap:12px;">
             <div class="form-group" style="margin:0;">
-              <label style="font-size:11.5px;font-weight:600;color:var(--text-secondary);margin-bottom:4px;display:block;">Header Brand Title</label>
+              <label style="font-size:11.5px;font-weight:600;color:var(--text-secondary);margin-bottom:4px;display:block;">Brand Header Title</label>
               <input type="text" id="ev-brand-title" class="form-input" style="width:100%;font-size:13px;padding:7px 10px;border:1px solid #cbd5e1;border-radius:6px;" value="The Privatian Family" oninput="syncVisualToHtml()">
             </div>
             <div class="form-group" style="margin:0;">
-              <label style="font-size:11.5px;font-weight:600;color:var(--text-secondary);margin-bottom:4px;display:block;">Header Subtitle</label>
-              <input type="text" id="ev-brand-sub" class="form-input" style="width:100%;font-size:13px;padding:7px 10px;border:1px solid #cbd5e1;border-radius:6px;" value="Administrator Portal Verification" oninput="syncVisualToHtml()">
+              <label style="font-size:11.5px;font-weight:600;color:var(--text-secondary);margin-bottom:4px;display:block;">Brand Subtitle</label>
+              <input type="text" id="ev-brand-sub" class="form-input" style="width:100%;font-size:13px;padding:7px 10px;border:1px solid #cbd5e1;border-radius:6px;" value="Administrative Portal • Verification" oninput="syncVisualToHtml()">
             </div>
             <div class="form-group" style="margin:0;">
-              <label style="font-size:11.5px;font-weight:600;color:var(--text-secondary);margin-bottom:4px;display:block;">Main Heading / Title</label>
+              <label style="font-size:11.5px;font-weight:600;color:var(--text-secondary);margin-bottom:4px;display:block;">Main Heading</label>
               <input type="text" id="ev-main-heading" class="form-input" style="width:100%;font-size:13px;padding:7px 10px;border:1px solid #cbd5e1;border-radius:6px;" value="Your Login Verification Code" oninput="syncVisualToHtml()">
             </div>
             <div class="form-group" style="margin:0;">
-              <label style="font-size:11.5px;font-weight:600;color:var(--text-secondary);margin-bottom:4px;display:block;">Intro Paragraph / Instructions</label>
-              <textarea id="ev-intro-text" class="form-input" rows="2" style="width:100%;font-size:13px;padding:7px 10px;border:1px solid #cbd5e1;border-radius:6px;resize:vertical;" oninput="syncVisualToHtml()">Enter the following 6-digit verification code in the admin sign-in form to access your account:</textarea>
+              <label style="font-size:11.5px;font-weight:600;color:var(--text-secondary);margin-bottom:4px;display:block;">Intro Instructions Text</label>
+              <textarea id="ev-intro-text" class="form-input" rows="2" style="width:100%;font-size:13px;padding:7px 10px;border:1px solid #cbd5e1;border-radius:6px;resize:vertical;" oninput="syncVisualToHtml()">Enter the single-use 6-digit verification code below in the administrator sign-in form to authenticate your session:</textarea>
             </div>
             <div class="form-group" style="margin:0;">
-              <label style="font-size:11.5px;font-weight:600;color:var(--text-secondary);margin-bottom:4px;display:block;">Security Notice Text</label>
-              <textarea id="ev-security-notice" class="form-input" rows="2" style="width:100%;font-size:12.5px;padding:7px 10px;border:1px solid #cbd5e1;border-radius:6px;resize:vertical;" oninput="syncVisualToHtml()">Security Notice: This code will expire in 1 hour. Never share this verification code with anyone. If you did not request this code, no action is needed.</textarea>
+              <label style="font-size:11.5px;font-weight:600;color:var(--text-secondary);margin-bottom:4px;display:block;">Security Notice</label>
+              <textarea id="ev-security-notice" class="form-input" rows="2" style="width:100%;font-size:12.5px;padding:7px 10px;border:1px solid #cbd5e1;border-radius:6px;resize:vertical;" oninput="syncVisualToHtml()">This passcode will expire in 1 hour. Never share this code with anyone. If you did not request this login attempt, no further action is required.</textarea>
             </div>
             <div class="form-group" style="margin:0;">
-              <label style="font-size:11.5px;font-weight:600;color:var(--text-secondary);margin-bottom:4px;display:block;">Footer Text</label>
-              <input type="text" id="ev-footer-text" class="form-input" style="width:100%;font-size:12.5px;padding:7px 10px;border:1px solid #cbd5e1;border-radius:6px;" value="The Privatian Family • Secure Administration" oninput="syncVisualToHtml()">
+              <label style="font-size:11.5px;font-weight:600;color:var(--text-secondary);margin-bottom:4px;display:block;">Footer Publication Info</label>
+              <input type="text" id="ev-footer-text" class="form-input" style="width:100%;font-size:12.5px;padding:7px 10px;border:1px solid #cbd5e1;border-radius:6px;" value="The Official Publication of The Privatian Society — Cambridge, Massachusetts" oninput="syncVisualToHtml()">
             </div>
           </div>
 
           <!-- Mode B: Raw HTML Code Editor -->
           <div id="email-html-editor-panel" style="display:none;flex-direction:column;gap:10px;">
-            <textarea id="email-html-textarea" class="form-input" rows="16" style="width:100%;font-family:monospace;font-size:12px;line-height:1.5;padding:12px;border:1px solid #cbd5e1;border-radius:8px;background:#0f172a;color:#f8fafc;resize:vertical;" oninput="syncHtmlToVisualAndPreview()"></textarea>
-          </div>
-
-          <!-- Dynamic Tags Reference Guide -->
-          <div style="margin-top:16px;padding:12px 14px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;">
-            <div style="font-size:11.5px;font-weight:700;color:var(--text-secondary);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.04em;">Available Dynamic Variables</div>
-            <div style="display:flex;flex-wrap:wrap;gap:6px;">
-              <button type="button" class="tag-chip" onclick="insertEmailTag('{{ .Token }}')" title="Click to copy/insert {{ .Token }} (6-Digit Code)"><code>{{ .Token }}</code> <span style="font-size:10.5px;opacity:0.75;">(6-digit OTP)</span></button>
-              <button type="button" class="tag-chip" onclick="insertEmailTag('{{ .ConfirmationURL }}')" title="Click to copy/insert {{ .ConfirmationURL }} (Magic Link)"><code>{{ .ConfirmationURL }}</code> <span style="font-size:10.5px;opacity:0.75;">(Login Link)</span></button>
-              <button type="button" class="tag-chip" onclick="insertEmailTag('{{ .Email }}')" title="Click to copy/insert {{ .Email }}"><code>{{ .Email }}</code> <span style="font-size:10.5px;opacity:0.75;">(Recipient)</span></button>
-              <button type="button" class="tag-chip" onclick="insertEmailTag('{{ .SiteURL }}')" title="Click to copy/insert {{ .SiteURL }}"><code>{{ .SiteURL }}</code> <span style="font-size:10.5px;opacity:0.75;">(Site URL)</span></button>
-            </div>
+            <textarea id="email-html-textarea" class="form-input" rows="18" style="width:100%;font-family:monospace;font-size:12px;line-height:1.5;padding:12px;border:1px solid #cbd5e1;border-radius:8px;background:#0f172a;color:#f8fafc;resize:vertical;" oninput="syncHtmlToVisualAndPreview()"></textarea>
           </div>
 
         </div>
