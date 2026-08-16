@@ -7,7 +7,7 @@
 var sections = [];
 var currentTab = 'active';
 var activeTab = 'active';
-var _currentAdminPage = 'sections';
+var _currentAdminPage = 'dashboard';
 var _allArticles = [];
 var _currentArticlesView = 'active';
 var _hsInstance = null;
@@ -1483,12 +1483,12 @@ async function verifyDatabaseSync(shouldToast = false) {
 
 // ── Page navigation ───────────────────────────────────────────
 const PAGE_CONFIG = {
+  dashboard: { title: 'Dashboard & Overview', breadcrumb: 'Dashboard' },
   sections:  { title: 'Sections',  breadcrumb: 'Sections' },
   homepage:  { title: 'Homepage Manager', breadcrumb: 'Homepage' },
   menu:      { title: 'Navigation Menu', breadcrumb: 'Navigation Menu' },
   header:    { title: 'Header Settings', breadcrumb: 'Header' },
   footer:    { title: 'Footer Settings', breadcrumb: 'Footer' },
-  dashboard: { title: 'Dashboard', breadcrumb: 'Dashboard' },
   articles:  { title: 'Articles',  breadcrumb: 'Articles' },
   gallery:   { title: 'Media Gallery & Asset Library', breadcrumb: 'Gallery' },
   settings:  { title: 'Settings',  breadcrumb: 'Settings' },
@@ -1497,28 +1497,40 @@ const PAGE_CONFIG = {
 };
 
 function navigateTo(page) {
-  _currentAdminPage = page || 'sections';
+  _currentAdminPage = page || 'dashboard';
+
+  // Persist current page to URL Hash and localStorage
+  try {
+    if (window.location.hash !== '#' + _currentAdminPage) {
+      history.replaceState(null, '', '#' + _currentAdminPage);
+    }
+    localStorage.setItem('pf_admin_current_page', _currentAdminPage);
+  } catch (e) {}
+
   document.querySelectorAll('.sidebar-nav-item').forEach(el => {
-    el.classList.toggle('active', el.dataset.page === page);
+    el.classList.toggle('active', el.dataset.page === _currentAdminPage);
   });
   document.querySelectorAll('.page').forEach(el => {
-    el.classList.toggle('active', el.id === `page-${page}`);
+    el.classList.toggle('active', el.id === `page-${_currentAdminPage}`);
   });
 
-  const cfg = PAGE_CONFIG[page] || { title: page, breadcrumb: page };
-  document.getElementById('page-title').textContent = cfg.title;
-  document.getElementById('breadcrumb-current').textContent = cfg.breadcrumb;
+  const cfg = PAGE_CONFIG[_currentAdminPage] || { title: _currentAdminPage, breadcrumb: _currentAdminPage };
+  const pageTitleEl = document.getElementById('page-title');
+  const breadcrumbEl = document.getElementById('breadcrumb-current');
+  if (pageTitleEl) pageTitleEl.textContent = cfg.title;
+  if (breadcrumbEl) breadcrumbEl.textContent = cfg.breadcrumb;
 
   // Inject topbar action buttons
   topbarActions.innerHTML = '';
-  if (page === 'access')   { loadAccessList(); }
-  if (page === 'homepage') { initHomepagePage(); }
-  if (page === 'menu')     { initMenuPage(); }
-  if (page === 'header')   { initHeaderPage(); }
-  if (page === 'footer')   { initFooterPage(); }
-  if (page === 'articles') { initArticlesPage(); }
-  if (page === 'activity') { loadActivityLogs(); }
-  if (page === 'gallery')  {
+  if (_currentAdminPage === 'dashboard') { initDashboardPage(); }
+  if (_currentAdminPage === 'access')    { loadAccessList(); }
+  if (_currentAdminPage === 'homepage')  { initHomepagePage(); }
+  if (_currentAdminPage === 'menu')      { initMenuPage(); }
+  if (_currentAdminPage === 'header')    { initHeaderPage(); }
+  if (_currentAdminPage === 'footer')    { initFooterPage(); }
+  if (_currentAdminPage === 'articles')  { initArticlesPage(); }
+  if (_currentAdminPage === 'activity')  { loadActivityLogs(); }
+  if (_currentAdminPage === 'gallery')   {
     loadGalleryAssets();
     initGalleryUploadDropzone();
     const btn = document.createElement('button');
@@ -1527,7 +1539,7 @@ function navigateTo(page) {
     btn.onclick = () => document.getElementById('gallery-file-input').click();
     topbarActions.appendChild(btn);
   }
-  if (page === 'sections') {
+  if (_currentAdminPage === 'sections') {
     // New Section button
     const btn = document.createElement('button');
     btn.className = 'btn btn--primary';
@@ -1540,7 +1552,7 @@ function navigateTo(page) {
   // Show/Hide topbar content language switcher (only relevant for content editors: sections, homepage, menu, header, footer)
   const langSwitcher = document.getElementById('admin-lang-switcher');
   if (langSwitcher) {
-    const showLangSwitcher = ['sections', 'homepage', 'menu', 'header', 'footer'].includes(page);
+    const showLangSwitcher = ['sections', 'homepage', 'menu', 'header', 'footer'].includes(_currentAdminPage);
     langSwitcher.style.display = showLangSwitcher ? 'flex' : 'none';
   }
 
@@ -1557,7 +1569,264 @@ document.querySelectorAll('.sidebar-nav-item').forEach(el => {
   });
 });
 
-// â”€â”€ Toast â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+/* ═══════════════════════════════════════════════════════════════
+   ADMIN DASHBOARD ENGINE — Real-time Metrics & Analytics
+═══════════════════════════════════════════════════════════════ */
+var _isDashboardLoading = false;
+var _cachedDashboardStats = null;
+
+function formatNumber(num) {
+  if (num === null || num === undefined || isNaN(num)) return '0';
+  return Number(num).toLocaleString('en-US');
+}
+
+function formatBytes(bytes) {
+  if (!bytes || bytes === 0) return '0 B';
+  const k = 1024;
+  const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+}
+
+async function initDashboardPage(forceRefresh = false) {
+  if (_isDashboardLoading) return;
+
+  if (_cachedDashboardStats && !forceRefresh) {
+    renderDashboardUI(_cachedDashboardStats);
+    return;
+  }
+
+  _isDashboardLoading = true;
+  const refreshBtn = document.getElementById('db-refresh-btn');
+  const refreshIcon = document.getElementById('db-refresh-icon');
+  if (refreshIcon) refreshIcon.style.animation = 'spin 0.8s linear infinite';
+  if (refreshBtn) refreshBtn.disabled = true;
+
+  try {
+    const res = await authFetch('/api/sections?action=dashboard_stats');
+    if (res.ok) {
+      const data = await res.json();
+      if (data && data.ok) {
+        _cachedDashboardStats = data;
+        renderDashboardUI(data);
+      }
+    }
+  } catch (e) {
+    console.warn('[Dashboard load error]:', e);
+  } finally {
+    _isDashboardLoading = false;
+    if (refreshIcon) refreshIcon.style.animation = '';
+    if (refreshBtn) refreshBtn.disabled = false;
+  }
+}
+
+function refreshDashboardMetrics() {
+  initDashboardPage(true).then(() => {
+    showToast('success', 'Dashboard metrics synchronized with live database ✓');
+  });
+}
+
+function renderDashboardUI(stats) {
+  if (!stats) return;
+
+  // 1. Views
+  const views = stats.views || {};
+  const elLifetime = document.getElementById('db-stat-views-lifetime');
+  const elToday = document.getElementById('db-stat-views-today');
+  const elMonth = document.getElementById('db-stat-views-month');
+  const elYear = document.getElementById('db-stat-views-year');
+  if (elLifetime) elLifetime.textContent = formatNumber(views.lifetime || 0);
+  if (elToday) elToday.textContent = formatNumber(views.daily || 0);
+  if (elMonth) elMonth.textContent = formatNumber(views.monthly || 0);
+  if (elYear) elYear.textContent = formatNumber(views.yearly || 0);
+
+  // 2. Articles
+  const arts = stats.articles || {};
+  const elArtTotal = document.getElementById('db-stat-articles-total');
+  const elArtPub = document.getElementById('db-stat-articles-pub');
+  const elArtDraft = document.getElementById('db-stat-articles-draft');
+  const elArtTrash = document.getElementById('db-stat-articles-trash');
+  if (elArtTotal) elArtTotal.textContent = formatNumber(arts.total || 0);
+  if (elArtPub) elArtPub.textContent = formatNumber(arts.published || 0);
+  if (elArtDraft) elArtDraft.textContent = formatNumber(arts.drafts || 0);
+  if (elArtTrash) elArtTrash.textContent = formatNumber(arts.trash || 0);
+
+  // 3. Team
+  const team = stats.team || {};
+  const elTeamTotal = document.getElementById('db-stat-team-total');
+  const elTeamAdmins = document.getElementById('db-stat-team-admins');
+  const elTeamMods = document.getElementById('db-stat-team-mods');
+  if (elTeamTotal) elTeamTotal.textContent = formatNumber(team.total || 0);
+  if (elTeamAdmins) elTeamAdmins.textContent = formatNumber(team.admins || 0);
+  if (elTeamMods) elTeamMods.textContent = formatNumber(team.moderators || 0);
+
+  // 4. Media
+  const media = stats.media || {};
+  const elMediaTotal = document.getElementById('db-stat-media-total');
+  const elMediaPhotos = document.getElementById('db-stat-media-photos');
+  const elMediaSvgs = document.getElementById('db-stat-media-svgs');
+  const elMediaSize = document.getElementById('db-stat-media-size');
+  if (elMediaTotal) elMediaTotal.textContent = formatNumber(media.totalFiles || 0);
+  if (elMediaPhotos) elMediaPhotos.textContent = formatNumber(media.photos || 0);
+  if (elMediaSvgs) elMediaSvgs.textContent = formatNumber(media.svgs || 0);
+  if (elMediaSize) elMediaSize.textContent = formatBytes(media.totalBytes || 0);
+
+  // 5. 7-Day Chart Visualizer
+  render7DayChart(views.last7Days || []);
+
+  // 6. Recent Articles Table
+  renderRecentArticlesTable(arts.recent || []);
+
+  // 7. Recent Activity Feed
+  renderRecentActivityFeed(stats.recentLogs || []);
+
+  // 8. Update time label
+  const elUpdated = document.getElementById('db-last-updated-text');
+  if (elUpdated) {
+    const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    elUpdated.textContent = `Live (${timeStr})`;
+  }
+}
+
+function render7DayChart(daysArray) {
+  const container = document.getElementById('db-chart-bars');
+  if (!container) return;
+
+  if (!daysArray || !daysArray.length) {
+    container.innerHTML = `<div style="width:100%;text-align:center;color:var(--text-muted);font-size:12px;padding:32px;">No historical view data recorded yet</div>`;
+    return;
+  }
+
+  const maxViews = Math.max(...daysArray.map(d => d.views || 0), 10);
+  const totalViews = daysArray.reduce((acc, d) => acc + (d.views || 0), 0);
+  const avgDaily = Math.round(totalViews / daysArray.length);
+
+  const avgEl = document.getElementById('db-avg-daily-val');
+  if (avgEl) avgEl.textContent = `${formatNumber(avgDaily)} / day`;
+
+  container.innerHTML = daysArray.map(d => {
+    const v = d.views || 0;
+    const pct = Math.max(8, Math.round((v / maxViews) * 100));
+    const formattedDate = d.date ? d.date.slice(5) : ''; // MM-DD
+    return `
+      <div class="db-bar-col">
+        <div class="db-bar-wrap" title="${escapeHtml(d.day)} (${escapeHtml(d.date)}): ${formatNumber(v)} views">
+          <div class="db-bar-val-badge">${formatNumber(v)} views</div>
+          <div class="db-bar-fill" style="height:${pct}%;"></div>
+        </div>
+        <span class="db-bar-day">${escapeHtml(d.day || '')}</span>
+        <span class="db-bar-date">${escapeHtml(formattedDate)}</span>
+      </div>
+    `;
+  }).join('');
+}
+
+function renderRecentArticlesTable(recentList) {
+  const tbody = document.getElementById('db-recent-articles-tbody');
+  if (!tbody) return;
+
+  if (!recentList || !recentList.length) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="5" style="text-align:center;padding:36px;color:var(--text-muted);font-size:13px;">
+          No articles published yet. <a href="admin-article-editor.html" style="color:var(--brand);font-weight:600;margin-left:4px;">Write your first article →</a>
+        </td>
+      </tr>
+    `;
+    return;
+  }
+
+  tbody.innerHTML = recentList.map(art => {
+    const isPub = art.status === 'published';
+    const pillClass = isPub ? 'db-art-pill--pub' : 'db-art-pill--draft';
+    const statusText = isPub ? 'Published' : 'Draft';
+    const title = art.title || art.title_bn || 'Untitled Story';
+    const author = art.author || 'The Privatian Society';
+    const sec = art.section || 'General';
+
+    return `
+      <tr>
+        <td>
+          <div style="font-weight:600;color:#0f172a;line-height:1.3;max-width:320px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${escapeHtml(title)}">
+            ${escapeHtml(title)}
+          </div>
+        </td>
+        <td><span class="db-art-sec-badge">${escapeHtml(sec)}</span></td>
+        <td style="color:#64748b;font-size:12.5px;">${escapeHtml(author)}</td>
+        <td><span class="db-art-pill ${pillClass}">${statusText}</span></td>
+        <td class="tar">
+          <a href="admin-article-editor.html?id=${encodeURIComponent(art.id)}" class="btn btn--secondary btn--xs" style="padding:4px 10px;font-size:11.5px;text-decoration:none;">Edit</a>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function renderRecentActivityFeed(logs) {
+  const feed = document.getElementById('db-activity-feed');
+  if (!feed) return;
+
+  if (!logs || !logs.length) {
+    feed.innerHTML = `
+      <div style="text-align:center;padding:32px;color:var(--text-muted);font-size:12.5px;">
+        No recent administrative activity recorded.
+      </div>
+    `;
+    return;
+  }
+
+  feed.innerHTML = logs.slice(0, 5).map(log => {
+    const actorEmail = (log.actor && (log.actor.name || log.actor.email)) || log.user_email || 'System';
+    const initials = actorEmail.charAt(0).toUpperCase();
+    const summary = log.summary || log.action || 'System modification';
+    const timeStr = log.created_at ? formatRelativeTime(new Date(log.created_at)) : 'Recently';
+
+    return `
+      <div class="db-activity-item">
+        <div class="db-activity-avatar" title="${escapeHtml(actorEmail)}">${initials}</div>
+        <div class="db-activity-body">
+          <span class="db-activity-summary">${escapeHtml(summary)}</span>
+          <span class="db-activity-time">${escapeHtml(timeStr)}</span>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function formatRelativeTime(date) {
+  if (!date || isNaN(date.getTime())) return 'Recently';
+  const now = new Date();
+  const diffSec = Math.floor((now - date) / 1000);
+  if (diffSec < 60) return 'Just now';
+  const diffMin = Math.floor(diffSec / 60);
+  if (diffMin < 60) return `${diffMin}m ago`;
+  const diffHrs = Math.floor(diffMin / 60);
+  if (diffHrs < 24) return `${diffHrs}h ago`;
+  const diffDays = Math.floor(diffHrs / 24);
+  if (diffDays === 1) return 'Yesterday';
+  if (diffDays < 30) return `${diffDays}d ago`;
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   UNSAVED MODIFICATIONS BROWSER LEAVE / REFRESH PROTECTION
+═══════════════════════════════════════════════════════════════ */
+window.addEventListener('beforeunload', function (e) {
+  let hasUnsaved = false;
+  if (typeof isHeaderModified === 'function' && isHeaderModified()) hasUnsaved = true;
+  if (typeof isFooterModified === 'function' && isFooterModified()) hasUnsaved = true;
+  if (typeof isMenuModified === 'function' && isMenuModified()) hasUnsaved = true;
+  if (typeof isHomepageModified === 'function' && isHomepageModified()) hasUnsaved = true;
+  if (window._hasUnsavedAdminChanges === true) hasUnsaved = true;
+
+  if (hasUnsaved) {
+    e.preventDefault();
+    e.returnValue = 'You have unsaved changes in the admin panel. Are you sure you want to leave or refresh?';
+    return e.returnValue;
+  }
+});
+
+// ── Toast ───────────────────────────────────────────────────────
 function showToast(type, message, actionLabel, actionFn) {
   const iconMap = { success: ICONS.check, warning: ICONS.warn, error: ICONS.error };
 
@@ -1587,7 +1856,7 @@ function showToast(type, message, actionLabel, actionFn) {
   setTimeout(dismiss, 4500);
 }
 
-// â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Helpers ─────────────────────────────────────────────────────
 function escapeHtml(str) {
   return String(str)
     .replace(/&/g,'&amp;')
@@ -1596,8 +1865,9 @@ function escapeHtml(str) {
     .replace(/"/g,'&quot;');
 }
 
-// -- INIT: boot the sections page, load data from API --
-navigateTo('sections');
+// -- INIT: Boot initial page based on URL hash or localStorage, default to dashboard --
+const _initialPage = window.location.hash.replace(/^#/, '') || localStorage.getItem('pf_admin_current_page') || 'dashboard';
+navigateTo(_initialPage);
 sections = [ALL_SECTION]; // show immediately while API loads
 render();
 loadSectionsFromAPI();   // async: fetches /api/sections?status=all
@@ -3997,13 +4267,13 @@ async function _loadArticleTrash() {
   }).join('');
 }
 
-// Handle direct navigation via hash (e.g. admin.html#articles, admin.html#menu)
-if (window.location.hash === '#articles') {
-  window.addEventListener('privatian:ready', () => navigateTo('articles'));
-}
-if (window.location.hash === '#menu') {
-  window.addEventListener('privatian:ready', () => navigateTo('menu'));
-}
+// Handle dynamic navigation via hashchange (e.g. browser back/forward, bookmarks)
+window.addEventListener('hashchange', () => {
+  const targetPage = window.location.hash.replace(/^#/, '');
+  if (targetPage && targetPage !== _currentAdminPage) {
+    navigateTo(targetPage);
+  }
+});
 
 /* =================================================================
    MENU MANAGER (HEADER MENU OVERLAY CUSTOMIZATION)

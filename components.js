@@ -1599,10 +1599,29 @@
   fetchMenuFromAPI();
   fetchFooterFromAPI();
 
+  // Non-blocking Page View Tracking for Analytics
+  function trackPageView() {
+    if (typeof window === 'undefined' || !window.location) return;
+    if (window.location.pathname.startsWith('/admin') || window.location.pathname.startsWith('/admin-')) return;
+    try {
+      var currentPath = window.location.pathname || '/';
+      var trackUrl = '/api/sections?action=track_view&path=' + encodeURIComponent(currentPath);
+      if (navigator.sendBeacon) {
+        navigator.sendBeacon(trackUrl);
+      } else {
+        fetch(trackUrl, { method: 'POST', keepalive: true }).catch(function() {});
+      }
+    } catch(e) {}
+  }
+
   if (document.readyState === 'complete' || document.readyState === 'interactive') {
     init();
+    trackPageView();
   } else {
-    document.addEventListener('DOMContentLoaded', init);
+    document.addEventListener('DOMContentLoaded', function() {
+      init();
+      trackPageView();
+    });
   }
 
 })();
