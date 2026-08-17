@@ -285,7 +285,12 @@
         </div>
 
         <button class="menu-btn" id="menu-toggle-btn" aria-expanded="false" aria-controls="menu-overlay" aria-label="Open menu">
-          <span class="menu-hamburger">&#9776;</span> <span class="menu-btn-text">${escapeHTML(menuLabel)}</span>
+          <span class="menu-btn-bars" aria-hidden="true">
+            <span class="menu-bar-line menu-bar--1"></span>
+            <span class="menu-bar-line menu-bar--2"></span>
+            <span class="menu-bar-line menu-bar--3"></span>
+          </span>
+          <span class="menu-btn-text" id="menu-btn-text">${escapeHTML(menuLabel)}</span>
         </button>
         <button class="search-btn" id="search-btn" aria-label="Search">
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -329,21 +334,24 @@
 
   <!-- MENU OVERLAY -->
   <div class="menu-overlay" id="menu-overlay" aria-hidden="true" role="dialog" aria-modal="true" aria-label="Site navigation menu">
-    <div class="menu-overlay-inner">
-      <div class="menu-col" id="mo-col-sections">
-        <h2 class="menu-section-title" id="mo-title-sections">${escapeHTML(sectionsTitle)}</h2>
-        <ul class="menu-section-list" id="menu-section-list"></ul>
-      </div>
-      <div class="menu-col" id="mo-col-series-explore">
-        <h2 class="menu-section-title" id="mo-title-series"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:text-bottom;margin-right:4px;"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg> ${escapeHTML(seriesTitle)}</h2>
-        <div id="mo-series-list"></div>
-        <hr class="menu-divider" />
-        <h2 class="menu-explore-title" id="mo-title-explore">${escapeHTML(exploreTitle)}</h2>
-        <ul class="menu-explore-list" id="mo-explore-list"></ul>
-      </div>
-      <div class="menu-col menu-col-latest" id="mo-col-latest">
-        <h2 class="menu-section-title" id="mo-title-latest">${escapeHTML(latestTitle)}</h2>
-        <div id="mo-latest-list"></div>
+    <div class="menu-overlay-backdrop" id="menu-overlay-backdrop"></div>
+    <div class="menu-drawer-panel" id="menu-drawer-panel">
+      <div class="menu-overlay-inner">
+        <div class="menu-col" id="mo-col-sections">
+          <h2 class="menu-section-title" id="mo-title-sections">${escapeHTML(sectionsTitle)}</h2>
+          <ul class="menu-section-list" id="menu-section-list"></ul>
+        </div>
+        <div class="menu-col" id="mo-col-series-explore">
+          <h2 class="menu-section-title" id="mo-title-series"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:text-bottom;margin-right:4px;"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg> ${escapeHTML(seriesTitle)}</h2>
+          <div id="mo-series-list"></div>
+          <hr class="menu-divider" />
+          <h2 class="menu-explore-title" id="mo-title-explore">${escapeHTML(exploreTitle)}</h2>
+          <ul class="menu-explore-list" id="mo-explore-list"></ul>
+        </div>
+        <div class="menu-col menu-col-latest" id="mo-col-latest">
+          <h2 class="menu-section-title" id="mo-title-latest">${escapeHTML(latestTitle)}</h2>
+          <div id="mo-latest-list"></div>
+        </div>
       </div>
     </div>
   </div>
@@ -1336,10 +1344,14 @@
       }
       var isBn = window.PrivatianLang && window.PrivatianLang.getLang() === 'bn';
       positionMenuOverlay();
+      
       menuOverlay.classList.add('is-open');
       menuBtn.classList.add('is-open');
       menuBtn.setAttribute('aria-expanded', 'true');
-      menuBtn.innerHTML = '<span style="display:inline-block;font-size:15px;">&#10005;</span> ' + (isBn ? 'বন্ধ' : 'Close');
+      var btnText = document.getElementById('menu-btn-text');
+      if (btnText) {
+        btnText.textContent = isBn ? 'বন্ধ' : 'Close';
+      }
       document.body.classList.add('menu-open');
       document.documentElement.classList.add('menu-open');
       document.body.style.overflow = 'hidden';
@@ -1352,7 +1364,10 @@
       menuOverlay.classList.remove('is-open');
       menuBtn.classList.remove('is-open');
       menuBtn.setAttribute('aria-expanded', 'false');
-      menuBtn.innerHTML = '<span class="menu-hamburger">&#9776;</span> <span class="menu-btn-text">' + (isBn ? 'মেনু' : 'Menu') + '</span>';
+      var btnText = document.getElementById('menu-btn-text');
+      if (btnText) {
+        btnText.textContent = isBn ? 'মেনু' : 'Menu';
+      }
       document.body.classList.remove('menu-open');
       document.documentElement.classList.remove('menu-open');
       var searchOverlay = document.getElementById('search-overlay');
@@ -1375,9 +1390,18 @@
         }
       });
 
+      var menuBackdrop = document.getElementById('menu-overlay-backdrop');
+      if (menuBackdrop) {
+        menuBackdrop.addEventListener('click', function(e) {
+          e.stopPropagation();
+          closeMenu();
+        });
+      }
+
       document.addEventListener('click', function(e) {
         if (menuOverlay.classList.contains('is-open')) {
-          if (!menuBtn.contains(e.target) && !menuOverlay.contains(e.target) && !e.target.closest('.header-lang-toggle')) {
+          var drawerPanel = document.getElementById('menu-drawer-panel');
+          if (!menuBtn.contains(e.target) && drawerPanel && !drawerPanel.contains(e.target) && !e.target.closest('.header-lang-toggle')) {
             closeMenu();
           }
         }
@@ -1635,10 +1659,13 @@
     var menuBtn = document.getElementById('menu-toggle-btn');
     var menuOverlay = document.getElementById('menu-overlay');
     if (menuBtn && menuOverlay) {
-      if (menuOverlay.classList.contains('is-open')) {
-        menuBtn.innerHTML = '<span style="display:inline-block;font-size:15px;">&#10005;</span> ' + (isBn ? 'বন্ধ' : 'Close');
-      } else {
-        menuBtn.innerHTML = '<span class="menu-hamburger">&#9776;</span> <span class="menu-btn-text">' + (isBn ? 'মেনু' : 'Menu') + '</span>';
+      var btnText = document.getElementById('menu-btn-text');
+      if (btnText) {
+        if (menuOverlay.classList.contains('is-open')) {
+          btnText.textContent = isBn ? 'বন্ধ' : 'Close';
+        } else {
+          btnText.textContent = isBn ? 'মেনু' : 'Menu';
+        }
       }
     }
 
