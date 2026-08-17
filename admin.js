@@ -10931,7 +10931,7 @@ function _deleteInspectorMedia() {
 
 // ── 9. Trash & Deletion Confirmations ─────────────────────────────
 function _trashAssetConfirm(uniqueId, filename) {
-  const item = _rawGalleryList.find(x => x.unique_id === uniqueId || x.id === uniqueId);
+  const item = _rawGalleryList.find(x => (uniqueId && x.unique_id === uniqueId) || (x.id && x.id === uniqueId));
   const info = _getStorageTargetInfo(item);
 
   _confirmModal({
@@ -10943,11 +10943,19 @@ function _trashAssetConfirm(uniqueId, filename) {
       try {
         const res = await _apiDelete(`/api/media?action=trash&id=${encodeURIComponent(uniqueId)}`);
         if (res && res.ok) {
-          const target = _rawGalleryList.find(x => x.unique_id === uniqueId || x.id === uniqueId);
+          const target = _rawGalleryList.find(x => (uniqueId && x.unique_id === uniqueId) || (x.id && x.id === uniqueId));
           if (target) {
             target.is_deleted = true;
             target.deleted_at = new Date().toISOString();
           }
+          try {
+            const cached = sessionStorage.getItem('privatian_media_cache');
+            if (cached) {
+              const parsed = JSON.parse(cached);
+              parsed.items = _rawGalleryList;
+              sessionStorage.setItem('privatian_media_cache', JSON.stringify(parsed));
+            }
+          } catch(e) {}
           renderGalleryFolders();
           _updateGalleryCounts();
           renderGalleryGrid();
@@ -10973,14 +10981,22 @@ async function _restoreAsset(uniqueId) {
   try {
     const res = await _apiPost(`/api/media?action=restore&id=${encodeURIComponent(uniqueId)}`);
     if (res && res.ok) {
-      const item = _rawGalleryList.find(x => x.unique_id === uniqueId || x.id === uniqueId);
+      const item = _rawGalleryList.find(x => (uniqueId && x.unique_id === uniqueId) || (x.id && x.id === uniqueId));
       if (item) {
         item.is_deleted = false;
         item.deleted_at = null;
       }
-      if (_galleryCurrentInspectorItem && _galleryCurrentInspectorItem.unique_id === uniqueId) {
+      if (_galleryCurrentInspectorItem && (_galleryCurrentInspectorItem.unique_id === uniqueId || _galleryCurrentInspectorItem.id === uniqueId)) {
         closeMediaInspector();
       }
+      try {
+        const cached = sessionStorage.getItem('privatian_media_cache');
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          parsed.items = _rawGalleryList;
+          sessionStorage.setItem('privatian_media_cache', JSON.stringify(parsed));
+        }
+      } catch(e) {}
       renderGalleryFolders();
       _updateGalleryCounts();
       renderGalleryGrid();
@@ -10992,7 +11008,7 @@ async function _restoreAsset(uniqueId) {
 }
 
 function _deletePermanentConfirm(uniqueId, filename) {
-  const item = _rawGalleryList.find(x => x.unique_id === uniqueId || x.id === uniqueId);
+  const item = _rawGalleryList.find(x => (uniqueId && x.unique_id === uniqueId) || (x.id && x.id === uniqueId));
   const info = _getStorageTargetInfo(item);
 
   _confirmModal({
@@ -11015,10 +11031,11 @@ function _deletePermanentConfirm(uniqueId, filename) {
         closeMediaInspector();
       }
 
-      // 3. Optimistically remove item from UI list
-      const targetItem = _rawGalleryList.find(x => x.unique_id === uniqueId || x.id === uniqueId);
-      const targetIndex = _rawGalleryList.findIndex(x => x.unique_id === uniqueId || x.id === uniqueId);
+      // 3. Optimistically backup and remove item from UI list
+      const targetItem = _rawGalleryList.find(x => (uniqueId && x.unique_id === uniqueId) || (x.id && x.id === uniqueId));
+      const targetIndex = _rawGalleryList.findIndex(x => (uniqueId && x.unique_id === uniqueId) || (x.id && x.id === uniqueId));
       const clonedItem = targetItem ? JSON.parse(JSON.stringify(targetItem)) : null;
+      const wasDeleted = targetItem ? (targetItem.is_deleted ?? true) : true;
 
       if (targetIndex !== -1) {
         _rawGalleryList.splice(targetIndex, 1);
@@ -11033,21 +11050,67 @@ function _deletePermanentConfirm(uniqueId, filename) {
         onUndo: () => {
           // User clicked Undo! Restore item back to list
           if (clonedItem) {
-            clonedItem.is_deleted = true;
-            if (!_rawGalleryList.some(x => (x.unique_id === clonedItem.unique_id || x.id === clonedItem.id))) {
-              _rawGalleryList.splice(Math.min(Math.max(0, targetIndex), _rawGalleryList.length), 0, clonedItem);
+            clonedItem.is_deleted = wasDeleted;
+            if (wasDeleted && !clonedItem.deleted_at) {
+              clonedItem.deleted_at = new Date().toISOString();
+            }
+
+            // Remove if already in list to avoid duplicates
+            _rawGalleryList = _rawGalleryList.filter(x => {
+              if (clonedItem.unique_id && x.unique_id && x.unique_id === clonedItem.unique_id) return false;
+              if (clonedItem.id && x.id && x.id === clonedItem.id) return false;
+              return true;
+            });
+
+            // Insert at original index or top
+            if (typeof targetIndex === 'number' && targetIndex >= 0 && targetIndex <= _rawGalleryList.length) {
+              _rawGalleryList.splice(targetIndex, 0, clonedItem);
+            } else {
+              _rawGalleryList.unshift(clonedItem);
             }
           }
+
+          try {
+            const cached = sessionStorage.getItem('privatian_media_cache');
+            if (cached) {
+              const parsed = JSON.parse(cached);
+              parsed.items = _rawGalleryList;
+              sessionStorage.setItem('privatian_media_cache', JSON.stringify(parsed));
+            }
+          } catch(e) {}
+
           renderGalleryFolders();
           _updateGalleryCounts();
           renderGalleryGrid();
-          showToast('success', `Permanent deletion cancelled. "${filename}" kept in Trash Bin.`);
+          showToast('success', `Permanent deletion cancelled. "${filename}" restored to Trash Bin.`);
+
+          // Visual bounce/highlight on restored card
+          setTimeout(() => {
+            const el = document.querySelector(`.gallery-item-card[data-id="${clonedItem ? clonedItem.unique_id : uniqueId}"]`);
+            if (el) {
+              el.style.transition = 'all 0.3s ease';
+              el.style.transform = 'scale(1.04)';
+              el.style.boxShadow = '0 0 0 3px #10b981, 0 8px 24px rgba(16, 185, 129, 0.3)';
+              setTimeout(() => {
+                el.style.transform = '';
+                el.style.boxShadow = '';
+              }, 1200);
+            }
+          }, 60);
         },
         onExecute: async () => {
           // 5 seconds elapsed without Undo, execute actual deletion on server
           try {
             const res = await _apiDelete(`/api/media?action=delete_permanent&id=${encodeURIComponent(uniqueId)}`);
             if (res && res.ok) {
+              try {
+                const cached = sessionStorage.getItem('privatian_media_cache');
+                if (cached) {
+                  const parsed = JSON.parse(cached);
+                  parsed.items = _rawGalleryList;
+                  sessionStorage.setItem('privatian_media_cache', JSON.stringify(parsed));
+                }
+              } catch(e) {}
               renderGalleryFolders();
               _updateGalleryCounts();
               renderGalleryGrid();
@@ -11055,8 +11118,17 @@ function _deletePermanentConfirm(uniqueId, filename) {
             }
           } catch(e) {
             // Restore back if error
-            if (clonedItem && !_rawGalleryList.some(x => (x.unique_id === clonedItem.unique_id || x.id === clonedItem.id))) {
-              _rawGalleryList.splice(Math.min(Math.max(0, targetIndex), _rawGalleryList.length), 0, clonedItem);
+            if (clonedItem) {
+              _rawGalleryList = _rawGalleryList.filter(x => {
+                if (clonedItem.unique_id && x.unique_id && x.unique_id === clonedItem.unique_id) return false;
+                if (clonedItem.id && x.id && x.id === clonedItem.id) return false;
+                return true;
+              });
+              if (typeof targetIndex === 'number' && targetIndex >= 0 && targetIndex <= _rawGalleryList.length) {
+                _rawGalleryList.splice(targetIndex, 0, clonedItem);
+              } else {
+                _rawGalleryList.unshift(clonedItem);
+              }
             }
             renderGalleryFolders();
             _updateGalleryCounts();
@@ -11115,19 +11187,41 @@ function _emptyTrashConfirm() {
         onUndo: () => {
           backupTrashed.forEach(item => {
             item.is_deleted = true;
-            if (!_rawGalleryList.some(x => (x.unique_id === item.unique_id || x.id === item.id))) {
-              _rawGalleryList.push(item);
-            }
+            if (!item.deleted_at) item.deleted_at = new Date().toISOString();
+            _rawGalleryList = _rawGalleryList.filter(x => {
+              if (item.unique_id && x.unique_id && x.unique_id === item.unique_id) return false;
+              if (item.id && x.id && x.id === item.id) return false;
+              return true;
+            });
+            _rawGalleryList.push(item);
           });
+
+          try {
+            const cached = sessionStorage.getItem('privatian_media_cache');
+            if (cached) {
+              const parsed = JSON.parse(cached);
+              parsed.items = _rawGalleryList;
+              sessionStorage.setItem('privatian_media_cache', JSON.stringify(parsed));
+            }
+          } catch(e) {}
+
           renderGalleryFolders();
           _updateGalleryCounts();
           renderGalleryGrid();
-          showToast('success', 'Empty trash cancelled. All items restored to Trash Bin.');
+          showToast('success', `Empty trash cancelled. All ${backupTrashed.length} items restored to Trash Bin.`);
         },
         onExecute: async () => {
           try {
             const res = await _apiPost('/api/media?action=empty_trash');
             if (res && res.ok) {
+              try {
+                const cached = sessionStorage.getItem('privatian_media_cache');
+                if (cached) {
+                  const parsed = JSON.parse(cached);
+                  parsed.items = _rawGalleryList;
+                  sessionStorage.setItem('privatian_media_cache', JSON.stringify(parsed));
+                }
+              } catch(e) {}
               renderGalleryFolders();
               _updateGalleryCounts();
               renderGalleryGrid();
@@ -11135,9 +11229,12 @@ function _emptyTrashConfirm() {
             }
           } catch(e) {
             backupTrashed.forEach(item => {
-              if (!_rawGalleryList.some(x => (x.unique_id === item.unique_id || x.id === item.id))) {
-                _rawGalleryList.push(item);
-              }
+              _rawGalleryList = _rawGalleryList.filter(x => {
+                if (item.unique_id && x.unique_id && x.unique_id === item.unique_id) return false;
+                if (item.id && x.id && x.id === item.id) return false;
+                return true;
+              });
+              _rawGalleryList.push(item);
             });
             renderGalleryFolders();
             _updateGalleryCounts();
