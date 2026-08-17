@@ -2380,8 +2380,8 @@ function renderAccessLists() {
     const isAdmin = (a.role === 'Admin');
 
     const roleBadge = isAdmin
-      ? `<span class="access-role-pill admin"><svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 4l3 12h14l3-12-6 7-4-7-4 7-6-7z"/><path d="M4 20h16"/></svg> Admin</span>`
-      : `<span class="access-role-pill moderator"><svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> Moderator</span>`;
+      ? `<span class="access-role-pill admin"><svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M2 4l3 12h14l3-12-6 7-4-7-4 7-6-7z"/><path d="M4 20h16"/></svg> Administrator</span>`
+      : `<span class="access-role-pill moderator"><svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> Moderator</span>`;
 
     let statusBadge = '';
     if (a.status === 'active') {
@@ -2393,9 +2393,9 @@ function renderAccessLists() {
     }
 
     const profileBtn = `
-      <button class="access-action-btn secondary" title="View & Edit User Profile" onclick="openAdminProfileModal('${a.id}')">
-        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-        Profile
+      <button type="button" class="access-action-btn secondary" title="View & Edit User Profile" onclick="openAdminProfileModal('${a.id}')">
+        <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        <span>Profile</span>
       </button>
     `;
 
@@ -2403,41 +2403,44 @@ function renderAccessLists() {
     if (isSelf) {
       actionsHtml = `
         ${profileBtn}
-        <span class="access-user-you-tag" title="Protected: Your active session cannot be modified by yourself"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" style="vertical-align:-1px;margin-right:3px;"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> Active (You)</span>
+        <span class="access-user-you-tag" title="Protected: Your active session cannot be modified by yourself">
+          <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          <span>Active (You)</span>
+        </span>
       `;
     } else if (panel === 'recycle') {
       actionsHtml = `
-        <button class="access-action-btn success" onclick="restoreAdmin('${a.id}','${escapeHtml(a.email)}','${a.role || ''}')">
-          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4.95"/></svg>
-          Restore
+        <button type="button" class="access-action-btn success" title="Restore account to active whitelist" onclick="restoreAdmin('${a.id}','${escapeHtml(a.email)}','${a.role || ''}')">
+          <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4.95"/></svg>
+          <span>Restore</span>
         </button>
-        <button class="access-action-btn danger" onclick="purgeAdmin('${a.id}','${escapeHtml(a.email)}','${a.role || ''}')">
-          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
-          Delete Forever
+        <button type="button" class="access-action-btn danger" title="Permanently delete from database" onclick="purgeAdmin('${a.id}','${escapeHtml(a.email)}','${a.role || ''}')">
+          <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+          <span>Delete Forever</span>
         </button>
       `;
     } else {
       const targetRole = isAdmin ? 'Moderator' : 'Admin';
       const roleToggleBtn = `
-        <button class="access-action-btn secondary" title="Switch role to ${targetRole}" onclick="changeAdminRole('${a.id}','${escapeHtml(a.email)}','${targetRole}')">
-          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
-          Set as ${targetRole}
+        <button type="button" class="access-action-btn secondary" title="Switch role to ${targetRole}" onclick="changeAdminRole('${a.id}','${escapeHtml(a.email)}','${targetRole}')">
+          <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+          <span>Set as ${targetRole}</span>
         </button>
       `;
 
       const suspendLabel = a.status === 'active' ? 'Suspend' : 'Unsuspend';
       const suspendNew   = a.status === 'active' ? 'suspended' : 'active';
       const suspendBtn = `
-        <button class="access-action-btn warning" onclick="toggleAdminStatus('${a.id}','${suspendNew}','${escapeHtml(a.email)}','${a.role || ''}')">
-          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
-          ${suspendLabel}
+        <button type="button" class="access-action-btn warning" title="${suspendLabel} access for this account" onclick="toggleAdminStatus('${a.id}','${suspendNew}','${escapeHtml(a.email)}','${a.role || ''}')">
+          <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
+          <span>${suspendLabel}</span>
         </button>
       `;
 
       const removeBtn = `
-        <button class="access-action-btn danger" onclick="removeAdmin('${a.id}','${escapeHtml(a.email)}','${a.role || ''}')">
-          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
-          Move to Recycle
+        <button type="button" class="access-action-btn danger" title="Move account to recycle bin" onclick="removeAdmin('${a.id}','${escapeHtml(a.email)}','${a.role || ''}')">
+          <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+          <span>Move to Recycle</span>
         </button>
       `;
 
@@ -2448,16 +2451,14 @@ function renderAccessLists() {
       ? `<div class="access-avatar" style="background:transparent;padding:0;overflow:hidden;border:2px solid #0a528e;border-radius:50%;"><img src="${escapeHtml(a.profile_pic)}" referrerpolicy="no-referrer" style="width:100%;height:100%;object-fit:cover;" /></div>`
       : `<div class="access-avatar" style="background:${gradient};border-radius:50%;" title="${escapeHtml(a.email)}">${initials}</div>`;
 
-    const userEmailHtml = a.full_name
-      ? `<span class="access-user-fullname" style="font-weight:700;color:#0f172a;margin-right:6px;font-size:14px;">${escapeHtml(a.full_name)}</span><span class="access-user-email" style="font-size:12.5px;color:#64748b;font-weight:500;">(${escapeHtml(a.email)})</span>`
-      : `<span class="access-user-email">${escapeHtml(a.email)}</span>`;
+    const displayName = a.full_name || a.email.split('@')[0];
 
     const extraProfileDetails = (a.university || a.university_id || a.university_mail || a.mobile_number)
-      ? `<div style="font-size:11.5px;color:#475569;margin-top:4px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;">` +
-          (a.university ? `<span style="display:inline-flex;align-items:center;gap:4px;background:#f8fafc;padding:2px 7px;border-radius:5px;border:1px solid #e2e8f0;"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M5 21V11M19 21V11M9 21V11M15 21V11M2 11h20M12 3L2 11h20L12 3z"/></svg> ${escapeHtml(a.university)}</span>` : '') +
-          (a.university_id ? `<span style="display:inline-flex;align-items:center;gap:4px;background:#f8fafc;padding:2px 7px;border-radius:5px;border:1px solid #e2e8f0;"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><line x1="15" y1="8" x2="17" y2="8"/><line x1="15" y1="12" x2="17" y2="12"/><line x1="7" y1="16" x2="17" y2="16"/></svg> ID: ${escapeHtml(a.university_id)}</span>` : '') +
-          (a.university_mail ? `<span style="display:inline-flex;align-items:center;gap:4px;background:#f8fafc;padding:2px 7px;border-radius:5px;border:1px solid #e2e8f0;"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg> ${escapeHtml(a.university_mail)}</span>` : '') +
-          (a.mobile_number ? `<span style="display:inline-flex;align-items:center;gap:4px;background:#f8fafc;padding:2px 7px;border-radius:5px;border:1px solid #e2e8f0;"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg> ${escapeHtml(a.mobile_number)}</span>` : '') +
+      ? `<div class="access-user-extra-tags">` +
+          (a.university ? `<span class="access-extra-tag"><svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M5 21V11M19 21V11M9 21V11M15 21V11M2 11h20M12 3L2 11h20L12 3z"/></svg>${escapeHtml(a.university)}</span>` : '') +
+          (a.university_id ? `<span class="access-extra-tag"><svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><line x1="15" y1="8" x2="17" y2="8"/><line x1="15" y1="12" x2="17" y2="12"/><line x1="7" y1="16" x2="17" y2="16"/></svg>ID: ${escapeHtml(a.university_id)}</span>` : '') +
+          (a.university_mail ? `<span class="access-extra-tag"><svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>${escapeHtml(a.university_mail)}</span>` : '') +
+          (a.mobile_number ? `<span class="access-extra-tag"><svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>${escapeHtml(a.mobile_number)}</span>` : '') +
         `</div>`
       : '';
 
@@ -2465,17 +2466,28 @@ function renderAccessLists() {
       <div class="access-user-card">
         ${avatarHtml}
         <div class="access-user-details">
-          <div class="access-user-main-row">
-            ${userEmailHtml}
+          <!-- 1. Top Row: Name and Email -->
+          <div class="access-user-name-row">
+            <span class="access-user-fullname">${escapeHtml(displayName)}</span>
+            <span class="access-user-email">(${escapeHtml(a.email)})</span>
             ${isSelf ? '<span class="access-user-you-tag">You</span>' : ''}
+          </div>
+
+          <!-- 2. Second Row: Badges & Status UNDER Name with Audit Info -->
+          <div class="access-user-sub-row">
             ${roleBadge}
             ${statusBadge}
+            <span class="access-user-meta-dot">•</span>
+            <div class="access-user-meta">
+              ${_auditLine(a)}
+            </div>
           </div>
+
+          <!-- 3. Third Row: Extra Profile Details (if present) -->
           ${extraProfileDetails}
-          <div class="access-user-meta">
-            ${_auditLine(a)}
-          </div>
         </div>
+
+        <!-- 4. Single-Row Uniform Actions Toolbar -->
         <div class="access-actions-wrap">
           ${actionsHtml}
         </div>
