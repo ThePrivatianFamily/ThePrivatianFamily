@@ -942,6 +942,51 @@ body.modal-open {
   to { opacity: 0; transform: translateX(20px); }
 }
 
+/* ── MINIMALIST MEDIA UNDO CAPSULE ──────────────────────── */
+@keyframes mediaUndoSlideUp {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(24px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0) scale(1);
+  }
+}
+
+#media-permanent-undo-toast {
+  position: fixed;
+  bottom: 28px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 9999999;
+  display: flex;
+  flex-direction: column;
+  background: rgba(15, 23, 42, 0.96);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  color: #f8fafc;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 50px;
+  box-shadow: 0 20px 45px -8px rgba(0, 0, 0, 0.55), 0 0 1px 1px rgba(255, 255, 255, 0.1);
+  min-width: 320px;
+  max-width: 90vw;
+  overflow: hidden;
+  pointer-events: auto !important;
+  user-select: none;
+  animation: mediaUndoSlideUp 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+#media-permanent-undo-toast #media-undo-btn:hover {
+  background: #2563eb !important;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(59, 130, 246, 0.5) !important;
+}
+
+#media-permanent-undo-toast #media-undo-btn:active {
+  transform: translateY(0);
+}
+
 /* ── APPLY CHANGES BUTTON ────────────────────────────────── */
 .btn--apply {
   background: #ffffff;

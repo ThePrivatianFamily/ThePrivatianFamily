@@ -10529,90 +10529,84 @@ function _getStorageTargetInfo(item) {
   }
 }
 
-// 5-Second Undo Floating Toast Manager
-var _pendingPermanentDeleteTimeout = null;
-var _pendingPermanentDeleteInterval = null;
+// 5-Second Undo Floating Banner Manager
+var _currentUndoState = null;
 
 function _show5SecUndoToast({ filename, onUndo, onExecute }) {
   // If an existing pending delete is running, execute it immediately before starting new one
-  if (_pendingPermanentDeleteTimeout) {
-    clearTimeout(_pendingPermanentDeleteTimeout);
-    clearInterval(_pendingPermanentDeleteInterval);
-    _pendingPermanentDeleteTimeout = null;
-    _pendingPermanentDeleteInterval = null;
+  if (_currentUndoState && _currentUndoState.timeout) {
+    clearTimeout(_currentUndoState.timeout);
+    clearInterval(_currentUndoState.interval);
+    if (typeof _currentUndoState.onExecute === 'function') {
+      _currentUndoState.onExecute();
+    }
+    _currentUndoState = null;
   }
 
   const existingToast = document.getElementById('media-permanent-undo-toast');
   if (existingToast) existingToast.remove();
 
-  const toastContainer = document.getElementById('toast-container') || document.body;
   const toast = document.createElement('div');
   toast.id = 'media-permanent-undo-toast';
-  toast.className = 'toast-undo-banner';
-  toast.style.cssText = `
-    display: flex;
-    flex-direction: column;
-    background: #0f172a;
-    color: #f8fafc;
-    border: 1px solid #ef4444;
-    border-radius: 10px;
-    box-shadow: 0 14px 30px rgba(0, 0, 0, 0.45), 0 6px 12px rgba(239, 68, 68, 0.25);
-    min-width: 330px;
-    max-width: 440px;
-    overflow: hidden;
-    position: fixed;
-    bottom: 24px;
-    right: 24px;
-    z-index: 100000;
-    padding: 0;
-    animation: toastSlideIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-  `;
+  toast.className = 'media-undo-capsule';
+
+  const shortName = filename && filename.length > 28 ? filename.substring(0, 26) + '...' : (filename || 'item');
 
   toast.innerHTML = `
-    <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;gap:12px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:7px 10px 7px 14px;gap:14px;pointer-events:auto;">
       <div style="display:flex;align-items:center;gap:10px;flex:1;min-width:0;">
-        <span style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;background:rgba(239, 68, 68, 0.2);color:#f87171;flex-shrink:0;">
-          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+        <span style="display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;background:rgba(239, 68, 68, 0.2);color:#f87171;font-size:11.5px;font-weight:800;flex-shrink:0;font-variant-numeric:tabular-nums;box-shadow:inset 0 0 0 1px rgba(239,68,68,0.3);">
+          <span id="undo-countdown-num">5</span>s
         </span>
-        <div style="flex:1;min-width:0;font-size:13px;line-height:1.4;">
-          <div style="font-weight:700;color:#fff;display:flex;align-items:center;gap:6px;">
-            <span>Deleting in</span>
-            <span id="undo-countdown-num" style="background:#ef4444;color:#fff;font-weight:800;padding:1px 6px;border-radius:4px;font-size:11px;">5s</span>
-          </div>
-          <div style="font-size:11.5px;color:#94a3b8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${escapeHtml(filename)}">
-            ${escapeHtml(filename)}
-          </div>
+        <div style="font-size:12.5px;color:#cbd5e1;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${escapeHtml(filename)}">
+          Deleting <span style="font-weight:700;color:#f8fafc;">"${escapeHtml(shortName)}"</span>
         </div>
       </div>
-      <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
-        <button id="media-undo-btn" type="button" style="
-          background:#ef4444;
-          color:#ffffff;
-          border:none;
-          padding:6px 14px;
-          border-radius:6px;
-          font-size:12px;
-          font-weight:700;
-          cursor:pointer;
-          display:flex;
-          align-items:center;
-          gap:5px;
-          transition:all 0.15s ease;
-          box-shadow:0 2px 8px rgba(239, 68, 68, 0.4);
+      <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;pointer-events:auto;">
+        <button id="media-undo-btn" type="button" onclick="window._triggerMediaUndo(event)" style="
+          background: #3b82f6;
+          color: #ffffff;
+          border: none;
+          padding: 6px 16px;
+          border-radius: 30px;
+          font-size: 12px;
+          font-weight: 700;
+          cursor: pointer;
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+          box-shadow: 0 2px 10px rgba(59, 130, 246, 0.38);
+          pointer-events: auto !important;
         ">
-          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.6"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/></svg>
           Undo
+        </button>
+        <button type="button" onclick="window._dismissMediaUndo(event)" style="
+          background: transparent;
+          border: none;
+          color: #94a3b8;
+          cursor: pointer;
+          padding: 5px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border-radius: 50%;
+          transition: all 0.15s ease;
+          pointer-events: auto !important;
+        " title="Delete immediately" onmouseover="this.style.color='#f8fafc';this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.color='#94a3b8';this.style.background='transparent'">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.4"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </button>
       </div>
     </div>
-    <div style="width:100%;height:3px;background:rgba(255,255,255,0.1);position:relative;overflow:hidden;">
-      <div id="media-undo-progress" style="width:100%;height:100%;background:#ef4444;transition:width 5s linear;"></div>
+    <div style="width:100%;height:2.5px;background:rgba(255,255,255,0.08);position:relative;overflow:hidden;">
+      <div id="media-undo-progress" style="width:100%;height:100%;background:linear-gradient(90deg, #3b82f6, #ef4444);transition:width 5s linear;"></div>
     </div>
   `;
 
-  toastContainer.appendChild(toast);
+  document.body.appendChild(toast);
 
-  // Trigger progress animation
+  // Trigger smooth progress animation
   requestAnimationFrame(() => {
     const bar = toast.querySelector('#media-undo-progress');
     if (bar) bar.style.width = '0%';
@@ -10621,36 +10615,70 @@ function _show5SecUndoToast({ filename, onUndo, onExecute }) {
   const countdownEl = toast.querySelector('#undo-countdown-num');
   const startTime = Date.now();
 
-  _pendingPermanentDeleteInterval = setInterval(() => {
+  const interval = setInterval(() => {
     const elapsed = Math.floor((Date.now() - startTime) / 1000);
     const left = Math.max(0, 5 - elapsed);
-    if (countdownEl) countdownEl.textContent = `${left}s`;
+    if (countdownEl) countdownEl.textContent = `${left}`;
   }, 250);
 
-  const cleanToast = () => {
-    if (_pendingPermanentDeleteTimeout) clearTimeout(_pendingPermanentDeleteTimeout);
-    if (_pendingPermanentDeleteInterval) clearInterval(_pendingPermanentDeleteInterval);
-    _pendingPermanentDeleteTimeout = null;
-    _pendingPermanentDeleteInterval = null;
-    toast.style.opacity = '0';
-    toast.style.transform = 'translateY(10px)';
-    toast.style.transition = 'all 0.2s ease';
-    setTimeout(() => toast.remove(), 200);
-  };
-
-  const undoBtn = toast.querySelector('#media-undo-btn');
-  if (undoBtn) {
-    undoBtn.addEventListener('click', () => {
-      cleanToast();
-      onUndo();
-    });
-  }
-
-  _pendingPermanentDeleteTimeout = setTimeout(() => {
-    cleanToast();
-    onExecute();
+  const timeout = setTimeout(() => {
+    _closeUndoToast();
+    if (typeof onExecute === 'function') onExecute();
   }, 5000);
+
+  _currentUndoState = {
+    toast,
+    timeout,
+    interval,
+    onUndo,
+    onExecute
+  };
 }
+
+function _closeUndoToast() {
+  if (!_currentUndoState) return;
+  const { toast, timeout, interval } = _currentUndoState;
+  if (timeout) clearTimeout(timeout);
+  if (interval) clearInterval(interval);
+  _currentUndoState = null;
+
+  if (toast) {
+    toast.style.opacity = '0';
+    toast.style.transform = 'translateX(-50%) translateY(14px) scale(0.96)';
+    toast.style.transition = 'all 0.2s ease';
+    setTimeout(() => { if (toast.parentNode) toast.remove(); }, 200);
+  }
+}
+
+function _triggerMediaUndo(e) {
+  if (e) {
+    e.preventDefault();
+    e.stopPropagation();
+  }
+  if (_currentUndoState && typeof _currentUndoState.onUndo === 'function') {
+    const fn = _currentUndoState.onUndo;
+    _closeUndoToast();
+    fn();
+  } else {
+    _closeUndoToast();
+  }
+}
+window._triggerMediaUndo = _triggerMediaUndo;
+
+function _dismissMediaUndo(e) {
+  if (e) {
+    e.preventDefault();
+    e.stopPropagation();
+  }
+  if (_currentUndoState && typeof _currentUndoState.onExecute === 'function') {
+    const fn = _currentUndoState.onExecute;
+    _closeUndoToast();
+    fn();
+  } else {
+    _closeUndoToast();
+  }
+}
+window._dismissMediaUndo = _dismissMediaUndo;
 
 function _showBlockedMediaModal(actionName, usedInArticles, filename) {
   const artListHtml = (usedInArticles && usedInArticles.length) ? usedInArticles.map(a => `
@@ -10990,6 +11018,8 @@ function _deletePermanentConfirm(uniqueId, filename) {
       // 3. Optimistically remove item from UI list
       const targetItem = _rawGalleryList.find(x => x.unique_id === uniqueId || x.id === uniqueId);
       const targetIndex = _rawGalleryList.findIndex(x => x.unique_id === uniqueId || x.id === uniqueId);
+      const clonedItem = targetItem ? JSON.parse(JSON.stringify(targetItem)) : null;
+
       if (targetIndex !== -1) {
         _rawGalleryList.splice(targetIndex, 1);
       }
@@ -11002,8 +11032,11 @@ function _deletePermanentConfirm(uniqueId, filename) {
         filename: filename || uniqueId,
         onUndo: () => {
           // User clicked Undo! Restore item back to list
-          if (targetItem && !_rawGalleryList.some(x => (x.unique_id === targetItem.unique_id || x.id === targetItem.id))) {
-            _rawGalleryList.splice(Math.min(Math.max(0, targetIndex), _rawGalleryList.length), 0, targetItem);
+          if (clonedItem) {
+            clonedItem.is_deleted = true;
+            if (!_rawGalleryList.some(x => (x.unique_id === clonedItem.unique_id || x.id === clonedItem.id))) {
+              _rawGalleryList.splice(Math.min(Math.max(0, targetIndex), _rawGalleryList.length), 0, clonedItem);
+            }
           }
           renderGalleryFolders();
           _updateGalleryCounts();
@@ -11022,8 +11055,8 @@ function _deletePermanentConfirm(uniqueId, filename) {
             }
           } catch(e) {
             // Restore back if error
-            if (targetItem && !_rawGalleryList.some(x => (x.unique_id === targetItem.unique_id || x.id === targetItem.id))) {
-              _rawGalleryList.splice(Math.min(Math.max(0, targetIndex), _rawGalleryList.length), 0, targetItem);
+            if (clonedItem && !_rawGalleryList.some(x => (x.unique_id === clonedItem.unique_id || x.id === clonedItem.id))) {
+              _rawGalleryList.splice(Math.min(Math.max(0, targetIndex), _rawGalleryList.length), 0, clonedItem);
             }
             renderGalleryFolders();
             _updateGalleryCounts();
@@ -11071,7 +11104,7 @@ function _emptyTrashConfirm() {
     variant: 'danger',
     onConfirm: async () => {
       // Optimistically remove trashed items and offer 5s Undo
-      const backupTrashed = [...trashedItems];
+      const backupTrashed = JSON.parse(JSON.stringify(trashedItems));
       _rawGalleryList = _rawGalleryList.filter(x => !x.is_deleted);
       renderGalleryFolders();
       _updateGalleryCounts();
@@ -11080,7 +11113,12 @@ function _emptyTrashConfirm() {
       _show5SecUndoToast({
         filename: `${trashCount} items in Trash Bin`,
         onUndo: () => {
-          _rawGalleryList.push(...backupTrashed);
+          backupTrashed.forEach(item => {
+            item.is_deleted = true;
+            if (!_rawGalleryList.some(x => (x.unique_id === item.unique_id || x.id === item.id))) {
+              _rawGalleryList.push(item);
+            }
+          });
           renderGalleryFolders();
           _updateGalleryCounts();
           renderGalleryGrid();
@@ -11096,7 +11134,11 @@ function _emptyTrashConfirm() {
               showToast('success', `Emptied Trash (${res.deletedCount || trashCount} items permanently erased).`);
             }
           } catch(e) {
-            _rawGalleryList.push(...backupTrashed);
+            backupTrashed.forEach(item => {
+              if (!_rawGalleryList.some(x => (x.unique_id === item.unique_id || x.id === item.id))) {
+                _rawGalleryList.push(item);
+              }
+            });
             renderGalleryFolders();
             _updateGalleryCounts();
             renderGalleryGrid();
@@ -11364,6 +11406,8 @@ window._deletePermanentConfirm = _deletePermanentConfirm;
 window._restoreAsset = _restoreAsset;
 window._emptyTrashConfirm = _emptyTrashConfirm;
 window._show5SecUndoToast = _show5SecUndoToast;
+window._triggerMediaUndo = _triggerMediaUndo;
+window._dismissMediaUndo = _dismissMediaUndo;
 window.deleteMediaConfirm = function(id) { if (typeof _deleteInspectorMedia === 'function') _deleteInspectorMedia(id); };
 window.openGalleryPicker = openGalleryPicker;
 window.closeGalleryPicker = closeGalleryPicker;
