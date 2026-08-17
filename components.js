@@ -184,13 +184,27 @@
   }
 
   // ── LIVE IN-MEMORY DATABASE STATE (No localStorage data caching) ──
-  var _liveMenuSettings = null;
+  var _liveMenuSettings_en = null;
+  var _liveMenuSettings_bn = null;
   var _liveSections = null;
-  var _liveFooterSettings = null;
+  var _liveFooterSettings_en = null;
+  var _liveFooterSettings_bn = null;
   var _liveHeaderSettings = null;
 
   function getMenuSettings() {
-    return _liveMenuSettings || DEFAULT_MENU_CONFIG;
+    var isBn = window.PrivatianLang && window.PrivatianLang.getLang() === 'bn';
+    if (isBn) return _liveMenuSettings_bn || DEFAULT_MENU_CONFIG;
+    return _liveMenuSettings_en || DEFAULT_MENU_CONFIG;
+  }
+
+  function getFooterSettings() {
+    var isBn = window.PrivatianLang && window.PrivatianLang.getLang() === 'bn';
+    if (isBn) return _liveFooterSettings_bn || DEFAULT_FOOTER_CONFIG;
+    return _liveFooterSettings_en || DEFAULT_FOOTER_CONFIG;
+  }
+
+  function getHeaderSettings() {
+    return _liveHeaderSettings || null;
   }
 
   function getSections() {
@@ -214,18 +228,6 @@
     });
     if (!seenAll) cleaned.unshift(allSec);
     return cleaned;
-  }
-
-  function getFooterSettings() {
-    return _liveFooterSettings || DEFAULT_FOOTER_CONFIG;
-  }
-
-  function getMenuSettings() {
-    return _liveMenuSettings || DEFAULT_MENU_CONFIG;
-  }
-
-  function getHeaderSettings() {
-    return _liveHeaderSettings || null;
   }
 
   function getQueryParam(name) {
@@ -1483,7 +1485,8 @@
     }
 
     if (data && typeof data === 'object') {
-      _liveMenuSettings = data;
+      if (isBn) _liveMenuSettings_bn = data;
+      else _liveMenuSettings_en = data;
       populateMenuOverlay();
     }
   }
@@ -1532,7 +1535,8 @@
     }
 
     if (data && typeof data === 'object') {
-      _liveFooterSettings = data;
+      if (isBn) _liveFooterSettings_bn = data;
+      else _liveFooterSettings_en = data;
       renderFooter();
     }
   }
@@ -1569,7 +1573,7 @@
     var menuOverlay = document.getElementById('menu-overlay');
     if (menuBtn && menuOverlay) {
       if (menuOverlay.classList.contains('is-open')) {
-        menuBtn.innerHTML = '<span style="font-size:16px">&#10005;</span> ' + (isBn ? 'বন্ধ' : 'Close');
+        menuBtn.innerHTML = '<span style="display:inline-block;font-size:15px;">&#10005;</span> ' + (isBn ? 'বন্ধ' : 'Close');
       } else {
         menuBtn.innerHTML = '<span class="menu-hamburger">&#9776;</span> <span class="menu-btn-text">' + (isBn ? 'মেনু' : 'Menu') + '</span>';
       }
@@ -1600,6 +1604,10 @@
     if (_liveSections) {
       updateAllNewsLabels(_liveSections);
     }
+
+    // 10. Background sync for active language
+    fetchMenuFromAPI();
+    fetchFooterFromAPI();
   }
 
   function init() {
