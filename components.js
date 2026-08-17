@@ -187,12 +187,25 @@
 
   function getSections() {
     var allSec = { id: 'all', name: 'All', name_bn: 'সব খবর', slug: '' };
-    if (_liveSections && Array.isArray(_liveSections) && _liveSections.length) {
-      var filtered = _liveSections.filter(function(s) { return !s.deleted && !s.locked; });
-      var hasAll = filtered.some(function(s) { return s.id === 'all' || s.slug === ''; });
-      return hasAll ? filtered : [allSec].concat(filtered);
-    }
-    return [allSec].concat(DEFAULT_SECTIONS);
+    var baseList = (_liveSections && Array.isArray(_liveSections) && _liveSections.length)
+      ? _liveSections.filter(function(s) { return !s.deleted && !s.locked; })
+      : DEFAULT_SECTIONS;
+
+    var cleaned = [];
+    var seenAll = false;
+    baseList.forEach(function(s) {
+      var isAll = (s.id === 'all' || s.slug === '' || s.slug === 'all');
+      if (isAll) {
+        if (!seenAll) {
+          cleaned.push(s);
+          seenAll = true;
+        }
+      } else {
+        cleaned.push(s);
+      }
+    });
+    if (!seenAll) cleaned.unshift(allSec);
+    return cleaned;
   }
 
   function getFooterSettings() {
@@ -463,7 +476,7 @@
     }
 
     ul.innerHTML = filtered.map(function(s) {
-      return `<li><a href="/section/${s.slug}">${escapeHTML(getSectionDisplayName(s))}</a></li>`;
+      return `<li><a href="${s.slug ? ('/section/' + s.slug) : '/'}">${escapeHTML(getSectionDisplayName(s))}</a></li>`;
     }).join('');
   }
 
@@ -825,7 +838,7 @@
       navSecs.forEach(function(s, idx) {
         var li = document.createElement('li');
         var a  = document.createElement('a');
-        a.href = s.slug ? ('/section/' + s.slug) : '#';
+        a.href = s.slug ? ('/section/' + s.slug) : '/';
         a.className = 'nav-link' + (s.slug === currentSlug ? ' active nav-link--active' : '');
         if (s.slug === currentSlug) {
           a.style.color = 'var(--brand-navy)';
@@ -859,7 +872,7 @@
       mSecs.forEach(function(s) {
         var li = document.createElement('li');
         var a  = document.createElement('a');
-        a.href = s.slug ? ('/section/' + s.slug) : '#';
+        a.href = s.slug ? ('/section/' + s.slug) : '/';
         a.textContent = getSectionDisplayName(s);
         if (s.slug === currentSlug) a.style.color = 'var(--brand-navy)';
         li.appendChild(a);
