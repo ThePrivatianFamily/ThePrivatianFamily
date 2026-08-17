@@ -247,8 +247,10 @@
       const stored = sessionStorage.getItem('privatian_media_cache');
       if (stored) {
         const parsed = JSON.parse(stored);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          _cachedList = parsed;
+        const list = Array.isArray(parsed) ? parsed : (parsed && Array.isArray(parsed.items) ? parsed.items : []);
+        if (list.length > 0) {
+          _cachedList = list;
+          if (parsed && Array.isArray(parsed.folders)) _cachedFolders = parsed.folders;
           populateFolderDropdowns();
           renderGalleryGrid(_lastSearchQuery, true);
         }
@@ -635,7 +637,10 @@
     if (!_cachedList.length) {
       try {
         const stored = sessionStorage.getItem('privatian_media_cache');
-        if (stored) _cachedList = JSON.parse(stored) || [];
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          _cachedList = Array.isArray(parsed) ? parsed : (parsed && Array.isArray(parsed.items) ? parsed.items : []);
+        }
       } catch(e) {}
     }
     if ((_cachedList && _cachedList.length > 0) || (window._rawGalleryList && window._rawGalleryList.length > 0)) {
