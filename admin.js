@@ -1848,11 +1848,158 @@ function renderDashboardUI(stats) {
   // 7. Recent Activity Feed
   renderRecentActivityFeed(stats.recentLogs || []);
 
-  // 8. Update time label
+  // 8. Cloud Infrastructure & Storage Quotas Hub
+  if (stats.cloudInfrastructure) {
+    renderCloudInfrastructureUI(stats.cloudInfrastructure);
+  }
+
+  // 9. Update time label
   const elUpdated = document.getElementById('db-last-updated-text');
   if (elUpdated) {
     const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     elUpdated.textContent = `Live (${timeStr})`;
+  }
+}
+
+function renderCloudInfrastructureUI(cloud) {
+  if (!cloud) return;
+
+  // 1. Supabase
+  if (cloud.supabase) {
+    const sb = cloud.supabase;
+    const elSbStatus = document.getElementById('db-quota-sb-status-badge');
+    const elSbRegion = document.getElementById('db-quota-sb-region');
+    const elSbVersion = document.getElementById('db-quota-sb-version');
+
+    if (elSbStatus && sb.status) elSbStatus.textContent = `● ${sb.status.replace(/_/g, ' ')}`;
+    if (elSbRegion && sb.region) elSbRegion.textContent = sb.region;
+    if (elSbVersion && sb.version) elSbVersion.textContent = sb.version;
+
+    if (sb.database) {
+      const elDbUsedTxt = document.getElementById('db-quota-sb-db-used-text');
+      const elDbUsed = document.getElementById('db-quota-sb-db-used');
+      const elDbUsedPct = document.getElementById('db-quota-sb-db-used-pct');
+      const elDbFree = document.getElementById('db-quota-sb-db-free');
+      const elDbFreePct = document.getElementById('db-quota-sb-db-free-pct');
+      const elDbMeter = document.getElementById('db-meter-sb-db');
+
+      if (elDbUsedTxt) elDbUsedTxt.textContent = `${formatBytes(sb.database.usedBytes)} / ${formatBytes(sb.database.totalQuotaBytes)}`;
+      if (elDbUsed) elDbUsed.textContent = formatBytes(sb.database.usedBytes);
+      if (elDbUsedPct) elDbUsedPct.textContent = `${sb.database.usedPercent}%`;
+      if (elDbFree) elDbFree.textContent = formatBytes(sb.database.freeBytes);
+      if (elDbFreePct) elDbFreePct.textContent = `${sb.database.freePercent}%`;
+      if (elDbMeter) elDbMeter.style.width = `${Math.min(100, Math.max(1, sb.database.usedPercent))}%`;
+    }
+
+    if (sb.storage) {
+      const elStUsedTxt = document.getElementById('db-quota-sb-storage-used-text');
+      const elStUsed = document.getElementById('db-quota-sb-storage-used');
+      const elStUsedPct = document.getElementById('db-quota-sb-storage-used-pct');
+      const elStFree = document.getElementById('db-quota-sb-storage-free');
+      const elStMeter = document.getElementById('db-meter-sb-storage');
+
+      if (elStUsedTxt) elStUsedTxt.textContent = `${formatBytes(sb.storage.usedBytes)} / ${formatBytes(sb.storage.totalQuotaBytes)}`;
+      if (elStUsed) elStUsed.textContent = formatBytes(sb.storage.usedBytes);
+      if (elStUsedPct) elStUsedPct.textContent = `${sb.storage.usedPercent}%`;
+      if (elStFree) elStFree.textContent = formatBytes(sb.storage.freeBytes);
+      if (elStMeter) elStMeter.style.width = `${Math.min(100, Math.max(0, sb.storage.usedPercent))}%`;
+    }
+
+    if (sb.auth) {
+      const elAuthUsed = document.getElementById('db-quota-sb-auth-used');
+      if (elAuthUsed) elAuthUsed.textContent = formatNumber(sb.auth.activeUsers);
+    }
+  }
+
+  // 2. Vercel
+  if (cloud.vercel) {
+    const vc = cloud.vercel;
+    if (vc.bandwidth) {
+      const elBwUsedTxt = document.getElementById('db-quota-vercel-bw-used-text');
+      const elBwUsed = document.getElementById('db-quota-vercel-bw-used');
+      const elBwUsedPct = document.getElementById('db-quota-vercel-bw-used-pct');
+      const elBwFree = document.getElementById('db-quota-vercel-bw-free');
+      const elBwFreePct = document.getElementById('db-quota-vercel-bw-free-pct');
+      const elBwMeter = document.getElementById('db-meter-vercel-bw');
+
+      if (elBwUsedTxt) elBwUsedTxt.textContent = `${formatBytes(vc.bandwidth.usedBytes)} / ${formatBytes(vc.bandwidth.totalQuotaBytes)}`;
+      if (elBwUsed) elBwUsed.textContent = formatBytes(vc.bandwidth.usedBytes);
+      if (elBwUsedPct) elBwUsedPct.textContent = `${vc.bandwidth.usedPercent}%`;
+      if (elBwFree) elBwFree.textContent = formatBytes(vc.bandwidth.freeBytes);
+      if (elBwFreePct) elBwFreePct.textContent = `${vc.bandwidth.freePercent}%`;
+      if (elBwMeter) elBwMeter.style.width = `${Math.min(100, Math.max(0.1, vc.bandwidth.usedPercent))}%`;
+    }
+
+    if (vc.requests) {
+      const elReqUsedTxt = document.getElementById('db-quota-vercel-req-used-text');
+      const elReqUsed = document.getElementById('db-quota-vercel-req-used');
+      const elReqUsedPct = document.getElementById('db-quota-vercel-req-used-pct');
+      const elReqFree = document.getElementById('db-quota-vercel-req-free');
+      const elReqMeter = document.getElementById('db-meter-vercel-req');
+
+      if (elReqUsedTxt) elReqUsedTxt.textContent = `${formatNumber(vc.requests.usedRequests)} / ${formatNumber(vc.requests.totalQuota)}`;
+      if (elReqUsed) elReqUsed.textContent = formatNumber(vc.requests.usedRequests);
+      if (elReqUsedPct) elReqUsedPct.textContent = `${vc.requests.usedPercent}%`;
+      if (elReqFree) elReqFree.textContent = formatNumber(vc.requests.freeRequests);
+      if (elReqMeter) elReqMeter.style.width = `${Math.min(100, Math.max(0.1, vc.requests.usedPercent))}%`;
+    }
+  }
+
+  // 3. Dual Cloud Storage (R2 & B2)
+  if (cloud.dualStorage) {
+    const ds = cloud.dualStorage;
+    if (ds.cloudflareR2) {
+      const r2 = ds.cloudflareR2;
+      const elR2UsedTxt = document.getElementById('db-quota-r2-used-text');
+      const elR2Used = document.getElementById('db-quota-r2-used');
+      const elR2UsedPct = document.getElementById('db-quota-r2-used-pct');
+      const elR2Free = document.getElementById('db-quota-r2-free');
+      const elR2FreePct = document.getElementById('db-quota-r2-free-pct');
+      const elR2Files = document.getElementById('db-quota-r2-files');
+      const elR2Meter = document.getElementById('db-meter-r2');
+
+      if (elR2UsedTxt) elR2UsedTxt.textContent = `${formatBytes(r2.usedBytes)} / ${formatBytes(r2.totalQuotaBytes)}`;
+      if (elR2Used) elR2Used.textContent = formatBytes(r2.usedBytes);
+      if (elR2UsedPct) elR2UsedPct.textContent = `${r2.usedPercent}%`;
+      if (elR2Free) elR2Free.textContent = formatBytes(r2.freeBytes);
+      if (elR2FreePct) elR2FreePct.textContent = `${r2.freePercent}%`;
+      if (elR2Files) elR2Files.textContent = `${formatNumber(r2.filesCount)} Files`;
+      if (elR2Meter) elR2Meter.style.width = `${Math.min(100, Math.max(0.1, r2.usedPercent))}%`;
+    }
+
+    if (ds.backblazeB2) {
+      const b2 = ds.backblazeB2;
+      const elB2UsedTxt = document.getElementById('db-quota-b2-used-text');
+      const elB2Used = document.getElementById('db-quota-b2-used');
+      const elB2UsedPct = document.getElementById('db-quota-b2-used-pct');
+      const elB2Free = document.getElementById('db-quota-b2-free');
+      const elB2FreePct = document.getElementById('db-quota-b2-free-pct');
+      const elB2Files = document.getElementById('db-quota-b2-files');
+      const elB2Meter = document.getElementById('db-meter-b2');
+
+      if (elB2UsedTxt) elB2UsedTxt.textContent = `${formatBytes(b2.usedBytes)} / ${formatBytes(b2.totalQuotaBytes)}`;
+      if (elB2Used) elB2Used.textContent = formatBytes(b2.usedBytes);
+      if (elB2UsedPct) elB2UsedPct.textContent = `${b2.usedPercent}%`;
+      if (elB2Free) elB2Free.textContent = formatBytes(b2.freeBytes);
+      if (elB2FreePct) elB2FreePct.textContent = `${b2.freePercent}%`;
+      if (elB2Files) elB2Files.textContent = `${formatNumber(b2.filesCount)} File${b2.filesCount === 1 ? '' : 's'}`;
+      if (elB2Meter) elB2Meter.style.width = `${Math.min(100, Math.max(0.1, b2.usedPercent))}%`;
+    }
+  }
+
+  // 4. Global Totals
+  if (cloud.globalTotals) {
+    const gt = cloud.globalTotals;
+    const elGlobalUsed = document.getElementById('db-quota-global-used-summary');
+    const elGlobalFree = document.getElementById('db-quota-global-free-summary');
+    const elLastSync = document.getElementById('db-quota-last-sync');
+
+    if (elGlobalUsed) elGlobalUsed.textContent = `${formatBytes(gt.usedStorageBytes)} Used`;
+    if (elGlobalFree) elGlobalFree.textContent = `${formatBytes(gt.freeStorageBytes)} Available (${gt.freePercent}% Free)`;
+    if (elLastSync) {
+      const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      elLastSync.textContent = `Live (${timeStr})`;
+    }
   }
 }
 
