@@ -3358,19 +3358,24 @@ async function loadHeaderSettings() {
   return defaults;
 }
 
-// ── Header Settings Tab Switcher (Matches Navigation Menu standard) ──
+// ── Header Settings Tab Switcher (Matches Footer & Menu standard) ──
+var _activeHeaderTab = 'favicon';
+
 function switchHeaderTab(tabKey) {
   const tabAliases = {
     '0': 'favicon', '1': 'logo', '2': 'nav', '3': 'subtabs', '4': 'preview',
     'tabcard': 'favicon', 'logo': 'logo', 'nav': 'nav', 'sub': 'subtabs', 'subtabs': 'subtabs', 'preview': 'preview', 'favicon': 'favicon'
   };
   const target = tabAliases[tabKey] || 'favicon';
+  _activeHeaderTab = target;
   const tabs = ['favicon', 'logo', 'nav', 'subtabs', 'preview'];
   
+  document.querySelectorAll('#header-tab-bar .tab-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.id === `tab-hs-${target}`);
+  });
+  
   tabs.forEach(t => {
-    const btn = document.getElementById(`tab-hs-${t}`);
     const panel = document.getElementById(`panel-hs-${t}`);
-    if (btn) btn.classList.toggle('active', t === target);
     if (panel) panel.style.display = (t === target ? 'block' : 'none');
   });
   
@@ -3386,7 +3391,7 @@ function switchHeaderSlide(indexOrKey) {
 
 function navigateHeaderSlide(delta) {
   const tabs = ['favicon', 'logo', 'nav', 'subtabs', 'preview'];
-  const activeBtn = document.querySelector('.header-tab-bar .tab-btn.active');
+  const activeBtn = document.querySelector('#header-tab-bar .tab-btn.active');
   let currentIdx = 0;
   if (activeBtn) {
     const id = activeBtn.id.replace('tab-hs-', '');
@@ -4320,7 +4325,7 @@ async function initHeaderPage() {
   renderHsSubsections(_hsInstance);
   bindHsAddForm(_hsInstance);
   bindHsSaveBtn(_hsInstance);
-  renderHeaderPreviewCanvas();
+  switchHeaderTab(_activeHeaderTab || 'favicon');
   updateGlobalSyncStatus();
 }
 

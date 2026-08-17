@@ -336,41 +336,79 @@ body {
 /* ── TAB BAR ─────────────────────────────────────────────── */
 .tab-bar {
   display: flex;
-  gap: 4px;
+  gap: 8px;
   margin-bottom: 20px;
-  border-bottom: 2px solid var(--border);
-  padding-bottom: 0;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 8px;
+  overflow-x: auto;
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+
+.tab-bar::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
 }
 
 .tab-btn {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 7px;
+  gap: 8px;
   padding: 8px 16px;
-  background: none;
-  border: none;
-  border-bottom: 2px solid transparent;
-  margin-bottom: -2px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
   font-family: var(--font-sans);
-  font-size: 13.5px;
+  font-size: 13px;
   font-weight: 600;
-  color: var(--text-secondary);
+  color: var(--text-secondary, #475569);
   cursor: pointer;
-  transition: color 0.15s, border-color 0.15s;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  white-space: nowrap;
+  user-select: none;
 }
 
-.tab-btn:hover { color: var(--brand); }
+.tab-btn svg {
+  color: var(--text-muted, #94a3b8);
+  transition: all 0.18s ease;
+  flex-shrink: 0;
+}
+
+.tab-btn:hover {
+  background: #f1f5f9;
+  color: var(--text-primary, #0f172a);
+  border-color: #cbd5e1;
+  transform: translateY(-1px);
+}
+
+.tab-btn:hover svg {
+  color: var(--brand, #0a528e);
+}
 
 .tab-btn.active {
-  color: var(--brand);
-  border-bottom-color: var(--brand);
+  background: #eff6ff !important;
+  color: var(--brand, #0a528e) !important;
+  font-weight: 700 !important;
+  border-color: #93c5fd !important;
+  box-shadow: 0 1px 4px rgba(10, 82, 142, 0.12), inset 0 0 0 1px rgba(10, 82, 142, 0.1) !important;
+  position: relative;
+}
+
+.tab-btn.active svg {
+  color: var(--brand, #0a528e) !important;
+  stroke-width: 2.2 !important;
+}
+
+.tab-btn:active {
+  transform: translateY(0);
 }
 
 .tab-count {
   font-size: 11px;
   font-weight: 700;
-  background: var(--brand-light);
-  color: var(--brand);
+  background: var(--brand-light, #e0f2fe);
+  color: var(--brand, #0a528e);
   border-radius: 10px;
   padding: 1px 7px;
   min-width: 20px;
@@ -378,8 +416,8 @@ body {
 }
 
 .tab-count--danger {
-  background: var(--danger-bg);
-  color: var(--danger);
+  background: var(--danger-bg, #fee2e2);
+  color: var(--danger, #ef4444);
 }
 
 /* ── CARD ────────────────────────────────────────────────── */
