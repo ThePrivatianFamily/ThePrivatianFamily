@@ -288,6 +288,15 @@ const ALL_SECTION = {
 // -- Load all sections (active + trashed) from API / Supabase --
 async function loadSectionsFromAPI() {
   updateGlobalSyncStatus('syncing', 'Loading sections from database...');
+  const secLoading = document.getElementById('sections-loading');
+  const secTable = document.getElementById('sections-table');
+  const activeEmpty = document.getElementById('active-empty');
+
+  if (secLoading && (!sections || sections.length <= 1)) {
+    secLoading.style.display = 'flex';
+    if (secTable) secTable.style.display = 'none';
+    if (activeEmpty) activeEmpty.hidden = true;
+  }
   let loaded = null;
 
   const isSystemConfig = r => {
@@ -373,6 +382,9 @@ async function loadSectionsFromAPI() {
       }
     } catch(err) {}
   }
+
+  if (secLoading) secLoading.style.display = 'none';
+  if (secTable) secTable.style.display = 'table';
 
   if (loaded) {
     sections = [ALL_SECTION, ...loaded];
@@ -4398,7 +4410,7 @@ async function initArticlesPage() {
   const table   = document.getElementById('articles-table');
   const empty   = document.getElementById('articles-empty');
 
-  if (loading) loading.style.display = 'block';
+  if (loading) loading.style.display = 'flex';
   if (table) table.style.display     = 'none';
   if (empty) empty.style.display     = 'none';
   updateGlobalSyncStatus('syncing', 'Loading articles...');
@@ -4833,7 +4845,7 @@ async function _loadArticleTrash() {
   const count   = document.getElementById('art-trash-count');
 
   if (!tbody) return;
-  if (loading) loading.style.display = 'block';
+  if (loading) loading.style.display = 'flex';
   if (table)   table.style.display   = 'none';
   if (empty)   empty.style.display   = 'none';
 
@@ -4941,7 +4953,7 @@ async function initAuthorsPage(forceRefresh = false) {
   const table = document.getElementById('authors-table');
   const empty = document.getElementById('authors-empty');
 
-  if (loading && _allAuthors.length === 0) loading.style.display = 'block';
+  if (loading && _allAuthors.length === 0) loading.style.display = 'flex';
   if (table) table.style.display = 'none';
   if (empty) empty.style.display = 'none';
 
@@ -5128,7 +5140,7 @@ async function _loadAuthorTrash() {
   const count = document.getElementById('auth-trash-count');
 
   if (!tbody) return;
-  if (loading) loading.style.display = 'block';
+  if (loading) loading.style.display = 'flex';
   if (table) table.style.display = 'none';
   if (empty) empty.style.display = 'none';
 
@@ -9619,7 +9631,7 @@ async function loadActivityLogs(showToastFeedback = false) {
   const searchVal = (document.getElementById('activity-search-input')?.value || '').trim();
 
   if (tbody && !tbody.children.length) {
-    if (loadingEl) loadingEl.style.display = 'block';
+    if (loadingEl) loadingEl.style.display = 'flex';
   }
   if (emptyEl) emptyEl.style.display = 'none';
 

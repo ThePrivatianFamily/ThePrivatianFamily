@@ -857,6 +857,15 @@
 
       <!-- Active Sections Table -->
       <div class="card" id="panel-active">
+        <div id="sections-loading" class="admin-loading-state" style="display:none;">
+          <div class="admin-spinner-wrap">
+            <div class="admin-spinner-ring"></div>
+            <div class="admin-spinner-ring-inner"></div>
+            <svg class="admin-spinner-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+          </div>
+          <div class="admin-loading-title">Loading publication sections…</div>
+          <div class="admin-loading-subtitle">Organizing navigation hierarchy and article categories</div>
+        </div>
         <table class="data-table" id="sections-table">
           <thead>
             <tr>
@@ -1863,9 +1872,14 @@
 
       <!-- Active article list -->
       <div class="art-card" id="art-active-panel">
-        <div id="articles-loading" style="padding:48px;text-align:center;color:#94a3b8;font-size:13.5px;font-weight:500;">
-          <svg viewBox="0 0 24 24" fill="none" stroke="#0a528e" stroke-width="2" width="28" height="28" style="margin:0 auto 12px;display:block;animation:spin 1s linear infinite;"><circle cx="12" cy="12" r="10" stroke-opacity=".2"/><path d="M12 2a10 10 0 0 1 10 10"/></svg>
-          Loading articles...
+        <div id="articles-loading" class="admin-loading-state">
+          <div class="admin-spinner-wrap">
+            <div class="admin-spinner-ring"></div>
+            <div class="admin-spinner-ring-inner"></div>
+            <svg class="admin-spinner-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+          </div>
+          <div class="admin-loading-title">Loading articles…</div>
+          <div class="admin-loading-subtitle">Fetching published stories, findings and editorial drafts</div>
         </div>
         <table id="articles-table" class="art-table" style="display:none;">
           <thead>
@@ -1895,7 +1909,14 @@
           <span style="font-size:12px;font-weight:700;color:#dc2626;letter-spacing:.04em;text-transform:uppercase;">Recycle Bin / Trash</span>
           <span style="font-size:12px;color:#94a3b8;margin-left:auto;">Deleted articles stay here until permanently removed</span>
         </div>
-        <div id="art-trash-loading" style="padding:36px;text-align:center;color:#94a3b8;font-size:13px;">Loading trash...</div>
+        <div id="art-trash-loading" class="admin-loading-state admin-loading-state--danger" style="padding:40px 20px;">
+          <div class="admin-spinner-wrap" style="width:36px;height:36px;margin-bottom:12px;">
+            <div class="admin-spinner-ring"></div>
+            <div class="admin-spinner-ring-inner"></div>
+            <svg class="admin-spinner-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+          </div>
+          <div class="admin-loading-title" style="font-size:13px;color:#991b1b;">Loading recycle bin…</div>
+        </div>
         <table id="art-trash-table" class="art-table" style="display:none;">
           <thead>
             <tr style="background:#fffafa;border-bottom:1px solid #fee2e2;">
@@ -1953,9 +1974,14 @@
 
       <!-- Active authors list -->
       <div class="art-card" id="auth-active-panel">
-        <div id="authors-loading" style="padding:48px;text-align:center;color:#94a3b8;font-size:13.5px;font-weight:500;">
-          <svg viewBox="0 0 24 24" fill="none" stroke="#0a528e" stroke-width="2" width="28" height="28" style="margin:0 auto 12px;display:block;animation:spin 1s linear infinite;"><circle cx="12" cy="12" r="10" stroke-opacity=".2"/><path d="M12 2a10 10 0 0 1 10 10"/></svg>
-          Loading authors...
+        <div id="authors-loading" class="admin-loading-state">
+          <div class="admin-spinner-wrap">
+            <div class="admin-spinner-ring"></div>
+            <div class="admin-spinner-ring-inner"></div>
+            <svg class="admin-spinner-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          </div>
+          <div class="admin-loading-title">Loading authors directory…</div>
+          <div class="admin-loading-subtitle">Connecting with contributor, writer and editor profiles</div>
         </div>
         <table id="authors-table" class="art-table" style="display:none;">
           <thead>
@@ -1985,7 +2011,14 @@
           <span style="font-size:12px;font-weight:700;color:#dc2626;letter-spacing:.04em;text-transform:uppercase;">Recycle Bin / Trash</span>
           <span style="font-size:12px;color:#94a3b8;margin-left:auto;">Deleted authors stay here until permanently removed</span>
         </div>
-        <div id="auth-trash-loading" style="padding:36px;text-align:center;color:#94a3b8;font-size:13px;">Loading trash...</div>
+        <div id="auth-trash-loading" class="admin-loading-state admin-loading-state--danger" style="padding:40px 20px;">
+          <div class="admin-spinner-wrap" style="width:36px;height:36px;margin-bottom:12px;">
+            <div class="admin-spinner-ring"></div>
+            <div class="admin-spinner-ring-inner"></div>
+            <svg class="admin-spinner-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+          </div>
+          <div class="admin-loading-title" style="font-size:13px;color:#991b1b;">Loading deleted authors…</div>
+        </div>
         <table id="auth-trash-table" class="art-table" style="display:none;">
           <thead>
             <tr style="background:#fffafa;border-bottom:1px solid #fee2e2;">
@@ -2359,9 +2392,14 @@
         </div>
 
         <!-- Empty & Loading States -->
-        <div id="activity-table-loading" style="padding:50px 20px;text-align:center;color:var(--text-muted);display:none;">
-          <svg class="spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="28" height="28" style="margin:0 auto 10px;display:block;"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
-          <span>Loading activity log records…</span>
+        <div id="activity-table-loading" class="admin-loading-state" style="display:none;">
+          <div class="admin-spinner-wrap">
+            <div class="admin-spinner-ring"></div>
+            <div class="admin-spinner-ring-inner"></div>
+            <svg class="admin-spinner-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          </div>
+          <div class="admin-loading-title">Loading activity log records…</div>
+          <div class="admin-loading-subtitle">Retrieving audit events, administrator logins, and editorial actions</div>
         </div>
 
         <div id="activity-table-empty" style="padding:60px 20px;text-align:center;display:none;">
