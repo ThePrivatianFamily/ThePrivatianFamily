@@ -153,6 +153,15 @@ body{font-family:var(--sans);background:var(--bg);padding-top:calc(var(--tb) + v
   70% { transform: scale(1); box-shadow: 0 0 0 5px rgba(239, 68, 68, 0); }
   100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
 }
+@keyframes spin {
+  0%   { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+.spin, .spinning, .anim-spin, svg.spin {
+  display: inline-block !important;
+  animation: spin 0.85s linear infinite !important;
+  transform-origin: center center !important;
+}
 .tb-btn{font:600 12px/1 var(--sans);border:none;border-radius:6px;
   padding:7px 14px;cursor:pointer;flex-shrink:0;transition:.15s;white-space:nowrap}
 .tb-preview{background:rgba(255,255,255,.07);color:rgba(255,255,255,.6);border:1px solid rgba(255,255,255,.12)}
@@ -1694,7 +1703,7 @@ button, input, select, textarea, [contenteditable] {
       </div>
       <div class="sec-dd" id="sec-dd">
         <!-- Populated from API -->
-        <div style="padding:12px 18px;font:400 12px/1 var(--sans);color:#9ca3af;">Loading sections…</div>
+        <div style="padding:12px 18px;font:400 12px/1 var(--sans);color:#9ca3af;display:flex;align-items:center;gap:8px;"><svg class="spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13"><circle cx="12" cy="12" r="10" stroke-opacity="0.25"/><path d="M12 2a10 10 0 0 1 10 10"/></svg> Loading sections…</div>
       </div>
     </div>
 
