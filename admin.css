@@ -4316,7 +4316,6 @@ body.modal-open {
   min-height: 200px;
   width: 100%;
   box-sizing: border-box;
-  contain: layout paint;
 }
 
 @media (max-width: 580px) {
@@ -4333,11 +4332,9 @@ body.modal-open {
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+  transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.18s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.18s ease;
   min-width: 0;
   box-sizing: border-box;
-  content-visibility: auto;
-  contain-intrinsic-size: 240px 240px;
   transform: translateZ(0);
   will-change: transform;
   backface-visibility: hidden;

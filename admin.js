@@ -1978,7 +1978,7 @@ function formatRelativeTime(date) {
   const diffDays = Math.floor(diffHrs / 24);
   if (diffDays === 1) return 'Yesterday';
   if (diffDays < 30) return `${diffDays}d ago`;
-  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  return formatDhaka24h(date, 'date');
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -8839,19 +8839,19 @@ function formatActivityRelativeTime(isoString) {
     const diffHours = Math.floor(diffMin / 60);
     const diffDays = Math.floor(diffHours / 24);
 
-    const hh = String(d.getHours()).padStart(2, '0');
-    const mm = String(d.getMinutes()).padStart(2, '0');
+    const timeStr = formatDhaka24h(d, 'time');
+    const dateStr = formatDhaka24h(d, 'date');
 
     if (diffSec < 45) return 'Just now';
     if (diffMin < 60) return `${diffMin}m ago`;
-    if (diffHours < 24) return `${diffHours}h ago (${hh}:${mm})`;
+    if (diffHours < 24) return `${diffHours}h ago (${timeStr})`;
     if (diffDays === 1) {
-      return `Yesterday, ${hh}:${mm}`;
+      return `Yesterday, ${timeStr}`;
     }
     if (diffDays < 7) {
-      return `${diffDays}d ago (${d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })} ${hh}:${mm})`;
+      return `${diffDays}d ago (${dateStr} ${timeStr})`;
     }
-    return `${d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })} ${hh}:${mm}`;
+    return `${dateStr} ${timeStr}`;
   } catch(e) { return '—'; }
 }
 
@@ -9055,12 +9055,41 @@ function renderActivityPage() {
 
     const rolePill = `<span style="font-size:10px;padding:1px 6px;border-radius:10px;font-weight:600;background:${actorRole === 'Admin' ? '#dbeafe' : '#e0e7ff'};color:${actorRole === 'Admin' ? '#1e40af' : '#3730a3'};">${escapeHtml(actorRole)}</span>`;
 
-    // Target link if article or section
+    // Context-aware target display & link
     let targetLinkHtml = '';
+    const act = log.action || '';
     if (log.category === 'articles' && log.target_id) {
-      targetLinkHtml = ` <a href="admin-article-editor.html?id=${encodeURIComponent(log.target_id)}" target="_blank" style="font-size:11px;color:var(--brand-navy,#0a528e);text-decoration:underline;margin-left:4px;">(Edit Article)</a>`;
+      if (act === 'articles.permanent_delete' || act === 'articles.delete_permanent') {
+        targetLinkHtml = ` <span style="font-size:11px;color:#dc2626;font-weight:600;margin-left:4px;">(Permanently Deleted)</span>`;
+      } else if (act === 'articles.trash') {
+        targetLinkHtml = ` <span style="font-size:11px;color:#d97706;font-weight:600;margin-left:4px;">(Moved to Trash)</span>`;
+      } else if (act === 'articles.restore') {
+        targetLinkHtml = ` <a href="admin-article-editor.html?id=${encodeURIComponent(log.target_id)}" target="_blank" style="font-size:11px;color:var(--brand-navy,#0a528e);text-decoration:underline;margin-left:4px;">(Open Restored Article)</a>`;
+      } else if (act === 'articles.publish') {
+        targetLinkHtml = ` <a href="admin-article-editor.html?id=${encodeURIComponent(log.target_id)}" target="_blank" style="font-size:11px;color:#16a34a;text-decoration:underline;margin-left:4px;">(Open Published Article)</a>`;
+      } else if (act === 'articles.unpublish') {
+        targetLinkHtml = ` <a href="admin-article-editor.html?id=${encodeURIComponent(log.target_id)}" target="_blank" style="font-size:11px;color:var(--brand-navy,#0a528e);text-decoration:underline;margin-left:4px;">(Open Draft)</a>`;
+      } else {
+        targetLinkHtml = ` <a href="admin-article-editor.html?id=${encodeURIComponent(log.target_id)}" target="_blank" style="font-size:11px;color:var(--brand-navy,#0a528e);text-decoration:underline;margin-left:4px;">(Open in Editor)</a>`;
+      }
     } else if (log.category === 'sections' && log.target_id) {
-      targetLinkHtml = ` <a href="/section/${encodeURIComponent(log.target_id)}" target="_blank" style="font-size:11px;color:var(--brand-navy,#0a528e);text-decoration:underline;margin-left:4px;">(View Section)</a>`;
+      if (act === 'section.delete_permanent') {
+        targetLinkHtml = ` <span style="font-size:11px;color:#dc2626;font-weight:600;margin-left:4px;">(Deleted)</span>`;
+      } else if (act === 'section.trash') {
+        targetLinkHtml = ` <span style="font-size:11px;color:#d97706;font-weight:600;margin-left:4px;">(Trashed)</span>`;
+      } else {
+        targetLinkHtml = ` <a href="/section/${encodeURIComponent(log.target_id)}" target="_blank" style="font-size:11px;color:var(--brand-navy,#0a528e);text-decoration:underline;margin-left:4px;">(View Section)</a>`;
+      }
+    } else if (log.category === 'layout') {
+      if (log.target_id === 'site_header_config') {
+        targetLinkHtml = ` <span style="font-size:10.5px;color:#475569;background:#f1f5f9;padding:1px 6px;border-radius:4px;margin-left:4px;">Header</span>`;
+      } else if (log.target_id === 'navigation_menu_config') {
+        targetLinkHtml = ` <span style="font-size:10.5px;color:#475569;background:#f1f5f9;padding:1px 6px;border-radius:4px;margin-left:4px;">Navigation Menu</span>`;
+      } else if (log.target_id === 'site_footer_config') {
+        targetLinkHtml = ` <span style="font-size:10.5px;color:#475569;background:#f1f5f9;padding:1px 6px;border-radius:4px;margin-left:4px;">Footer</span>`;
+      } else if (log.target_id && log.target_id.includes('homepage')) {
+        targetLinkHtml = ` <span style="font-size:10.5px;color:#475569;background:#f1f5f9;padding:1px 6px;border-radius:4px;margin-left:4px;">Homepage</span>`;
+      }
     }
 
     return `
@@ -9286,16 +9315,35 @@ var _galleryPickerCallback = null;
 var _galleryPickerSelectedItem = null;
 var _galleryPickerActiveFolder = 'all';
 
-// ── 1. Load & Sync Gallery Assets ─────────────────────────────────
+// ── 1. Load & Sync Gallery Assets (Instant 0ms Cache) ─────────────
 async function loadGalleryAssets() {
   const grid = document.getElementById('gallery-grid');
-  if (grid) {
-    grid.innerHTML = `
-      <div style="grid-column: 1 / -1; text-align: center; padding: 48px 20px; color: var(--text-muted);">
-        <div class="ft-loading-spinner" style="margin: 0 auto 12px; width: 28px; height: 28px; border: 3px solid #e2e8f0; border-top-color: #4f46e5; border-radius: 50%; animation: ftSpin 0.8s linear infinite;"></div>
-        <p style="font-size: 13px; font-weight: 600;">Scanning Cloudflare R2 &amp; Database...</p>
-      </div>
-    `;
+  
+  // 1. Instant 0ms Cache Load
+  try {
+    const cached = sessionStorage.getItem('privatian_media_cache');
+    if (cached) {
+      const parsed = JSON.parse(cached);
+      if (parsed && Array.isArray(parsed.items) && parsed.items.length) {
+        _rawGalleryList = parsed.items;
+        if (parsed.folders && Array.isArray(parsed.folders)) _galleryFolders = parsed.folders;
+        renderGalleryFolders();
+        _syncFolderSelectDropdowns();
+        _updateGalleryCounts(parsed.storage, parsed.syncStatus);
+        renderGalleryGrid();
+      }
+    }
+  } catch(e) {}
+
+  if (!_rawGalleryList || !_rawGalleryList.length) {
+    if (grid) {
+      grid.innerHTML = `
+        <div style="grid-column: 1 / -1; text-align: center; padding: 48px 20px; color: var(--text-muted);">
+          <div class="ft-loading-spinner" style="margin: 0 auto 12px; width: 28px; height: 28px; border: 3px solid #e2e8f0; border-top-color: #4f46e5; border-radius: 50%; animation: ftSpin 0.8s linear infinite;"></div>
+          <p style="font-size: 13px; font-weight: 600;">Scanning Cloudflare R2 &amp; Database...</p>
+        </div>
+      `;
+    }
   }
 
   try {
@@ -9303,13 +9351,16 @@ async function loadGalleryAssets() {
     if (data) {
       if (Array.isArray(data.items)) _rawGalleryList = data.items;
       if (data.folders && Array.isArray(data.folders)) _galleryFolders = data.folders;
+      try {
+        sessionStorage.setItem('privatian_media_cache', JSON.stringify(data));
+      } catch(e) {}
       renderGalleryFolders();
       _syncFolderSelectDropdowns();
       _updateGalleryCounts(data.storage, data.syncStatus);
       renderGalleryGrid();
     }
   } catch(e) {
-    if (grid) {
+    if (grid && (!_rawGalleryList || !_rawGalleryList.length)) {
       grid.innerHTML = `
         <div class="gallery-empty-state">
           <div class="gallery-empty-icon" style="color:#ef4444;background:#fee2e2;">
@@ -9561,6 +9612,7 @@ function _setGalleryFolder(folder) {
       'Supports JPG, PNG, WebP, AVIF, SVG, GIF. Direct high-speed upload to Cloudflare R2.';
   }
 
+  window._galleryRenderLimit = 24;
   renderGalleryFolders();
   renderGalleryGrid();
 }
@@ -9974,7 +10026,10 @@ function renderGalleryGrid() {
     return;
   }
 
-  grid.innerHTML = filtered.map(item => {
+  const renderLimit = window._galleryRenderLimit || 24;
+  const visibleItems = filtered.slice(0, renderLimit);
+
+  grid.innerHTML = visibleItems.map(item => {
     const ext = (item.filename && item.filename.split('.').pop()) || (item.mime_type ? item.mime_type.split('/').pop() : 'IMG');
     const sizeStr = _formatFileSize(item.file_size);
     const dateStr = _formatShortDate(item.created_at);
@@ -10026,7 +10081,16 @@ function renderGalleryGrid() {
         </div>
       </div>
     `;
-  }).join('');
+  }).join('') + (
+    filtered.length > renderLimit ? `
+      <div id="gallery-load-more-wrap" style="grid-column:1 / -1;text-align:center;padding:24px 0 12px;">
+        <button type="button" class="btn btn--secondary" onclick="window._galleryRenderLimit = (window._galleryRenderLimit || 24) + 24; renderGalleryGrid();" style="padding:9px 26px;border-radius:20px;font-weight:700;font-size:12.5px;background:#f8fafc;border:1px solid #cbd5e1;cursor:pointer;display:inline-flex;align-items:center;gap:6px;color:#0a528e;box-shadow:0 1px 3px rgba(0,0,0,0.05);">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+          <span>Load More Media (${filtered.length - renderLimit} remaining)</span>
+        </button>
+      </div>
+    ` : ''
+  );
 }
 
 // ── 5. File Upload & Drag-and-Drop Pipeline ───────────────────────
@@ -10163,12 +10227,14 @@ function _readFileAsBase64(file) {
 // ── 6. Toolbar Handlers ──────────────────────────────────────────
 function _handleGalleryProviderFilter(val) {
   _galleryProviderFilter = val || 'all';
+  window._galleryRenderLimit = 24;
   renderGalleryGrid();
 }
 window._handleGalleryProviderFilter = _handleGalleryProviderFilter;
 
 function _setGalleryFilter(filter) {
   _galleryFilter = filter;
+  window._galleryRenderLimit = 24;
   document.querySelectorAll('.gallery-tab-pill').forEach(btn => {
     btn.classList.toggle('active', btn.id === `gallery-filter-${filter}`);
   });
@@ -10180,6 +10246,7 @@ function _handleGallerySearch() {
   const input = document.getElementById('gallery-search-input');
   const clearBtn = document.getElementById('gallery-search-clear');
   _gallerySearchQuery = (input ? input.value : '').trim();
+  window._galleryRenderLimit = 24;
   if (clearBtn) clearBtn.style.display = _gallerySearchQuery ? 'block' : 'none';
   clearTimeout(_gallerySearchDebounceTimer);
   _gallerySearchDebounceTimer = setTimeout(() => {
@@ -10192,6 +10259,7 @@ function _clearGallerySearch() {
   const clearBtn = document.getElementById('gallery-search-clear');
   if (input) input.value = '';
   _gallerySearchQuery = '';
+  window._galleryRenderLimit = 24;
   if (clearBtn) clearBtn.style.display = 'none';
   clearTimeout(_gallerySearchDebounceTimer);
   renderGalleryGrid();
@@ -10200,6 +10268,7 @@ function _clearGallerySearch() {
 function _handleGallerySort() {
   const select = document.getElementById('gallery-sort-select');
   if (select) _gallerySort = select.value;
+  window._galleryRenderLimit = 24;
   renderGalleryGrid();
 }
 
@@ -10647,7 +10716,39 @@ async function _handlePickerQuickUpload(e) {
   }
 }
 
-// ── 10. Formatting Helpers (24-Hour Time Standard) ────────────────
+// ── 10. Universal Asia/Dhaka (GMT+6) 24-Hour Time Standard Helpers ──
+function formatDhaka24h(dateInput, formatType = 'datetime') {
+  if (!dateInput) return '—';
+  const d = dateInput instanceof Date ? dateInput : new Date(dateInput);
+  if (isNaN(d.getTime())) return '—';
+
+  try {
+    const dtf = new Intl.DateTimeFormat('en-GB', {
+      timeZone: 'Asia/Dhaka',
+      year: 'numeric',
+      month: 'short',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false
+    });
+
+    const p = {};
+    dtf.formatToParts(d).forEach(x => { p[x.type] = x.value; });
+
+    if (formatType === 'time') return `${p.hour}:${p.minute}`;
+    if (formatType === 'time_full') return `${p.hour}:${p.minute}:${p.second}`;
+    if (formatType === 'date') return `${p.day} ${p.month} ${p.year}`;
+    if (formatType === 'datetime') return `${p.day} ${p.month} ${p.year}, ${p.hour}:${p.minute}`;
+    if (formatType === 'full') return `${p.day} ${p.month} ${p.year}, ${p.hour}:${p.minute}:${p.second}`;
+    return `${p.day} ${p.month} ${p.year}, ${p.hour}:${p.minute}`;
+  } catch(e) {
+    return '—';
+  }
+}
+window.formatDhaka24h = formatDhaka24h;
+
 function _formatFileSize(bytes) {
   if (!bytes || bytes <= 0) return '0 B';
   const k = 1024;
@@ -10658,60 +10759,23 @@ function _formatFileSize(bytes) {
 }
 
 function _format24hTime(isoOrDate) {
-  if (!isoOrDate) return '—';
-  try {
-    const d = isoOrDate instanceof Date ? isoOrDate : new Date(isoOrDate);
-    if (isNaN(d.getTime())) return '—';
-    const hh = String(d.getHours()).padStart(2, '0');
-    const mm = String(d.getMinutes()).padStart(2, '0');
-    return `${hh}:${mm}`;
-  } catch(e) { return '—'; }
+  return formatDhaka24h(isoOrDate, 'time');
 }
 
 function _formatShortDate(isoString) {
-  if (!isoString) return '—';
-  try {
-    const d = new Date(isoString);
-    if (isNaN(d.getTime())) return '—';
-    return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
-  } catch(e) { return '—'; }
+  return formatDhaka24h(isoString, 'date');
 }
 
 function _formatLongDate(isoString) {
-  if (!isoString) return '—';
-  try {
-    const d = new Date(isoString);
-    if (isNaN(d.getTime())) return '—';
-    const day = d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
-    const hh = String(d.getHours()).padStart(2, '0');
-    const mm = String(d.getMinutes()).padStart(2, '0');
-    return `${day}, ${hh}:${mm}`;
-  } catch(e) { return '—'; }
+  return formatDhaka24h(isoString, 'datetime');
 }
 
 function _format24hDateTime(isoString) {
-  if (!isoString) return '—';
-  try {
-    const d = new Date(isoString);
-    if (isNaN(d.getTime())) return '—';
-    const day = d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
-    const hh = String(d.getHours()).padStart(2, '0');
-    const mm = String(d.getMinutes()).padStart(2, '0');
-    return `${day} ${hh}:${mm}`;
-  } catch(e) { return '—'; }
+  return formatDhaka24h(isoString, 'datetime');
 }
 
 function _format24hFull(isoString) {
-  if (!isoString) return '—';
-  try {
-    const d = new Date(isoString);
-    if (isNaN(d.getTime())) return '—';
-    const day = d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
-    const hh = String(d.getHours()).padStart(2, '0');
-    const mm = String(d.getMinutes()).padStart(2, '0');
-    const ss = String(d.getSeconds()).padStart(2, '0');
-    return `${day}, ${hh}:${mm}:${ss}`;
-  } catch(e) { return '—'; }
+  return formatDhaka24h(isoString, 'full');
 }
 
 // Window global exports for Gallery & Folders

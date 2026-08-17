@@ -2139,16 +2139,52 @@ function toBnDigits(num) {
   return String(num).replace(/\d/g, d => bnDigits[Number(d)]);
 }
 
+// ── UNIVERSAL DHAKA (GMT+6) 24-HOUR FORMATTER ────────────────────
+function formatDhaka24h(dateInput, formatType = 'datetime') {
+  if (!dateInput) return '—';
+  const d = dateInput instanceof Date ? dateInput : new Date(dateInput);
+  if (isNaN(d.getTime())) return '—';
+
+  try {
+    const dtf = new Intl.DateTimeFormat('en-GB', {
+      timeZone: 'Asia/Dhaka',
+      year: 'numeric',
+      month: 'short',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false
+    });
+
+    const p = {};
+    dtf.formatToParts(d).forEach(x => { p[x.type] = x.value; });
+
+    if (formatType === 'time') return `${p.hour}:${p.minute}`;
+    if (formatType === 'date') return `${p.day} ${p.month} ${p.year}`;
+    if (formatType === 'datetime') return `${p.day} ${p.month} ${p.year}, ${p.hour}:${p.minute}`;
+    if (formatType === 'full') return `${p.day} ${p.month} ${p.year}, ${p.hour}:${p.minute}:${p.second}`;
+    return `${p.day} ${p.month} ${p.year}, ${p.hour}:${p.minute}`;
+  } catch(e) {
+    return '—';
+  }
+}
+window.formatDhaka24h = formatDhaka24h;
+
 function fmtDate(d, lang = _currentEditLang) {
   if (!(d instanceof Date) || isNaN(d.getTime())) d = new Date();
   if (lang === 'bn') {
     const monthsBn = ['জানুয়ারি', 'ফেব্রুয়ারি', 'মার্চ', 'এপ্রিল', 'মে', 'জুন', 'জুলাই', 'আগস্ট', 'সেপ্টেম্বর', 'অক্টোবর', 'নভেম্বর', 'ডিসেম্বর'];
-    const day = toBnDigits(d.getDate());
-    const month = monthsBn[d.getMonth()];
-    const year = toBnDigits(d.getFullYear());
+    const dtf = new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Dhaka', year: 'numeric', month: 'numeric', day: 'numeric' });
+    const p = {};
+    dtf.formatToParts(d).forEach(x => { p[x.type] = x.value; });
+    const day = toBnDigits(p.day);
+    const monthIdx = parseInt(p.month, 10) - 1;
+    const month = monthsBn[monthIdx] || '';
+    const year = toBnDigits(p.year);
     return `${day} ${month}, ${year}`;
   }
-  return d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+  return d.toLocaleDateString('en-US', { timeZone: 'Asia/Dhaka', month: 'long', day: 'numeric', year: 'numeric' });
 }
 
 function loadBufferToInputs(lang) {
