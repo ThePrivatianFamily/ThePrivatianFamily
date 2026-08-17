@@ -1759,6 +1759,13 @@
     } catch(e) {}
   }
 
+  document.addEventListener('privatian:language-changed', function() {
+    try {
+      applyLogoSettings();
+      populateSections();
+    } catch(e) {}
+  });
+
   if (document.readyState === 'complete' || document.readyState === 'interactive') {
     init();
     trackPageView();

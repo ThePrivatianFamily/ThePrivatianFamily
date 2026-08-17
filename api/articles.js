@@ -164,7 +164,7 @@ module.exports = async function handler(req, res) {
     if (!session) return;
 
     const {
-      id: bodyId, title = '', title_bn = '', deck = '', deck_bn = '', section = '', author = '', author_bn = '', author_role = '', author_role_bn = '',
+      id: bodyId, author_id = null, title = '', title_bn = '', deck = '', deck_bn = '', section = '', author = '', author_bn = '', author_role = '', author_role_bn = '',
       author_bio = '', author_bio_bn = '', author_photo_url = '', hero_img_url = '', hero_img_alt = '',
       hero_caption = '', hero_caption_bn = '', hero_credit = '', hero_credit_bn = '', content_html = '', content_html_bn = '', slug: bodySlug,
       seo_title = '', seo_title_bn = '', meta_description = '', meta_description_bn = '', tags = '', tags_bn = '', status: bodyStatus,
@@ -184,7 +184,7 @@ module.exports = async function handler(req, res) {
       // We ONLY update the working draft in the `content` column without touching the live published article!
       if (existing.status === 'published' && is_draft) {
         const draftPayload = {
-          title, title_bn, deck, deck_bn, section, author, author_bn, author_role, author_role_bn, author_bio, author_bio_bn, author_photo_url,
+          title, title_bn, deck, deck_bn, section, author_id, author, author_bn, author_role, author_role_bn, author_bio, author_bio_bn, author_photo_url,
           hero_img_url, hero_img_alt, hero_caption, hero_caption_bn, hero_credit, hero_credit_bn, content_html, content_html_bn,
           seo_title, seo_title_bn, meta_description, meta_description_bn, tags, tags_bn,
           draft_saved_at: new Date().toISOString()
@@ -202,7 +202,7 @@ module.exports = async function handler(req, res) {
       // OTHERWISE: DIRECT LIVE PUBLISH OR DRAFT ARTICLE UPDATE
       const updates = {
         title: title || (title_bn ? title_bn : 'Untitled'),
-        title_bn, deck, deck_bn, section, author, author_bn, author_role, author_role_bn, author_bio, author_bio_bn, author_photo_url,
+        title_bn, deck, deck_bn, section, author_id, author, author_bn, author_role, author_role_bn, author_bio, author_bio_bn, author_photo_url,
         hero_img_url, hero_img_alt, hero_caption, hero_caption_bn, hero_credit, hero_credit_bn, content_html, content_html_bn,
         seo_title, seo_title_bn, meta_description, meta_description_bn, tags, tags_bn,
         content: null, // Clear working draft because live article is now updated
@@ -253,7 +253,7 @@ module.exports = async function handler(req, res) {
       const newArticle = {
         slug,
         title: title || (title_bn ? title_bn : 'Untitled'),
-        title_bn, deck, deck_bn, section, author, author_bn, author_role, author_role_bn, author_bio, author_bio_bn, author_photo_url,
+        title_bn, deck, deck_bn, section, author_id, author, author_bn, author_role, author_role_bn, author_bio, author_bio_bn, author_photo_url,
         hero_img_url, hero_img_alt, hero_caption, hero_caption_bn, hero_credit, hero_credit_bn, content_html, content_html_bn,
         seo_title, seo_title_bn, meta_description, meta_description_bn, tags, tags_bn,
         status: bodyStatus || 'draft',

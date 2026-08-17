@@ -106,6 +106,15 @@
           </a>
         </li>
         <li>
+          <a href="#" class="sidebar-nav-item" data-page="authors" id="nav-authors">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+              <circle cx="12" cy="7" r="4"/>
+            </svg>
+            <span>Authors</span>
+          </a>
+        </li>
+        <li>
           <a href="#" class="sidebar-nav-item" data-page="gallery" id="nav-gallery">
             <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
               <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
@@ -1906,7 +1915,97 @@
       </div>
     </section>
 
-        <!-- PAGE: SETTINGS (Admin Login Verification Email Studio) -->
+    <!-- PAGE: AUTHORS (DIRECTORY & PROFILES) -->
+    <section class="page" id="page-authors">
+      <!-- Page header -->
+      <div class="art-header-row">
+        <div class="art-title-wrap">
+          <h1 class="page-title">Authors Directory</h1>
+          <p class="page-subtitle">Manage writer and contributor profiles, credentials, designations, and biographies</p>
+        </div>
+        <button type="button" class="art-new-btn" id="new-author-btn" onclick="openAuthorModal()">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Add Author
+        </button>
+      </div>
+
+      <!-- Filters bar -->
+      <div class="art-filter-bar">
+        <div class="art-search-wrap">
+          <svg class="art-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="text" id="authors-search" class="art-search-input" placeholder="Search author by name, role, email, bio..." oninput="filterAuthors()" />
+        </div>
+        <select id="authors-filter-status" class="art-select" onchange="filterAuthors()">
+          <option value="">All Status</option>
+          <option value="active">Active</option>
+          <option value="inactive">Inactive</option>
+        </select>
+        <div class="art-view-switch">
+          <button onclick="switchAuthorsView('active')" id="auth-view-active" class="art-view-btn active">
+            Active Authors
+          </button>
+          <button onclick="switchAuthorsView('trash')" id="auth-view-trash" class="art-view-btn art-view-btn--trash">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+            Trash <span id="auth-trash-count" class="art-trash-pill">0</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Active authors list -->
+      <div class="art-card" id="auth-active-panel">
+        <div id="authors-loading" style="padding:48px;text-align:center;color:#94a3b8;font-size:13.5px;font-weight:500;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#0a528e" stroke-width="2" width="28" height="28" style="margin:0 auto 12px;display:block;animation:spin 1s linear infinite;"><circle cx="12" cy="12" r="10" stroke-opacity=".2"/><path d="M12 2a10 10 0 0 1 10 10"/></svg>
+          Loading authors...
+        </div>
+        <table id="authors-table" class="art-table" style="display:none;">
+          <thead>
+            <tr>
+              <th style="min-width:260px;">Author Profile</th>
+              <th style="width:180px;">Role / Designation</th>
+              <th style="width:140px;">Email / Contact</th>
+              <th style="width:100px;">Status</th>
+              <th style="width:110px;">Articles</th>
+              <th class="tar" style="width:160px;">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="authors-tbody"></tbody>
+        </table>
+        <div id="authors-empty" style="padding:64px 24px;text-align:center;display:none;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" stroke-width="1.2" width="52" height="52" style="margin:0 auto 16px;display:block;"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          <h3 style="font-size:16px;font-weight:600;color:#334155;margin-bottom:6px;">No authors found</h3>
+          <p style="color:#94a3b8;font-size:13.5px;margin:0 0 18px;">Create contributor and editor profiles to link with published articles.</p>
+          <button type="button" class="art-new-btn" onclick="openAuthorModal()" style="display:inline-flex;">Create New Author →</button>
+        </div>
+      </div>
+
+      <!-- Authors Trash panel -->
+      <div class="art-card" id="auth-trash-panel" style="display:none;">
+        <div style="padding:14px 20px;background:#fff8f8;border-bottom:1px solid #fee2e2;display:flex;align-items:center;gap:10px;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2.2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+          <span style="font-size:12px;font-weight:700;color:#dc2626;letter-spacing:.04em;text-transform:uppercase;">Recycle Bin / Trash</span>
+          <span style="font-size:12px;color:#94a3b8;margin-left:auto;">Deleted authors stay here until permanently removed</span>
+        </div>
+        <div id="auth-trash-loading" style="padding:36px;text-align:center;color:#94a3b8;font-size:13px;">Loading trash...</div>
+        <table id="auth-trash-table" class="art-table" style="display:none;">
+          <thead>
+            <tr style="background:#fffafa;border-bottom:1px solid #fee2e2;">
+              <th style="min-width:260px;color:#991b1b;">Author</th>
+              <th style="width:160px;color:#991b1b;">Role</th>
+              <th style="width:130px;color:#991b1b;">Deleted At</th>
+              <th class="tar" style="width:180px;color:#991b1b;">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="auth-trash-tbody"></tbody>
+        </table>
+        <div id="auth-trash-empty" style="padding:56px 24px;text-align:center;display:none;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" stroke-width="1.2" width="44" height="44" style="margin:0 auto 12px;display:block;"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+          <h3 style="font-size:15px;font-weight:600;color:#475569;margin-bottom:4px;">Trash is empty</h3>
+          <p style="color:#94a3b8;font-size:13px;margin:0;">No deleted authors in the recycle bin.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- PAGE: SETTINGS (Admin Login Verification Email Studio) -->
     <section class="page" id="page-settings">
       <!-- Settings Header -->
       <div class="menu-mgr-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:12px;">
@@ -3761,6 +3860,115 @@
       <div class="modal-footer" style="display:flex;justify-content:flex-end;gap:10px;padding:12px 20px;border-top:1px solid #e2e8f0;background:#fafbfc;">
         <button type="button" class="btn btn--ghost" onclick="closeFolderModal()">Cancel</button>
         <button type="button" class="btn btn--primary" id="gallery-folder-save-btn" onclick="_saveFolderModal()">Create Folder</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ MODAL: CREATE / EDIT AUTHOR PROFILE ═══════════════════════════════ -->
+  <div class="modal-overlay" id="modal-author" hidden>
+    <div class="modal modal--lg" role="dialog" aria-modal="true" style="max-width: 680px; width: 95%;">
+      <div class="modal-header" style="display:flex;justify-content:space-between;align-items:center;padding:16px 22px;border-bottom:1px solid #e2e8f0;background:#fafbfc;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span style="display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:8px;background:#e0f2fe;color:#0369a1;">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          </span>
+          <div>
+            <h2 class="modal-title" id="author-modal-title" style="font-size:16px;margin:0;font-weight:700;color:var(--text-primary);">New Author Profile</h2>
+            <div style="font-size:11.5px;color:var(--text-muted);">Author profiles automatically populate across Article Editor and bylines</div>
+          </div>
+        </div>
+        <button type="button" class="btn-close" onclick="closeAuthorModal()" style="background:none;border:none;cursor:pointer;color:var(--text-muted);display:inline-flex;align-items:center;justify-content:center;padding:4px 8px;" title="Close"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+      </div>
+      <div class="modal-body" style="padding: 22px; max-height: 75vh; overflow-y: auto;">
+        <input type="hidden" id="author-edit-id" value="" />
+
+        <!-- Author Photo / Avatar Row with Upload / Media Modal -->
+        <div style="display:flex;align-items:center;gap:18px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:14px 18px;margin-bottom:18px;">
+          <div id="author-modal-avatar-wrap" style="position:relative;width:64px;height:64px;border-radius:50%;overflow:hidden;background:#e2e8f0;border:2px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,0.08);flex-shrink:0;">
+            <img id="author-modal-avatar-img" src="" alt="" style="width:100%;height:100%;object-fit:cover;display:none;" />
+            <div id="author-modal-avatar-placeholder" style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:#64748b;font-weight:700;font-size:22px;">
+              <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="#94a3b8" stroke-width="1.6"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            </div>
+          </div>
+          <div style="flex:1;">
+            <label style="font-size:12px;font-weight:700;color:var(--text-primary);display:block;margin-bottom:4px;">Author Photo / Avatar</label>
+            <p style="font-size:11.5px;color:var(--text-muted);margin:0 0 8px;">Upload or select image from Media Gallery using the upload popup.</p>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+              <button type="button" class="btn btn--secondary btn--sm" onclick="openAuthorPhotoMediaModal()" style="display:inline-flex;align-items:center;gap:6px;font-size:12px;height:30px;">
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5-4 4-2-2-5 5"/></svg>
+                Select from Media Gallery / Upload
+              </button>
+              <button type="button" class="btn btn--ghost btn--sm" id="author-photo-remove-btn" onclick="removeAuthorModalPhoto()" style="display:none;font-size:12px;height:30px;color:#dc2626;">
+                Remove
+              </button>
+            </div>
+            <input type="hidden" id="author-photo-url-input" value="" />
+          </div>
+        </div>
+
+        <!-- Name (English & Bengali) -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">
+          <div class="form-group" style="margin-bottom:0;">
+            <label class="form-label" for="author-name-input">Full Name (English) <span style="color:#dc2626;">*</span></label>
+            <input type="text" id="author-name-input" class="form-input" placeholder="e.g. Dr. Elizabeth Sterling" maxlength="80" autocomplete="off" required />
+          </div>
+          <div class="form-group" style="margin-bottom:0;">
+            <label class="form-label" for="author-name-bn-input">পূর্ণ নাম (বাংলা)</label>
+            <input type="text" id="author-name-bn-input" class="form-input" placeholder="যেমন: ড. এলিজাবেথ স্টার্লিং" maxlength="80" autocomplete="off" />
+          </div>
+        </div>
+
+        <!-- Designation / Role (English & Bengali) -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">
+          <div class="form-group" style="margin-bottom:0;">
+            <label class="form-label" for="author-role-input">Designation / Role (English)</label>
+            <input type="text" id="author-role-input" class="form-input" placeholder="e.g. Senior Fellow, History & Heritage" maxlength="100" autocomplete="off" />
+          </div>
+          <div class="form-group" style="margin-bottom:0;">
+            <label class="form-label" for="author-role-bn-input">পদবী / ভূমিকা (বাংলা)</label>
+            <input type="text" id="author-role-bn-input" class="form-input" placeholder="যেমন: সিনিয়র ফেলো, ইতিহাস ও ঐতিহ্য" maxlength="100" autocomplete="off" />
+          </div>
+        </div>
+
+        <!-- Email & Slug -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">
+          <div class="form-group" style="margin-bottom:0;">
+            <label class="form-label" for="author-email-input">Email Address</label>
+            <input type="email" id="author-email-input" class="form-input" placeholder="author@privatian.org" maxlength="100" autocomplete="off" />
+          </div>
+          <div class="form-group" style="margin-bottom:0;">
+            <label class="form-label" for="author-slug-input">URL Slug (Auto-generated)</label>
+            <input type="text" id="author-slug-input" class="form-input" placeholder="elizabeth-sterling" maxlength="60" autocomplete="off" />
+          </div>
+        </div>
+
+        <!-- Biography (English) -->
+        <div class="form-group" style="margin-bottom:14px;">
+          <label class="form-label" for="author-bio-input">Biography / Details (English)</label>
+          <textarea id="author-bio-input" class="form-input" rows="3" placeholder="A brief biography of the author, credentials, focus areas, and affiliations…" style="resize:vertical;"></textarea>
+        </div>
+
+        <!-- Biography (বাংলা) -->
+        <div class="form-group" style="margin-bottom:14px;">
+          <label class="form-label" for="author-bio-bn-input">সংক্ষিপ্ত পরিচিতি / বিবরণ (বাংলা)</label>
+          <textarea id="author-bio-bn-input" class="form-input" rows="3" placeholder="লেখকের সংক্ষিপ্ত পরিচিতি, গবেষণার ক্ষেত্র ও প্রাতিষ্ঠানিক পরিচয়…" style="resize:vertical;"></textarea>
+        </div>
+
+        <!-- Active Status -->
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 14px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;">
+          <div>
+            <div style="font-size:13px;font-weight:700;color:var(--text-primary);">Active Author Profile</div>
+            <div style="font-size:11.5px;color:var(--text-muted);">Active authors appear in the Article Editor dropdown for immediate selection</div>
+          </div>
+          <label class="hs-toggle">
+            <input type="checkbox" id="author-active-toggle" checked />
+            <span class="hs-toggle-track"><span class="hs-toggle-thumb"></span></span>
+          </label>
+        </div>
+      </div>
+      <div class="modal-footer" style="display:flex;justify-content:flex-end;gap:10px;padding:14px 22px;border-top:1px solid #e2e8f0;background:#fafbfc;">
+        <button type="button" class="btn btn--ghost" onclick="closeAuthorModal()">Cancel</button>
+        <button type="button" class="btn btn--primary" id="author-save-btn" onclick="saveAuthorRecord()" style="padding:8px 20px;font-weight:700;">Save Author Profile</button>
       </div>
     </div>
   </div>

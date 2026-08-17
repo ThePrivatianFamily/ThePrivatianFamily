@@ -473,9 +473,19 @@
       if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', function() {
           translatePageDOM('bn');
+          updatePageTitleAndMeta('bn');
         });
       } else {
         translatePageDOM('bn');
+        updatePageTitleAndMeta('bn');
+      }
+    } else {
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', function() {
+          updatePageTitleAndMeta('en');
+        });
+      } else {
+        updatePageTitleAndMeta('en');
       }
     }
 
@@ -499,7 +509,10 @@
     // 1. Synchronously translate all page text in memory (0ms delay)
     translatePageDOM(_currentLang);
 
-    // 2. Dispatch global event for components and scripts
+    // 2. Update reactive document.title and meta publication tags
+    updatePageTitleAndMeta(_currentLang);
+
+    // 3. Dispatch global event for components and scripts
     var ev = new CustomEvent('privatian:language-changed', {
       detail: { lang: _currentLang, isBn: _currentLang === 'bn' }
     });
@@ -524,6 +537,105 @@
     }
   }
 
+  // ── 5. REACTIVE PAGE TITLE & META TAGS TRANSLATION ──────────
+  function updatePageTitleAndMeta(lang) {
+    var isBn = (lang || _currentLang) === 'bn';
+    var path = (window.location.pathname || '').toLowerCase();
+    
+    // Check page context
+    var isHome = path === '/' || path === '' || path.endsWith('/index.html') || path.endsWith('/');
+    var isEvents = path.indexOf('events') !== -1;
+    var isArticle = path.indexOf('article') !== -1;
+    var isSection = path.indexOf('section') !== -1;
+
+    // Default Site Titles & Taglines
+    var defaultSiteTitle = isBn ? 'দ্য প্রাইভেটিয়ান ফ্যামিলি' : 'The Privatian Family';
+    var defaultTagline = isBn ? 'জ্ঞান, ঐতিহ্য ও জীবনের কথা' : 'Insights, Stories & Heritage';
+    var defaultDesc = isBn ? 'দ্য প্রাইভেটিয়ান ফ্যামিলি — গল্প, অনুসন্ধান, সমাজ, সংস্কৃতি ও ঐতিহ্য অন্বেষণ করুন।' : 'The Privatian Family — Explore stories, findings, community, culture, and heritage.';
+
+    // Try reading customized header settings from localStorage if configured by admin
+    try {
+      var rawSettings = localStorage.getItem('privatian_header_settings');
+      if (rawSettings) {
+        var hs = JSON.parse(rawSettings);
+        if (hs) {
+          if (isBn && hs.siteTitle_bn) defaultSiteTitle = hs.siteTitle_bn;
+          else if (!isBn && hs.siteTitle) defaultSiteTitle = hs.siteTitle;
+
+          if (isBn && hs.tabTagline_bn) defaultTagline = hs.tabTagline_bn;
+          else if (!isBn && hs.tabTagline) defaultTagline = hs.tabTagline;
+
+          if (isBn && hs.metaDescription_bn) defaultDesc = hs.metaDescription_bn;
+          else if (!isBn && hs.metaDescription) defaultDesc = hs.metaDescription;
+        }
+      }
+    } catch(e) {}
+
+    var targetTitle = '';
+    var targetDesc = defaultDesc;
+
+    if (isHome) {
+      targetTitle = defaultSiteTitle + ' — ' + defaultTagline;
+    } else if (isEvents) {
+      targetTitle = (isBn ? 'অনুষ্ঠান ও সম্মিলন' : 'Events & Gatherings') + ' — ' + defaultSiteTitle;
+      targetDesc = isBn ? 'প্রাইভেসিয়ান পরিবারের আসন্ন ও বিগত অনুষ্ঠানসমূহ।' : 'Upcoming and past events of The Privatian Family.';
+    } else if (isArticle) {
+      if (window._currentArticle) {
+        var artTitle = isBn ? (window._currentArticle.title_bn || window._currentArticle.title) : (window._currentArticle.title || window._currentArticle.title_bn);
+        if (artTitle) targetTitle = artTitle + ' — ' + defaultSiteTitle;
+        var artDesc = isBn ? (window._currentArticle.deck_bn || window._currentArticle.deck) : (window._currentArticle.deck || window._currentArticle.deck_bn);
+        if (artDesc) targetDesc = artDesc;
+      }
+    } else if (isSection) {
+      var curT = document.title || '';
+      var dashIdx = curT.lastIndexOf('—');
+      if (dashIdx !== -1) {
+        var pfx = curT.substring(0, dashIdx).trim();
+        targetTitle = pfx + ' — ' + defaultSiteTitle;
+      }
+    }
+
+    if (!targetTitle) {
+      var currentT = document.title || '';
+      if (currentT) {
+        if (isBn) {
+          targetTitle = currentT
+            .replace('The Privatian Family', 'দ্য প্রাইভেটিয়ান ফ্যামিলি')
+            .replace('Insights, Stories & Heritage', 'জ্ঞান, ঐতিহ্য ও জীবনের কথা')
+            .replace('Events & Gatherings', 'অনুষ্ঠান ও সম্মিলন')
+            .replace('Article', 'প্রতিবেদন')
+            .replace('Section', 'বিভাগ');
+        } else {
+          targetTitle = currentT
+            .replace('দ্য প্রাইভেটিয়ান ফ্যামিলি', 'The Privatian Family')
+            .replace('দ্য প্রাইভেসিয়ান পরিবার', 'The Privatian Family')
+            .replace('জ্ঞান, ঐতিহ্য ও জীবনের কথা', 'Insights, Stories & Heritage')
+            .replace('অন্তর্দৃষ্টি, গল্প ও ঐতিহ্য', 'Insights, Stories & Heritage')
+            .replace('অনুষ্ঠান ও সম্মিলন', 'Events & Gatherings')
+            .replace('প্রতিবেদন', 'Article')
+            .replace('বিভাগ', 'Section');
+        }
+      }
+    }
+
+    if (targetTitle) {
+      document.title = targetTitle;
+    }
+
+    function setMeta(selector, val) {
+      if (!val) return;
+      var el = document.querySelector(selector);
+      if (el) el.setAttribute('content', val);
+    }
+
+    setMeta('meta[name="description"]', targetDesc);
+    setMeta('meta[property="og:title"]', targetTitle || document.title);
+    setMeta('meta[property="og:site_name"]', defaultSiteTitle);
+    setMeta('meta[property="og:description"]', targetDesc);
+    setMeta('meta[name="twitter:title"]', targetTitle || document.title);
+    setMeta('meta[name="twitter:description"]', targetDesc);
+  }
+
   // Auto initialize on load
   initLang();
 
@@ -535,6 +647,7 @@
     t: t,
     translateStatic: translateStatic,
     translatePageDOM: translatePageDOM,
+    updatePageTitleAndMeta: updatePageTitleAndMeta,
     toBengaliNumber: toBengaliNumber,
     toEnglishNumber: toEnglishNumber,
     formatDisplayDate: formatDisplayDate,

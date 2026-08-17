@@ -242,6 +242,8 @@ body{font-family:var(--sans);background:var(--bg);padding-top:calc(var(--tb) + v
 .ed-inline:focus{border-bottom-color:var(--navy)}
 #ed-author{font-weight:600;color:var(--dark)}
 #ed-date{color:var(--muted)}
+.ed-author-select-dropdown{background:#f8fafc;border:1px solid #cbd5e1;border-radius:6px;padding:3px 10px;font:600 13px/1.4 var(--sans);color:var(--dark);cursor:pointer;outline:none;max-width:280px;transition:all .15s ease}
+.ed-author-select-dropdown:focus{border-color:var(--navy);box-shadow:0 0 0 2px rgba(10,82,142,.15);background:#fff}
 
 /* BODY card */
 #ed-body{background:var(--card);padding:40px 48px 48px;border-bottom:1px solid #f0ece8}
@@ -1701,7 +1703,9 @@ button, input, select, textarea, [contenteditable] {
 
     <div class="ed-meta">
       <span class="by" id="ed-by-lbl">By</span>
-      <span class="ed-inline" id="ed-author" contenteditable="true" data-ph="Author name"></span>
+      <select id="ed-author-select" class="ed-author-select-dropdown" onchange="onAuthorSelectChange(this.value)" title="Select Author Profile">
+        <option value="">Select Author...</option>
+      </select>
       <span class="meta-dot">·</span>
       <span class="ed-inline" id="ed-date" contenteditable="true" data-ph="Date"></span>
       <span class="meta-dot">·</span>
@@ -1770,10 +1774,19 @@ button, input, select, textarea, [contenteditable] {
          role="textbox" aria-multiline="true" aria-label="Article body"></div>
   </div>
 
-  <!-- AUTHOR BIO -->
+  <!-- AUTHOR BIO (Linked from Authors Directory) -->
   <div id="ed-bio">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+      <div style="font-size:12px;font-weight:700;color:var(--text-secondary,#4a6a8a);text-transform:uppercase;letter-spacing:0.05em;display:flex;align-items:center;gap:6px;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        <span>Author Profile (Directory Linked)</span>
+      </div>
+      <a href="admin.html#authors" target="_blank" style="font-size:12px;font-weight:600;color:var(--navy,#0a528e);text-decoration:none;display:inline-flex;align-items:center;gap:4px;">
+        Manage Authors Directory →
+      </a>
+    </div>
     <div class="bio-card">
-      <div id="author-photo-zone" onclick="trigAuthorPhoto()" title="Click to choose or upload author photo">
+      <div id="author-photo-zone" style="cursor:default;" title="Author photo (managed in Authors Directory)">
         <svg id="author-photo-svg" width="64" height="64" viewBox="0 0 64 64" fill="none">
           <circle cx="32" cy="32" r="32" fill="#e8f1f9"/>
           <circle cx="32" cy="25" r="11" fill="#0a528e" opacity=".28"/>
@@ -1782,9 +1795,9 @@ button, input, select, textarea, [contenteditable] {
         <img id="author-photo-img" src="" alt="" style="display:none;width:64px;height:64px;object-fit:cover;border-radius:50%" />
       </div>
       <div class="bio-fields">
-        <div class="bio-f bio-name" contenteditable="true" id="bio-name" data-ph="Author Name"></div>
-        <div class="bio-f bio-role" contenteditable="true" id="bio-role" data-ph="Role · Designation"></div>
-        <div class="bio-f bio-desc" contenteditable="true" id="bio-desc" data-ph="A short bio about the author…"></div>
+        <div class="bio-f bio-name" id="bio-name" style="cursor:default;user-select:text;" data-ph="Select author from dropdown"></div>
+        <div class="bio-f bio-role" id="bio-role" style="cursor:default;user-select:text;" data-ph="Role · Designation"></div>
+        <div class="bio-f bio-desc" id="bio-desc" style="cursor:default;user-select:text;" data-ph="Author biography from directory…"></div>
       </div>
     </div>
   </div>
@@ -2069,6 +2082,10 @@ let _featImgUrl = ''; // featured image URL
 
 // ── Dual-Language Article State (English & Bengali) ──
 let _currentEditLang = 'en'; // 'en' | 'bn'
+let _authorsList = [];
+let _selectedAuthorId = null;
+let _authorPhotoUrl = '';
+
 let _langData = {
   en: {
     title: '',
@@ -2104,9 +2121,9 @@ function saveCurrentLangToBuffer() {
     title: gt('ed-headline'),
     deck: gt('ed-deck'),
     content_html: g('ed-rt') ? g('ed-rt').innerHTML : '',
-    author: gt('ed-author'),
-    author_role: gt('bio-role'),
-    author_bio: gt('bio-desc'),
+    author: _langData[_currentEditLang]?.author || '',
+    author_role: _langData[_currentEditLang]?.author_role || '',
+    author_bio: _langData[_currentEditLang]?.author_bio || '',
     hero_caption: (g('ed-feat-caption-inline')?.value || g('sd-feat-caption')?.value || '').trim(),
     hero_credit: (g('ed-feat-credit-inline')?.value || g('sd-feat-credit')?.value || '').trim(),
     seo_title: (g('sd-seo-title')?.value || '').trim(),
@@ -2122,6 +2139,8 @@ function lsSave() {
       id: ART_ID,
       status: STATUS,
       langData: _langData,
+      author_id: _selectedAuthorId,
+      author_photo_url: _authorPhotoUrl,
       currentLang: _currentEditLang,
       section: g('sec-lbl') ? g('sec-lbl').textContent.trim() : '',
       slug: (g('tb-slug')?.value || '').trim(),
@@ -2187,15 +2206,141 @@ function fmtDate(d, lang = _currentEditLang) {
   return d.toLocaleDateString('en-US', { timeZone: 'Asia/Dhaka', month: 'long', day: 'numeric', year: 'numeric' });
 }
 
+async function fetchAndPopulateAuthors(selectedId = null, authorName = null) {
+  const select = g('ed-author-select');
+  if (!select) return;
+
+  try {
+    let authors = [];
+    const sb = window._sb || (window.initSupabaseClient && window.initSupabaseClient());
+    if (sb) {
+      const { data, error } = await sb
+        .from('authors')
+        .select('*')
+        .or('is_deleted.is.null,is_deleted.eq.false')
+        .order('name', { ascending: true });
+      if (!error && Array.isArray(data)) authors = data;
+    }
+
+    if (authors.length === 0 && typeof PRIVATIAN_SUPABASE_URL !== 'undefined' && typeof PRIVATIAN_SUPABASE_KEY !== 'undefined') {
+      const res = await fetch(`${PRIVATIAN_SUPABASE_URL}/rest/v1/authors?select=*&or=(is_deleted.is.null,is_deleted.eq.false)&order=name.asc`, {
+        headers: {
+          'apikey': PRIVATIAN_SUPABASE_KEY,
+          'Authorization': 'Bearer ' + PRIVATIAN_SUPABASE_KEY
+        }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data)) authors = data;
+      }
+    }
+
+    _authorsList = authors;
+
+    select.innerHTML = '<option value="">Select Author...</option>' +
+      authors.map(a => `<option value="${escH(a.id)}">${escH(a.name)}${a.name_bn ? ` (${escH(a.name_bn)})` : ''}</option>`).join('');
+
+    let match = null;
+    if (selectedId) {
+      match = _authorsList.find(a => a.id === selectedId);
+    }
+    if (!match && authorName) {
+      const norm = authorName.trim().toLowerCase();
+      match = _authorsList.find(a => (a.name || '').trim().toLowerCase() === norm || (a.name_bn || '').trim().toLowerCase() === norm);
+    }
+
+    if (match) {
+      _selectedAuthorId = match.id;
+      select.value = match.id;
+      applyAuthorToState(match, false);
+    } else if (selectedId) {
+      select.value = selectedId;
+      _selectedAuthorId = selectedId;
+    }
+  } catch(e) {
+    console.warn('[Editor] Failed to fetch authors:', e);
+  }
+}
+
+function onAuthorSelectChange(authorId) {
+  if (!authorId) {
+    _selectedAuthorId = null;
+    _authorPhotoUrl = '';
+    _langData.en.author = '';
+    _langData.en.author_role = '';
+    _langData.en.author_bio = '';
+    _langData.bn.author = '';
+    _langData.bn.author_role = '';
+    _langData.bn.author_bio = '';
+    hideAuthorPhoto();
+    loadBufferToInputs(_currentEditLang);
+    DIRTY = true;
+    lsSave();
+    onInput();
+    return;
+  }
+
+  const author = _authorsList.find(a => a.id === authorId);
+  if (!author) return;
+
+  _selectedAuthorId = author.id;
+  applyAuthorToState(author, true);
+}
+
+function applyAuthorToState(author, triggerSave = false) {
+  _selectedAuthorId = author.id;
+  _authorPhotoUrl = author.photo_url || '';
+
+  _langData.en.author = author.name || '';
+  _langData.en.author_role = author.role || '';
+  _langData.en.author_bio = author.bio || '';
+
+  _langData.bn.author = author.name_bn || author.name || '';
+  _langData.bn.author_role = author.role_bn || author.role || '';
+  _langData.bn.author_bio = author.bio_bn || author.bio || '';
+
+  if (_authorPhotoUrl) {
+    showAuthorPhoto(_authorPhotoUrl);
+  } else {
+    hideAuthorPhoto();
+  }
+
+  loadBufferToInputs(_currentEditLang);
+
+  if (triggerSave) {
+    DIRTY = true;
+    lsSave();
+    onInput();
+    toast(`Author set: ${author.name}`, 'ok');
+  }
+}
+
+function hideAuthorPhoto() {
+  const img = g('author-photo-img');
+  const svg = g('author-photo-svg');
+  if (img) { img.src = ''; img.style.display = 'none'; }
+  if (svg) svg.style.display = 'block';
+}
+
 function loadBufferToInputs(lang) {
   const isBn = lang === 'bn';
   const data = _langData[lang] || {};
   tx('ed-headline', data.title || '');
   tx('ed-deck', data.deck || '');
-  tx('ed-author', data.author || '');
-  tx('bio-name', data.author || '');
-  tx('bio-role', data.author_role || '');
-  tx('bio-desc', data.author_bio || '');
+  tx('bio-name', data.author || (isBn ? 'লেখক নির্বাচন করুন' : 'Select author from dropdown'));
+  tx('bio-role', data.author_role || '—');
+  tx('bio-desc', data.author_bio || '—');
+
+  const authSel = g('ed-author-select');
+  if (authSel && _selectedAuthorId) {
+    authSel.value = _selectedAuthorId;
+  }
+
+  if (_authorPhotoUrl) {
+    showAuthorPhoto(_authorPhotoUrl);
+  } else {
+    hideAuthorPhoto();
+  }
 
   const rt = g('ed-rt');
   if (rt) {
@@ -2234,14 +2379,6 @@ function loadBufferToInputs(lang) {
   if (hl) hl.setAttribute('data-ph', isBn ? 'প্রতিবেদনের প্রধান শিরোনাম লিখুন…' : 'Article headline…');
   const dk = g('ed-deck');
   if (dk) dk.setAttribute('data-ph', isBn ? 'একটি আকর্ষণীয় উপশিরোনাম বা সারসংক্ষেপ যোগ করুন…' : 'Add a compelling subtitle…');
-  const auth = g('ed-author');
-  if (auth) auth.setAttribute('data-ph', isBn ? 'লেখকের নাম' : 'Author name');
-  const bName = g('bio-name');
-  if (bName) bName.setAttribute('data-ph', isBn ? 'লেখকের নাম' : 'Author Name');
-  const bRole = g('bio-role');
-  if (bRole) bRole.setAttribute('data-ph', isBn ? 'পদবি / দায়িত্ব (যেমন: জ্যেষ্ঠ প্রতিবেদক)' : 'Role · Designation');
-  const bDesc = g('bio-desc');
-  if (bDesc) bDesc.setAttribute('data-ph', isBn ? 'লেখক সম্পর্কে সংক্ষিপ্ত বিবরণ…' : 'A short bio about the author…');
 
   const indTxt = g('ed-lang-pill-txt');
   if (indTxt) indTxt.textContent = isBn ? 'সম্পাদনা চলছে বাংলায় (BN)' : 'Editing in English (EN)';
@@ -2337,12 +2474,15 @@ function initEmpty() {
     u.searchParams.set('id', ART_ID);
     history.replaceState({}, '', u.toString());
   }
+  _selectedAuthorId = null;
+  _authorPhotoUrl = '';
   _articleDateObj = new Date();
   refreshArticleIdDisplay();
   _langData = {
     en: { title: '', deck: '', content_html: '', author: '', author_role: '', author_bio: '', hero_caption: '', hero_credit: '', seo_title: '', meta_description: '', tags: [] },
     bn: { title: '', deck: '', content_html: '', author: '', author_role: '', author_bio: '', hero_caption: '', hero_credit: '', seo_title: '', meta_description: '', tags: [] }
   };
+  fetchAndPopulateAuthors();
   loadBufferToInputs(_currentEditLang);
   setSaveStatus('Draft ready');
 }
@@ -2429,6 +2569,8 @@ async function loadArticle(id) {
         if (localData && (localData.langData || localData.title)) {
           ART_ID = id;
           STATUS = localData.status || 'draft';
+          _selectedAuthorId = localData.author_id || null;
+          _authorPhotoUrl = localData.author_photo_url || '';
           refreshArticleIdDisplay();
           if (localData.langData) {
             _langData = localData.langData;
@@ -2440,6 +2582,7 @@ async function loadArticle(id) {
           if (localData.section) setSec(localData.section);
           if (localData.slug) syncSlug(localData.slug);
           if (localData.currentLang) _currentEditLang = localData.currentLang;
+          fetchAndPopulateAuthors(_selectedAuthorId, _langData.en?.author || _langData.bn?.author);
           loadBufferToInputs(_currentEditLang);
           updateMetrics();
           setSaveStatus('Local draft restored');
@@ -2459,6 +2602,8 @@ async function loadArticle(id) {
 function fill(a) {
   ART_ID = a.id;
   STATUS = a.status || 'draft';
+  _selectedAuthorId = a.author_id || null;
+  _authorPhotoUrl = a.author_photo_url || '';
   refreshArticleIdDisplay();
 
   // Populate English Buffer
@@ -2493,6 +2638,7 @@ function fill(a) {
 
   syncSlug(a.slug || '', 'load');
   if (a.section) setSec(a.section);
+  fetchAndPopulateAuthors(a.author_id, a.author || a.author_bn);
   if (a.author_photo_url) showAuthorPhoto(a.author_photo_url);
 
   // ── Featured image & drawer fields ───────────────────
@@ -2583,8 +2729,7 @@ function setSec(val) {
 // ── INPUT BINDING (Fast Real-Time Auto-Save) ──────────────────────
 function bindInput() {
   const targets = [
-    'ed-rt','ed-headline','ed-deck','ed-author','ed-date',
-    'bio-name','bio-role','bio-desc',
+    'ed-rt','ed-headline','ed-deck','ed-date',
     'ed-feat-caption-inline','ed-feat-credit-inline',
     'sd-feat-caption','sd-feat-credit','sd-feat-alt',
     'sd-seo-title','sd-meta-desc'
@@ -2697,6 +2842,7 @@ async function saveArt(silent = false) {
             content_html: payload.content_html || '',
             content_html_bn: payload.content_html_bn || '',
             section: payload.section || '',
+            author_id: payload.author_id || null,
             author: payload.author || '',
             author_bn: payload.author_bn || '',
             author_role: payload.author_role || '',
@@ -2735,6 +2881,7 @@ async function saveArt(silent = false) {
             content_html: payload.content_html || '',
             content_html_bn: payload.content_html_bn || '',
             section: payload.section || '',
+            author_id: payload.author_id || null,
             author: payload.author || '',
             author_bn: payload.author_bn || '',
             author_role: payload.author_role || '',
@@ -2907,6 +3054,7 @@ async function doPublish() {
           content_html: payload.content_html || '',
           content_html_bn: payload.content_html_bn || '',
           section: payload.section || '',
+          author_id: payload.author_id || null,
           author: payload.author || '',
           author_bn: payload.author_bn || '',
           author_bio: payload.author_bio || '',
@@ -3048,10 +3196,11 @@ function buildPayload() {
 
   return {
     id:               ART_ID,
+    author_id:        _selectedAuthorId || null,
     slug:             currentSlug || undefined,
     status:           STATUS || 'draft',
     section:          g('sec-lbl').textContent === 'Select Section' ? '' : g('sec-lbl').textContent,
-    author_photo_url: g('author-photo-img').src && g('author-photo-img').style.display !== 'none' ? g('author-photo-img').src : '',
+    author_photo_url: _authorPhotoUrl || '',
     hero_img_url:     _featImgUrl || '',
     hero_img_alt:     (g('sd-feat-alt')?.value  || '').trim(),
 

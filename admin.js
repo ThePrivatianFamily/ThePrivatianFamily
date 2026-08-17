@@ -1622,6 +1622,7 @@ const PAGE_CONFIG = {
   header:    { title: 'Header Settings', breadcrumb: 'Header' },
   footer:    { title: 'Footer Settings', breadcrumb: 'Footer' },
   articles:  { title: 'Articles',  breadcrumb: 'Articles' },
+  authors:   { title: 'Authors Directory & Profiles', breadcrumb: 'Authors' },
   gallery:   { title: 'Media Gallery & Asset Library', breadcrumb: 'Gallery' },
   settings:  { title: 'Settings',  breadcrumb: 'Settings' },
   access:    { title: 'Manage Access', breadcrumb: 'Manage Access' },
@@ -1661,6 +1662,7 @@ function navigateTo(page) {
   if (_currentAdminPage === 'header')    { initHeaderPage(); }
   if (_currentAdminPage === 'footer')    { initFooterPage(); }
   if (_currentAdminPage === 'articles')  { initArticlesPage(); }
+  if (_currentAdminPage === 'authors')   { initAuthorsPage(); }
   if (_currentAdminPage === 'activity')  { loadActivityLogs(); }
   if (_currentAdminPage === 'settings')  { initSettingsPage(); }
   if (_currentAdminPage === 'gallery')   {
@@ -4869,6 +4871,501 @@ async function _loadArticleTrash() {
       </td>
     </tr>`;
   }).join('');
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   AUTHORS MANAGEMENT MODULE (DIRECTORY, CRUD & MEDIA MODAL AVATAR)
+═══════════════════════════════════════════════════════════════ */
+var _allAuthors = [];
+var _currentAuthorsView = 'active';
+
+async function initAuthorsPage(forceRefresh = false) {
+  updateGlobalSyncStatus('syncing', 'Loading authors...');
+  const loading = document.getElementById('authors-loading');
+  const table = document.getElementById('authors-table');
+  const empty = document.getElementById('authors-empty');
+
+  if (loading && _allAuthors.length === 0) loading.style.display = 'block';
+  if (table) table.style.display = 'none';
+  if (empty) empty.style.display = 'none';
+
+  let loaded = null;
+
+  // Tier 1: Try Supabase JS client
+  try {
+    const sb = window._sb || (window.initSupabaseClient && window.initSupabaseClient());
+    if (sb) {
+      const { data, error } = await sb
+        .from('authors')
+        .select('*')
+        .or('is_deleted.is.null,is_deleted.eq.false')
+        .order('created_at', { ascending: false });
+      if (!error && Array.isArray(data)) {
+        loaded = data;
+      }
+    }
+  } catch(err) {
+    console.warn('[Admin] Authors fetch error:', err);
+  }
+
+  // Tier 2: Direct REST fetch
+  if (!loaded) {
+    try {
+      if (typeof PRIVATIAN_SUPABASE_URL !== 'undefined' && typeof PRIVATIAN_SUPABASE_KEY !== 'undefined') {
+        const res = await fetch(`${PRIVATIAN_SUPABASE_URL}/rest/v1/authors?select=*&or=(is_deleted.is.null,is_deleted.eq.false)&order=created_at.desc`, {
+          headers: {
+            'apikey': PRIVATIAN_SUPABASE_KEY,
+            'Authorization': 'Bearer ' + PRIVATIAN_SUPABASE_KEY
+          }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data)) loaded = data;
+        }
+      }
+    } catch(err) {}
+  }
+
+  if (loaded) {
+    _allAuthors = loaded;
+  }
+
+  if (loading) loading.style.display = 'none';
+  renderAuthorsTable(_allAuthors);
+  _loadAuthorTrash();
+  switchAuthorsView(_currentAuthorsView || 'active');
+  updateGlobalSyncStatus('synced', 'Synced with database');
+}
+
+function renderAuthorsTable(authorsList) {
+  const tbody = document.getElementById('authors-tbody');
+  const table = document.getElementById('authors-table');
+  const empty = document.getElementById('authors-empty');
+
+  if (!tbody) return;
+
+  if (!authorsList || authorsList.length === 0) {
+    if (table) table.style.display = 'none';
+    if (empty) empty.style.display = 'block';
+    return;
+  }
+
+  if (table) table.style.display = 'table';
+  if (empty) empty.style.display = 'none';
+
+  // Count articles per author if articles loaded
+  const artCounts = {};
+  if (Array.isArray(_allArticles)) {
+    _allArticles.forEach(a => {
+      const auth = (a.author || a.author_bn || '').trim().toLowerCase();
+      if (auth) artCounts[auth] = (artCounts[auth] || 0) + 1;
+    });
+  }
+
+  tbody.innerHTML = authorsList.map(a => {
+    const avatar = a.photo_url
+      ? `<img src="${escapeHtml(a.photo_url)}" alt="" class="art-thumb" style="border-radius:50%;width:38px;height:38px;object-fit:cover;" loading="lazy" />`
+      : `<div class="art-thumb-ph" style="border-radius:50%;width:38px;height:38px;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>`;
+
+    const nameBnBadge = a.name_bn
+      ? `<span style="display:inline-block;margin-left:6px;font-size:11px;background:#f1f5f9;color:#475569;padding:1px 6px;border-radius:4px;border:1px solid #e2e8f0;">${escapeHtml(a.name_bn)}</span>`
+      : '';
+
+    const roleBnBadge = a.role_bn
+      ? `<div style="font-size:11.5px;color:#64748b;margin-top:2px;">${escapeHtml(a.role_bn)}</div>`
+      : '';
+
+    const count = artCounts[(a.name || '').toLowerCase()] || artCounts[(a.name_bn || '').toLowerCase()] || 0;
+
+    const isActive = (a.is_active !== false);
+    const statusBadge = isActive
+      ? `<span class="art-status-pill art-status--published"><svg width="6" height="6" viewBox="0 0 6 6" fill="currentColor"><circle cx="3" cy="3" r="3"/></svg>Active</span>`
+      : `<span class="art-status-pill art-status--draft"><svg width="6" height="6" viewBox="0 0 6 6" fill="currentColor"><circle cx="3" cy="3" r="3"/></svg>Inactive</span>`;
+
+    return `<tr>
+      <td>
+        <div class="art-media-wrap" style="align-items:center;">
+          ${avatar}
+          <div class="art-title-meta">
+            <div class="art-row-title" style="font-weight:700;">${escapeHtml(a.name || 'Unnamed Author')}${nameBnBadge}</div>
+            <div class="art-row-slug" style="font-size:11.5px;color:#94a3b8;">${escapeHtml(a.slug || a.id || '')}</div>
+          </div>
+        </div>
+      </td>
+      <td>
+        <div style="font-size:12.5px;font-weight:600;color:var(--text-primary);">${escapeHtml(a.role || '—')}</div>
+        ${roleBnBadge}
+      </td>
+      <td>
+        <span style="font-size:12.5px;color:var(--text-secondary);">${escapeHtml(a.email || '—')}</span>
+      </td>
+      <td>${statusBadge}</td>
+      <td>
+        <span style="font-size:12px;font-weight:700;background:#e0f2fe;color:#0369a1;padding:2px 8px;border-radius:12px;">${count} articles</span>
+      </td>
+      <td class="tar">
+        <div class="art-btn-group">
+          <button type="button" onclick="openAuthorModal('${escapeHtml(a.id)}')" class="art-action-btn" title="Edit Author Profile">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            Edit
+          </button>
+          <button type="button" onclick="deleteAuthorRecord('${escapeHtml(a.id)}', '${escapeHtml((a.name || 'Author').replace(/'/g, "\\'"))}')" class="art-action-btn art-action-btn--delete" title="Move to trash">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+          </button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function filterAuthors() {
+  const query = (document.getElementById('authors-search')?.value || '').trim().toLowerCase();
+  const statusFilter = (document.getElementById('authors-filter-status')?.value || '').toLowerCase();
+
+  const filtered = _allAuthors.filter(a => {
+    if (statusFilter === 'active' && a.is_active === false) return false;
+    if (statusFilter === 'inactive' && a.is_active !== false) return false;
+
+    if (query) {
+      const matchName = (a.name || '').toLowerCase().includes(query);
+      const matchNameBn = (a.name_bn || '').toLowerCase().includes(query);
+      const matchRole = (a.role || '').toLowerCase().includes(query);
+      const matchRoleBn = (a.role_bn || '').toLowerCase().includes(query);
+      const matchEmail = (a.email || '').toLowerCase().includes(query);
+      const matchBio = (a.bio || '').toLowerCase().includes(query);
+      const matchBioBn = (a.bio_bn || '').toLowerCase().includes(query);
+      if (!matchName && !matchNameBn && !matchRole && !matchRoleBn && !matchEmail && !matchBio && !matchBioBn) return false;
+    }
+    return true;
+  });
+
+  renderAuthorsTable(filtered);
+}
+
+function switchAuthorsView(view) {
+  _currentAuthorsView = view;
+  const activePanel = document.getElementById('auth-active-panel');
+  const trashPanel = document.getElementById('auth-trash-panel');
+  const activeBtn = document.getElementById('auth-view-active');
+  const trashBtn = document.getElementById('auth-view-trash');
+
+  if (view === 'trash') {
+    if (activePanel) activePanel.style.display = 'none';
+    if (trashPanel) trashPanel.style.display = 'block';
+    if (activeBtn) activeBtn.classList.remove('active');
+    if (trashBtn) trashBtn.classList.add('active');
+    _loadAuthorTrash();
+  } else {
+    if (activePanel) activePanel.style.display = 'block';
+    if (trashPanel) trashPanel.style.display = 'none';
+    if (activeBtn) activeBtn.classList.add('active');
+    if (trashBtn) trashBtn.classList.remove('active');
+    filterAuthors();
+  }
+}
+
+async function _loadAuthorTrash() {
+  const tbody = document.getElementById('auth-trash-tbody');
+  const table = document.getElementById('auth-trash-table');
+  const empty = document.getElementById('auth-trash-empty');
+  const loading = document.getElementById('auth-trash-loading');
+  const count = document.getElementById('auth-trash-count');
+
+  if (!tbody) return;
+  if (loading) loading.style.display = 'block';
+  if (table) table.style.display = 'none';
+  if (empty) empty.style.display = 'none';
+
+  let trashed = [];
+
+  try {
+    const sb = window._sb || (window.initSupabaseClient && window.initSupabaseClient());
+    if (sb) {
+      const { data, error } = await sb
+        .from('authors')
+        .select('*')
+        .eq('is_deleted', true)
+        .order('deleted_at', { ascending: false });
+      if (!error && Array.isArray(data)) trashed = data;
+    }
+  } catch(e) {}
+
+  if (count) count.textContent = Array.isArray(trashed) ? trashed.length : '0';
+  if (loading) loading.style.display = 'none';
+
+  if (!Array.isArray(trashed) || trashed.length === 0) {
+    tbody.innerHTML = '';
+    if (empty) empty.style.display = 'block';
+    if (table) table.style.display = 'none';
+    return;
+  }
+
+  if (table) table.style.display = 'table';
+  const fmt = iso => iso ? _format24hDateTime(iso) : '—';
+  const isAdmin = Boolean(window.PRIVATIAN_USER && window.PRIVATIAN_USER.role === 'Admin');
+
+  tbody.innerHTML = trashed.map(a => {
+    const avatar = a.photo_url
+      ? `<img src="${escapeHtml(a.photo_url)}" alt="" class="art-thumb" style="border-radius:50%;width:38px;height:38px;object-fit:cover;opacity:0.7;" loading="lazy" />`
+      : `<div class="art-thumb-ph" style="border-radius:50%;width:38px;height:38px;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>`;
+
+    const permDeleteBtn = isAdmin
+      ? `<button type="button" onclick="permanentDeleteAuthorRecord('${escapeHtml(a.id)}','${escapeHtml((a.name||'Author').replace(/'/g,"\\'"))}')" class="art-action-btn art-action-btn--delete-perm" title="Permanently delete from database (Admin only)">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/><path d="M9 6V4h6v2"/></svg>
+          Delete Forever
+        </button>`
+      : '';
+
+    return `<tr>
+      <td>
+        <div class="art-media-wrap" style="align-items:center;">
+          ${avatar}
+          <div class="art-title-meta">
+            <div class="art-row-title" style="color:#64748b;">${escapeHtml(a.name || 'Unnamed')}</div>
+            <div class="art-row-slug">${escapeHtml(a.slug || a.id || '')}</div>
+          </div>
+        </div>
+      </td>
+      <td><span style="font-size:12.5px;color:#64748b;">${escapeHtml(a.role || '—')}</span></td>
+      <td><span class="art-date-txt" style="color:#dc2626;font-weight:600;">${fmt(a.deleted_at)}</span></td>
+      <td class="tar">
+        <div class="art-btn-group">
+          <button type="button" onclick="restoreAuthorRecord('${escapeHtml(a.id)}')" class="art-action-btn art-action-btn--restore" title="Restore author profile">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+            Restore
+          </button>
+          ${permDeleteBtn}
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function openAuthorModal(authorId = null) {
+  const modal = document.getElementById('modal-author');
+  const titleEl = document.getElementById('author-modal-title');
+  const idInput = document.getElementById('author-edit-id');
+  const nameInput = document.getElementById('author-name-input');
+  const nameBnInput = document.getElementById('author-name-bn-input');
+  const roleInput = document.getElementById('author-role-input');
+  const roleBnInput = document.getElementById('author-role-bn-input');
+  const emailInput = document.getElementById('author-email-input');
+  const slugInput = document.getElementById('author-slug-input');
+  const bioInput = document.getElementById('author-bio-input');
+  const bioBnInput = document.getElementById('author-bio-bn-input');
+  const activeToggle = document.getElementById('author-active-toggle');
+
+  if (authorId) {
+    const author = _allAuthors.find(a => a.id === authorId);
+    if (author) {
+      if (titleEl) titleEl.textContent = 'Edit Author Profile';
+      if (idInput) idInput.value = author.id;
+      if (nameInput) nameInput.value = author.name || '';
+      if (nameBnInput) nameBnInput.value = author.name_bn || '';
+      if (roleInput) roleInput.value = author.role || '';
+      if (roleBnInput) roleBnInput.value = author.role_bn || '';
+      if (emailInput) emailInput.value = author.email || '';
+      if (slugInput) slugInput.value = author.slug || '';
+      if (bioInput) bioInput.value = author.bio || '';
+      if (bioBnInput) bioBnInput.value = author.bio_bn || '';
+      if (activeToggle) activeToggle.checked = (author.is_active !== false);
+      setAuthorModalPhoto(author.photo_url || '');
+    }
+  } else {
+    if (titleEl) titleEl.textContent = 'New Author Profile';
+    if (idInput) idInput.value = '';
+    if (nameInput) nameInput.value = '';
+    if (nameBnInput) nameBnInput.value = '';
+    if (roleInput) roleInput.value = '';
+    if (roleBnInput) roleBnInput.value = '';
+    if (emailInput) emailInput.value = '';
+    if (slugInput) slugInput.value = '';
+    if (bioInput) bioInput.value = '';
+    if (bioBnInput) bioBnInput.value = '';
+    if (activeToggle) activeToggle.checked = true;
+    setAuthorModalPhoto('');
+  }
+
+  if (modal) {
+    modal.removeAttribute('hidden');
+    modal.style.display = 'flex';
+  }
+}
+
+function closeAuthorModal() {
+  const modal = document.getElementById('modal-author');
+  if (modal) {
+    modal.setAttribute('hidden', '');
+    modal.style.display = 'none';
+  }
+}
+
+function openAuthorPhotoMediaModal() {
+  if (typeof window.openUniversalMediaModal === 'function') {
+    window.openUniversalMediaModal({
+      title: 'Select Author Photo / Avatar',
+      defaultFolder: 'Authors',
+      onSelect: (asset) => {
+        if (asset && asset.url) {
+          setAuthorModalPhoto(asset.url);
+        }
+      }
+    });
+  } else {
+    showToast('info', 'Media Gallery modal loading...');
+  }
+}
+
+function setAuthorModalPhoto(url) {
+  const img = document.getElementById('author-modal-avatar-img');
+  const ph = document.getElementById('author-modal-avatar-placeholder');
+  const input = document.getElementById('author-photo-url-input');
+  const removeBtn = document.getElementById('author-photo-remove-btn');
+
+  if (url) {
+    if (img) { img.src = url; img.style.display = 'block'; }
+    if (ph) ph.style.display = 'none';
+    if (input) input.value = url;
+    if (removeBtn) removeBtn.style.display = 'inline-flex';
+  } else {
+    if (img) { img.src = ''; img.style.display = 'none'; }
+    if (ph) ph.style.display = 'flex';
+    if (input) input.value = '';
+    if (removeBtn) removeBtn.style.display = 'none';
+  }
+}
+
+function removeAuthorModalPhoto() {
+  setAuthorModalPhoto('');
+}
+
+async function saveAuthorRecord() {
+  const idInput = document.getElementById('author-edit-id');
+  const nameInput = document.getElementById('author-name-input');
+  const nameBnInput = document.getElementById('author-name-bn-input');
+  const roleInput = document.getElementById('author-role-input');
+  const roleBnInput = document.getElementById('author-role-bn-input');
+  const emailInput = document.getElementById('author-email-input');
+  const slugInput = document.getElementById('author-slug-input');
+  const bioInput = document.getElementById('author-bio-input');
+  const bioBnInput = document.getElementById('author-bio-bn-input');
+  const photoInput = document.getElementById('author-photo-url-input');
+  const activeToggle = document.getElementById('author-active-toggle');
+  const saveBtn = document.getElementById('author-save-btn');
+
+  const name = (nameInput?.value || '').trim();
+  if (!name) {
+    showToast('error', 'Please enter author full name.');
+    if (nameInput) nameInput.focus();
+    return;
+  }
+
+  const editId = idInput?.value || null;
+  const nameBn = (nameBnInput?.value || '').trim();
+  const role = (roleInput?.value || '').trim();
+  const roleBn = (roleBnInput?.value || '').trim();
+  const email = (emailInput?.value || '').trim();
+  let slug = (slugInput?.value || '').trim();
+  if (!slug) {
+    slug = genSlug(name);
+  }
+  const bio = (bioInput?.value || '').trim();
+  const bioBn = (bioBnInput?.value || '').trim();
+  const photoUrl = (photoInput?.value || '').trim();
+  const isActive = activeToggle ? activeToggle.checked : true;
+
+  const payload = {
+    name: name,
+    name_bn: nameBn,
+    role: role,
+    role_bn: roleBn,
+    email: email,
+    slug: slug,
+    bio: bio,
+    bio_bn: bioBn,
+    photo_url: photoUrl,
+    is_active: isActive,
+    updated_at: new Date().toISOString()
+  };
+
+  if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = 'Saving...'; }
+
+  try {
+    const sb = window._sb || (window.initSupabaseClient && window.initSupabaseClient());
+    if (!sb) throw new Error('Database client not initialized');
+
+    if (editId) {
+      const { error } = await sb.from('authors').update(payload).eq('id', editId);
+      if (error) throw error;
+      showToast('success', 'Author profile updated successfully');
+    } else {
+      payload.created_at = new Date().toISOString();
+      const { error } = await sb.from('authors').insert([payload]);
+      if (error) throw error;
+      showToast('success', 'Author profile created successfully');
+    }
+
+    closeAuthorModal();
+    await initAuthorsPage(true);
+  } catch(e) {
+    console.error('Error saving author:', e);
+    showToast('error', 'Failed to save author: ' + (e.message || e));
+  } finally {
+    if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = 'Save Author Profile'; }
+  }
+}
+
+async function deleteAuthorRecord(id, name) {
+  if (!confirm(`Are you sure you want to move author "${name}" to the recycle bin?`)) return;
+
+  try {
+    const sb = window._sb || (window.initSupabaseClient && window.initSupabaseClient());
+    if (sb) {
+      const { error } = await sb.from('authors').update({
+        is_deleted: true,
+        deleted_at: new Date().toISOString()
+      }).eq('id', id);
+      if (error) throw error;
+    }
+    showToast('success', `Author "${name}" moved to recycle bin`);
+    await initAuthorsPage(true);
+  } catch(e) {
+    showToast('error', 'Failed to delete author: ' + e.message);
+  }
+}
+
+async function restoreAuthorRecord(id) {
+  try {
+    const sb = window._sb || (window.initSupabaseClient && window.initSupabaseClient());
+    if (sb) {
+      const { error } = await sb.from('authors').update({
+        is_deleted: false,
+        deleted_at: null
+      }).eq('id', id);
+      if (error) throw error;
+    }
+    showToast('success', 'Author profile restored successfully');
+    await _loadAuthorTrash();
+    await initAuthorsPage(true);
+  } catch(e) {
+    showToast('error', 'Failed to restore author: ' + e.message);
+  }
+}
+
+async function permanentDeleteAuthorRecord(id, name) {
+  if (!confirm(`WARNING: This will permanently delete author "${name}" from the database. This action cannot be undone. Continue?`)) return;
+
+  try {
+    const sb = window._sb || (window.initSupabaseClient && window.initSupabaseClient());
+    if (sb) {
+      const { error } = await sb.from('authors').delete().eq('id', id);
+      if (error) throw error;
+    }
+    showToast('success', `Author "${name}" permanently deleted`);
+    await _loadAuthorTrash();
+  } catch(e) {
+    showToast('error', 'Failed to permanently delete: ' + e.message);
+  }
 }
 
 // Handle dynamic navigation via hashchange (e.g. browser back/forward, bookmarks)
