@@ -14,6 +14,7 @@ const https = require('https');
 const { createClient } = require('@supabase/supabase-js');
 const { verifySession, requireAuth, requireAdmin } = require('./_lib/auth');
 const { logActivity } = require('./_lib/activity');
+const { getStoredMediaList, computeStorageStats } = require('./media');
 
 const SUPABASE_PROJECT_REF = process.env.SUPABASE_PROJECT_REF || 'aenhajqjsgskimfzvlfr';
 const SUPABASE_MANAGEMENT_TOKEN = process.env.SUPABASE_MANAGEMENT_TOKEN || process.env.SUPABASE_ACCESS_TOKEN || Buffer.from('c2JwXzQzMzNmZjBmMjkzZjU4NGUyYzVhMjk3MDNhYjY4ZDhhOTY1MTFhZTY=', 'base64').toString('utf8');
@@ -556,89 +557,40 @@ module.exports = async function handler(req, res) {
       }
     } catch(e) {}
 
-    let totalMediaFiles = 0;
-    let totalMediaBytes = 0;
-    let photosCount = 0;
-    let svgsCount = 0;
-    let r2FilesCount = 0;
-    let r2BytesTotal = 0;
-    let b2FilesCount = 0;
-    let b2BytesTotal = 0;
-    let allFiles = [];
+    // 4. Media Asset Stats using unified single source of truth (Shared with Media Gallery)
+    let mediaStats = {
+      totalFiles: 0,
+      activeFiles: 0,
+      trashFiles: 0,
+      totalBytes: 0,
+      activeBytes: 0,
+      trashBytes: 0,
+      photosCount: 0,
+      svgsCount: 0,
+      r2: { usedBytes: 0, fileCount: 0, activeCount: 0, capacityBytes: 10 * 1024 * 1024 * 1024, usedPct: 0, freeBytes: 10 * 1024 * 1024 * 1024, freePct: 100 },
+      b2: { usedBytes: 0, fileCount: 0, activeCount: 0, capacityBytes: 10 * 1024 * 1024 * 1024, usedPct: 0, freeBytes: 10 * 1024 * 1024 * 1024, freePct: 100 },
+      supabase: { usedBytes: 0, fileCount: 0, activeCount: 0, capacityBytes: 1024 * 1024 * 1024, usedPct: 0, freeBytes: 1024 * 1024 * 1024, freePct: 100 }
+    };
 
     try {
-      const { S3Client, ListObjectsV2Command } = require('@aws-sdk/client-s3');
-      
-      const r2 = new S3Client({
-        region: 'auto',
-        endpoint: process.env.R2_ENDPOINT || 'https://44fa7e7d93ed3ba71fdc0ce85e2dd0ed.r2.cloudflarestorage.com',
-        credentials: {
-          accessKeyId: process.env.R2_ACCESS_KEY_ID || '51b83c34bbe3d11ceabd3effda70ad02',
-          secretAccessKey: process.env.R2_SECRET_ACCESS_KEY || '9f4544f5357f1ebd2c2a4860c8fb1100b59ef2e851ba424d3b4ff9db501a08ec',
-        },
-      });
-
-      const b2 = new S3Client({
-        region: process.env.B2_REGION || 'eu-central-003',
-        endpoint: process.env.B2_ENDPOINT || 'https://s3.eu-central-003.backblazeb2.com',
-        credentials: {
-          accessKeyId: process.env.B2_KEY_ID || '003bacfa081e2ae0000000001',
-          secretAccessKey: process.env.B2_APPLICATION_KEY || 'K003lV8zhvkGSz6s6rt4MjoNPt2aAMQ',
-        },
-      });
-
-      const [r2Res, b2Res] = await Promise.allSettled([
-        r2.send(new ListObjectsV2Command({ Bucket: process.env.R2_BUCKET_NAME || 'theprivatianfamily' })),
-        b2.send(new ListObjectsV2Command({ Bucket: process.env.B2_BUCKET_NAME || 'ThePrivatianFamily' }))
-      ]);
-
-      if (r2Res.status === 'fulfilled' && r2Res.value && Array.isArray(r2Res.value.Contents)) {
-        const r2Valid = r2Res.value.Contents.filter(o => !o.Key.endsWith('/'));
-        r2FilesCount = r2Valid.length;
-        r2BytesTotal = r2Valid.reduce((acc, o) => acc + (o.Size || 0), 0);
-        allFiles.push(...r2Valid);
-      }
-      if (b2Res.status === 'fulfilled' && b2Res.value && Array.isArray(b2Res.value.Contents)) {
-        const b2Valid = b2Res.value.Contents.filter(o => !o.Key.endsWith('/'));
-        b2FilesCount = b2Valid.length;
-        b2BytesTotal = b2Valid.reduce((acc, o) => acc + (o.Size || 0), 0);
-        allFiles.push(...b2Valid);
-      }
-
-      if (allFiles.length > 0) {
-        totalMediaFiles = allFiles.length;
-        totalMediaBytes = allFiles.reduce((acc, o) => acc + (o.Size || 0), 0);
-        svgsCount = allFiles.filter(o => o.Key.toLowerCase().endsWith('.svg')).length;
-        photosCount = totalMediaFiles - svgsCount;
+      const mediaItems = await getStoredMediaList(sb);
+      if (Array.isArray(mediaItems)) {
+        mediaStats = computeStorageStats(mediaItems);
       }
     } catch(err) {
-      console.warn('[Dashboard stats dual storage query error]:', err.message);
+      console.warn('[Dashboard stats media computation error]:', err.message);
     }
 
-    // Fallback or addition if Supabase store has items
-    if (totalMediaFiles === 0) {
-      try {
-        const { data: mediaRow } = await sb.from('site_settings').select('value').eq('key', 'privatian_media_library_items').maybeSingle();
-        let mediaItems = (mediaRow && Array.isArray(mediaRow.value)) ? mediaRow.value : [];
-        if (!mediaItems.length) {
-          const { data: fMedia } = await sb.from('sections').select('name').eq('admin_id', '__media_library_store__').maybeSingle();
-          if (fMedia && fMedia.name) {
-            try { mediaItems = JSON.parse(fMedia.name); } catch(e) {}
-          }
-        }
-        if (!mediaItems.length) {
-          const { data: mediaRowOld } = await sb.from('site_settings').select('value').eq('key', 'media_library_items').maybeSingle();
-          if (mediaRowOld && Array.isArray(mediaRowOld.value)) mediaItems = mediaRowOld.value;
-        }
-        if (Array.isArray(mediaItems) && mediaItems.length > 0) {
-          const activeMedia = mediaItems.filter(m => !m.is_deleted && !m.deleted);
-          totalMediaFiles = activeMedia.length;
-          totalMediaBytes = activeMedia.reduce((acc, m) => acc + (m.file_size || m.size || 0), 0);
-          svgsCount = activeMedia.filter(m => (m.mime_type && m.mime_type.includes('svg')) || (m.filename && m.filename.endsWith('.svg'))).length;
-          photosCount = totalMediaFiles - svgsCount;
-        }
-      } catch(e) {}
-    }
+    const totalMediaFiles = mediaStats.activeFiles || mediaStats.totalFiles || 0;
+    const totalMediaBytes = mediaStats.totalBytes || 0;
+    const photosCount = mediaStats.photosCount || 0;
+    const svgsCount = mediaStats.svgsCount || 0;
+    const r2FilesCount = mediaStats.r2.fileCount || 0;
+    const r2BytesTotal = mediaStats.r2.usedBytes || 0;
+    const b2FilesCount = mediaStats.b2.fileCount || 0;
+    const b2BytesTotal = mediaStats.b2.usedBytes || 0;
+    const sbStorageActualBytes = mediaStats.supabase.usedBytes || 0;
+    const sbStorageActualFiles = mediaStats.supabase.fileCount || 0;
 
     let analyticsStore = null;
     try {
@@ -803,36 +755,12 @@ module.exports = async function handler(req, res) {
     const sbDbUsedPct = Number(((sbDbUsedBytes / sbDbTotalQuotaBytes) * 100).toFixed(2));
     const sbDbFreePct = Number(((sbDbFreeBytes / sbDbTotalQuotaBytes) * 100).toFixed(2));
 
-    // Realtime Supabase File Storage (1 GB Free Tier)
-    let sbStorageActualBytes = 0;
-    let sbStorageActualFiles = 0;
-    try {
-      const { data: topFiles } = await sb.storage.from('article-images').list();
-      if (Array.isArray(topFiles)) {
-        for (const item of topFiles) {
-          if (item.metadata && item.metadata.size) {
-            sbStorageActualBytes += item.metadata.size;
-            sbStorageActualFiles++;
-          } else if (!item.id && item.name) {
-            const { data: subFiles } = await sb.storage.from('article-images').list(item.name);
-            if (Array.isArray(subFiles)) {
-              for (const sub of subFiles) {
-                if (sub.metadata && sub.metadata.size) {
-                  sbStorageActualBytes += sub.metadata.size;
-                  sbStorageActualFiles++;
-                }
-              }
-            }
-          }
-        }
-      }
-    } catch(e) {}
-
-    const sbStorageTotalQuotaBytes = 1024 * 1024 * 1024; // 1 GB
-    const sbStorageUsedBytes = Math.max(sbStorageActualBytes, 11315823); // ~10.8 MB active assets
+    // Realtime Supabase File Storage (1 GB Free Tier) - 100% Unified with Gallery
+    const sbStorageTotalQuotaBytes = mediaStats.supabase.capacityBytes || (1024 * 1024 * 1024); // 1 GB
+    const sbStorageUsedBytes = mediaStats.supabase.usedBytes || 0;
     const sbStorageFreeBytes = Math.max(0, sbStorageTotalQuotaBytes - sbStorageUsedBytes);
-    const sbStorageUsedPct = Number(((sbStorageUsedBytes / sbStorageTotalQuotaBytes) * 100).toFixed(2));
-    const sbStorageFreePct = Number(((sbStorageFreeBytes / sbStorageTotalQuotaBytes) * 100).toFixed(2));
+    const sbStorageUsedPct = Number((mediaStats.supabase.usedPct || 0).toFixed(2));
+    const sbStorageFreePct = Number(Math.max(0, 100 - sbStorageUsedPct).toFixed(2));
 
     // Vercel Bandwidth & Requests (Hobby Free Tier)
     const vercelBwTotalQuotaBytes = 100 * 1024 * 1024 * 1024; // 100 GB
@@ -847,21 +775,21 @@ module.exports = async function handler(req, res) {
     const vercelReqUsedPct = Number(((vercelReqUsed / vercelReqTotalQuota) * 100).toFixed(2));
     const vercelReqFreePct = Number(((vercelReqFree / vercelReqTotalQuota) * 100).toFixed(2));
 
-    // Cloudflare R2 Storage (10 GB Free)
-    const r2TotalQuotaBytes = 10 * 1024 * 1024 * 1024; // 10 GB
-    const r2UsedBytes = (typeof r2BytesTotal === 'number' && r2BytesTotal > 0) ? r2BytesTotal : Math.round(totalMediaBytes * 0.55);
+    // Cloudflare R2 Storage (10 GB Free) - 100% Unified with Gallery
+    const r2TotalQuotaBytes = mediaStats.r2.capacityBytes || (10 * 1024 * 1024 * 1024); // 10 GB
+    const r2UsedBytes = mediaStats.r2.usedBytes || 0;
     const r2FreeBytes = Math.max(0, r2TotalQuotaBytes - r2UsedBytes);
-    const r2UsedPct = Number(((r2UsedBytes / r2TotalQuotaBytes) * 100).toFixed(2));
-    const r2FreePct = Number(((r2FreeBytes / r2TotalQuotaBytes) * 100).toFixed(2));
+    const r2UsedPct = Number((mediaStats.r2.usedPct || 0).toFixed(2));
+    const r2FreePct = Number(Math.max(0, 100 - r2UsedPct).toFixed(2));
 
-    // Backblaze B2 Storage (10 GB Free)
-    const b2TotalQuotaBytes = 10 * 1024 * 1024 * 1024; // 10 GB
-    const b2UsedBytes = (typeof b2BytesTotal === 'number' && b2BytesTotal > 0) ? b2BytesTotal : Math.round(totalMediaBytes * 0.45);
+    // Backblaze B2 Storage (10 GB Free) - 100% Unified with Gallery
+    const b2TotalQuotaBytes = mediaStats.b2.capacityBytes || (10 * 1024 * 1024 * 1024); // 10 GB
+    const b2UsedBytes = mediaStats.b2.usedBytes || 0;
     const b2FreeBytes = Math.max(0, b2TotalQuotaBytes - b2UsedBytes);
-    const b2UsedPct = Number(((b2UsedBytes / b2TotalQuotaBytes) * 100).toFixed(2));
-    const b2FreePct = Number(((b2FreeBytes / b2TotalQuotaBytes) * 100).toFixed(2));
+    const b2UsedPct = Number((mediaStats.b2.usedPct || 0).toFixed(2));
+    const b2FreePct = Number(Math.max(0, 100 - b2UsedPct).toFixed(2));
 
-    // Global Combined Storage
+    // Global Combined Storage (500 MB DB + 1 GB SB Storage + 10 GB R2 + 10 GB B2 = 21.5 GB)
     const combinedTotalStorageBytes = sbDbTotalQuotaBytes + sbStorageTotalQuotaBytes + r2TotalQuotaBytes + b2TotalQuotaBytes; // 21.5 GB
     const combinedUsedStorageBytes = sbDbUsedBytes + sbStorageUsedBytes + r2UsedBytes + b2UsedBytes;
     const combinedFreeStorageBytes = Math.max(0, combinedTotalStorageBytes - combinedUsedStorageBytes);
@@ -889,6 +817,7 @@ module.exports = async function handler(req, res) {
           freeBytes: sbStorageFreeBytes,
           usedPercent: sbStorageUsedPct,
           freePercent: sbStorageFreePct,
+          filesCount: mediaStats.supabase.fileCount || 0,
           bucketsCount: sbBucketsData.length || 1
         },
         auth: {
@@ -930,7 +859,7 @@ module.exports = async function handler(req, res) {
           freeBytes: r2FreeBytes,
           usedPercent: r2UsedPct,
           freePercent: r2FreePct,
-          filesCount: r2FilesCount || Math.round(totalMediaFiles * 0.55),
+          filesCount: r2FilesCount,
           status: 'Active (Zero-Egress)'
         },
         backblazeB2: {
@@ -939,7 +868,7 @@ module.exports = async function handler(req, res) {
           freeBytes: b2FreeBytes,
           usedPercent: b2UsedPct,
           freePercent: b2FreePct,
-          filesCount: b2FilesCount || Math.round(totalMediaFiles * 0.45),
+          filesCount: b2FilesCount,
           status: 'Active (EU-Central)'
         }
       },

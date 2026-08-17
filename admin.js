@@ -1902,6 +1902,8 @@ function renderCloudInfrastructureUI(cloud) {
       if (elStUsed) elStUsed.textContent = formatBytes(sb.storage.usedBytes);
       if (elStUsedPct) elStUsedPct.textContent = `${sb.storage.usedPercent}%`;
       if (elStFree) elStFree.textContent = formatBytes(sb.storage.freeBytes);
+      const elStFreePct = document.getElementById('db-quota-sb-storage-free-pct');
+      if (elStFreePct) elStFreePct.textContent = `${sb.storage.freePercent}%`;
       if (elStMeter) elStMeter.style.width = `${Math.min(100, Math.max(0, sb.storage.usedPercent))}%`;
     }
 

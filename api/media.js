@@ -462,7 +462,7 @@ async function removeMediaItemMetadata(sb, uniqueId) {
 }
 
 // ── MAIN SERVERLESS HANDLER ──────────────────────────────────────────────
-module.exports = async (req, res) => {
+async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
@@ -1282,4 +1282,9 @@ async function findArticlesUsingMediaItem(sb, item) {
   }
 
   return res.status(400).json({ error: 'Invalid action parameter or HTTP method.' });
-};
+}
+
+module.exports = handler;
+module.exports.getStoredMediaList = getStoredMediaList;
+module.exports.computeStorageStats = computeStorageStats;
+module.exports.fetchRawMediaItems = fetchRawMediaItems;
