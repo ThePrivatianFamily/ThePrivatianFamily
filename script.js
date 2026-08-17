@@ -21,6 +21,12 @@ document.addEventListener('DOMContentLoaded', function () {
 
   // ── 3. Reactive language change listener ─────────────────────────
   document.addEventListener('privatian:language-changed', function() {
+    if (window.PrivatianLang && window.PrivatianLang.translatePageDOM) {
+      window.PrivatianLang.translatePageDOM();
+    }
+    if (_lastHomepageConfig) {
+      applyHomepageConfig(_lastHomepageConfig);
+    }
     fetchHomepageConfigFromAPI();
   });
 

@@ -159,8 +159,16 @@
     }
 
     if (isBn) {
-      // Strictly use what is saved in admin (name_bn). If no Bengali was configured in admin, show the configured name as-is.
-      return (s.name_bn && String(s.name_bn).trim() !== '') ? s.name_bn : (s.name || '');
+      if (s.name_bn && String(s.name_bn).trim() !== '') {
+        return s.name_bn;
+      }
+      var defMatch = DEFAULT_SECTIONS.find(function(d) { return (d.slug && d.slug === s.slug) || (d.id && d.id === s.id); });
+      if (defMatch && defMatch.name_bn) return defMatch.name_bn;
+      if (window.PrivatianLang && window.PrivatianLang.translateStatic) {
+        var tr = window.PrivatianLang.translateStatic(s.name, 'bn');
+        if (tr && tr !== s.name) return tr;
+      }
+      return s.name || '';
     }
 
     // English mode: strictly return the name configured in admin
@@ -1523,31 +1531,44 @@
     }
   }
 
-  function reRenderAllComponents() {
-    _headerReady = false;
-    var existingHeader = document.getElementById('site-header');
-    var existingSub = document.getElementById('sub-header');
-    var existingSearch = document.getElementById('search-overlay');
-    var existingMenu = document.getElementById('menu-overlay');
-    var existingFooter = document.getElementById('site-footer');
+  function updateComponentLanguages() {
+    var isBn = window.PrivatianLang && window.PrivatianLang.getLang() === 'bn';
 
-    if (existingHeader) {
-      var mountH = document.createElement('div');
-      mountH.id = 'site-header-mount';
-      existingHeader.parentNode.replaceChild(mountH, existingHeader);
-    }
-    if (existingSub) existingSub.remove();
-    if (existingSearch) existingSearch.remove();
-    if (existingMenu) existingMenu.remove();
+    // 1. Update Lang Toggle Buttons active state
+    var langBtns = document.querySelectorAll('.header-lang-toggle .lang-btn');
+    langBtns.forEach(function(btn) {
+      var isBtnBn = (btn.textContent || '').trim().includes('বাংলা');
+      btn.classList.toggle('active', isBn ? isBtnBn : !isBtnBn);
+    });
 
-    if (existingFooter) {
-      var mountF = document.createElement('div');
-      mountF.id = 'site-footer-mount';
-      existingFooter.parentNode.replaceChild(mountF, existingFooter);
+    // 2. Update Menu button label
+    var menuText = document.querySelector('#menu-toggle-btn .menu-btn-text');
+    if (menuText) {
+      menuText.textContent = isBn ? 'মেনু' : 'Menu';
     }
 
-    initHeader();
+    // 3. Update Search placeholder & text
+    var searchInput = document.getElementById('search-input');
+    if (searchInput) {
+      searchInput.placeholder = isBn ? 'প্রতিবেদন, বিষয় ও বিভাগ অনুসন্ধান করুন…' : 'Search articles, topics, sections…';
+    }
+
+    // 4. Update Header Logo Tagline
+    applyLogoSettings();
+
+    // 5. Update Navigation categories
+    populateSections();
+
+    // 6. Update Sub-header tabs
+    populateSubHeader();
+
+    // 7. Update Footer
     renderFooter();
+
+    // 8. Update All News Section Labels
+    if (_liveSections) {
+      updateAllNewsLabels(_liveSections);
+    }
   }
 
   function init() {
@@ -1561,7 +1582,7 @@
 
   // Reactive listener for language switch
   document.addEventListener('privatian:language-changed', function() {
-    reRenderAllComponents();
+    updateComponentLanguages();
   });
 
   // Expose immediate initializer for instant rendering right after mount tag
