@@ -72,6 +72,56 @@ module.exports = async function handler(req, res) {
     return res.status(200).json({ success: true });
   }
 
+  // ── REFRESH (Sliding Session Extension for Active Work) ─────────
+  if (action === 'refresh' && req.method === 'POST') {
+    const s = await requireAuth(req, res);
+    if (!s) return;
+
+    try {
+      const sb = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
+      const { data: admin, error } = await sb
+        .from('allowed_admins')
+        .select('*')
+        .ilike('email', s.email)
+        .eq('status', 'active')
+        .single();
+
+      if (error || !admin) {
+        return res.status(403).json({ error: 'Account no longer authorized', redirect: '/admin-login.html' });
+      }
+
+      const displayName = admin.full_name || s.name || admin.email.split('@')[0];
+      const displayPic  = admin.profile_pic || s.picture || '';
+
+      const freshToken = jwt.sign(
+        { email: admin.email, role: admin.role, name: displayName, full_name: admin.full_name || '', picture: displayPic, profile_pic: displayPic },
+        process.env.SESSION_SECRET || 'the_privatian_family_super_secret_session_jwt_key_2026',
+        { expiresIn: '2h' }
+      );
+
+      res.setHeader('Set-Cookie',
+        `privatian_session=${freshToken}; HttpOnly; Secure; SameSite=Strict; Max-Age=7200; Path=/`
+      );
+
+      return res.status(200).json({
+        success: true,
+        token: freshToken,
+        user: {
+          id: admin.id,
+          email: admin.email,
+          role: admin.role,
+          name: displayName,
+          full_name: admin.full_name || '',
+          picture: displayPic,
+          profile_pic: admin.profile_pic || ''
+        }
+      });
+    } catch(e) {
+      console.error('[auth/refresh]', e.message);
+      return res.status(500).json({ error: 'Failed to refresh session' });
+    }
+  }
+
   // ── VERIFY (Google OAuth) ────────────────────────────────────────
   if (action === 'verify' && req.method === 'POST') {
     const { credential } = req.body || {};
@@ -115,12 +165,12 @@ module.exports = async function handler(req, res) {
 
       const token = jwt.sign(
         { email: admin.email, role: admin.role, name: displayName, full_name: admin.full_name || gp.name || '', picture: displayPic, profile_pic: displayPic },
-        process.env.SESSION_SECRET,
-        { expiresIn: '24h' }
+        process.env.SESSION_SECRET || 'the_privatian_family_super_secret_session_jwt_key_2026',
+        { expiresIn: '2h' }
       );
 
       res.setHeader('Set-Cookie',
-        `privatian_session=${token}; HttpOnly; Secure; SameSite=Strict; Max-Age=86400; Path=/`
+        `privatian_session=${token}; HttpOnly; Secure; SameSite=Strict; Max-Age=7200; Path=/`
       );
 
       // Record Activity Log for login
@@ -354,12 +404,12 @@ module.exports = async function handler(req, res) {
 
       const token = jwt.sign(
         { email: admin.email, role: admin.role, name: displayName, full_name: admin.full_name || '', picture: displayPic, profile_pic: displayPic },
-        process.env.SESSION_SECRET,
-        { expiresIn: '24h' }
+        process.env.SESSION_SECRET || 'the_privatian_family_super_secret_session_jwt_key_2026',
+        { expiresIn: '2h' }
       );
 
       res.setHeader('Set-Cookie',
-        `privatian_session=${token}; HttpOnly; Secure; SameSite=Strict; Max-Age=86400; Path=/`
+        `privatian_session=${token}; HttpOnly; Secure; SameSite=Strict; Max-Age=7200; Path=/`
       );
 
       // Reset rate limit streak on successful login

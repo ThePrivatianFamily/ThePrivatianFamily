@@ -22,6 +22,7 @@ module.exports = async function handler(req, res) {
   const slug = req.query.slug || '';
   const id   = req.query.id || '';
 
+  const { verifySession } = require('./_lib/auth');
   const sb = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
   const host = req.headers['x-forwarded-host'] || req.headers.host || 'theprivatianfamily.vercel.app';
   const proto = req.headers['x-forwarded-proto'] || 'https';
@@ -37,7 +38,11 @@ module.exports = async function handler(req, res) {
       query = query.eq('id', id);
     }
     const { data } = await query.maybeSingle();
-    if (data) article = data;
+    if (data) {
+      if (data.status === 'published' || verifySession(req)) {
+        article = data;
+      }
+    }
   } catch (err) {}
 
   // Read the base article.html template

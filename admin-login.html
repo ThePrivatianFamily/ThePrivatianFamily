@@ -597,6 +597,7 @@
 
   <script>
     const TOKEN_KEY = 'privatian_token';
+    const LAST_ACTIVE_KEY = 'privatian_last_active';
     let _lastSentEmail = '';
     let _resendCountdown = 0;
     let _resendTimer = null;
@@ -615,10 +616,17 @@
       return null;
     }
 
-    // If already logged in, redirect directly
+    // If already logged in with active session (< 2 hours), redirect directly
     (async function () {
       const token = localStorage.getItem(TOKEN_KEY);
+      const lastActive = localStorage.getItem(LAST_ACTIVE_KEY);
+      const MAX_INACTIVITY_MS = 2 * 60 * 60 * 1000;
       if (!token) return;
+      if (lastActive && (Date.now() - parseInt(lastActive, 10) > MAX_INACTIVITY_MS)) {
+        localStorage.removeItem(TOKEN_KEY);
+        localStorage.removeItem(LAST_ACTIVE_KEY);
+        return;
+      }
       try {
         const r = await fetch('/api/auth?action=me', { headers: { 'Authorization': 'Bearer ' + token } });
         if (r.ok) { window.location.replace('/admin.html'); }
@@ -803,6 +811,7 @@
 
         if (data.success && data.token) {
           localStorage.setItem(TOKEN_KEY, data.token);
+          localStorage.setItem(LAST_ACTIVE_KEY, String(Date.now()));
           showMsg('success', 'Access granted! Redirecting to admin panel...');
           setTimeout(function() { window.location.replace('/admin.html'); }, 600);
         } else {
@@ -1109,6 +1118,7 @@
         const verifyData = await verifyRes.json();
         if (verifyRes.ok && verifyData.success && verifyData.token) {
           localStorage.setItem(TOKEN_KEY, verifyData.token);
+          localStorage.setItem(LAST_ACTIVE_KEY, String(Date.now()));
           showMsg('success', 'Access granted! Welcome to the Admin Panel. Redirecting...');
           setTimeout(function() { window.location.replace('/admin.html'); }, 500);
         } else {

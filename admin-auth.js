@@ -1,14 +1,51 @@
 /* ═══════════════════════════════════════════════════════════
-   THE PRIVATIAN FAMILY — Admin Auth Frontend Guard
-   Instant zero-delay local JWT verification + background live DB checks.
+   THE PRIVATIAN FAMILY — Admin Auth Frontend Guard & Session Engine
+   1. Zero-FOUC Synchronous Pre-Render Shield (0ms leak-proof)
+   2. Strict 2-Hour Inactivity Auto-Logout
+   3. Continuous Sliding Session Extension on Active Work
+   4. Heartbeat Token Renewal & Cross-Tab Activity Sync
+   5. Background Live Account Status / Revocation Checks
 ═══════════════════════════════════════════════════════════ */
 (function () {
   'use strict';
 
-  const TOKEN_KEY = 'privatian_token';
-  const LOGIN_URL = '/admin-login.html';
+  const TOKEN_KEY       = 'privatian_token';
+  const LAST_ACTIVE_KEY = 'privatian_last_active';
+  const LOGIN_URL       = '/admin-login.html';
 
-  function getToken() { return localStorage.getItem(TOKEN_KEY); }
+  // 2 Hours of Inactivity Max Limit
+  const MAX_INACTIVITY_MS      = 2 * 60 * 60 * 1000;  // 2 hours = 7,200,000 ms
+  const WARNING_BEFORE_MS      = 10 * 60 * 1000;      // 10 minutes = 600,000 ms
+  const WARNING_TRIGGER_MS     = MAX_INACTIVITY_MS - WARNING_BEFORE_MS; // 1 hr 50 mins
+  const HEARTBEAT_INTERVAL_MS  = 15 * 60 * 1000;      // 15 minutes heartbeat refresh
+  const THROTTLE_ACTIVITY_MS   = 15 * 1000;           // Throttle activity writes to 15s
+
+  let _lastActivityTime = Date.now();
+  let _lastWriteTime    = 0;
+  let _warningBannerEl  = null;
+
+  // ── Step 0: Ensure Instant FOUC Guard Shield ────────────────
+  // Immediately prevent browser from flashing unauthenticated admin UI
+  const existingGuard = document.getElementById('privatian-fouc-guard');
+  if (!existingGuard) {
+    const style = document.createElement('style');
+    style.id = 'privatian-fouc-guard';
+    style.innerHTML = 'html, body { visibility: hidden !important; opacity: 0 !important; pointer-events: none !important; }';
+    if (document.head) {
+      document.head.insertBefore(style, document.head.firstChild);
+    } else {
+      document.documentElement.appendChild(style);
+    }
+  }
+
+  function getToken() {
+    return localStorage.getItem(TOKEN_KEY);
+  }
+
+  function getLastActive() {
+    const v = localStorage.getItem(LAST_ACTIVE_KEY);
+    return v ? parseInt(v, 10) : 0;
+  }
 
   function esc(s) {
     return String(s || '')
@@ -19,6 +56,7 @@
   function parseJwt(token) {
     try {
       const base64Url = token.split('.')[1];
+      if (!base64Url) return null;
       const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
       const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
         return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
@@ -31,15 +69,247 @@
 
   function clearSession() {
     localStorage.removeItem(TOKEN_KEY);
-    document.cookie = 'privatian_session=; Max-Age=0; path=/';
+    localStorage.removeItem(LAST_ACTIVE_KEY);
+    document.cookie = 'privatian_session=; Max-Age=0; path=/; SameSite=Strict; Secure';
   }
 
   function redirectToLogin(msg) {
     clearSession();
-    if (msg) sessionStorage.setItem('login_message', msg);
+    if (msg) {
+      sessionStorage.setItem('login_message', msg);
+    }
+    // Keep page invisible while redirecting
     window.location.replace(LOGIN_URL);
   }
 
+  function revealPage() {
+    // Remove the FOUC blocker style smoothly
+    const guard = document.getElementById('privatian-fouc-guard');
+    if (guard) guard.remove();
+    document.documentElement.style.visibility = 'visible';
+    document.documentElement.style.opacity = '1';
+    document.documentElement.style.pointerEvents = 'auto';
+    if (document.body) {
+      document.body.style.visibility = 'visible';
+      document.body.style.opacity = '1';
+      document.body.style.pointerEvents = 'auto';
+    }
+  }
+
+  // ── Step 1: Synchronous Zero-Delay Session Validation ───────
+  const token = getToken();
+  if (!token) {
+    redirectToLogin('Authentication required. Please sign in.');
+    return;
+  }
+
+  const payload = parseJwt(token);
+  const now = Date.now();
+
+  if (!payload || !payload.email || (payload.exp && payload.exp * 1000 < now)) {
+    redirectToLogin('Your session has expired. Please sign in again.');
+    return;
+  }
+
+  // Inactivity check on initial load
+  const lastActiveStored = getLastActive();
+  if (lastActiveStored && (now - lastActiveStored > MAX_INACTIVITY_MS)) {
+    redirectToLogin('Your session expired due to 2 hours of inactivity. Please sign in again.');
+    return;
+  }
+
+  // Session is valid! Update activity timestamp immediately and unhide page
+  _lastActivityTime = now;
+  localStorage.setItem(LAST_ACTIVE_KEY, String(now));
+  revealPage();
+
+  // Establish in-memory user & token
+  const initialUser = {
+    email:       payload.email,
+    name:        payload.full_name || payload.name || payload.email.split('@')[0],
+    full_name:   payload.full_name || payload.name || '',
+    role:        payload.role || 'Admin',
+    picture:     payload.profile_pic || payload.picture || '',
+    profile_pic: payload.profile_pic || payload.picture || ''
+  };
+
+  window.PRIVATIAN_USER  = initialUser;
+  window.PRIVATIAN_TOKEN = token;
+
+  // Signal app ready immediately
+  window.dispatchEvent(new CustomEvent('privatian:ready', { detail: initialUser }));
+
+  // ── Step 2: Activity Tracking & Sliding Session Engine ──────
+  function recordActivity(explicit) {
+    const t = Date.now();
+    _lastActivityTime = t;
+
+    // Dismiss warning banner if visible upon user activity
+    if (_warningBannerEl && _warningBannerEl.parentNode) {
+      _warningBannerEl.remove();
+      _warningBannerEl = null;
+    }
+
+    if (explicit || (t - _lastWriteTime > THROTTLE_ACTIVITY_MS)) {
+      _lastWriteTime = t;
+      localStorage.setItem(LAST_ACTIVE_KEY, String(t));
+    }
+  }
+
+  window.recordPrivatianActivity = recordActivity;
+
+  // Listen to all relevant user interactions
+  const activityEvents = ['mousedown', 'mousemove', 'keydown', 'input', 'scroll', 'touchstart', 'focus', 'click', 'paste', 'wheel'];
+  activityEvents.forEach(function (evt) {
+    window.addEventListener(evt, function () { recordActivity(false); }, { passive: true });
+  });
+
+  // Cross-tab synchronization
+  window.addEventListener('storage', function (e) {
+    if (e.key === LAST_ACTIVE_KEY && e.newValue) {
+      const parsed = parseInt(e.newValue, 10);
+      if (parsed > _lastActivityTime) {
+        _lastActivityTime = parsed;
+        if (_warningBannerEl && _warningBannerEl.parentNode) {
+          _warningBannerEl.remove();
+          _warningBannerEl = null;
+        }
+      }
+    } else if (e.key === TOKEN_KEY && !e.newValue) {
+      // Logged out in another tab
+      redirectToLogin('You were signed out from another tab.');
+    }
+  });
+
+  // ── Step 3: Inactivity Monitor & Graceful 10-Minute Warning ──
+  function showInactivityWarning(remainingSec) {
+    if (_warningBannerEl) {
+      const countdownSpan = document.getElementById('privatian-session-countdown');
+      if (countdownSpan) {
+        const mins = Math.floor(remainingSec / 60);
+        const secs = remainingSec % 60;
+        countdownSpan.textContent = mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
+      }
+      return;
+    }
+
+    _warningBannerEl = document.createElement('div');
+    _warningBannerEl.id = 'privatian-inactivity-warning';
+    _warningBannerEl.style.cssText = [
+      'position: fixed',
+      'bottom: 24px',
+      'right: 24px',
+      'z-index: 999999',
+      'background: #0f172a',
+      'color: #f8fafc',
+      'border: 1px solid #38bdf8',
+      'border-radius: 12px',
+      'padding: 16px 20px',
+      'box-shadow: 0 10px 30px rgba(0,0,0,0.4), 0 0 15px rgba(56,189,248,0.25)',
+      'font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+      'font-size: 13.5px',
+      'display: flex',
+      'align-items: center',
+      'gap: 14px'
+    ].join(';');
+
+    const mins = Math.floor(remainingSec / 60);
+    const secs = remainingSec % 60;
+    const timeStr = mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
+
+    _warningBannerEl.innerHTML =
+      '<div style="display:flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:50%;background:rgba(56,189,248,0.15);color:#38bdf8;flex-shrink:0;">' +
+        '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>' +
+      '</div>' +
+      '<div>' +
+        '<div style="font-weight:700;font-size:14px;color:#ffffff;margin-bottom:2px;">Session Expiring Soon</div>' +
+        '<div style="color:#94a3b8;font-size:12px;">Auto-logout in <strong id="privatian-session-countdown" style="color:#38bdf8;font-weight:700;">' + timeStr + '</strong> due to inactivity.</div>' +
+      '</div>' +
+      '<button id="privatian-keep-alive-btn" style="background:#0284c7;color:#fff;border:none;padding:7px 14px;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;margin-left:6px;transition:background .15s;">' +
+        'Stay Logged In' +
+      '</button>';
+
+    document.body.appendChild(_warningBannerEl);
+
+    const btn = document.getElementById('privatian-keep-alive-btn');
+    if (btn) {
+      btn.onclick = function () {
+        recordActivity(true);
+        triggerSessionRefresh();
+      };
+    }
+  }
+
+  // Check inactivity every 10 seconds
+  setInterval(function () {
+    const currentToken = getToken();
+    if (!currentToken) {
+      redirectToLogin('Authentication required.');
+      return;
+    }
+
+    const idleMs = Date.now() - _lastActivityTime;
+
+    if (idleMs >= MAX_INACTIVITY_MS) {
+      // 2 Hours of pure inactivity reached -> Auto Logout
+      redirectToLogin('Your session expired due to 2 hours of inactivity. Please sign in again.');
+      return;
+    }
+
+    if (idleMs >= WARNING_TRIGGER_MS) {
+      // Within the final 10 minutes of inactivity
+      const remainingSec = Math.max(1, Math.round((MAX_INACTIVITY_MS - idleMs) / 1000));
+      showInactivityWarning(remainingSec);
+    } else {
+      if (_warningBannerEl && _warningBannerEl.parentNode) {
+        _warningBannerEl.remove();
+        _warningBannerEl = null;
+      }
+    }
+  }, 10000);
+
+  // ── Step 4: Active Work Rolling Token Heartbeat Refresh ──────
+  async function triggerSessionRefresh() {
+    const tok = getToken();
+    if (!tok) return;
+
+    try {
+      const res = await fetch('/api/auth?action=refresh', {
+        method: 'POST',
+        headers: {
+          'Authorization': 'Bearer ' + tok,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        if (data && data.token) {
+          localStorage.setItem(TOKEN_KEY, data.token);
+          window.PRIVATIAN_TOKEN = data.token;
+          if (data.user) {
+            window.PRIVATIAN_USER = data.user;
+            window.dispatchEvent(new CustomEvent('privatian:ready', { detail: data.user }));
+            injectSidebarUser(data.user);
+          }
+        }
+      } else if (res.status === 401 || res.status === 403) {
+        redirectToLogin('Session expired or access revoked. Please sign in again.');
+      }
+    } catch(e) {
+      // Transient network hiccup
+    }
+  }
+
+  // Periodic heartbeat: if user was active recently, renew token every 15 mins
+  setInterval(function () {
+    const idleMs = Date.now() - _lastActivityTime;
+    if (idleMs < HEARTBEAT_INTERVAL_MS) {
+      triggerSessionRefresh();
+    }
+  }, HEARTBEAT_INTERVAL_MS);
+
+  // ── Step 5: Sidebar User Profile Injection & Logout ───────────
   function injectSidebarUser(user) {
     function inject() {
       const sidebarFooter = document.querySelector('.sidebar-footer');
@@ -67,7 +337,7 @@
             '<div style="font-size:11px;color:rgba(255,255,255,.6);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="' + esc(user.email) + '">' + esc(user.email) + '</div>' +
             '<div style="display:flex;align-items:center;gap:6px;margin-top:4px;flex-wrap:wrap;">' +
               '<span style="background:rgba(255,255,255,.18);border-radius:4px;padding:1px 6px;font-size:9.5px;font-weight:700;color:rgba(255,255,255,.9);letter-spacing:.04em;text-transform:uppercase;">' + esc(user.role || 'Admin') + '</span>' +
-              (user.university ? '<span style="font-size:10px;color:rgba(255,255,255,.55);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:95px;" title="' + esc(user.university) + '">🏛️ ' + esc(user.university) + '</span>' : '') +
+              (user.university ? '<span style="font-size:10px;color:rgba(255,255,255,.55);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:95px;" title="' + esc(user.university) + '"><svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:2px;"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>' + esc(user.university) + '</span>' : '') +
             '</div>' +
           '</div>' +
         '</div>' +
@@ -108,37 +378,7 @@
 
   window.injectSidebarUser = injectSidebarUser;
 
-  // ── Instant Local Validation (0ms delay) ───────────────────
-  const token = getToken();
-  if (!token) {
-    redirectToLogin();
-    return;
-  }
-
-  const payload = parseJwt(token);
-  if (!payload || !payload.email || (payload.exp && payload.exp < Date.now() / 1000)) {
-    redirectToLogin('Session expired. Please sign in again.');
-    return;
-  }
-
-  // Establish active session immediately
-  const initialUser = {
-    email:       payload.email,
-    name:        payload.full_name || payload.name || payload.email.split('@')[0],
-    full_name:   payload.full_name || payload.name || '',
-    role:        payload.role || 'Admin',
-    picture:     payload.profile_pic || payload.picture || '',
-    profile_pic: payload.profile_pic || payload.picture || ''
-  };
-
-  window.PRIVATIAN_USER  = initialUser;
-  window.PRIVATIAN_TOKEN = token;
-
-  // Signal app ready immediately
-  window.dispatchEvent(new CustomEvent('privatian:ready', { detail: initialUser }));
-  injectSidebarUser(initialUser);
-
-  // ── Background Server Validation (Catches revocations/role changes) ──
+  // ── Step 6: Background Server Validation ──────────────────────
   (async function verifyWithServer() {
     try {
       const [resAuth, resDb] = await Promise.all([
@@ -168,31 +408,13 @@
         return;
       }
 
-      // Update in-memory user with latest server data
+      // Update in-memory user with latest verified server data
       window.PRIVATIAN_USER = verifiedUser;
       window.dispatchEvent(new CustomEvent('privatian:ready', { detail: verifiedUser }));
       injectSidebarUser(verifiedUser);
     } catch(e) {
-      // Network hiccup - allow local session to continue
+      // Network hiccup - local verified session continues
     }
   })();
-
-  // ── 15-Minute Inactivity Timeout Guard ───────────────────────
-  const INACTIVITY_TIMEOUT_MS = 15 * 60 * 1000;
-  let _lastActivityTime = Date.now();
-
-  function recordActivity() {
-    _lastActivityTime = Date.now();
-  }
-
-  ['mousedown', 'mousemove', 'keydown', 'scroll', 'touchstart', 'input'].forEach(function (evt) {
-    window.addEventListener(evt, recordActivity, { passive: true });
-  });
-
-  setInterval(function () {
-    if (Date.now() - _lastActivityTime > INACTIVITY_TIMEOUT_MS) {
-      redirectToLogin('Your session expired due to 15 minutes of inactivity. Please sign in again.');
-    }
-  }, 20000);
 
 })();

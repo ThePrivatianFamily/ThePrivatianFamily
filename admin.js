@@ -83,6 +83,13 @@ function _getAuthToken() {
   return window.PRIVATIAN_TOKEN || localStorage.getItem('privatian_token') || '';
 }
 
+function _handleAuthFailure() {
+  localStorage.removeItem('privatian_token');
+  localStorage.removeItem('privatian_last_active');
+  sessionStorage.setItem('login_message', 'Your session expired. Please sign in again.');
+  window.location.replace('/admin-login.html');
+}
+
 function _authHeaders() {
   const tok = _getAuthToken();
   return {
@@ -95,24 +102,28 @@ async function _apiGet(url) {
   const tok = _getAuthToken();
   const headers = tok ? { 'Authorization': 'Bearer ' + tok } : {};
   const r = await fetch(url, { headers });
+  if (r.status === 401) { _handleAuthFailure(); return null; }
   if (!r.ok) { const d = await r.json().catch(() => ({})); throw new Error(d.error || 'Request failed'); }
   return r.json();
 }
 
 async function _apiPost(url, body) {
   const r = await fetch(url, { method: 'POST', headers: _authHeaders(), body: JSON.stringify(body) });
+  if (r.status === 401) { _handleAuthFailure(); return null; }
   if (!r.ok) { const d = await r.json().catch(() => ({})); throw new Error(d.error || 'Request failed'); }
   return r.json();
 }
 
 async function _apiPut(url, body) {
   const r = await fetch(url, { method: 'PUT', headers: _authHeaders(), body: JSON.stringify(body) });
+  if (r.status === 401) { _handleAuthFailure(); return null; }
   if (!r.ok) { const d = await r.json().catch(() => ({})); throw new Error(d.error || 'Request failed'); }
   return r.json();
 }
 
 async function _apiPatch(url, body) {
   const r = await fetch(url, { method: 'PATCH', headers: _authHeaders(), body: body ? JSON.stringify(body) : undefined });
+  if (r.status === 401) { _handleAuthFailure(); return null; }
   if (!r.ok) { const d = await r.json().catch(() => ({})); throw new Error(d.error || 'Request failed'); }
   return r.json();
 }
@@ -121,6 +132,7 @@ async function _apiDelete(url) {
   const tok = _getAuthToken();
   const headers = tok ? { 'Authorization': 'Bearer ' + tok } : {};
   const r = await fetch(url, { method: 'DELETE', headers });
+  if (r.status === 401) { _handleAuthFailure(); return null; }
   if (!r.ok) { const d = await r.json().catch(() => ({})); throw new Error(d.error || 'Request failed'); }
   return r.json();
 }
