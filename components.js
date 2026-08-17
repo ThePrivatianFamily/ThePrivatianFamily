@@ -1264,12 +1264,11 @@
         window.PrivatianCloseSearch();
       }
       var isBn = window.PrivatianLang && window.PrivatianLang.getLang() === 'bn';
-      _savedScrollY = window.scrollY;
       positionMenuOverlay();
       menuOverlay.classList.add('is-open');
       menuBtn.classList.add('is-open');
       menuBtn.setAttribute('aria-expanded', 'true');
-      menuBtn.innerHTML = '<span style="font-size:16px">&#10005;</span> ' + (isBn ? 'বন্ধ' : 'Close');
+      menuBtn.innerHTML = '<span style="display:inline-block;font-size:15px;">&#10005;</span> ' + (isBn ? 'বন্ধ' : 'Close');
       document.body.classList.add('menu-open');
       document.documentElement.classList.add('menu-open');
       document.body.style.overflow = 'hidden';
@@ -1290,7 +1289,6 @@
         document.body.style.overflow = '';
         document.documentElement.style.overflow = '';
       }
-      window.scrollTo(0, _savedScrollY);
     }
 
     window.PrivatianCloseMenu = closeMenu;
