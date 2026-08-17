@@ -2991,8 +2991,20 @@ async function handleSaveAdminProfile(event, id) {
 async function loadAccessList() {
   const statusDot = document.getElementById('access-status-dot');
   const statusTxt = document.getElementById('access-save-status');
+  const loadingEl = document.getElementById('access-loading');
+  const activePanel = document.getElementById('access-panel-active');
+  const suspendedPanel = document.getElementById('access-panel-suspended');
+  const recyclePanel = document.getElementById('access-panel-recycle');
+
   if (statusDot) statusDot.style.background = '#f59e0b';
   if (statusTxt) statusTxt.textContent = 'Syncing...';
+
+  if (loadingEl && (!_rawAdminList || !_rawAdminList.length)) {
+    loadingEl.style.display = 'flex';
+    if (activePanel) activePanel.style.display = 'none';
+    if (suspendedPanel) suspendedPanel.style.display = 'none';
+    if (recyclePanel) recyclePanel.style.display = 'none';
+  }
 
   try {
     let all = null;
@@ -3019,11 +3031,19 @@ async function loadAccessList() {
     if (!Array.isArray(all)) throw new Error('Failed to load admin list');
 
     _rawAdminList = all;
+    if (loadingEl) loadingEl.style.display = 'none';
+    if (activePanel) activePanel.style.display = '';
+    if (suspendedPanel) suspendedPanel.style.display = '';
+    if (recyclePanel) recyclePanel.style.display = '';
     renderAccessLists();
 
     if (statusDot) statusDot.style.background = '#10b981';
     if (statusTxt) statusTxt.textContent = 'Synced with database';
   } catch(e) {
+    if (loadingEl) loadingEl.style.display = 'none';
+    if (activePanel) activePanel.style.display = '';
+    if (suspendedPanel) suspendedPanel.style.display = '';
+    if (recyclePanel) recyclePanel.style.display = '';
     if (statusDot) statusDot.style.background = '#ef4444';
     if (statusTxt) statusTxt.textContent = 'Sync Error';
     console.warn('[Admin] loadAccessList error:', e.message);
@@ -10093,6 +10113,8 @@ var _galleryPickerActiveFolder = 'all';
 // ── 1. Load & Sync Gallery Assets (Instant 0ms Cache) ─────────────
 async function loadGalleryAssets() {
   const grid = document.getElementById('gallery-grid');
+  const gridLoading = document.getElementById('gallery-grid-loading');
+  const foldersLoading = document.getElementById('gallery-folders-loading');
   
   // 1. Instant 0ms Cache Load
   try {
@@ -10111,14 +10133,8 @@ async function loadGalleryAssets() {
   } catch(e) {}
 
   if (!_rawGalleryList || !_rawGalleryList.length) {
-    if (grid) {
-      grid.innerHTML = `
-        <div style="grid-column: 1 / -1; text-align: center; padding: 48px 20px; color: var(--text-muted);">
-          <div class="ft-loading-spinner" style="margin: 0 auto 12px; width: 28px; height: 28px; border: 3px solid #e2e8f0; border-top-color: #4f46e5; border-radius: 50%; animation: ftSpin 0.8s linear infinite;"></div>
-          <p style="font-size: 13px; font-weight: 600;">Scanning Cloudflare R2 &amp; Database...</p>
-        </div>
-      `;
-    }
+    if (gridLoading) gridLoading.style.display = 'flex';
+    if (foldersLoading) foldersLoading.style.display = 'flex';
   }
 
   try {
@@ -10129,12 +10145,16 @@ async function loadGalleryAssets() {
       try {
         sessionStorage.setItem('privatian_media_cache', JSON.stringify(data));
       } catch(e) {}
+      if (foldersLoading) foldersLoading.style.display = 'none';
       renderGalleryFolders();
       _syncFolderSelectDropdowns();
       _updateGalleryCounts(data.storage, data.syncStatus);
+      if (gridLoading) gridLoading.style.display = 'none';
       renderGalleryGrid();
     }
   } catch(e) {
+    if (gridLoading) gridLoading.style.display = 'none';
+    if (foldersLoading) foldersLoading.style.display = 'none';
     if (grid && (!_rawGalleryList || !_rawGalleryList.length)) {
       grid.innerHTML = `
         <div class="gallery-empty-state">
@@ -10153,8 +10173,20 @@ async function loadGalleryAssets() {
 async function syncGalleryAssets() {
   const btn = document.getElementById('gallery-btn-sync-trigger');
   const btnText = document.getElementById('gallery-btn-sync-text');
+  const gridLoading = document.getElementById('gallery-grid-loading');
+  const foldersLoading = document.getElementById('gallery-folders-loading');
+
   if (btn) btn.disabled = true;
   if (btnText) btnText.textContent = 'Syncing R2 & DB...';
+  if (gridLoading) {
+    gridLoading.style.display = 'flex';
+    const grid = document.getElementById('gallery-grid');
+    if (grid) {
+      grid.innerHTML = '';
+      grid.appendChild(gridLoading);
+    }
+  }
+  if (foldersLoading) foldersLoading.style.display = 'flex';
 
   try {
     showToast('info', 'Scanning Cloudflare R2 bucket & synchronizing with Supabase...');
@@ -10171,6 +10203,8 @@ async function syncGalleryAssets() {
   } catch(e) {
     showToast('error', 'Sync failed: ' + e.message);
   } finally {
+    if (gridLoading) gridLoading.style.display = 'none';
+    if (foldersLoading) foldersLoading.style.display = 'none';
     if (btn) btn.disabled = false;
     if (btnText) btnText.textContent = 'Sync with R2 & DB';
   }
