@@ -2473,17 +2473,19 @@ function renderAccessLists() {
             ${isSelf ? '<span class="access-user-you-tag">You</span>' : ''}
           </div>
 
-          <!-- 2. Second Row: Badges & Status UNDER Name with Audit Info -->
+          <!-- 2. Second Row: Badges UNDER Name -->
           <div class="access-user-sub-row">
             ${roleBadge}
             ${statusBadge}
-            <span class="access-user-meta-dot">•</span>
-            <div class="access-user-meta">
-              ${_auditLine(a)}
-            </div>
           </div>
 
-          <!-- 3. Third Row: Extra Profile Details (if present) -->
+          <!-- 3. Third Row: Clean Audit Metadata Line -->
+          <div class="access-user-meta">
+            <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" style="opacity:0.6;flex-shrink:0;"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            ${_auditLine(a)}
+          </div>
+
+          <!-- 4. Fourth Row: Extra Profile Details (if present) -->
           ${extraProfileDetails}
         </div>
 

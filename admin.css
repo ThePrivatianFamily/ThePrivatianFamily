@@ -3284,11 +3284,12 @@ body.modal-open {
 }
 
 .access-user-meta {
-  font-size: 11.5px;
+  font-size: 11px;
   color: #64748b;
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 5px;
+  line-height: 1.4;
 }
 
 .access-user-meta strong {
