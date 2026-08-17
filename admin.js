@@ -10502,7 +10502,100 @@ function _copyMediaDirectUrl(url) {
 }
 
 // ── 8. Media Inspector Modal ─────────────────────────────────────
-function openMediaInspector(uniqueId) {
+function _showBlockedMediaModal(actionName, usedInArticles, filename) {
+  const artListHtml = (usedInArticles && usedInArticles.length) ? usedInArticles.map(a => `
+    <div style="display:flex;align-items:center;justify-content:space-between;background:#fff;border:1px solid #fecaca;padding:6px 10px;border-radius:6px;margin-top:6px;gap:8px;">
+      <span style="font-weight:700;color:#991b1b;font-size:12px;">${escapeHtml(a.title)}</span>
+      <span class="badge" style="font-size:10px;font-weight:700;background:${a.is_deleted ? '#fee2e2;color:#991b1b;' : (a.status === 'published' ? '#dcfce7;color:#15803d;' : '#fef3c7;color:#b45309;')}">${a.is_deleted ? 'In Article Trash' : (a.status === 'published' ? 'Published' : 'Draft')}</span>
+    </div>
+  `).join('') : '<div style="font-size:12px;color:var(--text-muted);padding:4px 0;">Referenced in active article(s).</div>';
+
+  _confirmModal({
+    title: `Cannot ${actionName} (Asset Protected)`,
+    variant: 'danger',
+    confirmText: 'Understood',
+    body: `
+      <div style="font-size:13px;line-height:1.5;">
+        <p style="margin:0 0 8px 0;color:var(--text-primary);">
+          <strong>${escapeHtml(filename)}</strong> cannot be ${actionName.toLowerCase()} because it is currently linked to <strong>${usedInArticles ? usedInArticles.length : 1} article(s)</strong>:
+        </p>
+        <div style="max-height:140px;overflow-y:auto;margin-bottom:12px;">
+          ${artListHtml}
+        </div>
+        <div style="font-size:12px;color:#991b1b;background:#fef2f2;border:1px solid #fecaca;padding:8px 12px;border-radius:8px;">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:4px;"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          <strong>Protection Policy:</strong> As per system rules, images in use cannot be moved to trash or deleted until the referencing article(s) are permanently removed from the system.
+        </div>
+      </div>
+    `,
+    onConfirm: () => {}
+  });
+}
+
+function _renderInspectorFooter(item, isProtected = false, usedArticles = []) {
+  const modal = document.getElementById('modal-media-inspector');
+  if (!modal) return;
+  const footerEl = modal.querySelector('.modal-footer');
+  if (!footerEl) return;
+
+  if (item.is_deleted) {
+    if (isProtected) {
+      footerEl.innerHTML = `
+        <button type="button" class="btn btn--ghost" style="color:#94a3b8;cursor:not-allowed;" onclick="_showBlockedMediaModal('Delete Permanently', ${JSON.stringify(usedArticles).replace(/"/g, '&quot;')}, '${escapeHtml(item.filename || item.unique_id)}')" title="Protected: This image is used in an article">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          <span>Protected (In Use)</span>
+        </button>
+        <div style="display:flex;gap:10px;">
+          <button class="btn btn--ghost" type="button" onclick="closeMediaInspector()">Close</button>
+          <button class="btn btn--primary" type="button" onclick="_restoreAsset('${item.unique_id}')" style="background:#10b981;border-color:#10b981;">
+            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:3px;"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+            Restore Asset
+          </button>
+        </div>
+      `;
+    } else {
+      footerEl.innerHTML = `
+        <button type="button" class="btn btn--ghost" style="color:#dc2626;" onclick="_deletePermanentConfirm('${item.unique_id}', '${escapeHtml(item.filename || item.unique_id)}')">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+          <span>Delete Permanently</span>
+        </button>
+        <div style="display:flex;gap:10px;">
+          <button class="btn btn--ghost" type="button" onclick="closeMediaInspector()">Close</button>
+          <button class="btn btn--primary" type="button" onclick="_restoreAsset('${item.unique_id}')" style="background:#10b981;border-color:#10b981;">
+            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:3px;"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+            Restore Asset
+          </button>
+        </div>
+      `;
+    }
+  } else {
+    if (isProtected) {
+      footerEl.innerHTML = `
+        <button type="button" class="btn btn--ghost" style="color:#94a3b8;cursor:not-allowed;" onclick="_showBlockedMediaModal('Move to Trash', ${JSON.stringify(usedArticles).replace(/"/g, '&quot;')}, '${escapeHtml(item.filename || item.unique_id)}')" title="Protected: This image is used in an article">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          <span>Protected (In Use)</span>
+        </button>
+        <div style="display:flex;gap:10px;">
+          <button class="btn btn--ghost" type="button" onclick="closeMediaInspector()">Close</button>
+          <button class="btn btn--primary" type="button" id="media-insp-save-btn" onclick="_saveInspectorMetadata()">Save Metadata</button>
+        </div>
+      `;
+    } else {
+      footerEl.innerHTML = `
+        <button type="button" class="btn btn--ghost" style="color:#dc2626;" onclick="_deleteInspectorMedia()">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+          <span>Move to Trash</span>
+        </button>
+        <div style="display:flex;gap:10px;">
+          <button class="btn btn--ghost" type="button" onclick="closeMediaInspector()">Close</button>
+          <button class="btn btn--primary" type="button" id="media-insp-save-btn" onclick="_saveInspectorMetadata()">Save Metadata</button>
+        </div>
+      `;
+    }
+  }
+}
+
+async function openMediaInspector(uniqueId) {
   const item = _rawGalleryList.find(x => x.unique_id === uniqueId || x.id === uniqueId);
   if (!item) return;
   _galleryCurrentInspectorItem = item;
@@ -10525,7 +10618,7 @@ function openMediaInspector(uniqueId) {
 
   const subEl = document.getElementById('media-insp-meta-sub');
   const provEl = document.getElementById('media-insp-provider');
-  const provider = item.provider || (item.url?.includes('backblazeb2') ? 'b2' : 'r2');
+  const provider = item.provider || (item.url?.includes('backblazeb2') ? 'b2' : (item.url?.includes('supabase.co') ? 'supabase' : 'r2'));
 
   if (imgEl) imgEl.src = item.url;
   if (filenameEl) filenameEl.textContent = item.filename || item.unique_id;
@@ -10541,47 +10634,60 @@ function openMediaInspector(uniqueId) {
   if (altBnInp) altBnInp.value = item.alt_text_bn || '';
   if (currIdInp) currIdInp.value = item.unique_id;
 
+  const providerDisplayNames = {
+    r2: 'Cloudflare R2 (10 GB Free)',
+    b2: 'Backblaze B2 (10 GB Free)',
+    supabase: 'Supabase Storage (1 GB Free)'
+  };
+  const providerColors = {
+    r2: '#ea580c',
+    b2: '#e11d48',
+    supabase: '#059669'
+  };
+
   if (subEl) {
-    subEl.textContent = provider === 'b2' ? 'Backblaze B2 Cloud Asset' : 'Cloudflare R2 Cloud Asset';
+    subEl.textContent = provider === 'b2' ? 'Backblaze B2 Cloud Asset' : (provider === 'supabase' ? 'Supabase Storage Cloud Asset' : 'Cloudflare R2 Cloud Asset');
   }
   if (provEl) {
-    provEl.innerHTML = provider === 'b2'
-      ? '<span style="display:inline-flex;align-items:center;gap:5px;color:#e11d48;font-weight:700;"><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#e11d48;"></span>Backblaze B2 (10 GB)</span>'
-      : '<span style="display:inline-flex;align-items:center;gap:5px;color:#ea580c;font-weight:700;"><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#f97316;"></span>Cloudflare R2 (10 GB)</span>';
+    provEl.innerHTML = `<span style="display:inline-flex;align-items:center;gap:5px;color:${providerColors[provider] || '#ea580c'};font-weight:700;"><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${providerColors[provider] || '#ea580c'};"></span>${providerDisplayNames[provider] || 'Cloud Storage'}</span>`;
   }
+
+  // Reset Article Usage card while loading
+  const usageWrap = document.getElementById('media-insp-usage-wrap');
+  const usageCountBadge = document.getElementById('media-insp-usage-count-badge');
+  const usageList = document.getElementById('media-insp-usage-list');
+  if (usageWrap) usageWrap.style.display = 'none';
 
   // Inspector footer action buttons depending on trash state
-  const footerEl = modal.querySelector('.modal-footer');
-  if (footerEl) {
-    if (item.is_deleted) {
-      footerEl.innerHTML = `
-        <button type="button" class="btn btn--ghost" style="color:#dc2626;" onclick="_deletePermanentConfirm('${item.unique_id}', '${escapeHtml(item.filename || item.unique_id)}')">
-          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
-          <span>Delete Permanently</span>
-        </button>
-        <div style="display:flex;gap:10px;">
-          <button class="btn btn--ghost" type="button" onclick="closeMediaInspector()">Close</button>
-          <button class="btn btn--primary" type="button" onclick="_restoreAsset('${item.unique_id}')" style="background:#10b981;border-color:#10b981;">
-            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:3px;"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
-            Restore Asset
-          </button>
-        </div>
-      `;
-    } else {
-      footerEl.innerHTML = `
-        <button type="button" class="btn btn--ghost" style="color:#dc2626;" onclick="_deleteInspectorMedia()">
-          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
-          <span>Move to Trash</span>
-        </button>
-        <div style="display:flex;gap:10px;">
-          <button class="btn btn--ghost" type="button" onclick="closeMediaInspector()">Close</button>
-          <button class="btn btn--primary" type="button" id="media-insp-save-btn" onclick="_saveInspectorMetadata()">Save Metadata</button>
-        </div>
-      `;
-    }
-  }
+  _renderInspectorFooter(item, false);
 
   modal.hidden = false;
+
+  // Asynchronously query live usage
+  try {
+    const usageRes = await _apiGet(`/api/media?action=usage&id=${encodeURIComponent(item.unique_id || item.id)}`);
+    if (_galleryCurrentInspectorItem && (_galleryCurrentInspectorItem.unique_id === uniqueId || _galleryCurrentInspectorItem.id === uniqueId)) {
+      if (usageRes && usageRes.is_in_use && usageRes.used_in_articles && usageRes.used_in_articles.length > 0) {
+        if (usageWrap) usageWrap.style.display = 'block';
+        if (usageCountBadge) usageCountBadge.textContent = `${usageRes.used_in_articles.length} ${usageRes.used_in_articles.length === 1 ? 'Article' : 'Articles'}`;
+        if (usageList) {
+          usageList.innerHTML = usageRes.used_in_articles.map(art => `
+            <div style="display:flex;align-items:center;justify-content:space-between;background:#fff;border:1px solid #fecaca;padding:5px 9px;border-radius:6px;gap:8px;">
+              <div style="display:flex;align-items:center;gap:6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="#991b1b" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                <strong style="color:#991b1b;font-size:11.5px;">${escapeHtml(art.title)}</strong>
+              </div>
+              <span class="badge" style="font-size:9.5px;font-weight:700;background:${art.is_deleted ? '#fee2e2;color:#991b1b;' : (art.status === 'published' ? '#dcfce7;color:#15803d;' : '#fef3c7;color:#b45309;')}">${art.is_deleted ? 'In Article Trash' : (art.status === 'published' ? 'Published' : 'Draft')}</span>
+            </div>
+          `).join('');
+        }
+        _renderInspectorFooter(item, true, usageRes.used_in_articles);
+      } else {
+        if (usageWrap) usageWrap.style.display = 'none';
+        _renderInspectorFooter(item, false);
+      }
+    }
+  } catch(e) {}
 }
 
 function closeMediaInspector() {
@@ -10653,8 +10759,8 @@ function _deleteInspectorMedia() {
 // ── 9. Trash & Deletion Confirmations ─────────────────────────────
 function _trashAssetConfirm(uniqueId, filename) {
   const item = _rawGalleryList.find(x => x.unique_id === uniqueId || x.id === uniqueId);
-  const provider = item ? (item.provider || (item.url?.includes('backblazeb2') ? 'b2' : 'r2')) : 'r2';
-  const providerName = provider === 'b2' ? 'Backblaze B2' : 'Cloudflare R2';
+  const provider = item ? (item.provider || (item.url?.includes('backblazeb2') ? 'b2' : (item.url?.includes('supabase.co') ? 'supabase' : 'r2'))) : 'r2';
+  const providerName = provider === 'b2' ? 'Backblaze B2' : (provider === 'supabase' ? 'Supabase Storage' : 'Cloudflare R2');
 
   _confirmModal({
     title: 'Move Asset to Trash',
@@ -10676,7 +10782,16 @@ function _trashAssetConfirm(uniqueId, filename) {
           showToast('success', `Moved "${filename}" to Trash Bin.`);
         }
       } catch(e) {
-        showToast('error', 'Failed to move to trash: ' + e.message);
+        if (e.status === 409 || e.message?.includes('in use by') || e.message?.includes('ব্যবহৃত হচ্ছে')) {
+          let usedArticles = [];
+          try {
+            const check = await _apiGet(`/api/media?action=usage&id=${encodeURIComponent(uniqueId)}`);
+            if (check && check.used_in_articles) usedArticles = check.used_in_articles;
+          } catch(err) {}
+          _showBlockedMediaModal('Move to Trash', usedArticles, filename);
+        } else {
+          showToast('error', 'Failed to move to trash: ' + e.message);
+        }
       }
     }
   });
@@ -10706,8 +10821,8 @@ async function _restoreAsset(uniqueId) {
 
 function _deletePermanentConfirm(uniqueId, filename) {
   const item = _rawGalleryList.find(x => x.unique_id === uniqueId || x.id === uniqueId);
-  const provider = item ? (item.provider || (item.url?.includes('backblazeb2') ? 'b2' : 'r2')) : 'r2';
-  const providerName = provider === 'b2' ? 'Backblaze B2' : 'Cloudflare R2';
+  const provider = item ? (item.provider || (item.url?.includes('backblazeb2') ? 'b2' : (item.url?.includes('supabase.co') ? 'supabase' : 'r2'))) : 'r2';
+  const providerName = provider === 'b2' ? 'Backblaze B2' : (provider === 'supabase' ? 'Supabase Storage' : 'Cloudflare R2');
 
   _confirmModal({
     title: `Permanently Erase from ${providerName}`,
@@ -10728,7 +10843,16 @@ function _deletePermanentConfirm(uniqueId, filename) {
           showToast('success', `Permanently erased "${filename}" from ${providerName}.`);
         }
       } catch(e) {
-        showToast('error', 'Failed to delete asset: ' + e.message);
+        if (e.status === 409 || e.message?.includes('in use by') || e.message?.includes('ব্যবহৃত হচ্ছে')) {
+          let usedArticles = [];
+          try {
+            const check = await _apiGet(`/api/media?action=usage&id=${encodeURIComponent(uniqueId)}`);
+            if (check && check.used_in_articles) usedArticles = check.used_in_articles;
+          } catch(err) {}
+          _showBlockedMediaModal('Delete Permanently', usedArticles, filename);
+        } else {
+          showToast('error', 'Failed to delete asset: ' + e.message);
+        }
       }
     }
   });
@@ -10742,7 +10866,7 @@ function _emptyTrashConfirm() {
   }
   _confirmModal({
     title: `Empty Trash Bin (${trashCount} ${trashCount === 1 ? 'item' : 'items'})`,
-    body: `Are you sure you want to permanently erase all <strong>${trashCount}</strong> trashed items from your cloud storage (Cloudflare R2 & Backblaze B2)?<br><div style="margin-top:8px;font-size:12px;color:#991b1b;background:#fef2f2;border:1px solid #fecaca;padding:8px 12px;border-radius:8px;"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:3px;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><strong>Irreversible Action:</strong> All trashed images will be permanently erased from cloud storage. This action cannot be recovered.</div>`,
+    body: `Are you sure you want to permanently erase all <strong>${trashCount}</strong> trashed items from your cloud storage (Cloudflare R2, Backblaze B2 & Supabase Storage)?<br><div style="margin-top:8px;font-size:12px;color:#991b1b;background:#fef2f2;border:1px solid #fecaca;padding:8px 12px;border-radius:8px;"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:3px;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><strong>Irreversible Action:</strong> All trashed images will be permanently erased from cloud storage. This action cannot be recovered.</div>`,
     confirmText: 'Empty Trash Now',
     variant: 'danger',
     onConfirm: async () => {

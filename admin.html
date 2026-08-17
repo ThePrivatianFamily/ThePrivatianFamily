@@ -3558,7 +3558,7 @@
 
           <!-- Right Column: Metadata & Edit Form -->
           <div>
-            <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:12px 16px;margin-bottom:16px;">
+            <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:12px 16px;margin-bottom:14px;">
               <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:12px;">
                 <div>
                   <span style="color:var(--text-muted);display:block;font-size:10.5px;text-transform:uppercase;font-weight:700;">Unique ID</span>
@@ -3577,6 +3577,19 @@
                   <span id="media-insp-date" style="color:var(--text-primary);">—</span>
                 </div>
               </div>
+            </div>
+
+            <!-- Article Usage Indicator Card -->
+            <div id="media-insp-usage-wrap" style="display:none;background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:10px 14px;margin-bottom:14px;">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+                <span style="font-size:12px;font-weight:700;color:#991b1b;display:flex;align-items:center;gap:6px;">
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                  <span id="media-insp-usage-title">Protected (In Use by Articles)</span>
+                </span>
+                <span id="media-insp-usage-count-badge" class="badge" style="background:#fee2e2;color:#991b1b;font-size:10.5px;font-weight:700;">1 Article</span>
+              </div>
+              <p style="margin:0 0 6px 0;font-size:11.5px;color:#7f1d1d;">This image cannot be moved to trash or deleted until the following referencing article(s) are permanently erased:</p>
+              <div id="media-insp-usage-list" style="display:flex;flex-direction:column;gap:4px;font-size:11.5px;"></div>
             </div>
 
             <!-- Editable Fields -->

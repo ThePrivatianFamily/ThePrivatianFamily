@@ -977,6 +977,62 @@ module.exports = async (req, res) => {
     }
   }
 
+/**
+ * Find all articles in the database that reference a given media item (by ID, Unique ID, Storage Key, or URL).
+ * An article references an image if:
+ * 1. hero_img_url matches or contains the image url / unique_id / storage_key
+ * 2. content_html or content_html_bn contains the image url / unique_id / storage_key
+ * 3. author_photo_url matches or contains the image url / unique_id / storage_key
+ * 4. content (draft JSON) contains the image url / unique_id / storage_key
+ *
+ * NOTE: As per user rule, even if an article is in trash (is_deleted: true), the image CANNOT be trashed or deleted
+ * until that article is PERMANENTLY deleted from the articles table or the image is unlinked.
+ */
+async function findArticlesUsingMediaItem(sb, item) {
+  if (!sb || !item) return [];
+  try {
+    const { data: articles, error } = await sb
+      .from('articles')
+      .select('id, title, title_bn, slug, hero_img_url, content_html, content_html_bn, content, author_photo_url, is_deleted, status');
+    if (error || !Array.isArray(articles)) return [];
+
+    const uid = (item.unique_id || item.id || '').trim();
+    const url = (item.url || '').trim();
+    const key = (item.storage_key || item.r2_key || '').trim();
+    const filename = (item.filename || '').trim();
+
+    // Identifiers to search for
+    const needles = [uid, url, key, filename].filter(x => x && x.length >= 4);
+    if (!needles.length) return [];
+
+    const matchingArticles = articles.filter(art => {
+      // 1. Check hero_img_url
+      if (art.hero_img_url && needles.some(n => art.hero_img_url.includes(n))) return true;
+      // 2. Check author_photo_url
+      if (art.author_photo_url && needles.some(n => art.author_photo_url.includes(n))) return true;
+      // 3. Check content_html
+      if (art.content_html && needles.some(n => art.content_html.includes(n))) return true;
+      // 4. Check content_html_bn
+      if (art.content_html_bn && needles.some(n => art.content_html_bn.includes(n))) return true;
+      // 5. Check content (working draft JSON)
+      if (art.content && typeof art.content === 'string' && needles.some(n => art.content.includes(n))) return true;
+      return false;
+    });
+
+    return matchingArticles.map(a => ({
+      id: a.id,
+      title: a.title || a.title_bn || 'Untitled Article',
+      title_bn: a.title_bn || '',
+      slug: a.slug || a.id,
+      status: a.status,
+      is_deleted: !!a.is_deleted
+    }));
+  } catch (err) {
+    console.error('[Media] findArticlesUsingMediaItem error:', err);
+    return [];
+  }
+}
+
   // ── 5. TRASH & DELETION ACTIONS ────────────────────────────────────────
   if ((req.method === 'DELETE' || req.method === 'POST') && action === 'trash') {
     const session = await requireAuth(req, res);
@@ -989,6 +1045,18 @@ module.exports = async (req, res) => {
       const items = await getStoredMediaList(sb);
       const item = items.find(x => x.unique_id === id || x.id === id);
       if (!item) return res.status(404).json({ error: 'Media asset not found.' });
+
+      // GUARD: Prevent moving to trash if image is currently used in any article
+      const usedInArticles = await findArticlesUsingMediaItem(sb, item);
+      if (usedInArticles.length > 0) {
+        const artNames = usedInArticles.map(a => `"${a.title}"${a.is_deleted ? ' (In Article Trash)' : ''}`).join(', ');
+        return res.status(409).json({
+          error: `Cannot move to Trash: This image is currently in use by ${usedInArticles.length} article(s): ${artNames}. Delete or unlink the article(s) permanently first.`,
+          error_bn: `এই ছবিটি ${usedInArticles.length}টি আর্টিকেলে (${artNames}) ব্যবহৃত হচ্ছে। আর্টিকেলটি স্থায়ীভাবে মুছে না ফেলা পর্যন্ত ছবিটি ট্র্যাশে পাঠানো যাবে না।`,
+          is_in_use: true,
+          used_in_articles: usedInArticles
+        });
+      }
 
       item.is_deleted = true;
       item.deleted_at = new Date().toISOString();
@@ -1066,8 +1134,23 @@ module.exports = async (req, res) => {
     try {
       const items = await getStoredMediaList(sb);
       const item = items.find(x => x.unique_id === id || x.id === id);
+
+      // GUARD: Prevent permanent deletion if image is currently used in any article
+      if (item) {
+        const usedInArticles = await findArticlesUsingMediaItem(sb, item);
+        if (usedInArticles.length > 0) {
+          const artNames = usedInArticles.map(a => `"${a.title}"${a.is_deleted ? ' (In Article Trash)' : ''}`).join(', ');
+          return res.status(409).json({
+            error: `Cannot delete permanently: This image is currently in use by ${usedInArticles.length} article(s): ${artNames}. Delete or unlink the article(s) permanently first.`,
+            error_bn: `এই ছবিটি ${usedInArticles.length}টি আর্টিকেলে (${artNames}) ব্যবহৃত হচ্ছে। আর্টিকেলটি স্থায়ীভাবে মুছে না ফেলা পর্যন্ত ছবিটি স্থায়ীভাবে মোছা যাবে না।`,
+            is_in_use: true,
+            used_in_articles: usedInArticles
+          });
+        }
+      }
+
       const key = item && (item.storage_key || item.r2_key);
-      const provider = (item && item.provider) || (item && item.url?.includes('backblazeb2') ? 'b2' : 'r2');
+      const provider = (item && item.provider) || (item && item.url?.includes('backblazeb2') ? 'b2' : (item && item.url?.includes('supabase.co') ? 'supabase' : 'r2'));
 
       if (key) {
         if (provider === 'b2') {
@@ -1121,8 +1204,19 @@ module.exports = async (req, res) => {
     try {
       const items = await getStoredMediaList(sb);
       const trashedItems = items.filter(x => x.is_deleted);
+      let deletedCount = 0;
+      let skippedCount = 0;
+      const skippedDetails = [];
 
       for (const item of trashedItems) {
+        // Protect if in use
+        const usedInArticles = await findArticlesUsingMediaItem(sb, item);
+        if (usedInArticles.length > 0) {
+          skippedCount++;
+          skippedDetails.push({ filename: item.filename, articles: usedInArticles });
+          continue;
+        }
+
         const key = item.storage_key || item.r2_key;
         const provider = item.provider || (item.url?.includes('backblazeb2') ? 'b2' : (item.url?.includes('supabase.co') ? 'supabase' : 'r2'));
 
@@ -1136,6 +1230,7 @@ module.exports = async (req, res) => {
           }
         }
         await removeMediaItemMetadata(sb, item.unique_id || item.id);
+        deletedCount++;
       }
       invalidateMediaCache();
 
@@ -1144,16 +1239,45 @@ module.exports = async (req, res) => {
           actor: session,
           action: 'media.empty_trash',
           category: 'media',
-          summary: `${session.name || session.email} emptied Trash Bin (${trashedItems.length} assets permanently erased)`,
-          details: { deletedCount: trashedItems.length },
+          summary: `${session.name || session.email} emptied Trash Bin (${deletedCount} assets erased${skippedCount > 0 ? `, ${skippedCount} protected assets skipped` : ''})`,
+          details: { deletedCount, skippedCount, skippedDetails },
           req
         });
       } catch(e) {}
 
-      return res.status(200).json({ ok: true, deletedCount: trashedItems.length, message: `Trash emptied (${trashedItems.length} assets permanently erased).` });
+      let msg = `Trash emptied (${deletedCount} assets permanently erased).`;
+      if (skippedCount > 0) {
+        msg += ` Note: ${skippedCount} image(s) were protected and kept because they are in use by existing articles.`;
+      }
+
+      return res.status(200).json({ ok: true, deletedCount, skippedCount, message: msg });
     } catch(err) {
       console.error('[Media] Empty trash error:', err);
       return res.status(500).json({ error: 'Failed to empty Trash Bin.' });
+    }
+  }
+
+  // ── 6. CHECK MEDIA ASSET ARTICLE USAGE (GET) ───────────────────────────
+  if (req.method === 'GET' && action === 'usage') {
+    const id = req.query.id;
+    if (!id) return res.status(400).json({ error: 'id is required.' });
+
+    try {
+      const items = await getStoredMediaList(sb);
+      const item = items.find(x => x.unique_id === id || x.id === id);
+      if (!item) return res.status(404).json({ error: 'Media asset not found.' });
+
+      const usedInArticles = await findArticlesUsingMediaItem(sb, item);
+      return res.status(200).json({
+        ok: true,
+        media_id: id,
+        filename: item.filename,
+        is_in_use: usedInArticles.length > 0,
+        used_in_articles: usedInArticles
+      });
+    } catch(err) {
+      console.error('[Media] Usage check error:', err);
+      return res.status(500).json({ error: 'Failed to check media asset usage.' });
     }
   }
 
