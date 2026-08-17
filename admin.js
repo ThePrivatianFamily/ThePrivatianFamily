@@ -2086,46 +2086,65 @@ function renderRecentActivityFeed(logs) {
   const feed = document.getElementById('db-activity-feed');
   if (!feed) return;
 
+  // If logs array is empty, attempt an async fetch directly from /api/activity-log
   if (!logs || !logs.length) {
     feed.innerHTML = `
-      <div style="text-align:center;padding:32px;color:var(--text-muted);font-size:12.5px;">
-        No recent administrative activity recorded.
+      <div style="text-align:center;padding:28px 16px;color:var(--text-muted);font-size:12px;display:flex;flex-direction:column;align-items:center;gap:6px;">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" style="opacity:0.6;"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        <span>No recent administrative activity recorded.</span>
       </div>
     `;
+
+    // Asynchronous background fill if /api/activity-log has events
+    if (!window._fetchingDashboardActivityLogs) {
+      window._fetchingDashboardActivityLogs = true;
+      _apiGet('/api/activity-log?action=list&limit=5')
+        .then(res => {
+          window._fetchingDashboardActivityLogs = false;
+          const items = (res && Array.isArray(res.items)) ? res.items : (Array.isArray(res) ? res : []);
+          if (items.length > 0) {
+            renderRecentActivityFeed(items);
+          }
+        })
+        .catch(() => {
+          window._fetchingDashboardActivityLogs = false;
+        });
+    }
     return;
   }
 
   feed.innerHTML = logs.slice(0, 5).map(log => {
-    const actorEmail = (log.actor && (log.actor.name || log.actor.email)) || log.user_email || 'System';
-    const initials = actorEmail.charAt(0).toUpperCase();
-    const summary = log.summary || log.action || 'System modification';
-    const timeStr = log.created_at ? formatRelativeTime(new Date(log.created_at)) : 'Recently';
+    const actorEmail = log.actor_email || (log.actor && (log.actor.email || log.actor.name)) || log.user_email || 'System';
+    const actorName = log.actor_name || (log.actor && log.actor.name) || actorEmail.split('@')[0] || 'Admin';
+    const initials = (actorName || actorEmail).charAt(0).toUpperCase();
+    const summary = log.summary || log.action || 'Administrative modification';
+    
+    // Parse time
+    const timeVal = log.timestamp || log.created_at || log.logged_at;
+    const dateObj = timeVal ? new Date(timeVal) : null;
+    const timeStr = dateObj ? formatActivityRelativeTime(timeVal) : 'Recently';
+
+    // Category pill
+    const catPill = typeof getActivityCategoryPill === 'function' 
+      ? getActivityCategoryPill(log.category)
+      : `<span style="padding:2px 6px;font-size:9.5px;font-weight:700;border-radius:4px;background:#f1f5f9;color:#334155;border:1px solid #e2e8f0;">${(log.category || 'LOG').toUpperCase()}</span>`;
 
     return `
       <div class="db-activity-item">
-        <div class="db-activity-avatar" title="${escapeHtml(actorEmail)}">${initials}</div>
+        <div class="db-activity-avatar" title="${escapeHtml(actorName)} (${escapeHtml(actorEmail)})">${initials}</div>
         <div class="db-activity-body">
-          <span class="db-activity-summary">${escapeHtml(summary)}</span>
-          <span class="db-activity-time">${escapeHtml(timeStr)}</span>
+          <div class="db-activity-top">
+            <span class="db-activity-summary" title="${escapeHtml(summary)}">${escapeHtml(summary)}</span>
+            <span class="db-activity-time">${escapeHtml(timeStr)}</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:6px;margin-top:2px;">
+            ${catPill}
+            <span class="db-activity-actor">by <strong>${escapeHtml(actorName)}</strong></span>
+          </div>
         </div>
       </div>
     `;
   }).join('');
-}
-
-function formatRelativeTime(date) {
-  if (!date || isNaN(date.getTime())) return 'Recently';
-  const now = new Date();
-  const diffSec = Math.floor((now - date) / 1000);
-  if (diffSec < 60) return 'Just now';
-  const diffMin = Math.floor(diffSec / 60);
-  if (diffMin < 60) return `${diffMin}m ago`;
-  const diffHrs = Math.floor(diffMin / 60);
-  if (diffHrs < 24) return `${diffHrs}h ago`;
-  const diffDays = Math.floor(diffHrs / 24);
-  if (diffDays === 1) return 'Yesterday';
-  if (diffDays < 30) return `${diffDays}d ago`;
-  return formatDhaka24h(date, 'date');
 }
 
 /* ═══════════════════════════════════════════════════════════════

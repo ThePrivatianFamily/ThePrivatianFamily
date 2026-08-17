@@ -737,9 +737,30 @@ module.exports = async function handler(req, res) {
 
     let recentLogs = [];
     try {
-      const { data: logRow } = await sb.from('site_settings').select('value').eq('key', 'activity_logs_store').maybeSingle();
-      if (logRow && Array.isArray(logRow.value)) {
-        recentLogs = logRow.value.slice(0, 5);
+      // 1. Primary: query activity_logs table
+      const { data: actRows, error: actErr } = await sb
+        .from('activity_logs')
+        .select('*')
+        .order('timestamp', { ascending: false })
+        .limit(6);
+
+      if (!actErr && Array.isArray(actRows) && actRows.length > 0) {
+        recentLogs = actRows;
+      } else {
+        // 2. Fallback: site_settings activity_logs_store
+        const { data: logRow } = await sb.from('site_settings').select('value').eq('key', 'activity_logs_store').maybeSingle();
+        if (logRow && Array.isArray(logRow.value) && logRow.value.length > 0) {
+          recentLogs = logRow.value.slice(0, 6);
+        } else {
+          // 3. Fallback: sections __activity_logs_store__
+          const { data: secRow } = await sb.from('sections').select('name').eq('admin_id', '__activity_logs_store__').maybeSingle();
+          if (secRow && secRow.name) {
+            try {
+              const parsed = JSON.parse(secRow.name);
+              if (Array.isArray(parsed) && parsed.length > 0) recentLogs = parsed.slice(0, 6);
+            } catch(e) {}
+          }
+        }
       }
     } catch(e) {}
 
