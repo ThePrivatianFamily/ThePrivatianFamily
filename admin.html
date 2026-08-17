@@ -2485,19 +2485,23 @@
               <span class="gallery-pulse-dot b2"></span>
               <span id="gallery-sync-b2-text">Backblaze B2 (10 GB)</span>
             </div>
+            <div class="gallery-sync-chip db synced" id="gallery-sync-sb-badge" style="border-color:#a7f3d0;background:#ecfdf5;color:#065f46;" title="Live status with Supabase Storage Bucket: article-images">
+              <span class="gallery-pulse-dot" style="background:#10b981;"></span>
+              <span id="gallery-sync-sb-text">Supabase Storage (1 GB)</span>
+            </div>
             <div class="gallery-sync-chip db synced" id="gallery-sync-db-badge" title="Live metadata synchronized with Supabase PostgreSQL Database">
               <span class="gallery-pulse-dot db"></span>
               <span id="gallery-sync-db-text">Database Synced</span>
             </div>
-            <span class="gallery-header-pill" style="background:#0f172a;color:#38bdf8;">20 GB Free Dual Cloud</span>
+            <span class="gallery-header-pill" style="background:#0f172a;color:#38bdf8;">21 GB Free Multi-Cloud</span>
           </div>
           <h2 class="gallery-header-title">Media Gallery &amp; Multi-Cloud Asset Library</h2>
-          <p class="gallery-header-desc">Upload, store, and manage high-resolution media across <strong style="color:#f97316;">Cloudflare R2 (10 GB)</strong> and <strong style="color:#e11d48;">Backblaze B2 (10 GB)</strong> with automated unique IDs (<code style="color:var(--brand);font-weight:700;">img_xxxxxxxx</code>) for instant insertion across all articles, sections, and site layouts.</p>
+          <p class="gallery-header-desc">Upload, store, and manage high-resolution media across <strong style="color:#f97316;">Cloudflare R2 (10 GB)</strong>, <strong style="color:#e11d48;">Backblaze B2 (10 GB)</strong>, and <strong style="color:#10b981;">Supabase Storage (1 GB)</strong> with automated unique IDs (<code style="color:var(--brand);font-weight:700;">img_xxxxxxxx</code>) for instant insertion across all articles, sections, and site layouts.</p>
         </div>
         <div class="gallery-header-actions">
-          <button class="btn btn--secondary btn--sm" id="gallery-btn-sync-trigger" onclick="syncGalleryAssets()" title="Force real-time scan and sync between R2, B2 &amp; Database">
+          <button class="btn btn--secondary btn--sm" id="gallery-btn-sync-trigger" onclick="syncGalleryAssets()" title="Force real-time scan and sync between R2, B2, Supabase &amp; Database">
             <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
-            <span id="gallery-btn-sync-text">Sync R2, B2 &amp; DB</span>
+            <span id="gallery-btn-sync-text">Sync Multi-Cloud Storage</span>
           </button>
           <button class="btn btn--primary btn--sm" id="gallery-btn-upload-trigger" onclick="openGalleryUniversalUpload()" title="Open Universal Media Uploader">
             <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
@@ -2506,7 +2510,7 @@
         </div>
       </div>
 
-      <!-- ══ STORAGE ANALYTICS & DUAL QUOTA DASHBOARD ══ -->
+      <!-- ══ STORAGE ANALYTICS & MULTI-CLOUD QUOTA DASHBOARD ══ -->
       <div class="gallery-analytics-wrap">
         <!-- 4 KPI Stat Cards -->
         <div class="gallery-kpi-grid">
@@ -2530,7 +2534,7 @@
             <div class="gallery-kpi-data">
               <span class="gallery-kpi-label">Total Storage Used</span>
               <div class="gallery-kpi-val" id="gallery-stat-storage-used">0 B</div>
-              <div class="gallery-kpi-sub" id="gallery-stat-used-pct">0.00% of 20 GB Total Free Tier</div>
+              <div class="gallery-kpi-sub" id="gallery-stat-used-pct">0.00% of 21 GB Total Free Tier</div>
             </div>
           </div>
 
@@ -2541,7 +2545,7 @@
             </div>
             <div class="gallery-kpi-data">
               <span class="gallery-kpi-label">Total Storage Free</span>
-              <div class="gallery-kpi-val" id="gallery-stat-storage-free">20.00 GB</div>
+              <div class="gallery-kpi-val" id="gallery-stat-storage-free">21.00 GB</div>
               <div class="gallery-kpi-sub" id="gallery-stat-free-pct">100% capacity remaining</div>
             </div>
           </div>
@@ -2559,17 +2563,17 @@
           </div>
         </div>
 
-        <!-- Visual Dual Quota & Capacity Bar -->
+        <!-- Visual Multi-Cloud Quota & Capacity Bar -->
         <div class="gallery-quota-card" style="padding:16px 20px;">
           <div class="gallery-quota-header" style="margin-bottom:12px;">
             <div class="gallery-quota-title-wrap">
-              <span class="gallery-quota-title" style="font-size:14px;font-weight:700;">Dual-Cloud Storage Quotas (20 GB Total Capacity)</span>
-              <span class="gallery-quota-badge" style="background:#e0f2fe;color:#0369a1;">10 GB R2 + 10 GB B2 Free</span>
+              <span class="gallery-quota-title" style="font-size:14px;font-weight:700;">Multi-Cloud Storage Quotas (21 GB Total Capacity)</span>
+              <span class="gallery-quota-badge" style="background:#e0f2fe;color:#0369a1;">10 GB R2 + 10 GB B2 + 1 GB Supabase Free</span>
             </div>
             <div class="gallery-quota-numbers">
-              <span id="gallery-quota-used-text" style="font-weight:700;">0 B / 20.00 GB</span>
+              <span id="gallery-quota-used-text" style="font-weight:700;">0 B / 21.00 GB</span>
               <span class="gallery-quota-sep">•</span>
-              <span id="gallery-quota-free-text" style="color:#16a34a;font-weight:700;">20.00 GB Available</span>
+              <span id="gallery-quota-free-text" style="color:#16a34a;font-weight:700;">21.00 GB Available</span>
             </div>
           </div>
 
@@ -2601,8 +2605,22 @@
             </div>
           </div>
 
+          <!-- Provider 3: Supabase Storage Progress Bar -->
+          <div style="margin-bottom:12px;background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:10px 14px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;font-size:12px;">
+              <span style="font-weight:700;color:#059669;display:flex;align-items:center;gap:5px;">
+                <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#10b981;"></span>
+                Supabase Storage (1.00 GB Free Tier)
+              </span>
+              <span id="gallery-sb-quota-stats" style="font-weight:600;color:#64748b;">0 B / 1.00 GB (0.00% used)</span>
+            </div>
+            <div class="gallery-quota-track" style="height:7px;background:#f1f5f9;border-radius:4px;overflow:hidden;">
+              <div class="gallery-quota-fill" id="gallery-sb-quota-fill" style="width: 1.05%;background:linear-gradient(90deg, #10b981, #059669);"></div>
+            </div>
+          </div>
+
           <div class="gallery-quota-footer" style="padding-top:4px;">
-            <span style="display:inline-flex;align-items:center;gap:6px;font-size:12px;"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" style="color:#4f46e5;"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> High-speed global edge distribution with <strong>Dual-Engine Zero-Egress Cloud Backup</strong>.</span>
+            <span style="display:inline-flex;align-items:center;gap:6px;font-size:12px;"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" style="color:#4f46e5;"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> High-speed global edge distribution with <strong>Triple-Engine Multi-Cloud Backup</strong>.</span>
             <span id="gallery-quota-percent-text" style="font-weight:600;">0.00% total capacity used</span>
           </div>
         </div>
@@ -2669,9 +2687,10 @@
 
             <!-- Provider Filter Dropdown -->
             <select id="gallery-provider-select" class="gallery-sort-select" onchange="_handleGalleryProviderFilter(this.value)" title="Filter by Storage Provider">
-              <option value="all">All Storage (20 GB)</option>
+              <option value="all">All Storage (21 GB)</option>
               <option value="r2">Cloudflare R2 (10 GB)</option>
               <option value="b2">Backblaze B2 (10 GB)</option>
+              <option value="supabase">Supabase Storage (1 GB)</option>
             </select>
 
             <select id="gallery-sort-select" class="gallery-sort-select" onchange="_handleGallerySort()">

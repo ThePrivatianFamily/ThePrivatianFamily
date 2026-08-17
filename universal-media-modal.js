@@ -56,7 +56,7 @@
           <div class="umm-header-left">
             <div class="umm-header-badge" id="umm-header-badge">
               <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/></svg>
-              <span>Dual Cloud: R2 + B2 (20 GB Free)</span>
+              <span>Multi-Cloud: R2 + B2 + Supabase (21 GB Free)</span>
             </div>
             <h2 class="umm-header-title" id="umm-header-title">Select or Upload Image</h2>
             <p class="umm-header-sub" id="umm-header-sub">High-performance multi-cloud asset library with instant search</p>
@@ -91,10 +91,11 @@
                 </button>
               </div>
               <div class="umm-filters-wrap" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-                <select id="umm-provider-select" class="umm-folder-select" style="min-width:140px;" onchange="window._ummOnProviderFilter(this.value)" title="Filter by Cloud Storage">
-                  <option value="all">All Storage (20 GB)</option>
+                <select id="umm-provider-select" class="umm-folder-select" style="min-width:150px;" onchange="window._ummOnProviderFilter(this.value)" title="Filter by Cloud Storage">
+                  <option value="all">All Storage (21 GB)</option>
                   <option value="r2">Cloudflare R2 (10 GB)</option>
                   <option value="b2">Backblaze B2 (10 GB)</option>
+                  <option value="supabase">Supabase Storage (1 GB)</option>
                 </select>
                 <select id="umm-folder-select" class="umm-folder-select" onchange="window._ummOnFolderFilter(this.value)">
                   <option value="all">All Folders</option>
@@ -121,6 +122,7 @@
                   <select id="umm-upload-provider-select" class="umm-folder-select" style="height:32px;font-size:11.5px;min-width:170px;" onchange="window._ummOnUploadProviderChange(this.value)">
                     <option value="r2" selected>Cloudflare R2 (Primary • 10 GB)</option>
                     <option value="b2">Backblaze B2 (Secondary • 10 GB)</option>
+                    <option value="supabase">Supabase Storage (1 GB Free)</option>
                     <option value="auto">Auto (Smart Routing)</option>
                   </select>
                 </div>
@@ -424,10 +426,15 @@
       const isSel = _selectedItem && (_selectedItem.unique_id === item.unique_id || _selectedItem.url === item.url);
       const name = item.title || item.filename || 'Image';
       const uid = item.unique_id || 'img';
-      const provider = item.provider || (item.url?.includes('backblazeb2') ? 'b2' : 'r2');
-      const provBadge = provider === 'b2'
-        ? `<span class="umm-provider-badge b2" title="Hosted on Backblaze B2 (10 GB Free)">B2</span>`
-        : `<span class="umm-provider-badge r2" title="Hosted on Cloudflare R2 (10 GB Free)">R2</span>`;
+      const provider = item.provider || (item.url?.includes('backblazeb2') ? 'b2' : (item.url?.includes('supabase.co') ? 'supabase' : 'r2'));
+      let provBadge = '';
+      if (provider === 'b2') {
+        provBadge = `<span class="umm-provider-badge b2" title="Hosted on Backblaze B2 (10 GB Free)">B2</span>`;
+      } else if (provider === 'supabase') {
+        provBadge = `<span class="umm-provider-badge sb" style="background:#059669;color:#fff;" title="Hosted on Supabase Storage (1 GB Free)">SB</span>`;
+      } else {
+        provBadge = `<span class="umm-provider-badge r2" title="Hosted on Cloudflare R2 (10 GB Free)">R2</span>`;
+      }
 
       return `
         <div class="umm-grid-item ${isSel ? 'selected' : ''}" 
@@ -486,7 +493,13 @@
 
     const tok = getAuthToken();
     let uploadedCount = 0;
-    const providerName = targetProvider === 'b2' ? 'Backblaze B2' : 'Cloudflare R2';
+    const providerDisplayNames = {
+      r2: 'Cloudflare R2',
+      b2: 'Backblaze B2',
+      supabase: 'Supabase Storage',
+      auto: 'Cloudflare R2 (Auto)'
+    };
+    const providerName = providerDisplayNames[targetProvider] || 'Cloudflare R2';
 
     for (let i = 0; i < files.length; i++) {
       const file = files[i];

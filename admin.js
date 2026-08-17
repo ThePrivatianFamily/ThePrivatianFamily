@@ -9995,15 +9995,18 @@ function _updateGalleryCounts(apiStorage = null, syncStatus = null) {
   const quotaFill = document.getElementById('gallery-quota-fill');
   const quotaPercentText = document.getElementById('gallery-quota-percent-text');
 
-  // Dual Quota elements
+  // Multi-Cloud Quota elements
   const r2QuotaStats = document.getElementById('gallery-r2-quota-stats');
   const r2QuotaFill = document.getElementById('gallery-r2-quota-fill');
   const b2QuotaStats = document.getElementById('gallery-b2-quota-stats');
   const b2QuotaFill = document.getElementById('gallery-b2-quota-fill');
+  const sbQuotaStats = document.getElementById('gallery-sb-quota-stats');
+  const sbQuotaFill = document.getElementById('gallery-sb-quota-fill');
 
   // Sync badges
   const r2SyncText = document.getElementById('gallery-sync-r2-text');
   const b2SyncText = document.getElementById('gallery-sync-b2-text');
+  const sbSyncText = document.getElementById('gallery-sync-sb-text');
   const dbSyncText = document.getElementById('gallery-sync-db-text');
 
   // Separate active and trash
@@ -10018,16 +10021,19 @@ function _updateGalleryCounts(apiStorage = null, syncStatus = null) {
   const svgs = activeItems.filter(x => x.mime_type?.includes('svg') || x.filename?.toLowerCase().endsWith('.svg')).length;
 
   // Provider breakdown
-  const r2Items = _rawGalleryList.filter(x => x.provider === 'r2' || (!x.provider && !x.url?.includes('backblazeb2')));
+  const r2Items = _rawGalleryList.filter(x => x.provider === 'r2' || (!x.provider && !x.url?.includes('backblazeb2') && !x.url?.includes('supabase.co')));
   const b2Items = _rawGalleryList.filter(x => x.provider === 'b2' || x.url?.includes('backblazeb2'));
+  const sbItems = _rawGalleryList.filter(x => x.provider === 'supabase' || x.url?.includes('supabase.co/storage'));
 
   const r2UsedBytes = apiStorage?.r2?.usedBytes ?? r2Items.reduce((acc, cur) => acc + (cur.file_size || 0), 0);
   const b2UsedBytes = apiStorage?.b2?.usedBytes ?? b2Items.reduce((acc, cur) => acc + (cur.file_size || 0), 0);
+  const sbUsedBytes = apiStorage?.supabase?.usedBytes ?? sbItems.reduce((acc, cur) => acc + (cur.file_size || 0), 0);
 
   const SINGLE_QUOTA_BYTES = 10 * 1024 * 1024 * 1024; // 10 GB
-  const TOTAL_QUOTA_BYTES = 20 * 1024 * 1024 * 1024;  // 20 GB
+  const SB_QUOTA_BYTES     = 1024 * 1024 * 1024;       // 1 GB
+  const TOTAL_QUOTA_BYTES  = 21 * 1024 * 1024 * 1024;  // 21 GB
 
-  const totalBytes = apiStorage?.totalBytes ?? (r2UsedBytes + b2UsedBytes);
+  const totalBytes = apiStorage?.totalBytes ?? (r2UsedBytes + b2UsedBytes + sbUsedBytes);
   const activeBytes = apiStorage?.activeBytes ?? activeItems.reduce((acc, cur) => acc + (cur.file_size || 0), 0);
 
   const freeBytes = Math.max(0, TOTAL_QUOTA_BYTES - totalBytes);
@@ -10036,6 +10042,7 @@ function _updateGalleryCounts(apiStorage = null, syncStatus = null) {
 
   const r2UsedPct = (r2UsedBytes / SINGLE_QUOTA_BYTES) * 100;
   const b2UsedPct = (b2UsedBytes / SINGLE_QUOTA_BYTES) * 100;
+  const sbUsedPct = (sbUsedBytes / SB_QUOTA_BYTES) * 100;
 
   const avgBytes = activeCount > 0 ? Math.round(activeBytes / activeCount) : 0;
   const largestBytes = apiStorage?.largestFileSize ?? activeItems.reduce((max, cur) => Math.max(max, cur.file_size || 0), 0);
@@ -10046,6 +10053,9 @@ function _updateGalleryCounts(apiStorage = null, syncStatus = null) {
   }
   if (b2SyncText) {
     b2SyncText.textContent = `Backblaze B2 (${b2Items.length} files • ${_formatFileSize(b2UsedBytes)})`;
+  }
+  if (sbSyncText) {
+    sbSyncText.textContent = `Supabase Storage (${sbItems.length} files • ${_formatFileSize(sbUsedBytes)})`;
   }
   if (dbSyncText) {
     dbSyncText.textContent = `Database Synced (${_galleryFolders.length} Folders)`;
@@ -10059,11 +10069,11 @@ function _updateGalleryCounts(apiStorage = null, syncStatus = null) {
 
   // 3. KPI Cards
   if (statTotalCount) statTotalCount.textContent = activeCount;
-  if (statBreakdown) statBreakdown.textContent = `${photos} Photos • ${svgs} SVGs • ${r2Items.length} R2 / ${b2Items.length} B2`;
+  if (statBreakdown) statBreakdown.textContent = `${photos} Photos • ${svgs} SVGs • ${r2Items.length} R2 / ${b2Items.length} B2 / ${sbItems.length} SB`;
   if (statStorageUsed) statStorageUsed.textContent = _formatFileSize(totalBytes);
   if (statUsedPct) {
     const pctStr = usedPct < 0.01 && totalBytes > 0 ? '< 0.01%' : (usedPct.toFixed(2) + '%');
-    statUsedPct.textContent = `${pctStr} of 20 GB Total Free Tier`;
+    statUsedPct.textContent = `${pctStr} of 21 GB Total Free Tier`;
   }
   if (statStorageFree) statStorageFree.textContent = _formatFileSize(freeBytes);
   if (statFreePct) statFreePct.textContent = `${freePct.toFixed(1)}% capacity available`;
@@ -10071,7 +10081,7 @@ function _updateGalleryCounts(apiStorage = null, syncStatus = null) {
   if (statLargest) statLargest.textContent = largestBytes > 0 ? (`Max: ${_formatFileSize(largestBytes)}`) : 'Max: 0 B';
 
   // 4. Quota Bars
-  if (quotaUsedText) quotaUsedText.textContent = `${_formatFileSize(totalBytes)} / 20.00 GB`;
+  if (quotaUsedText) quotaUsedText.textContent = `${_formatFileSize(totalBytes)} / 21.00 GB`;
   if (quotaFreeText) quotaFreeText.textContent = `${_formatFileSize(freeBytes)} Available`;
   if (quotaFill) {
     const fillWidth = Math.min(100, Math.max(totalBytes > 0 ? 0.8 : 0.2, usedPct));
@@ -10098,13 +10108,26 @@ function _updateGalleryCounts(apiStorage = null, syncStatus = null) {
     b2QuotaFill.style.width = Math.min(100, Math.max(b2UsedBytes > 0 ? 0.8 : 0.2, b2UsedPct)).toFixed(2) + '%';
   }
 
+  // Provider 3: Supabase Storage Quota Progress
+  if (sbQuotaStats) {
+    sbQuotaStats.textContent = `${_formatFileSize(sbUsedBytes)} / 1.00 GB (${sbUsedPct < 0.01 && sbUsedBytes > 0 ? '< 0.01%' : sbUsedPct.toFixed(2) + '%'} used)`;
+  }
+  if (sbQuotaFill) {
+    sbQuotaFill.style.width = Math.min(100, Math.max(sbUsedBytes > 0 ? 0.8 : 0.2, sbUsedPct)).toFixed(2) + '%';
+  }
+
   // 5. Footer Bar Summary
   if (footerText) {
-    footerText.textContent = `${activeCount} active items (${_formatFileSize(activeBytes)}) across R2 & B2 • ${trashCount} in trash • ${_formatFileSize(freeBytes)} free capacity remaining`;
+    footerText.textContent = `${activeCount} active items (${_formatFileSize(activeBytes)}) across R2, B2 & Supabase • ${trashCount} in trash • ${_formatFileSize(freeBytes)} free capacity remaining`;
   }
 }
 
 // ── 4. Render Gallery Grid (Fast GPU Accelerated 60FPS) ───────────
+function _handleGalleryProviderFilter(val) {
+  _galleryProviderFilter = val || 'all';
+  renderGalleryGrid();
+}
+
 function renderGalleryGrid() {
   const grid = document.getElementById('gallery-grid');
   const trashBanner = document.getElementById('gallery-trash-banner');
@@ -10132,9 +10155,11 @@ function renderGalleryGrid() {
 
     // Filter by storage provider
     if (_galleryProviderFilter === 'r2') {
-      filtered = filtered.filter(x => x.provider === 'r2' || (!x.provider && !x.url?.includes('backblazeb2')));
+      filtered = filtered.filter(x => x.provider === 'r2' || (!x.provider && !x.url?.includes('backblazeb2') && !x.url?.includes('supabase.co')));
     } else if (_galleryProviderFilter === 'b2') {
       filtered = filtered.filter(x => x.provider === 'b2' || x.url?.includes('backblazeb2'));
+    } else if (_galleryProviderFilter === 'supabase') {
+      filtered = filtered.filter(x => x.provider === 'supabase' || x.url?.includes('supabase.co/storage'));
     }
 
     // Filter by media type
@@ -10198,7 +10223,7 @@ function renderGalleryGrid() {
             <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
           </div>
           <h3 style="margin:0;font-size:15px;color:var(--text-primary);">${_gallerySearchQuery ? 'No matching images found' : (_galleryActiveFolder !== 'all' ? `No images in "${_galleryActiveFolder}" folder` : 'No images uploaded yet')}</h3>
-          <p style="margin:0;font-size:12.5px;color:var(--text-muted);max-width:360px;">${_gallerySearchQuery ? 'Try searching for a different keyword, filename, or storage provider.' : 'Drag & drop images into the upload area or click Upload Media to store in Cloudflare R2 or Backblaze B2.'}</p>
+          <p style="margin:0;font-size:12.5px;color:var(--text-muted);max-width:360px;">${_gallerySearchQuery ? 'Try searching for a different keyword, filename, or storage provider.' : 'Drag & drop images into the upload area or click Upload Media to store in Cloudflare R2, Backblaze B2, or Supabase Storage.'}</p>
           ${!_gallerySearchQuery ? `<button class="btn btn--primary btn--sm" onclick="openGalleryUniversalUpload()" style="margin-top:4px;">Upload to this folder</button>` : ''}
         </div>
       `;
@@ -10213,10 +10238,15 @@ function renderGalleryGrid() {
     const ext = (item.filename && item.filename.split('.').pop()) || (item.mime_type ? item.mime_type.split('/').pop() : 'IMG');
     const sizeStr = _formatFileSize(item.file_size);
     const dateStr = _formatShortDate(item.created_at);
-    const provider = item.provider || (item.url?.includes('backblazeb2') ? 'b2' : 'r2');
-    const provBadge = provider === 'b2'
-      ? `<span class="gallery-badge-provider b2" title="Hosted on Backblaze B2 (10 GB Free)">B2</span>`
-      : `<span class="gallery-badge-provider r2" title="Hosted on Cloudflare R2 (10 GB Free)">R2</span>`;
+    const provider = item.provider || (item.url?.includes('backblazeb2') ? 'b2' : (item.url?.includes('supabase.co') ? 'supabase' : 'r2'));
+    let provBadge = '';
+    if (provider === 'b2') {
+      provBadge = `<span class="gallery-badge-provider b2" title="Hosted on Backblaze B2 (10 GB Free)">B2</span>`;
+    } else if (provider === 'supabase') {
+      provBadge = `<span class="gallery-badge-provider sb" style="background:#ecfdf5;color:#059669;border:1px solid #a7f3d0;" title="Hosted on Supabase Storage (1 GB Free)">SB</span>`;
+    } else {
+      provBadge = `<span class="gallery-badge-provider r2" title="Hosted on Cloudflare R2 (10 GB Free)">R2</span>`;
+    }
 
     return `
       <div class="gallery-item-card ${item.is_deleted ? 'gallery-item-card--trashed' : ''}" data-id="${item.unique_id}">

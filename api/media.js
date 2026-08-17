@@ -133,10 +133,32 @@ async function getStoredMediaList(sb, forceFresh = false) {
     return _mediaListCache;
   }
 
-  // Concurrently scan both Cloudflare R2 and Backblaze B2 buckets
-  const [r2Result, b2Result] = await Promise.allSettled([
+  // Concurrently scan Cloudflare R2, Backblaze B2, and Supabase Storage buckets
+  const [r2Result, b2Result, sbResult] = await Promise.allSettled([
     r2Client.send(new ListObjectsV2Command({ Bucket: R2_BUCKET_NAME, MaxKeys: 1000 })),
-    b2Client.send(new ListObjectsV2Command({ Bucket: B2_BUCKET_NAME, MaxKeys: 1000 }))
+    b2Client.send(new ListObjectsV2Command({ Bucket: B2_BUCKET_NAME, MaxKeys: 1000 })),
+    (async () => {
+      if (!sb) return [];
+      const { data: topFiles } = await sb.storage.from('article-images').list();
+      let files = [];
+      if (Array.isArray(topFiles)) {
+        for (const item of topFiles) {
+          if (item.metadata && item.metadata.size) {
+            files.push({ ...item, Key: item.name });
+          } else if (!item.id && item.name) {
+            const { data: subFiles } = await sb.storage.from('article-images').list(item.name);
+            if (Array.isArray(subFiles)) {
+              for (const sub of subFiles) {
+                if (sub.metadata && sub.metadata.size) {
+                  files.push({ ...sub, Key: item.name + '/' + sub.name });
+                }
+              }
+            }
+          }
+        }
+      }
+      return files;
+    })()
   ]);
 
   let r2Objects = [];
@@ -151,6 +173,11 @@ async function getStoredMediaList(sb, forceFresh = false) {
     b2Objects = b2Result.value.Contents.filter(o => !o.Key.endsWith('/'));
   } else if (b2Result.status === 'rejected') {
     console.warn('[Media] Backblaze B2 list error:', b2Result.reason && b2Result.reason.message);
+  }
+
+  let sbObjects = [];
+  if (sbResult.status === 'fulfilled' && Array.isArray(sbResult.value)) {
+    sbObjects = sbResult.value;
   }
 
   // Fetch metadata dictionary from Supabase
@@ -202,35 +229,49 @@ async function getStoredMediaList(sb, forceFresh = false) {
     const cleanName = fname.replace(/^img_[a-z0-9]{8}_/, '');
 
     const dbMeta = dbMetadataMap.get(uniqueId) || dbMetadataMap.get(obj.Key) || {};
-    const publicUrl = provider === 'b2' ? `${B2_PUBLIC_URL}/${obj.Key}` : `${R2_PUBLIC_URL}/${obj.Key}`;
+    let publicUrl = '';
+    if (provider === 'b2') {
+      publicUrl = `${B2_PUBLIC_URL}/${obj.Key}`;
+    } else if (provider === 'supabase') {
+      publicUrl = sb ? sb.storage.from('article-images').getPublicUrl(obj.Key).data.publicUrl : '';
+    } else {
+      publicUrl = `${R2_PUBLIC_URL}/${obj.Key}`;
+    }
+
+    const providerNames = {
+      r2: 'Cloudflare R2',
+      b2: 'Backblaze B2',
+      supabase: 'Supabase Storage'
+    };
 
     return {
       id: uniqueId,
       unique_id: uniqueId,
-      provider: provider, // 'r2' or 'b2'
-      provider_name: provider === 'b2' ? 'Backblaze B2' : 'Cloudflare R2',
+      provider: provider, // 'r2' | 'b2' | 'supabase'
+      provider_name: providerNames[provider] || 'Cloud Storage',
       storage_key: obj.Key,
       r2_key: obj.Key, // backward compatibility
       url: dbMeta.url || publicUrl,
       filename: dbMeta.filename || cleanName,
       title: dbMeta.title || cleanName.replace(/\.[^/.]+$/, ''),
-      folder: dbMeta.folder || '',
+      folder: dbMeta.folder || (provider === 'supabase' && parts.length > 1 ? parts[0] : ''),
       alt_text: dbMeta.alt_text || '',
       alt_text_bn: dbMeta.alt_text_bn || '',
-      mime_type: dbMeta.mime_type || (fname.endsWith('.svg') ? 'image/svg+xml' : (fname.endsWith('.png') ? 'image/png' : (fname.endsWith('.webp') ? 'image/webp' : 'image/jpeg'))),
-      file_size: obj.Size || dbMeta.file_size || 0,
+      mime_type: (obj.metadata && obj.metadata.mimetype) || dbMeta.mime_type || (fname.endsWith('.svg') ? 'image/svg+xml' : (fname.endsWith('.png') ? 'image/png' : (fname.endsWith('.webp') ? 'image/webp' : 'image/jpeg'))),
+      file_size: (obj.metadata && obj.metadata.size) || obj.Size || dbMeta.file_size || 0,
       tags: dbMeta.tags || [],
       uploaded_by: dbMeta.uploaded_by || 'Admin',
       is_deleted: dbMeta.is_deleted === true,
       deleted_at: dbMeta.deleted_at || null,
-      created_at: obj.LastModified ? new Date(obj.LastModified).toISOString() : (dbMeta.created_at || new Date().toISOString()),
-      updated_at: dbMeta.updated_at || (obj.LastModified ? new Date(obj.LastModified).toISOString() : new Date().toISOString())
+      created_at: obj.created_at || (obj.LastModified ? new Date(obj.LastModified).toISOString() : (dbMeta.created_at || new Date().toISOString())),
+      updated_at: obj.updated_at || dbMeta.updated_at || (obj.LastModified ? new Date(obj.LastModified).toISOString() : new Date().toISOString())
     };
   };
 
   const allItems = [
     ...r2Objects.map(o => mapObjectToItem(o, 'r2')),
-    ...b2Objects.map(o => mapObjectToItem(o, 'b2'))
+    ...b2Objects.map(o => mapObjectToItem(o, 'b2')),
+    ...sbObjects.map(o => mapObjectToItem(o, 'supabase'))
   ];
 
   if (allItems.length > 0) {
@@ -267,11 +308,12 @@ function computeStorageStats(items) {
   const activeItems = items.filter(x => !x.is_deleted);
   const trashItems = items.filter(x => x.is_deleted);
 
-  const SINGLE_QUOTA_BYTES = 10 * 1024 * 1024 * 1024; // 10 GB per provider
-  const TOTAL_QUOTA_BYTES  = 20 * 1024 * 1024 * 1024; // 20 GB combined
+  const SINGLE_QUOTA_BYTES = 10 * 1024 * 1024 * 1024; // 10 GB per R2/B2 provider
+  const SB_QUOTA_BYTES     = 1024 * 1024 * 1024;       // 1 GB Supabase Storage
+  const TOTAL_QUOTA_BYTES  = 21 * 1024 * 1024 * 1024; // 21 GB combined
 
   // 1. Cloudflare R2 stats
-  const r2Items = items.filter(x => x.provider === 'r2' || (!x.provider && !x.url?.includes('backblazeb2')));
+  const r2Items = items.filter(x => x.provider === 'r2' || (!x.provider && !x.url?.includes('backblazeb2') && !x.url?.includes('supabase.co')));
   const r2Active = r2Items.filter(x => !x.is_deleted);
   const r2UsedBytes = r2Items.reduce((acc, x) => acc + (x.file_size || 0), 0);
   const r2FreeBytes = Math.max(0, SINGLE_QUOTA_BYTES - r2UsedBytes);
@@ -284,7 +326,14 @@ function computeStorageStats(items) {
   const b2FreeBytes = Math.max(0, SINGLE_QUOTA_BYTES - b2UsedBytes);
   const b2UsedPct = (b2UsedBytes / SINGLE_QUOTA_BYTES) * 100;
 
-  // 3. Combined Total stats
+  // 3. Supabase Storage stats
+  const sbItems = items.filter(x => x.provider === 'supabase' || x.url?.includes('supabase.co/storage'));
+  const sbActive = sbItems.filter(x => !x.is_deleted);
+  const sbUsedBytes = sbItems.reduce((acc, x) => acc + (x.file_size || 0), 0);
+  const sbFreeBytes = Math.max(0, SB_QUOTA_BYTES - sbUsedBytes);
+  const sbUsedPct = (sbUsedBytes / SB_QUOTA_BYTES) * 100;
+
+  // 4. Combined Total stats
   const totalFiles = items.length;
   const activeFiles = activeItems.length;
   const trashFiles = trashItems.length;
@@ -307,7 +356,7 @@ function computeStorageStats(items) {
     totalBytes,
     activeBytes,
     trashBytes,
-    capacityBytes: TOTAL_QUOTA_BYTES, // 20 GB
+    capacityBytes: TOTAL_QUOTA_BYTES, // 21 GB
     freeBytes,
     usedPct,
     freePct,
@@ -337,6 +386,16 @@ function computeStorageStats(items) {
       usedPct: b2UsedPct,
       fileCount: b2Items.length,
       activeCount: b2Active.length
+    },
+    supabase: {
+      provider: 'supabase',
+      name: 'Supabase Storage',
+      capacityBytes: SB_QUOTA_BYTES,
+      usedBytes: sbUsedBytes,
+      freeBytes: sbFreeBytes,
+      usedPct: sbUsedPct,
+      fileCount: sbItems.length,
+      activeCount: sbActive.length
     }
   };
 }
@@ -448,6 +507,15 @@ module.exports = async (req, res) => {
             endpoint: 'Backblaze B2 Cloud Storage (10 GB Free)',
             totalObjects: storage.b2.fileCount,
             totalBytes: storage.b2.usedBytes,
+            syncedAt: new Date().toISOString()
+          },
+          supabase: {
+            status: 'synced',
+            bucket: 'article-images',
+            region: 'ap-northeast-1',
+            endpoint: 'Supabase Storage Bucket (1 GB Free)',
+            totalObjects: storage.supabase.fileCount,
+            totalBytes: storage.supabase.usedBytes,
             syncedAt: new Date().toISOString()
           },
           db: {
@@ -582,9 +650,9 @@ module.exports = async (req, res) => {
         return res.status(400).json({ error: 'File size exceeds 25MB limit.' });
       }
 
-      // Determine Target Provider ('r2' or 'b2')
+      // Determine Target Provider ('r2', 'b2', or 'supabase')
       let targetProvider = (provider || 'r2').toLowerCase();
-      if (targetProvider !== 'b2' && targetProvider !== 'r2') {
+      if (targetProvider !== 'b2' && targetProvider !== 'r2' && targetProvider !== 'supabase') {
         targetProvider = 'r2'; // default
       }
 
@@ -595,33 +663,52 @@ module.exports = async (req, res) => {
       const targetFolder = (folder || '').trim();
       const storageKey = `gallery/${datePath}/${uniqueId}_${safeName}.${ext}`;
 
-      const client = targetProvider === 'b2' ? b2Client : r2Client;
-      const bucket = targetProvider === 'b2' ? B2_BUCKET_NAME : R2_BUCKET_NAME;
-      const publicUrl = targetProvider === 'b2'
-        ? `${B2_PUBLIC_URL}/${storageKey}`
-        : `${R2_PUBLIC_URL}/${storageKey}`;
+      let publicUrl = '';
+      if (targetProvider === 'supabase') {
+        if (!sb) throw new Error('Supabase Storage is unavailable.');
+        const { error: sbErr } = await sb.storage
+          .from('article-images')
+          .upload(storageKey, fileBuffer, {
+            contentType: detectedMime,
+            upsert: true
+          });
+        if (sbErr) throw new Error(sbErr.message);
+        publicUrl = sb.storage.from('article-images').getPublicUrl(storageKey).data.publicUrl;
+      } else {
+        const client = targetProvider === 'b2' ? b2Client : r2Client;
+        const bucket = targetProvider === 'b2' ? B2_BUCKET_NAME : R2_BUCKET_NAME;
+        publicUrl = targetProvider === 'b2'
+          ? `${B2_PUBLIC_URL}/${storageKey}`
+          : `${R2_PUBLIC_URL}/${storageKey}`;
 
-      const uploadParams = {
-        Bucket: bucket,
-        Key: storageKey,
-        Body: fileBuffer,
-        ContentType: detectedMime,
-        CacheControl: 'public, max-age=31536000, immutable',
-        Metadata: {
-          'unique-id': uniqueId,
-          'original-name': filename || 'image',
-          'folder': targetFolder,
-          'uploaded-by': session.email || 'admin'
-        }
+        const uploadParams = {
+          Bucket: bucket,
+          Key: storageKey,
+          Body: fileBuffer,
+          ContentType: detectedMime,
+          CacheControl: 'public, max-age=31536000, immutable',
+          Metadata: {
+            'unique-id': uniqueId,
+            'original-name': filename || 'image',
+            'folder': targetFolder,
+            'uploaded-by': session.email || 'admin'
+          }
+        };
+
+        await client.send(new PutObjectCommand(uploadParams));
+      }
+
+      const providerNames = {
+        r2: 'Cloudflare R2',
+        b2: 'Backblaze B2',
+        supabase: 'Supabase Storage'
       };
-
-      await client.send(new PutObjectCommand(uploadParams));
 
       const mediaItem = {
         id: uniqueId,
         unique_id: uniqueId,
         provider: targetProvider,
-        provider_name: targetProvider === 'b2' ? 'Backblaze B2' : 'Cloudflare R2',
+        provider_name: providerNames[targetProvider] || 'Cloud Storage',
         url: publicUrl,
         storage_key: storageKey,
         r2_key: storageKey, // backward compatibility
@@ -987,6 +1074,10 @@ module.exports = async (req, res) => {
           try {
             await b2Client.send(new DeleteObjectCommand({ Bucket: B2_BUCKET_NAME, Key: key }));
           } catch(e) {}
+        } else if (provider === 'supabase') {
+          try {
+            if (sb) await sb.storage.from('article-images').remove([key]);
+          } catch(e) {}
         } else {
           try {
             await r2Client.send(new DeleteObjectCommand({ Bucket: R2_BUCKET_NAME, Key: key }));
@@ -997,12 +1088,18 @@ module.exports = async (req, res) => {
       await removeMediaItemMetadata(sb, id);
       invalidateMediaCache();
 
+      const providerDisplayNames = {
+        r2: 'Cloudflare R2',
+        b2: 'Backblaze B2',
+        supabase: 'Supabase Storage'
+      };
+
       try {
         await logActivity({
           actor: session,
           action: 'media.delete_permanent',
           category: 'media',
-          summary: `${session.name || session.email} permanently erased image "${(item && item.filename) || id}" from ${provider === 'b2' ? 'Backblaze B2' : 'Cloudflare R2'}`,
+          summary: `${session.name || session.email} permanently erased image "${(item && item.filename) || id}" from ${providerDisplayNames[provider] || 'Cloud Storage'}`,
           target_id: id,
           target_name: (item && item.filename) || id,
           details: { id, storage_key: key, provider },
@@ -1027,11 +1124,13 @@ module.exports = async (req, res) => {
 
       for (const item of trashedItems) {
         const key = item.storage_key || item.r2_key;
-        const provider = item.provider || (item.url?.includes('backblazeb2') ? 'b2' : 'r2');
+        const provider = item.provider || (item.url?.includes('backblazeb2') ? 'b2' : (item.url?.includes('supabase.co') ? 'supabase' : 'r2'));
 
         if (key) {
           if (provider === 'b2') {
             try { await b2Client.send(new DeleteObjectCommand({ Bucket: B2_BUCKET_NAME, Key: key })); } catch(e) {}
+          } else if (provider === 'supabase') {
+            try { if (sb) await sb.storage.from('article-images').remove([key]); } catch(e) {}
           } else {
             try { await r2Client.send(new DeleteObjectCommand({ Bucket: R2_BUCKET_NAME, Key: key })); } catch(e) {}
           }
