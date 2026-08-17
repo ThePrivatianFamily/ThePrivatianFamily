@@ -425,8 +425,14 @@ function validateSlug(slug) {
 
 function formatDate(iso) {
   if (!iso) return '—';
-  const d = new Date(iso);
-  return d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+  try {
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return '—';
+    const day = d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+    const hh = String(d.getHours()).padStart(2, '0');
+    const mm = String(d.getMinutes()).padStart(2, '0');
+    return `${day} ${hh}:${mm}`;
+  } catch(e) { return '—'; }
 }
 
 // ── State ────────────────────────────────────────────────────────
@@ -2322,7 +2328,7 @@ function _getAvatarGradient(email) {
 }
 
 function _auditLine(a) {
-  const fmt = iso => iso ? new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '';
+  const fmt = iso => iso ? _format24hDateTime(iso) : '';
   const LABELS = {
     suspended:                 'Suspended by',
     unsuspended:               'Unsuspended by',
@@ -4348,8 +4354,8 @@ function renderArticlesTable(articles) {
 
   tbody.innerHTML = articles.map(a => {
     const updated = a.updated_at
-      ? new Date(a.updated_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-      : '—';
+      ? _format24hDateTime(a.updated_at)
+      : (a.created_at ? _format24hDateTime(a.created_at) : '—');
     const isPublished = a.status === 'published';
     const statusBadge = isPublished
       ? `<span class="art-status-pill art-status--published"><svg width="6" height="6" viewBox="0 0 6 6" fill="currentColor"><circle cx="3" cy="3" r="3"/></svg>Published</span>`
@@ -4712,7 +4718,7 @@ async function _loadArticleTrash() {
     return;
   }
   if (table) table.style.display = 'table';
-  const fmt = iso => iso ? new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—';
+  const fmt = iso => iso ? _format24hDateTime(iso) : '—';
   const isAdmin = Boolean(window.PRIVATIAN_USER && window.PRIVATIAN_USER.role === 'Admin');
   tbody.innerHTML = arts.map(a => {
     const thumb = a.hero_img_url
@@ -9230,30 +9236,30 @@ function debounceActivitySearch() {
 
 function formatActivityRelativeTime(isoString) {
   if (!isoString) return '—';
-  const d = new Date(isoString);
-  const now = new Date();
-  const diffMs = now - d;
-  const diffSec = Math.floor(diffMs / 1000);
-  const diffMin = Math.floor(diffSec / 60);
-  const diffHours = Math.floor(diffMin / 60);
-  const diffDays = Math.floor(diffHours / 24);
+  try {
+    const d = new Date(isoString);
+    if (isNaN(d.getTime())) return '—';
+    const now = new Date();
+    const diffMs = now - d;
+    const diffSec = Math.floor(diffMs / 1000);
+    const diffMin = Math.floor(diffSec / 60);
+    const diffHours = Math.floor(diffMin / 60);
+    const diffDays = Math.floor(diffHours / 24);
 
-  if (diffSec < 45) return 'Just now';
-  if (diffMin < 60) return `${diffMin}m ago`;
-  if (diffHours < 24) return `${diffHours}h ago`;
-  if (diffDays === 1) {
-    return `Yesterday, ${d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
-  }
-  if (diffDays < 7) {
-    return `${diffDays}d ago (${d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })})`;
-  }
-  return d.toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: d.getFullYear() !== now.getFullYear() ? 'numeric' : undefined,
-    hour: '2-digit',
-    minute: '2-digit'
-  });
+    const hh = String(d.getHours()).padStart(2, '0');
+    const mm = String(d.getMinutes()).padStart(2, '0');
+
+    if (diffSec < 45) return 'Just now';
+    if (diffMin < 60) return `${diffMin}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago (${hh}:${mm})`;
+    if (diffDays === 1) {
+      return `Yesterday, ${hh}:${mm}`;
+    }
+    if (diffDays < 7) {
+      return `${diffDays}d ago (${d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })} ${hh}:${mm})`;
+    }
+    return `${d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })} ${hh}:${mm}`;
+  } catch(e) { return '—'; }
 }
 
 function getActivityCategoryPill(cat) {
@@ -9451,7 +9457,7 @@ function renderActivityPage() {
     const actorName = log.actor_name || actorEmail;
     const actorRole = log.actor_role || 'Admin';
     const timeFormatted = formatActivityRelativeTime(log.timestamp);
-    const fullDate = log.timestamp ? new Date(log.timestamp).toLocaleString('en-US') : '';
+    const fullDate = log.timestamp ? _format24hFull(log.timestamp) : '';
     const ip = (log.details && log.details.ip) ? log.details.ip : '—';
 
     const rolePill = `<span style="font-size:10px;padding:1px 6px;border-radius:10px;font-weight:600;background:${actorRole === 'Admin' ? '#dbeafe' : '#e0e7ff'};color:${actorRole === 'Admin' ? '#1e40af' : '#3730a3'};">${escapeHtml(actorRole)}</span>`;
@@ -9579,7 +9585,7 @@ function openActivityDetails(logId) {
   if (actorEl) actorEl.textContent = log.actor_name || log.actor_email || 'System';
   if (emailEl) emailEl.textContent = log.actor_email || 'system';
   if (roleEl) roleEl.innerHTML = `<span style="font-size:11px;padding:2px 8px;border-radius:12px;font-weight:700;background:#dbeafe;color:#1e40af;">Role: ${escapeHtml(log.actor_role || 'Admin')}</span>`;
-  if (timeEl) timeEl.textContent = log.timestamp ? new Date(log.timestamp).toLocaleString('en-US') : '—';
+  if (timeEl) timeEl.textContent = log.timestamp ? _format24hFull(log.timestamp) : '—';
   if (ipEl) ipEl.textContent = `IP: ${(log.details && log.details.ip) || 'Unknown'}`;
   if (uaEl) uaEl.textContent = `UA: ${(log.details && log.details.userAgent) || 'Unknown'}`;
   if (catBadgeEl) catBadgeEl.innerHTML = getActivityCategoryPill(log.category);
@@ -11048,7 +11054,7 @@ async function _handlePickerQuickUpload(e) {
   }
 }
 
-// ── 10. Formatting Helpers ─────────────────────────────────────────
+// ── 10. Formatting Helpers (24-Hour Time Standard) ────────────────
 function _formatFileSize(bytes) {
   if (!bytes || bytes <= 0) return '0 B';
   const k = 1024;
@@ -11058,10 +11064,22 @@ function _formatFileSize(bytes) {
   return (val >= 100 || i === 0 ? val.toFixed(0) : val.toFixed(2)) + ' ' + sizes[i];
 }
 
+function _format24hTime(isoOrDate) {
+  if (!isoOrDate) return '—';
+  try {
+    const d = isoOrDate instanceof Date ? isoOrDate : new Date(isoOrDate);
+    if (isNaN(d.getTime())) return '—';
+    const hh = String(d.getHours()).padStart(2, '0');
+    const mm = String(d.getMinutes()).padStart(2, '0');
+    return `${hh}:${mm}`;
+  } catch(e) { return '—'; }
+}
+
 function _formatShortDate(isoString) {
   if (!isoString) return '—';
   try {
     const d = new Date(isoString);
+    if (isNaN(d.getTime())) return '—';
     return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
   } catch(e) { return '—'; }
 }
@@ -11070,7 +11088,36 @@ function _formatLongDate(isoString) {
   if (!isoString) return '—';
   try {
     const d = new Date(isoString);
-    return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+    if (isNaN(d.getTime())) return '—';
+    const day = d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+    const hh = String(d.getHours()).padStart(2, '0');
+    const mm = String(d.getMinutes()).padStart(2, '0');
+    return `${day}, ${hh}:${mm}`;
+  } catch(e) { return '—'; }
+}
+
+function _format24hDateTime(isoString) {
+  if (!isoString) return '—';
+  try {
+    const d = new Date(isoString);
+    if (isNaN(d.getTime())) return '—';
+    const day = d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+    const hh = String(d.getHours()).padStart(2, '0');
+    const mm = String(d.getMinutes()).padStart(2, '0');
+    return `${day} ${hh}:${mm}`;
+  } catch(e) { return '—'; }
+}
+
+function _format24hFull(isoString) {
+  if (!isoString) return '—';
+  try {
+    const d = new Date(isoString);
+    if (isNaN(d.getTime())) return '—';
+    const day = d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+    const hh = String(d.getHours()).padStart(2, '0');
+    const mm = String(d.getMinutes()).padStart(2, '0');
+    const ss = String(d.getSeconds()).padStart(2, '0');
+    return `${day}, ${hh}:${mm}:${ss}`;
   } catch(e) { return '—'; }
 }
 

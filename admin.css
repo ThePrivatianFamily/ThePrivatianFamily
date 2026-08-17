@@ -4361,7 +4361,7 @@ body.modal-open {
 .gallery-thumb-wrap {
   position: relative;
   aspect-ratio: 16 / 10;
-  background: #0f172a;
+  background: radial-gradient(circle at center, #1e293b 0%, #0f172a 100%);
   overflow: hidden;
   display: flex;
   align-items: center;
@@ -4370,75 +4370,107 @@ body.modal-open {
   transform: translateZ(0);
   will-change: transform;
   backface-visibility: hidden;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 .gallery-thumb-img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
   display: block;
-  transition: transform 0.25s ease;
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   transform: translateZ(0);
   image-rendering: auto;
+  padding: 4px;
 }
 
 .gallery-item-card:hover .gallery-thumb-img {
-  transform: scale(1.03) translateZ(0);
+  transform: scale(1.05) translateZ(0);
 }
 
 .gallery-badge-format {
   position: absolute;
-  top: 8px;
-  left: 8px;
-  background: rgba(15, 23, 42, 0.85);
-  backdrop-filter: blur(4px);
+  top: 7px;
+  left: 7px;
+  background: rgba(15, 23, 42, 0.8);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   color: #ffffff;
-  font-size: 9.5px;
+  font-size: 9px;
   font-weight: 700;
   text-transform: uppercase;
-  padding: 2px 5px;
-  border-radius: 4px;
-  border: 1px solid rgba(255, 255, 255, 0.18);
+  padding: 2.5px 6px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
   letter-spacing: 0.04em;
+  z-index: 2;
 }
 
 .gallery-badge-size {
   position: absolute;
-  top: 8px;
-  right: 8px;
-  background: rgba(15, 23, 42, 0.85);
-  backdrop-filter: blur(4px);
+  top: 7px;
+  right: 7px;
+  background: rgba(15, 23, 42, 0.8);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   color: #e2e8f0;
-  font-size: 9.5px;
-  padding: 2px 5px;
-  border-radius: 4px;
-  border: 1px solid rgba(255, 255, 255, 0.18);
+  font-size: 9px;
+  font-weight: 600;
+  padding: 2.5px 6px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  z-index: 2;
 }
 
 .gallery-badge-provider {
   position: absolute;
-  bottom: 8px;
-  right: 8px;
-  font-size: 9px;
+  bottom: 7px;
+  right: 7px;
+  font-size: 8.5px;
   font-weight: 800;
-  padding: 1.5px 5.5px;
-  border-radius: 4px;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
-  backdrop-filter: blur(4px);
-  box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+  padding: 2px 7px 2px 6px;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.35);
+  line-height: 1.2;
+  transition: all 0.2s ease;
+  z-index: 2;
+}
+
+.gallery-badge-provider::before {
+  content: '';
+  display: inline-block;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
 }
 
 .gallery-badge-provider.r2 {
-  background: rgba(249, 115, 22, 0.92);
-  color: #ffffff;
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  background: rgba(15, 23, 42, 0.82);
+  color: #fdba74;
+  border: 1px solid rgba(251, 146, 60, 0.45);
+}
+
+.gallery-badge-provider.r2::before {
+  background: #f97316;
+  box-shadow: 0 0 5px #f97316;
 }
 
 .gallery-badge-provider.b2 {
-  background: rgba(225, 29, 72, 0.92);
-  color: #ffffff;
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  background: rgba(15, 23, 42, 0.82);
+  color: #fda4af;
+  border: 1px solid rgba(244, 63, 94, 0.45);
+}
+
+.gallery-badge-provider.b2::before {
+  background: #e11d48;
+  box-shadow: 0 0 5px #e11d48;
 }
 
 .gallery-card-trash-badge {
