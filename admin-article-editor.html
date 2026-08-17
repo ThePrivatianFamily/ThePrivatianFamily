@@ -2281,11 +2281,20 @@ window.addEventListener('privatian:ready', () => {
   });
 });
 
+function generateUUID() {
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+    return crypto.randomUUID();
+  }
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    var r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+}
+
 function initEmpty() {
-  if (!ART_ID) {
-    ART_ID = (typeof crypto !== 'undefined' && crypto.randomUUID)
-      ? crypto.randomUUID()
-      : 'art_' + Date.now().toString(36) + '_' + Math.random().toString(36).substr(2, 9);
+  const isInvalidId = !ART_ID || ART_ID === 'new' || !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(ART_ID);
+  if (isInvalidId) {
+    ART_ID = generateUUID();
     const u = new URL(location.href);
     u.searchParams.set('id', ART_ID);
     history.replaceState({}, '', u.toString());
@@ -2328,7 +2337,8 @@ function copyArticleId() {
 
 // ── LOAD ARTICLE ─────────────────────────────────────────────
 async function loadArticle(id) {
-  if (!id) {
+  if (!id || id === 'new') {
+    ART_ID = null;
     initEmpty();
     return;
   }
@@ -2402,7 +2412,7 @@ async function loadArticle(id) {
 
     if (!restoredLocal) {
       // If it's a new or unsaved ID, smoothly initialize empty editor without error
-      ART_ID = id;
+      ART_ID = id === 'new' ? null : id;
       initEmpty();
     }
   }
