@@ -893,6 +893,15 @@
 
       <!-- Trash Table -->
       <div class="card" id="panel-trash" hidden>
+        <div id="sec-trash-loading" class="admin-loading-state admin-loading-state--danger" style="display:none;">
+          <div class="admin-spinner-wrap">
+            <div class="admin-spinner-ring"></div>
+            <div class="admin-spinner-ring-inner"></div>
+            <svg class="admin-spinner-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+          </div>
+          <div class="admin-loading-title">Loading section recycle bin…</div>
+          <div class="admin-loading-subtitle">Fetching trashed and archived categories from database</div>
+        </div>
         <table class="data-table" id="trash-table">
           <thead>
             <tr>

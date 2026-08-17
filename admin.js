@@ -289,13 +289,21 @@ const ALL_SECTION = {
 async function loadSectionsFromAPI() {
   updateGlobalSyncStatus('syncing', 'Loading sections from database...');
   const secLoading = document.getElementById('sections-loading');
+  const secTrashLoading = document.getElementById('sec-trash-loading');
   const secTable = document.getElementById('sections-table');
+  const trashTable = document.getElementById('trash-table');
   const activeEmpty = document.getElementById('active-empty');
+  const trashEmpty = document.getElementById('trash-empty');
 
   if (secLoading && (!sections || sections.length <= 1)) {
     secLoading.style.display = 'flex';
     if (secTable) secTable.style.display = 'none';
     if (activeEmpty) activeEmpty.hidden = true;
+  }
+  if (secTrashLoading && (!sections || sections.length <= 1)) {
+    secTrashLoading.style.display = 'flex';
+    if (trashTable) trashTable.style.display = 'none';
+    if (trashEmpty) trashEmpty.hidden = true;
   }
   let loaded = null;
 
@@ -384,7 +392,9 @@ async function loadSectionsFromAPI() {
   }
 
   if (secLoading) secLoading.style.display = 'none';
+  if (secTrashLoading) secTrashLoading.style.display = 'none';
   if (secTable) secTable.style.display = 'table';
+  if (trashTable) trashTable.style.display = 'table';
 
   if (loaded) {
     sections = [ALL_SECTION, ...loaded];
@@ -495,6 +505,10 @@ function render() {
 
 function renderActive(active) {
   if (!sectionsTable) return;
+  const secLoading = document.getElementById('sections-loading');
+  const secTable = document.getElementById('sections-table');
+  if (secLoading) secLoading.style.display = 'none';
+  if (secTable) secTable.style.display = 'table';
   sectionsTable.innerHTML = '';
 
   if (!active || active.length === 0) {
@@ -580,6 +594,10 @@ function renderActive(active) {
 
 function renderTrash(trash) {
   if (!trashTable) return;
+  const secTrashLoading = document.getElementById('sec-trash-loading');
+  const trashTableEl = document.getElementById('trash-table');
+  if (secTrashLoading) secTrashLoading.style.display = 'none';
+  if (trashTableEl) trashTableEl.style.display = 'table';
   trashTable.innerHTML = '';
 
   if (!trash || trash.length === 0) {
@@ -1438,6 +1456,11 @@ function switchTab(tab) {
   tabTrashBtn.classList.toggle('active', tab === 'trash');
   panelActive.hidden = tab !== 'active';
   panelTrash.hidden  = tab !== 'trash';
+  if (tab === 'trash') {
+    renderTrash(sections.filter(s => s.deleted));
+  } else {
+    renderActive(sections.filter(s => !s.deleted));
+  }
 }
 
 tabActiveBtn.addEventListener('click', () => switchTab('active'));
