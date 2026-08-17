@@ -1179,9 +1179,13 @@
 
       searchOverlay.removeAttribute('hidden');
       requestAnimationFrame(function() {
-        searchOverlay.classList.add('is-open');
+        requestAnimationFrame(function() {
+          searchOverlay.classList.add('is-open');
+        });
       });
-      setTimeout(function() { if (searchInput) searchInput.focus(); }, 80);
+      setTimeout(function() { if (searchInput) searchInput.focus(); }, 140);
+      document.body.classList.add('menu-open');
+      document.documentElement.classList.add('menu-open');
       document.body.style.overflow = 'hidden';
       document.documentElement.style.overflow = 'hidden';
 
@@ -1194,15 +1198,25 @@
     function closeSearch() {
       if (!searchOverlay) return;
       searchOverlay.classList.remove('is-open');
-      setTimeout(function() { searchOverlay.setAttribute('hidden', ''); }, 230);
+      setTimeout(function() { 
+        if (!searchOverlay.classList.contains('is-open')) {
+          searchOverlay.setAttribute('hidden', '');
+        }
+      }, 550);
       var menuOverlay = document.getElementById('menu-overlay');
       if (!menuOverlay || !menuOverlay.classList.contains('is-open')) {
+        document.body.classList.remove('menu-open');
+        document.documentElement.classList.remove('menu-open');
         document.body.style.overflow = '';
         document.documentElement.style.overflow = '';
       }
-      if (searchInput) searchInput.value = '';
-      if (searchResults) searchResults.innerHTML = '';
-      if (searchClearBtn) searchClearBtn.style.display = 'none';
+      setTimeout(function() {
+        if (!searchOverlay.classList.contains('is-open')) {
+          if (searchInput) searchInput.value = '';
+          if (searchResults) searchResults.innerHTML = '';
+          if (searchClearBtn) searchClearBtn.style.display = 'none';
+        }
+      }, 500);
     }
 
     window.PrivatianCloseSearch = closeSearch;
