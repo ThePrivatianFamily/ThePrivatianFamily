@@ -64,30 +64,37 @@
 
   var DEFAULT_MENU_CONFIG = {
     sectionsTitle: 'Sections',
+    sectionsTitle_bn: 'বিভাগসমূহ',
     seriesTitle: 'Featured series',
+    seriesTitle_bn: 'নির্বাচিত সিরিজ',
     series: [
       {
         id: 'series-1',
         title: 'Wondering',
+        title_bn: 'অনুসন্ধিৎসু',
         href: '/section/findings',
         description: 'A series of profound questions explored by The Privatian Family experts.',
+        description_bn: 'প্রাইভেটিয়ান ফ্যামিলি বিশেষজ্ঞদের গভীর অনুসন্ধানী আলোচনা।',
         enabled: true
       }
     ],
     exploreTitle: 'Explore the Privatian',
+    exploreTitle_bn: 'প্রাইভেসিয়ান পরিবার এক্সপ্লোর করুন',
     explore: [
-      { id: 'exp-1', label: 'Events', href: '/events', target: '_self', enabled: true },
-      { id: 'exp-2', label: 'Article archive', href: '/', target: '_self', enabled: true },
-      { id: 'exp-3', label: 'About us', href: '/', target: '_self', enabled: true },
-      { id: 'exp-4', label: 'News+', href: '/', target: '_self', enabled: true },
-      { id: 'exp-5', label: 'Podcast', href: '/', target: '_self', enabled: true }
+      { id: 'exp-1', label: 'Events', label_bn: 'ইভেন্টসমূহ', href: '/events', target: '_self', enabled: true },
+      { id: 'exp-2', label: 'Article archive', label_bn: 'আর্টিকেল আর্কাইভ', href: '/', target: '_self', enabled: true },
+      { id: 'exp-3', label: 'About us', label_bn: 'আমাদের সম্পর্কে', href: '/', target: '_self', enabled: true },
+      { id: 'exp-4', label: 'News+', label_bn: 'সংবাদ+', href: '/', target: '_self', enabled: true },
+      { id: 'exp-5', label: 'Podcast', label_bn: 'পডকাস্ট', href: '/', target: '_self', enabled: true }
     ],
     latestTitle: 'Read the latest',
+    latestTitle_bn: 'সাম্প্রতিক প্রতিবেদনসমূহ',
     latestMode: 'curated',
     latest: [
       {
         id: 'latest-1',
         title: "For families in transition, 'not all traditions are equal'",
+        title_bn: 'পরিবর্তনশীল পরিবারের জন্য সকল ঐতিহ্য সমান নয়',
         href: '/section/community-heritage',
         imageUrl: 'img1.png',
         enabled: true
@@ -95,6 +102,7 @@
       {
         id: 'latest-2',
         title: 'The art of the pen: How writing shapes cultural identity',
+        title_bn: 'লেখনীর শিল্প: যেভাবে সাহিত্য সাংস্কৃতিক পরিচয় গড়ে তোলে',
         href: '/section/culture',
         imageUrl: 'img3.png',
         enabled: true
@@ -210,6 +218,10 @@
 
   function getFooterSettings() {
     return _liveFooterSettings || DEFAULT_FOOTER_CONFIG;
+  }
+
+  function getMenuSettings() {
+    return _liveMenuSettings || DEFAULT_MENU_CONFIG;
   }
 
   function getHeaderSettings() {
@@ -1578,10 +1590,13 @@
     // 6. Update Sub-header tabs
     populateSubHeader();
 
-    // 7. Update Footer
+    // 7. Update Menu Overlay
+    populateMenuOverlay();
+
+    // 8. Update Footer
     renderFooter();
 
-    // 8. Update All News Section Labels
+    // 9. Update All News Section Labels
     if (_liveSections) {
       updateAllNewsLabels(_liveSections);
     }
