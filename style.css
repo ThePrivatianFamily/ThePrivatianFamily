@@ -433,13 +433,14 @@ body.menu-open .site-header {
   z-index: 1200; 
   pointer-events: none;
   visibility: hidden;
-  transition: visibility 0.48s ease;
+  transition: visibility 0.65s ease;
   overflow: hidden;
 }
 
 .menu-overlay.is-open { 
   pointer-events: auto;
   visibility: visible;
+  transition: visibility 0.01s ease;
 }
 
 /* Glass backdrop dim */
@@ -450,16 +451,17 @@ body.menu-open .site-header {
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   opacity: 0;
-  transition: opacity 0.42s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: opacity 0.48s cubic-bezier(0.32, 0, 0.2, 1);
   will-change: opacity;
   cursor: pointer;
 }
 
 .menu-overlay.is-open .menu-overlay-backdrop {
   opacity: 1;
+  transition: opacity 0.65s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-/* High-End Curtain Drop Drawer Panel */
+/* High-End Curtain Drop Drawer Panel (Smooth, Majestic & Slower) */
 .menu-drawer-panel {
   position: absolute;
   top: 0;
@@ -478,16 +480,16 @@ body.menu-open .site-header {
   /* Smooth 60fps Curtain Drop */
   transform: translateY(-100%);
   opacity: 0;
-  transition: transform 0.48s cubic-bezier(0.16, 1, 0.3, 1),
-              opacity 0.36s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: transform 0.55s cubic-bezier(0.32, 0, 0.2, 1),
+              opacity 0.42s ease;
   will-change: transform, opacity;
 }
 
 .menu-overlay.is-open .menu-drawer-panel {
   transform: translateY(0);
   opacity: 1;
-  transition: transform 0.52s cubic-bezier(0.16, 1, 0.3, 1),
-              opacity 0.38s ease;
+  transition: transform 0.72s cubic-bezier(0.22, 1, 0.36, 1),
+              opacity 0.55s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .menu-overlay-inner { 
@@ -503,9 +505,9 @@ body.menu-open .site-header {
   padding: 0 40px; 
   border-right: var(--border-light); 
   opacity: 0;
-  transform: translateY(28px);
-  transition: opacity 0.28s cubic-bezier(0.2, 0.9, 0.3, 1),
-              transform 0.28s cubic-bezier(0.2, 0.9, 0.3, 1);
+  transform: translateY(32px);
+  transition: opacity 0.32s ease,
+              transform 0.35s ease;
   will-change: opacity, transform;
 }
 .menu-col:first-child { padding-left: 0; }
@@ -514,20 +516,20 @@ body.menu-open .site-header {
 .menu-overlay.is-open .menu-col:nth-child(1) {
   opacity: 1;
   transform: translateY(0);
-  transition: opacity 0.48s cubic-bezier(0.16, 1, 0.3, 1) 0.12s,
-              transform 0.52s cubic-bezier(0.16, 1, 0.3, 1) 0.12s;
+  transition: opacity 0.65s cubic-bezier(0.22, 1, 0.36, 1) 0.18s,
+              transform 0.72s cubic-bezier(0.22, 1, 0.36, 1) 0.18s;
 }
 .menu-overlay.is-open .menu-col:nth-child(2) {
   opacity: 1;
   transform: translateY(0);
-  transition: opacity 0.48s cubic-bezier(0.16, 1, 0.3, 1) 0.20s,
-              transform 0.52s cubic-bezier(0.16, 1, 0.3, 1) 0.20s;
+  transition: opacity 0.65s cubic-bezier(0.22, 1, 0.36, 1) 0.30s,
+              transform 0.72s cubic-bezier(0.22, 1, 0.36, 1) 0.30s;
 }
 .menu-overlay.is-open .menu-col:nth-child(3) {
   opacity: 1;
   transform: translateY(0);
-  transition: opacity 0.48s cubic-bezier(0.16, 1, 0.3, 1) 0.28s,
-              transform 0.52s cubic-bezier(0.16, 1, 0.3, 1) 0.28s;
+  transition: opacity 0.65s cubic-bezier(0.22, 1, 0.36, 1) 0.42s,
+              transform 0.72s cubic-bezier(0.22, 1, 0.36, 1) 0.42s;
 }
 
 .menu-section-title { 
