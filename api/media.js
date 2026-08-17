@@ -93,6 +93,15 @@ const FALLBACK_STORE_KEY = 'privatian_media_library_items';
 const FALLBACK_FOLDERS_KEY = 'privatian_media_folders';
 const DEFAULT_FOLDERS = ['Articles', 'Hero Banners', 'Authors', 'Logos & Icons', 'Heritage & Archive'];
 
+let _mediaListCache = null;
+let _mediaListCacheTime = 0;
+const MEDIA_CACHE_TTL_MS = 30000; // 30s cache for fast 10ms responses
+
+function invalidateMediaCache() {
+  _mediaListCache = null;
+  _mediaListCacheTime = 0;
+}
+
 async function getStoredFolderList(sb) {
   if (sb) {
     try {
@@ -119,7 +128,11 @@ async function saveStoredFolderList(sb, folders) {
   }
 }
 
-async function getStoredMediaList(sb) {
+async function getStoredMediaList(sb, forceFresh = false) {
+  if (!forceFresh && _mediaListCache && (Date.now() - _mediaListCacheTime < MEDIA_CACHE_TTL_MS)) {
+    return _mediaListCache;
+  }
+
   // Concurrently scan both Cloudflare R2 and Backblaze B2 buckets
   const [r2Result, b2Result] = await Promise.allSettled([
     r2Client.send(new ListObjectsV2Command({ Bucket: R2_BUCKET_NAME, MaxKeys: 1000 })),
@@ -227,6 +240,8 @@ async function getStoredMediaList(sb) {
       saveAllMediaItems(sb, allItems).catch(() => {});
     }
 
+    _mediaListCache = allItems;
+    _mediaListCacheTime = Date.now();
     return allItems;
   }
 
@@ -240,6 +255,8 @@ async function getStoredMediaList(sb) {
       }
     });
     list.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+    _mediaListCache = list;
+    _mediaListCacheTime = Date.now();
     return list;
   }
 
@@ -404,7 +421,7 @@ module.exports = async (req, res) => {
     if (!session) return;
 
     try {
-      const items = await getStoredMediaList(sb);
+      const items = await getStoredMediaList(sb, action === 'sync');
       const folders = await getStoredFolderList(sb);
       const storage = computeStorageStats(items);
 
@@ -626,6 +643,7 @@ module.exports = async (req, res) => {
       if (sb) {
         await saveMediaItemMetadata(sb, mediaItem);
       }
+      invalidateMediaCache();
 
       try {
         await logActivity({
@@ -664,6 +682,7 @@ module.exports = async (req, res) => {
       if (!folders.includes(name)) {
         folders.push(name);
         await saveStoredFolderList(sb, folders);
+        invalidateMediaCache();
       }
 
       try {
@@ -713,6 +732,7 @@ module.exports = async (req, res) => {
       if (updatedCount > 0) {
         await saveAllMediaItems(sb, items);
       }
+      invalidateMediaCache();
 
       try {
         await logActivity({
@@ -757,6 +777,7 @@ module.exports = async (req, res) => {
       if (updatedCount > 0) {
         await saveAllMediaItems(sb, items);
       }
+      invalidateMediaCache();
 
       try {
         await logActivity({
@@ -801,6 +822,7 @@ module.exports = async (req, res) => {
       });
 
       await saveAllMediaItems(sb, items);
+      invalidateMediaCache();
 
       try {
         await logActivity({
@@ -846,6 +868,7 @@ module.exports = async (req, res) => {
       item.updated_at = new Date().toISOString();
 
       await saveMediaItemMetadata(sb, item);
+      invalidateMediaCache();
 
       try {
         await logActivity({
@@ -885,6 +908,7 @@ module.exports = async (req, res) => {
       item.updated_at = new Date().toISOString();
 
       await saveAllMediaItems(sb, items);
+      invalidateMediaCache();
 
       try {
         await logActivity({
@@ -923,6 +947,7 @@ module.exports = async (req, res) => {
       item.updated_at = new Date().toISOString();
 
       await saveAllMediaItems(sb, items);
+      invalidateMediaCache();
 
       try {
         await logActivity({
@@ -970,6 +995,7 @@ module.exports = async (req, res) => {
       }
 
       await removeMediaItemMetadata(sb, id);
+      invalidateMediaCache();
 
       try {
         await logActivity({
@@ -1012,6 +1038,7 @@ module.exports = async (req, res) => {
         }
         await removeMediaItemMetadata(sb, item.unique_id || item.id);
       }
+      invalidateMediaCache();
 
       try {
         await logActivity({

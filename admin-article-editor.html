@@ -2292,7 +2292,12 @@ function initEmpty() {
   }
   _articleDateObj = new Date();
   refreshArticleIdDisplay();
-  setSaveStatus('Draft saved');
+  _langData = {
+    en: { title: '', deck: '', content_html: '', author: '', author_role: '', author_bio: '', hero_caption: '', hero_credit: '', seo_title: '', meta_description: '', tags: [] },
+    bn: { title: '', deck: '', content_html: '', author: '', author_role: '', author_bio: '', hero_caption: '', hero_credit: '', seo_title: '', meta_description: '', tags: [] }
+  };
+  loadBufferToInputs(_currentEditLang);
+  setSaveStatus('Draft ready');
 }
 
 function refreshArticleIdDisplay() {
@@ -2323,9 +2328,14 @@ function copyArticleId() {
 
 // ── LOAD ARTICLE ─────────────────────────────────────────────
 async function loadArticle(id) {
+  if (!id) {
+    initEmpty();
+    return;
+  }
+
   let a = null;
   try {
-    const r = await api('/api/articles?action=get&id=' + id);
+    const r = await api('/api/articles?action=get&id=' + encodeURIComponent(id));
     if (r.ok) {
       a = await r.json();
     }
@@ -2335,7 +2345,7 @@ async function loadArticle(id) {
     try {
       const sb = window._sb || (window.initSupabaseClient && window.initSupabaseClient());
       if (sb) {
-        const { data, error } = await sb.from('articles').select('*').eq('id', id).single();
+        const { data, error } = await sb.from('articles').select('*').eq('id', id).maybeSingle();
         if (!error && data) a = data;
       }
     } catch(e) {}
@@ -2362,7 +2372,39 @@ async function loadArticle(id) {
     _serverTS = new Date(a.updated_at || a.created_at || 0).getTime();
     fill(a);
   } else {
-    toast('Failed to load article from database', 'err');
+    // Check if there is a local draft stored for this ID
+    let restoredLocal = false;
+    try {
+      const localRaw = localStorage.getItem('privatian_art_draft_' + id) || localStorage.getItem('privatian_art_draft_new');
+      if (localRaw) {
+        const localData = JSON.parse(localRaw);
+        if (localData && (localData.langData || localData.title)) {
+          ART_ID = id;
+          STATUS = localData.status || 'draft';
+          refreshArticleIdDisplay();
+          if (localData.langData) {
+            _langData = localData.langData;
+          }
+          if (localData.hero_img_url) {
+            _featImgUrl = localData.hero_img_url;
+            showFeatPreview(localData.hero_img_url);
+          }
+          if (localData.section) setSec(localData.section);
+          if (localData.slug) syncSlug(localData.slug);
+          if (localData.currentLang) _currentEditLang = localData.currentLang;
+          loadBufferToInputs(_currentEditLang);
+          updateMetrics();
+          setSaveStatus('Local draft restored');
+          restoredLocal = true;
+        }
+      }
+    } catch(e) {}
+
+    if (!restoredLocal) {
+      // If it's a new or unsaved ID, smoothly initialize empty editor without error
+      ART_ID = id;
+      initEmpty();
+    }
   }
 }
 

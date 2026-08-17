@@ -302,12 +302,19 @@
     }
   }
 
+  const BATCH_SIZE = 36;
+  let _renderBatchLimit = BATCH_SIZE;
+
   /**
-   * Render the responsive gallery grid
+   * Render the responsive gallery grid with lightweight batching and GPU acceleration
    */
-  function renderGalleryGrid(searchQuery = '') {
+  function renderGalleryGrid(searchQuery = '', resetBatch = true) {
     const grid = document.getElementById('umm-grid');
     if (!grid) return;
+
+    if (resetBatch) {
+      _renderBatchLimit = BATCH_SIZE;
+    }
 
     let items = _cachedList.filter(x => !x.is_deleted);
 
@@ -372,7 +379,10 @@
       return;
     }
 
-    const itemsHtml = items.map(item => {
+    const visibleItems = items.slice(0, _renderBatchLimit);
+    const hasMore = items.length > _renderBatchLimit;
+
+    const itemsHtml = visibleItems.map(item => {
       const isSel = _selectedItem && (_selectedItem.unique_id === item.unique_id || _selectedItem.url === item.url);
       const name = item.title || item.filename || 'Image';
       const uid = item.unique_id || 'img';
@@ -399,8 +409,25 @@
       `;
     }).join('');
 
-    grid.innerHTML = extraHtml + itemsHtml;
+    let loadMoreHtml = '';
+    if (hasMore) {
+      const remaining = items.length - _renderBatchLimit;
+      loadMoreHtml = `
+        <div style="grid-column:1 / -1;display:flex;justify-content:center;padding:16px 0 8px;">
+          <button type="button" class="umm-btn" onclick="window._ummLoadMore()" style="background:#f1f5f9;color:#0a528e;border:1px solid #cbd5e1;font-size:12px;font-weight:700;padding:8px 24px;border-radius:8px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;">
+            <span>Load More Assets (${remaining} remaining)</span>
+          </button>
+        </div>
+      `;
+    }
+
+    grid.innerHTML = extraHtml + itemsHtml + loadMoreHtml;
   }
+
+  window._ummLoadMore = function() {
+    _renderBatchLimit += BATCH_SIZE;
+    renderGalleryGrid(_lastSearchQuery, false);
+  };
 
   /**
    * Upload single or multiple files
@@ -568,8 +595,15 @@
 
     updateSelectedSummary();
 
+    // 1. Instantly render from local/global cache if available (0ms instant open)
+    if ((_cachedList && _cachedList.length > 0) || (window._rawGalleryList && window._rawGalleryList.length > 0)) {
+      if (!_cachedList.length && window._rawGalleryList) _cachedList = window._rawGalleryList;
+      renderGalleryGrid(_lastSearchQuery, true);
+    }
+
+    // 2. Fetch fresh updates in the background without locking the UI
     fetchMediaList().then(() => {
-      renderGalleryGrid(_lastSearchQuery);
+      renderGalleryGrid(_lastSearchQuery, true);
     });
   };
 
@@ -596,7 +630,7 @@
       if (btnUp) btnUp.classList.remove('active');
       if (paneGal) paneGal.classList.add('active');
       if (paneUp) paneUp.classList.remove('active');
-      renderGalleryGrid(_lastSearchQuery);
+      renderGalleryGrid(_lastSearchQuery, true);
     } else {
       if (btnUp) btnUp.classList.add('active');
       if (btnGal) btnGal.classList.remove('active');
@@ -609,7 +643,7 @@
     const found = _cachedList.find(x => x.unique_id === uniqueId || x.id === uniqueId);
     if (found) {
       _selectedItem = found;
-      renderGalleryGrid(_lastSearchQuery);
+      renderGalleryGrid(_lastSearchQuery, false);
       updateSelectedSummary();
     }
   };
@@ -623,7 +657,7 @@
       title: 'Direct URL Image',
       provider: url.includes('backblazeb2') ? 'b2' : 'r2'
     };
-    renderGalleryGrid(_lastSearchQuery);
+    renderGalleryGrid(_lastSearchQuery, false);
     updateSelectedSummary();
   };
 
@@ -634,8 +668,8 @@
 
     clearTimeout(_searchDebounceTimer);
     _searchDebounceTimer = setTimeout(() => {
-      renderGalleryGrid(_lastSearchQuery);
-    }, 150);
+      renderGalleryGrid(_lastSearchQuery, true);
+    }, 180);
   };
 
   window._ummClearSearch = function() {
@@ -646,12 +680,12 @@
 
   window._ummOnFolderFilter = function(val) {
     _activeFolder = val || 'all';
-    renderGalleryGrid(_lastSearchQuery);
+    renderGalleryGrid(_lastSearchQuery, true);
   };
 
   window._ummOnProviderFilter = function(val) {
     _activeProvider = val || 'all';
-    renderGalleryGrid(_lastSearchQuery);
+    renderGalleryGrid(_lastSearchQuery, true);
   };
 
   window._ummOnUploadProviderChange = function(val) {
