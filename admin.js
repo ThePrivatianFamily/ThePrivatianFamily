@@ -10501,7 +10501,157 @@ function _copyMediaDirectUrl(url) {
   });
 }
 
-// ── 8. Media Inspector Modal ─────────────────────────────────────
+// ── 8. Media Inspector Modal & Storage Info Helper ───────────────
+function _getStorageTargetInfo(item) {
+  const provider = item ? (item.provider || (item.url?.includes('backblazeb2') ? 'b2' : (item.url?.includes('supabase.co') ? 'supabase' : 'r2'))) : 'r2';
+  
+  if (provider === 'b2') {
+    return {
+      provider: 'b2',
+      title: 'Backblaze B2',
+      bucketName: 'Backblaze B2 Cloud Storage',
+      targetDesc: 'Backblaze B2 Cloud Storage'
+    };
+  } else if (provider === 'supabase') {
+    return {
+      provider: 'supabase',
+      title: 'Supabase Storage',
+      bucketName: 'Supabase Storage Bucket',
+      targetDesc: 'Supabase Storage'
+    };
+  } else {
+    return {
+      provider: 'r2',
+      title: 'Cloudflare R2',
+      bucketName: 'Cloudflare R2 Bucket',
+      targetDesc: 'Cloudflare R2 and CDN'
+    };
+  }
+}
+
+// 5-Second Undo Floating Toast Manager
+var _pendingPermanentDeleteTimeout = null;
+var _pendingPermanentDeleteInterval = null;
+
+function _show5SecUndoToast({ filename, onUndo, onExecute }) {
+  // If an existing pending delete is running, execute it immediately before starting new one
+  if (_pendingPermanentDeleteTimeout) {
+    clearTimeout(_pendingPermanentDeleteTimeout);
+    clearInterval(_pendingPermanentDeleteInterval);
+    _pendingPermanentDeleteTimeout = null;
+    _pendingPermanentDeleteInterval = null;
+  }
+
+  const existingToast = document.getElementById('media-permanent-undo-toast');
+  if (existingToast) existingToast.remove();
+
+  const toastContainer = document.getElementById('toast-container') || document.body;
+  const toast = document.createElement('div');
+  toast.id = 'media-permanent-undo-toast';
+  toast.className = 'toast-undo-banner';
+  toast.style.cssText = `
+    display: flex;
+    flex-direction: column;
+    background: #0f172a;
+    color: #f8fafc;
+    border: 1px solid #ef4444;
+    border-radius: 10px;
+    box-shadow: 0 14px 30px rgba(0, 0, 0, 0.45), 0 6px 12px rgba(239, 68, 68, 0.25);
+    min-width: 330px;
+    max-width: 440px;
+    overflow: hidden;
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    z-index: 100000;
+    padding: 0;
+    animation: toastSlideIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  `;
+
+  toast.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;gap:12px;">
+      <div style="display:flex;align-items:center;gap:10px;flex:1;min-width:0;">
+        <span style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;background:rgba(239, 68, 68, 0.2);color:#f87171;flex-shrink:0;">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+        </span>
+        <div style="flex:1;min-width:0;font-size:13px;line-height:1.4;">
+          <div style="font-weight:700;color:#fff;display:flex;align-items:center;gap:6px;">
+            <span>Deleting in</span>
+            <span id="undo-countdown-num" style="background:#ef4444;color:#fff;font-weight:800;padding:1px 6px;border-radius:4px;font-size:11px;">5s</span>
+          </div>
+          <div style="font-size:11.5px;color:#94a3b8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${escapeHtml(filename)}">
+            ${escapeHtml(filename)}
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
+        <button id="media-undo-btn" type="button" style="
+          background:#ef4444;
+          color:#ffffff;
+          border:none;
+          padding:6px 14px;
+          border-radius:6px;
+          font-size:12px;
+          font-weight:700;
+          cursor:pointer;
+          display:flex;
+          align-items:center;
+          gap:5px;
+          transition:all 0.15s ease;
+          box-shadow:0 2px 8px rgba(239, 68, 68, 0.4);
+        ">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+          Undo
+        </button>
+      </div>
+    </div>
+    <div style="width:100%;height:3px;background:rgba(255,255,255,0.1);position:relative;overflow:hidden;">
+      <div id="media-undo-progress" style="width:100%;height:100%;background:#ef4444;transition:width 5s linear;"></div>
+    </div>
+  `;
+
+  toastContainer.appendChild(toast);
+
+  // Trigger progress animation
+  requestAnimationFrame(() => {
+    const bar = toast.querySelector('#media-undo-progress');
+    if (bar) bar.style.width = '0%';
+  });
+
+  const countdownEl = toast.querySelector('#undo-countdown-num');
+  const startTime = Date.now();
+
+  _pendingPermanentDeleteInterval = setInterval(() => {
+    const elapsed = Math.floor((Date.now() - startTime) / 1000);
+    const left = Math.max(0, 5 - elapsed);
+    if (countdownEl) countdownEl.textContent = `${left}s`;
+  }, 250);
+
+  const cleanToast = () => {
+    if (_pendingPermanentDeleteTimeout) clearTimeout(_pendingPermanentDeleteTimeout);
+    if (_pendingPermanentDeleteInterval) clearInterval(_pendingPermanentDeleteInterval);
+    _pendingPermanentDeleteTimeout = null;
+    _pendingPermanentDeleteInterval = null;
+    toast.style.opacity = '0';
+    toast.style.transform = 'translateY(10px)';
+    toast.style.transition = 'all 0.2s ease';
+    setTimeout(() => toast.remove(), 200);
+  };
+
+  const undoBtn = toast.querySelector('#media-undo-btn');
+  if (undoBtn) {
+    undoBtn.addEventListener('click', () => {
+      cleanToast();
+      onUndo();
+    });
+  }
+
+  _pendingPermanentDeleteTimeout = setTimeout(() => {
+    cleanToast();
+    onExecute();
+  }, 5000);
+}
+
 function _showBlockedMediaModal(actionName, usedInArticles, filename) {
   const artListHtml = (usedInArticles && usedInArticles.length) ? usedInArticles.map(a => `
     <div style="display:flex;align-items:center;justify-content:space-between;background:#fff;border:1px solid #fecaca;padding:6px 10px;border-radius:6px;margin-top:6px;gap:8px;">
@@ -10618,7 +10768,7 @@ async function openMediaInspector(uniqueId) {
 
   const subEl = document.getElementById('media-insp-meta-sub');
   const provEl = document.getElementById('media-insp-provider');
-  const provider = item.provider || (item.url?.includes('backblazeb2') ? 'b2' : (item.url?.includes('supabase.co') ? 'supabase' : 'r2'));
+  const info = _getStorageTargetInfo(item);
 
   if (imgEl) imgEl.src = item.url;
   if (filenameEl) filenameEl.textContent = item.filename || item.unique_id;
@@ -10634,11 +10784,6 @@ async function openMediaInspector(uniqueId) {
   if (altBnInp) altBnInp.value = item.alt_text_bn || '';
   if (currIdInp) currIdInp.value = item.unique_id;
 
-  const providerDisplayNames = {
-    r2: 'Cloudflare R2 (10 GB Free)',
-    b2: 'Backblaze B2 (10 GB Free)',
-    supabase: 'Supabase Storage (1 GB Free)'
-  };
   const providerColors = {
     r2: '#ea580c',
     b2: '#e11d48',
@@ -10646,10 +10791,10 @@ async function openMediaInspector(uniqueId) {
   };
 
   if (subEl) {
-    subEl.textContent = provider === 'b2' ? 'Backblaze B2 Cloud Asset' : (provider === 'supabase' ? 'Supabase Storage Cloud Asset' : 'Cloudflare R2 Cloud Asset');
+    subEl.textContent = `${info.targetDesc} Asset`;
   }
   if (provEl) {
-    provEl.innerHTML = `<span style="display:inline-flex;align-items:center;gap:5px;color:${providerColors[provider] || '#ea580c'};font-weight:700;"><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${providerColors[provider] || '#ea580c'};"></span>${providerDisplayNames[provider] || 'Cloud Storage'}</span>`;
+    provEl.innerHTML = `<span style="display:inline-flex;align-items:center;gap:5px;color:${providerColors[info.provider] || '#ea580c'};font-weight:700;"><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${providerColors[info.provider] || '#ea580c'};"></span>${info.targetDesc}</span>`;
   }
 
   // Reset Article Usage card while loading
@@ -10759,12 +10904,11 @@ function _deleteInspectorMedia() {
 // ── 9. Trash & Deletion Confirmations ─────────────────────────────
 function _trashAssetConfirm(uniqueId, filename) {
   const item = _rawGalleryList.find(x => x.unique_id === uniqueId || x.id === uniqueId);
-  const provider = item ? (item.provider || (item.url?.includes('backblazeb2') ? 'b2' : (item.url?.includes('supabase.co') ? 'supabase' : 'r2'))) : 'r2';
-  const providerName = provider === 'b2' ? 'Backblaze B2' : (provider === 'supabase' ? 'Supabase Storage' : 'Cloudflare R2');
+  const info = _getStorageTargetInfo(item);
 
   _confirmModal({
     title: 'Move Asset to Trash',
-    body: `Are you sure you want to move <strong>${escapeHtml(filename)}</strong> (<code style="color:#4f46e5;">${uniqueId}</code>) to the <strong>Trash Bin</strong>?<br><div style="margin-top:8px;font-size:12px;color:#1e293b;background:#f8fafc;border:1px solid #e2e8f0;padding:8px 12px;border-radius:8px;">The file remains safely in <strong>${providerName}</strong> and can be restored at any time from the Trash Bin tab.</div>`,
+    body: `Are you sure you want to move <strong>${escapeHtml(filename)}</strong> (<code style="color:#4f46e5;">${uniqueId}</code>) to the <strong>Trash Bin</strong>?<br><div style="margin-top:8px;font-size:12px;color:#1e293b;background:#f8fafc;border:1px solid #e2e8f0;padding:8px 12px;border-radius:8px;">The file remains safely in <strong>${info.targetDesc}</strong> and can be restored at any time from the Trash Bin tab.</div>`,
     confirmText: 'Move to Trash',
     variant: 'danger',
     onConfirm: async () => {
@@ -10821,67 +10965,145 @@ async function _restoreAsset(uniqueId) {
 
 function _deletePermanentConfirm(uniqueId, filename) {
   const item = _rawGalleryList.find(x => x.unique_id === uniqueId || x.id === uniqueId);
-  const provider = item ? (item.provider || (item.url?.includes('backblazeb2') ? 'b2' : (item.url?.includes('supabase.co') ? 'supabase' : 'r2'))) : 'r2';
-  const providerName = provider === 'b2' ? 'Backblaze B2' : (provider === 'supabase' ? 'Supabase Storage' : 'Cloudflare R2');
+  const info = _getStorageTargetInfo(item);
 
   _confirmModal({
-    title: `Permanently Erase from ${providerName}`,
-    body: `Permanently erase <strong>${escapeHtml(filename)}</strong> (<code style="color:#dc2626;">${uniqueId}</code>) from your <strong>${providerName}</strong> bucket?<br><div style="margin-top:8px;font-size:12px;color:#991b1b;background:#fef2f2;border:1px solid #fecaca;padding:8px 12px;border-radius:8px;"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:3px;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><strong>Irreversible Action:</strong> This file will be permanently deleted from <strong>${providerName}</strong> and CDN. This action cannot be recovered.</div>`,
+    title: `Permanently Erase from ${info.title}`,
+    body: `Permanently erase <strong>${escapeHtml(filename)}</strong> (<code style="color:#dc2626;">${uniqueId}</code>) from your <strong>${info.bucketName}</strong>?<br><div style="margin-top:8px;font-size:12px;color:#991b1b;background:#fef2f2;border:1px solid #fecaca;padding:8px 12px;border-radius:8px;"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:3px;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><strong>Irreversible Action:</strong> This file will be permanently deleted from <strong>${info.targetDesc}</strong>. This action cannot be recovered.</div>`,
     confirmText: 'Permanently Delete',
     variant: 'danger',
     onConfirm: async () => {
+      // 1. First check article usage guardrail before initiating deletion
       try {
-        const res = await _apiDelete(`/api/media?action=delete_permanent&id=${encodeURIComponent(uniqueId)}`);
-        if (res && res.ok) {
-          _rawGalleryList = _rawGalleryList.filter(x => x.unique_id !== uniqueId && x.id !== uniqueId);
-          if (_galleryCurrentInspectorItem && _galleryCurrentInspectorItem.unique_id === uniqueId) {
-            closeMediaInspector();
+        const check = await _apiGet(`/api/media?action=usage&id=${encodeURIComponent(uniqueId)}`);
+        if (check && check.is_in_use && check.used_in_articles && check.used_in_articles.length > 0) {
+          _showBlockedMediaModal('Delete Permanently', check.used_in_articles, filename);
+          return;
+        }
+      } catch (err) {}
+
+      // 2. Close inspector modal if open
+      if (_galleryCurrentInspectorItem && (_galleryCurrentInspectorItem.unique_id === uniqueId || _galleryCurrentInspectorItem.id === uniqueId)) {
+        closeMediaInspector();
+      }
+
+      // 3. Optimistically remove item from UI list
+      const targetItem = _rawGalleryList.find(x => x.unique_id === uniqueId || x.id === uniqueId);
+      const targetIndex = _rawGalleryList.findIndex(x => x.unique_id === uniqueId || x.id === uniqueId);
+      if (targetIndex !== -1) {
+        _rawGalleryList.splice(targetIndex, 1);
+      }
+      renderGalleryFolders();
+      _updateGalleryCounts();
+      renderGalleryGrid();
+
+      // 4. Start 5-second countdown with Undo button
+      _show5SecUndoToast({
+        filename: filename || uniqueId,
+        onUndo: () => {
+          // User clicked Undo! Restore item back to list
+          if (targetItem && !_rawGalleryList.some(x => (x.unique_id === targetItem.unique_id || x.id === targetItem.id))) {
+            _rawGalleryList.splice(Math.min(Math.max(0, targetIndex), _rawGalleryList.length), 0, targetItem);
           }
           renderGalleryFolders();
           _updateGalleryCounts();
           renderGalleryGrid();
-          showToast('success', `Permanently erased "${filename}" from ${providerName}.`);
-        }
-      } catch(e) {
-        if (e.status === 409 || e.message?.includes('in use by') || e.message?.includes('ব্যবহৃত হচ্ছে')) {
-          let usedArticles = [];
+          showToast('success', `Permanent deletion cancelled. "${filename}" kept in Trash Bin.`);
+        },
+        onExecute: async () => {
+          // 5 seconds elapsed without Undo, execute actual deletion on server
           try {
-            const check = await _apiGet(`/api/media?action=usage&id=${encodeURIComponent(uniqueId)}`);
-            if (check && check.used_in_articles) usedArticles = check.used_in_articles;
-          } catch(err) {}
-          _showBlockedMediaModal('Delete Permanently', usedArticles, filename);
-        } else {
-          showToast('error', 'Failed to delete asset: ' + e.message);
+            const res = await _apiDelete(`/api/media?action=delete_permanent&id=${encodeURIComponent(uniqueId)}`);
+            if (res && res.ok) {
+              renderGalleryFolders();
+              _updateGalleryCounts();
+              renderGalleryGrid();
+              showToast('success', `Permanently erased "${filename}" from ${info.targetDesc}.`);
+            }
+          } catch(e) {
+            // Restore back if error
+            if (targetItem && !_rawGalleryList.some(x => (x.unique_id === targetItem.unique_id || x.id === targetItem.id))) {
+              _rawGalleryList.splice(Math.min(Math.max(0, targetIndex), _rawGalleryList.length), 0, targetItem);
+            }
+            renderGalleryFolders();
+            _updateGalleryCounts();
+            renderGalleryGrid();
+            if (e.status === 409 || e.message?.includes('in use by') || e.message?.includes('ব্যবহৃত হচ্ছে')) {
+              let usedArticles = [];
+              try {
+                const check = await _apiGet(`/api/media?action=usage&id=${encodeURIComponent(uniqueId)}`);
+                if (check && check.used_in_articles) usedArticles = check.used_in_articles;
+              } catch(err) {}
+              _showBlockedMediaModal('Delete Permanently', usedArticles, filename);
+            } else {
+              showToast('error', 'Failed to delete asset: ' + e.message);
+            }
+          }
         }
-      }
+      });
     }
   });
 }
 
 function _emptyTrashConfirm() {
-  const trashCount = _rawGalleryList.filter(x => x.is_deleted).length;
+  const trashedItems = _rawGalleryList.filter(x => x.is_deleted);
+  const trashCount = trashedItems.length;
   if (trashCount === 0) {
     showToast('info', 'Trash Bin is already empty.');
     return;
   }
+
+  // Detect which providers actually have files in trash
+  const hasR2 = trashedItems.some(x => (x.provider === 'r2' || (!x.provider && !x.url?.includes('backblazeb2') && !x.url?.includes('supabase.co'))));
+  const hasB2 = trashedItems.some(x => (x.provider === 'b2' || x.url?.includes('backblazeb2')));
+  const hasSupabase = trashedItems.some(x => (x.provider === 'supabase' || x.url?.includes('supabase.co')));
+
+  const providersInTrash = [];
+  if (hasR2) providersInTrash.push('Cloudflare R2');
+  if (hasB2) providersInTrash.push('Backblaze B2');
+  if (hasSupabase) providersInTrash.push('Supabase Storage');
+  const providersStr = providersInTrash.join(', ') || 'Cloud Storage';
+
   _confirmModal({
     title: `Empty Trash Bin (${trashCount} ${trashCount === 1 ? 'item' : 'items'})`,
-    body: `Are you sure you want to permanently erase all <strong>${trashCount}</strong> trashed items from your cloud storage (Cloudflare R2, Backblaze B2 & Supabase Storage)?<br><div style="margin-top:8px;font-size:12px;color:#991b1b;background:#fef2f2;border:1px solid #fecaca;padding:8px 12px;border-radius:8px;"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:3px;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><strong>Irreversible Action:</strong> All trashed images will be permanently erased from cloud storage. This action cannot be recovered.</div>`,
+    body: `Are you sure you want to permanently erase all <strong>${trashCount}</strong> trashed items from your cloud storage (<strong>${providersStr}</strong>)?<br><div style="margin-top:8px;font-size:12px;color:#991b1b;background:#fef2f2;border:1px solid #fecaca;padding:8px 12px;border-radius:8px;"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:3px;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><strong>Irreversible Action:</strong> All trashed images will be permanently erased from ${providersStr}. This action cannot be recovered.</div>`,
     confirmText: 'Empty Trash Now',
     variant: 'danger',
     onConfirm: async () => {
-      try {
-        const res = await _apiPost('/api/media?action=empty_trash');
-        if (res && res.ok) {
-          _rawGalleryList = _rawGalleryList.filter(x => !x.is_deleted);
+      // Optimistically remove trashed items and offer 5s Undo
+      const backupTrashed = [...trashedItems];
+      _rawGalleryList = _rawGalleryList.filter(x => !x.is_deleted);
+      renderGalleryFolders();
+      _updateGalleryCounts();
+      renderGalleryGrid();
+
+      _show5SecUndoToast({
+        filename: `${trashCount} items in Trash Bin`,
+        onUndo: () => {
+          _rawGalleryList.push(...backupTrashed);
           renderGalleryFolders();
           _updateGalleryCounts();
           renderGalleryGrid();
-          showToast('success', `Emptied Trash (${res.deletedCount || trashCount} items permanently erased).`);
+          showToast('success', 'Empty trash cancelled. All items restored to Trash Bin.');
+        },
+        onExecute: async () => {
+          try {
+            const res = await _apiPost('/api/media?action=empty_trash');
+            if (res && res.ok) {
+              renderGalleryFolders();
+              _updateGalleryCounts();
+              renderGalleryGrid();
+              showToast('success', `Emptied Trash (${res.deletedCount || trashCount} items permanently erased).`);
+            }
+          } catch(e) {
+            _rawGalleryList.push(...backupTrashed);
+            renderGalleryFolders();
+            _updateGalleryCounts();
+            renderGalleryGrid();
+            showToast('error', 'Failed to empty trash: ' + e.message);
+          }
         }
-      } catch(e) {
-        showToast('error', 'Failed to empty trash: ' + e.message);
-      }
+      });
     }
   });
 }
@@ -11137,6 +11359,11 @@ window._copyInspectorDirectUrl = _copyInspectorDirectUrl;
 window._copyInspectorMarkdown = _copyInspectorMarkdown;
 window._saveInspectorMetadata = _saveInspectorMetadata;
 window._deleteInspectorMedia = _deleteInspectorMedia;
+window._trashAssetConfirm = _trashAssetConfirm;
+window._deletePermanentConfirm = _deletePermanentConfirm;
+window._restoreAsset = _restoreAsset;
+window._emptyTrashConfirm = _emptyTrashConfirm;
+window._show5SecUndoToast = _show5SecUndoToast;
 window.deleteMediaConfirm = function(id) { if (typeof _deleteInspectorMedia === 'function') _deleteInspectorMedia(id); };
 window.openGalleryPicker = openGalleryPicker;
 window.closeGalleryPicker = closeGalleryPicker;
