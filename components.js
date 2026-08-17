@@ -189,7 +189,8 @@
   var _liveSections = null;
   var _liveFooterSettings_en = null;
   var _liveFooterSettings_bn = null;
-  var _liveHeaderSettings = null;
+  var _liveHeaderSettings_en = null;
+  var _liveHeaderSettings_bn = null;
 
   function getMenuSettings() {
     var isBn = window.PrivatianLang && window.PrivatianLang.getLang() === 'bn';
@@ -204,7 +205,9 @@
   }
 
   function getHeaderSettings() {
-    return _liveHeaderSettings || null;
+    var isBn = window.PrivatianLang && window.PrivatianLang.getLang() === 'bn';
+    if (isBn) return _liveHeaderSettings_bn || null;
+    return _liveHeaderSettings_en || null;
   }
 
   function getSections() {
@@ -796,27 +799,81 @@
 
     // Apply Browser Tab Title & Meta settings (Tab Hover Card)
     var isBn = window.PrivatianLang && window.PrivatianLang.getLang() === 'bn';
-    var defaultSiteTitle = isBn ? 'দ্য প্রাইভেসিয়ান পরিবার' : 'The Privatian Family';
-    var defaultTagline = isBn ? 'অন্তর্দৃষ্টি, গল্প ও ঐতিহ্য' : 'Insights, Stories & Heritage';
+    var defaultSiteTitle = isBn ? 'দ্য প্রাইভেটিয়ান ফ্যামিলি' : 'The Privatian Family';
+    var defaultTagline = isBn ? 'জ্ঞান, ঐতিহ্য ও জীবনের কথা' : 'Insights, Stories & Heritage';
 
-    var siteTitle = isBn ? (settings.siteTitle_bn || settings.siteTitle || defaultSiteTitle) : (settings.siteTitle || defaultSiteTitle);
-    var tabTagline = isBn ? (settings.tabTagline_bn || settings.tabTagline || defaultTagline) : (settings.tabTagline || defaultTagline);
-    var browserTabTitle = isBn ? (settings.browserTabTitle_bn || (siteTitle + ' — ' + tabTagline)) : (settings.browserTabTitle || (siteTitle + ' — ' + tabTagline));
+    var siteTitle = '';
+    var tabTagline = '';
+    var browserTabTitle = '';
 
-    var path = window.location.pathname || '';
+    if (isBn) {
+      // For Bengali: Strictly ensure that if a title is used, it MUST contain Bengali script!
+      // Never allow an English string like "The Privatian Family Hub" to bleed into Bengali tab title.
+      if (settings && settings.siteTitle && /[\u0980-\u09FF]/.test(settings.siteTitle)) {
+        siteTitle = settings.siteTitle;
+      } else if (settings && settings.siteTitle_bn && /[\u0980-\u09FF]/.test(settings.siteTitle_bn)) {
+        siteTitle = settings.siteTitle_bn;
+      } else {
+        siteTitle = defaultSiteTitle;
+      }
+
+      if (settings && settings.tabTagline && /[\u0980-\u09FF]/.test(settings.tabTagline)) {
+        tabTagline = settings.tabTagline;
+      } else if (settings && settings.tabTagline_bn && /[\u0980-\u09FF]/.test(settings.tabTagline_bn)) {
+        tabTagline = settings.tabTagline_bn;
+      } else {
+        tabTagline = defaultTagline;
+      }
+
+      if (settings && settings.browserTabTitle && /[\u0980-\u09FF]/.test(settings.browserTabTitle)) {
+        browserTabTitle = settings.browserTabTitle;
+      } else if (settings && settings.browserTabTitle_bn && /[\u0980-\u09FF]/.test(settings.browserTabTitle_bn)) {
+        browserTabTitle = settings.browserTabTitle_bn;
+      } else {
+        browserTabTitle = siteTitle + (tabTagline ? ' — ' + tabTagline : '');
+      }
+    } else {
+      // For English: Strictly ensure no Bengali characters
+      if (settings && settings.siteTitle && !/[\u0980-\u09FF]/.test(settings.siteTitle)) {
+        siteTitle = settings.siteTitle;
+      } else {
+        siteTitle = defaultSiteTitle;
+      }
+
+      if (settings && settings.tabTagline && !/[\u0980-\u09FF]/.test(settings.tabTagline)) {
+        tabTagline = settings.tabTagline;
+      } else {
+        tabTagline = defaultTagline;
+      }
+
+      if (settings && settings.browserTabTitle && !/[\u0980-\u09FF]/.test(settings.browserTabTitle)) {
+        browserTabTitle = settings.browserTabTitle;
+      } else {
+        browserTabTitle = siteTitle + (tabTagline ? ' — ' + tabTagline : '');
+      }
+    }
+
+    var path = (window.location.pathname || '').toLowerCase();
     if (browserTabTitle && (path.endsWith('index.html') || path === '/' || path === '' || path.endsWith('/'))) {
       document.title = browserTabTitle;
     }
-    var metaDesc = isBn ? (settings.metaDescription_bn || settings.metaDescription) : settings.metaDescription;
-    if (metaDesc) {
-      var m = document.querySelector('meta[name="description"]');
-      if (m) m.setAttribute('content', metaDesc);
-      var ogm = document.querySelector('meta[property="og:description"]');
-      if (ogm) ogm.setAttribute('content', metaDesc);
-    }
+
+    var metaDesc = isBn
+      ? ((settings && settings.metaDescription && /[\u0980-\u09FF]/.test(settings.metaDescription)) ? settings.metaDescription : 'দ্য প্রাইভেটিয়ান সোসাইটির অফিশিয়াল প্রকাশনা — ক্যামব্রিজ, ম্যাসাচুসেটস।')
+      : ((settings && settings.metaDescription && !/[\u0980-\u09FF]/.test(settings.metaDescription)) ? settings.metaDescription : 'The Official Publication of The Privatian Society — Cambridge, Massachusetts.');
+
+    var m = document.querySelector('meta[name="description"]');
+    if (m && metaDesc) m.setAttribute('content', metaDesc);
+    var ogm = document.querySelector('meta[property="og:description"]');
+    if (ogm && metaDesc) ogm.setAttribute('content', metaDesc);
+
     if (browserTabTitle) {
       var ogt = document.querySelector('meta[property="og:title"]');
       if (ogt) ogt.setAttribute('content', browserTabTitle);
+      var ogs = document.querySelector('meta[property="og:site_name"]');
+      if (ogs) ogs.setAttribute('content', siteTitle);
+      var twt = document.querySelector('meta[name="twitter:title"]');
+      if (twt) twt.setAttribute('content', browserTabTitle);
     }
   }
 
@@ -1452,7 +1509,13 @@
     }
 
     if (data && typeof data === 'object') {
-      _liveHeaderSettings = data;
+      if (isBn) {
+        _liveHeaderSettings_bn = data;
+        try { localStorage.setItem('privatian_header_settings_bn', JSON.stringify(data)); } catch(e) {}
+      } else {
+        _liveHeaderSettings_en = data;
+        try { localStorage.setItem('privatian_header_settings_en', JSON.stringify(data)); } catch(e) {}
+      }
       applyLogoSettings();
       populateSections();
       populateSubHeader();
@@ -1761,6 +1824,9 @@
 
   document.addEventListener('privatian:language-changed', function() {
     try {
+      fetchHeaderSettingsFromAPI();
+      fetchMenuFromAPI();
+      fetchFooterFromAPI();
       applyLogoSettings();
       populateSections();
     } catch(e) {}

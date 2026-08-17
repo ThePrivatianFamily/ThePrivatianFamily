@@ -3826,11 +3826,67 @@ async function saveHeaderSettings(hs) {
   hs.updatedAt = new Date().toISOString();
   hs.lang = currentLang;
 
+  let savedOk = false;
   try {
-    await _apiPost('/api/sections?action=header' + (currentLang === 'bn' ? '&lang=bn' : ''), hs);
+    const res = await _apiPost('/api/sections?action=header' + (currentLang === 'bn' ? '&lang=bn' : ''), hs);
+    if (res && (res.ok || res.data)) savedOk = true;
   } catch(err) {
     console.warn('[Admin] saveHeaderSettings API error:', err.message);
   }
+
+  // Direct Supabase Fallback
+  try {
+    const sb = window._sb || (window.initSupabaseClient && window.initSupabaseClient());
+    if (sb) {
+      const targetAdminId = currentLang === 'bn' ? '__header_config_bn__' : '__header_config__';
+      const settingsKey = currentLang === 'bn' ? 'site_header_config_bn' : 'site_header_config';
+
+      // 1. sections table
+      const { data: existing } = await sb.from('sections').select('id').eq('admin_id', targetAdminId).maybeSingle();
+      if (existing) {
+        await sb.from('sections').update({
+          name: JSON.stringify(hs),
+          slug: targetAdminId,
+          display_order: 9998,
+          is_active: false,
+          locked: true,
+          is_deleted: true
+        }).eq('admin_id', targetAdminId);
+      } else {
+        await sb.from('sections').insert({
+          admin_id: targetAdminId,
+          name: JSON.stringify(hs),
+          slug: targetAdminId,
+          display_order: 9998,
+          is_active: false,
+          locked: true,
+          is_deleted: true
+        });
+      }
+
+      // 2. site_settings table (if available)
+      try {
+        await sb.from('site_settings').upsert({
+          key: settingsKey,
+          value: hs,
+          updated_at: new Date().toISOString()
+        }, { onConflict: 'key' });
+      } catch(e) {}
+
+      savedOk = true;
+    }
+  } catch(e) {
+    console.warn('[Admin] Supabase direct fallback error:', e);
+  }
+
+  // Local storage caching for zero-latency client reading
+  try {
+    if (currentLang === 'bn') {
+      localStorage.setItem('privatian_header_settings_bn', JSON.stringify(hs));
+    } else {
+      localStorage.setItem('privatian_header_settings_en', JSON.stringify(hs));
+    }
+  } catch(e) {}
 }
 
 // ── HEADER BRAND LOGO & LIVE PREVIEW (MATCHING FOOTER STYLE) ─────────────

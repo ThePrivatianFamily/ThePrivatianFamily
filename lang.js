@@ -555,18 +555,25 @@
 
     // Try reading customized header settings from localStorage if configured by admin
     try {
-      var rawSettings = localStorage.getItem('privatian_header_settings');
+      var rawKey = isBn ? 'privatian_header_settings_bn' : 'privatian_header_settings_en';
+      var rawSettings = localStorage.getItem(rawKey) || localStorage.getItem('privatian_header_settings');
       if (rawSettings) {
         var hs = JSON.parse(rawSettings);
         if (hs) {
-          if (isBn && hs.siteTitle_bn) defaultSiteTitle = hs.siteTitle_bn;
-          else if (!isBn && hs.siteTitle) defaultSiteTitle = hs.siteTitle;
+          if (isBn) {
+            if (hs.siteTitle && /[\u0980-\u09FF]/.test(hs.siteTitle)) defaultSiteTitle = hs.siteTitle;
+            else if (hs.siteTitle_bn && /[\u0980-\u09FF]/.test(hs.siteTitle_bn)) defaultSiteTitle = hs.siteTitle_bn;
 
-          if (isBn && hs.tabTagline_bn) defaultTagline = hs.tabTagline_bn;
-          else if (!isBn && hs.tabTagline) defaultTagline = hs.tabTagline;
+            if (hs.tabTagline && /[\u0980-\u09FF]/.test(hs.tabTagline)) defaultTagline = hs.tabTagline;
+            else if (hs.tabTagline_bn && /[\u0980-\u09FF]/.test(hs.tabTagline_bn)) defaultTagline = hs.tabTagline_bn;
 
-          if (isBn && hs.metaDescription_bn) defaultDesc = hs.metaDescription_bn;
-          else if (!isBn && hs.metaDescription) defaultDesc = hs.metaDescription;
+            if (hs.metaDescription && /[\u0980-\u09FF]/.test(hs.metaDescription)) defaultDesc = hs.metaDescription;
+            else if (hs.metaDescription_bn && /[\u0980-\u09FF]/.test(hs.metaDescription_bn)) defaultDesc = hs.metaDescription_bn;
+          } else {
+            if (hs.siteTitle && !/[\u0980-\u09FF]/.test(hs.siteTitle)) defaultSiteTitle = hs.siteTitle;
+            if (hs.tabTagline && !/[\u0980-\u09FF]/.test(hs.tabTagline)) defaultTagline = hs.tabTagline;
+            if (hs.metaDescription && !/[\u0980-\u09FF]/.test(hs.metaDescription)) defaultDesc = hs.metaDescription;
+          }
         }
       }
     } catch(e) {}
@@ -600,20 +607,21 @@
       if (currentT) {
         if (isBn) {
           targetTitle = currentT
-            .replace('The Privatian Family', 'দ্য প্রাইভেটিয়ান ফ্যামিলি')
-            .replace('Insights, Stories & Heritage', 'জ্ঞান, ঐতিহ্য ও জীবনের কথা')
-            .replace('Events & Gatherings', 'অনুষ্ঠান ও সম্মিলন')
-            .replace('Article', 'প্রতিবেদন')
-            .replace('Section', 'বিভাগ');
+            .replace(/The Privatian Family Hub/g, 'দ্য প্রাইভেটিয়ান ফ্যামিলি')
+            .replace(/The Privatian Family/g, 'দ্য প্রাইভেটিয়ান ফ্যামিলি')
+            .replace(/Insights, Stories & Heritage/g, 'জ্ঞান, ঐতিহ্য ও জীবনের কথা')
+            .replace(/Events & Gatherings/g, 'অনুষ্ঠান ও সম্মিলন')
+            .replace(/Article/g, 'প্রতিবেদন')
+            .replace(/Section/g, 'বিভাগ');
         } else {
           targetTitle = currentT
-            .replace('দ্য প্রাইভেটিয়ান ফ্যামিলি', 'The Privatian Family')
-            .replace('দ্য প্রাইভেসিয়ান পরিবার', 'The Privatian Family')
-            .replace('জ্ঞান, ঐতিহ্য ও জীবনের কথা', 'Insights, Stories & Heritage')
-            .replace('অন্তর্দৃষ্টি, গল্প ও ঐতিহ্য', 'Insights, Stories & Heritage')
-            .replace('অনুষ্ঠান ও সম্মিলন', 'Events & Gatherings')
-            .replace('প্রতিবেদন', 'Article')
-            .replace('বিভাগ', 'Section');
+            .replace(/দ্য প্রাইভেটিয়ান ফ্যামিলি/g, 'The Privatian Family')
+            .replace(/দ্য প্রাইভেসিয়ান পরিবার/g, 'The Privatian Family')
+            .replace(/জ্ঞান, ঐতিহ্য ও জীবনের কথা/g, 'Insights, Stories & Heritage')
+            .replace(/অন্তর্দৃষ্টি, গল্প ও ঐতিহ্য/g, 'Insights, Stories & Heritage')
+            .replace(/অনুষ্ঠান ও সম্মিলন/g, 'Events & Gatherings')
+            .replace(/প্রতিবেদন/g, 'Article')
+            .replace(/বিভাগ/g, 'Section');
         }
       }
     }
