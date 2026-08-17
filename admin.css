@@ -5655,4 +5655,49 @@ body.modal-open {
   }
 }
 
+/* ==========================================================================
+   ACTIVITY LOG INSPECT BUTTON (LUXURY PILL DESIGN)
+   ========================================================================== */
+.activity-inspect-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 12px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  color: #0a528e;
+  background: #f0f7fc;
+  border: 1px solid #bae6fd;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 1px 2px rgba(10, 82, 142, 0.05);
+  user-select: none;
+  line-height: 1;
+}
+
+.activity-inspect-btn svg {
+  color: #0284c7;
+  transition: all 0.18s ease;
+  flex-shrink: 0;
+}
+
+.activity-inspect-btn:hover {
+  background: #0a528e;
+  color: #ffffff;
+  border-color: #0a528e;
+  transform: translateY(-1px);
+  box-shadow: 0 3px 8px rgba(10, 82, 142, 0.25);
+}
+
+.activity-inspect-btn:hover svg {
+  color: #ffffff;
+}
+
+.activity-inspect-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 2px rgba(10, 82, 142, 0.15);
+}
+
 

@@ -1210,14 +1210,6 @@ function makeStudioHero(articleId) {
   }
   switchStudioTab('layout');
   showToast('success', 'Article selected as Hero Featured Story for this section.');
-  recordActivityLog({
-    action: 'sections.hero_select',
-    category: 'sections',
-    summary: `Selected article "${articleId}" as Hero Featured Story for section "${_studioCurrentSection?.name || ''}"`,
-    target_id: articleId,
-    target_name: _studioCurrentSection?.name || 'Section Hero',
-    details: { sectionId: _studioCurrentSection?.id, articleId }
-  });
 }
 
 function pinStudioSlot(articleId, slotNum) {
@@ -1228,14 +1220,6 @@ function pinStudioSlot(articleId, slotNum) {
   }
   switchStudioTab('layout');
   showToast('success', `Article pinned to Slot ${slotNum}.`);
-  recordActivityLog({
-    action: 'sections.slot_pin',
-    category: 'sections',
-    summary: `Pinned article "${articleId}" to Slot ${slotNum} for section "${_studioCurrentSection?.name || ''}"`,
-    target_id: articleId,
-    target_name: `Slot ${slotNum}`,
-    details: { sectionId: _studioCurrentSection?.id, slotNum, articleId }
-  });
 }
 
 async function lookupHeroArticleById(rawInput) {
@@ -1276,14 +1260,6 @@ async function lookupHeroArticleById(rawInput) {
     updateStudioHeroPreview(art.id);
   }
   showToast('success', `Applied Hero Featured Story: "${art.title || art.id}".`);
-  recordActivityLog({
-    action: 'sections.hero_lookup',
-    category: 'sections',
-    summary: `Looked up and set article "${art.title || art.id}" as Hero Story for section "${_studioCurrentSection?.name || ''}"`,
-    target_id: art.id,
-    target_name: art.title || art.id,
-    details: { sectionId: _studioCurrentSection?.id, articleId: art.id, title: art.title }
-  });
 }
 
 async function saveSectionStudio() {
@@ -3159,7 +3135,16 @@ async function loadHeaderSettings() {
   try {
     const data = await _apiGet('/api/sections?action=header' + (currentLang === 'bn' ? '&lang=bn' : ''));
     if (data && typeof data === 'object') {
-      return sanitizeLoadedHeaderData(data, currentLang);
+      const sanitized = sanitizeLoadedHeaderData(data, currentLang);
+      if (sanitized && sanitized.faviconUrl) {
+        if (typeof window.applyFaviconSettings === 'function') {
+          window.applyFaviconSettings(sanitized.faviconUrl);
+        }
+        try {
+          localStorage.setItem('privatian_custom_favicon', sanitized.faviconUrl);
+        } catch(e) {}
+      }
+      return sanitized;
     }
   } catch(err) {
     console.warn('[Admin] loadHeaderSettings API failed (trying fallback):', err.message);
@@ -3173,7 +3158,16 @@ async function loadHeaderSettings() {
       if (sData && sData.name) {
         const parsed = JSON.parse(sData.name);
         if (parsed && typeof parsed === 'object') {
-          return sanitizeLoadedHeaderData(parsed, currentLang);
+          const sanitized = sanitizeLoadedHeaderData(parsed, currentLang);
+          if (sanitized && sanitized.faviconUrl) {
+            if (typeof window.applyFaviconSettings === 'function') {
+              window.applyFaviconSettings(sanitized.faviconUrl);
+            }
+            try {
+              localStorage.setItem('privatian_custom_favicon', sanitized.faviconUrl);
+            } catch(e) {}
+          }
+          return sanitized;
         }
       }
     }
@@ -3235,11 +3229,12 @@ function updateFaviconPreviews(url) {
 
   const cleanUrl = (url || '').trim();
 
-  const setImgOrMonogram = (el, size, fontSize, borderRadius) => {
+  function setImgOrMonogram(el, size, fontSize, rx = 2) {
     if (!el) return;
     if (cleanUrl) {
       el.innerHTML = `<img src="${cleanUrl}" alt="Favicon" style="width:100%;height:100%;object-fit:cover;display:block;" onerror="this.parentElement.innerHTML='P';this.parentElement.style.background='#0a528e';this.parentElement.style.color='#fff';">`;
       el.style.background = 'transparent';
+      el.style.color = 'inherit';
     } else {
       el.innerHTML = 'P';
       el.style.background = '#0a528e';
@@ -3734,14 +3729,6 @@ function onHeaderLogoSvgInput(svgCode) {
   _hsInstance.logoSvg = svgCode ? svgCode.trim() : null;
   updateGlobalSyncStatus();
   updateHeaderLogoPreview();
-  recordActivityLog({
-    action: 'layout.header_logo_update',
-    category: 'layout',
-    summary: `Updated Header logo SVG in Header Settings`,
-    target_id: 'header_logo',
-    target_name: 'Header Logo',
-    details: {}
-  });
 }
 
 function onHeaderLogoHeightInput(heightVal) {
@@ -3752,14 +3739,6 @@ function onHeaderLogoHeightInput(heightVal) {
   if (label) label.textContent = h;
   updateGlobalSyncStatus();
   updateHeaderLogoPreview();
-  recordActivityLog({
-    action: 'layout.header_logo_resize',
-    category: 'layout',
-    summary: `Resized Header logo to ${h}px`,
-    target_id: 'header_logo',
-    target_name: 'Header Logo',
-    details: { height: h }
-  });
 }
 
 function resetHeaderLogoToDefault() {
@@ -3775,14 +3754,6 @@ function resetHeaderLogoToDefault() {
   updateGlobalSyncStatus();
   updateHeaderLogoPreview();
   showToast('info', 'Header logo reset to default.');
-  recordActivityLog({
-    action: 'layout.header_logo_reset',
-    category: 'layout',
-    summary: `Reset Header logo to default in Header Settings`,
-    target_id: 'header_logo',
-    target_name: 'Header Logo',
-    details: {}
-  });
 }
 
 function updateHeaderLogoPreview() {
@@ -3878,14 +3849,6 @@ function renderHsNavSections(hs) {
     row.querySelector('input[type="checkbox"]').addEventListener('change', (e) => {
       hs.enabledNavSections = getEnabledNavSections();
       updateGlobalSyncStatus();
-      recordActivityLog({
-        action: 'layout.header_toggle_section',
-        category: 'layout',
-        summary: `${e.target.checked ? 'Enabled' : 'Disabled'} section "${s.name}" in Header Navigation Bar`,
-        target_id: sectionId,
-        target_name: s.name,
-        details: { sectionId, enabled: e.target.checked }
-      });
     });
     container.appendChild(row);
   });
@@ -3951,14 +3914,6 @@ function moveHsSubRow(id, dir, hs) {
   items[newIdx] = temp;
   renderHsSubsections(hs);
   updateGlobalSyncStatus();
-  recordActivityLog({
-    action: 'layout.header_reorder_tab',
-    category: 'layout',
-    summary: `Reordered sub-header tab "${temp.label || id}" (${dir < 0 ? 'Moved Up' : 'Moved Down'}) in Header`,
-    target_id: id,
-    target_name: temp.label || id,
-    details: { id, dir }
-  });
 }
 
 function buildHsSubRow(container, sub, hs, idx, total) {
@@ -4027,14 +3982,6 @@ function buildHsSubRow(container, sub, hs, idx, total) {
     sub.enabled = e.target.checked;
     row.classList.toggle('hs-sub-row--off', !sub.enabled);
     updateGlobalSyncStatus();
-    recordActivityLog({
-      action: 'layout.header_toggle_tab',
-      category: 'layout',
-      summary: `${sub.enabled ? 'Enabled' : 'Disabled'} sub-header tab "${sub.label}" in Header`,
-      target_id: sub.id,
-      target_name: sub.label,
-      details: { id: sub.id, enabled: sub.enabled, href: sub.href }
-    });
   });
 
   // Edit toggle
@@ -4063,14 +4010,6 @@ function buildHsSubRow(container, sub, hs, idx, total) {
     } else if (badgeEl) { badgeEl.remove(); }
     editForm.hidden = true;
     updateGlobalSyncStatus();
-    recordActivityLog({
-      action: 'layout.header_edit_tab',
-      category: 'layout',
-      summary: `Updated sub-header tab "${sub.label}" (${sub.href}) in Header`,
-      target_id: sub.id,
-      target_name: sub.label,
-      details: { id: sub.id, label: sub.label, href: sub.href, icon: sub.icon }
-    });
   });
 
   // Cancel edit
@@ -4081,17 +4020,9 @@ function buildHsSubRow(container, sub, hs, idx, total) {
     if (!confirm('Delete tab "' + sub.label + '"? This cannot be undone.')) return;
     const idx = hs.subsections.findIndex(s => s.id === sub.id);
     if (idx !== -1) {
-      const removed = hs.subsections.splice(idx, 1)[0];
+      hs.subsections.splice(idx, 1)[0];
       renderHsSubsections(hs);
       updateGlobalSyncStatus();
-      recordActivityLog({
-        action: 'layout.header_delete_tab',
-        category: 'layout',
-        summary: `Deleted sub-header tab "${removed?.label || sub.label}" from Header`,
-        target_id: sub.id,
-        target_name: removed?.label || sub.label,
-        details: { id: sub.id }
-      });
     }
   });
 
@@ -4126,14 +4057,6 @@ function bindHsAddForm(hs) {
       if (addBtn) addBtn.style.display = '';
       updateGlobalSyncStatus();
       showToast('success', 'Tab added! Click "Apply Header Changes" to save.');
-      recordActivityLog({
-        action: 'layout.header_add_tab',
-        category: 'layout',
-        summary: `Added sub-header tab "${newSub.label}" (${newSub.href}) in Header`,
-        target_id: newSub.id,
-        target_name: newSub.label,
-        details: newSub
-      });
     });
   }
 }
@@ -4175,6 +4098,12 @@ function bindHsSaveBtn(hs) {
     try {
       await saveHeaderSettings(currentInstance);
       window._appliedHeaderConfig = JSON.parse(JSON.stringify(currentInstance));
+      if (typeof window.applyFaviconSettings === 'function') {
+        window.applyFaviconSettings(currentInstance.faviconUrl);
+      }
+      try {
+        localStorage.setItem('privatian_custom_favicon', currentInstance.faviconUrl || '');
+      } catch(e) {}
       updateGlobalSyncStatus('synced', 'Synced with database');
       saveBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" width="15" height="15"><polyline points="20 6 9 17 4 12"/></svg> Changes Applied!`;
       saveBtn.style.background = 'var(--success, #1a7a4a)';
@@ -5195,14 +5124,6 @@ function toggleMenuSearchEnabled(checked) {
   renderMenuSearch();
   renderMenuPreview();
   updateGlobalSyncStatus();
-  recordActivityLog({
-    action: 'layout.menu_toggle_search',
-    category: 'layout',
-    summary: `${checked ? 'Enabled' : 'Disabled'} Menubar Search Bar in Navigation Menu`,
-    target_id: 'menu_search',
-    target_name: 'Menubar Search',
-    details: { enabled: checked }
-  });
 }
 
 function openSearchTagModal(id) {
@@ -5291,14 +5212,6 @@ function saveSearchTagModal() {
   updateGlobalSyncStatus();
   showToast('success', editId ? 'Search tag updated!' : 'Search tag added!');
 
-  recordActivityLog({
-    action: editId ? 'layout.menu_edit_search_tag' : 'layout.menu_add_search_tag',
-    category: 'layout',
-    summary: `${editId ? 'Updated' : 'Added'} search tag "${label || labelBn}" in Navigation Menu`,
-    target_id: editId || 'tag-new',
-    target_name: label || labelBn,
-    details: { label, label_bn: labelBn, query, enabled }
-  });
 }
 
 function deleteSearchTag(id) {
@@ -5311,14 +5224,6 @@ function deleteSearchTag(id) {
   updateGlobalSyncStatus();
   showToast('info', 'Search tag deleted');
   if (item) {
-    recordActivityLog({
-      action: 'layout.menu_delete_search_tag',
-      category: 'layout',
-      summary: `Deleted search tag "${item.label || id}" from Navigation Menu`,
-      target_id: id,
-      target_name: item.label || id,
-      details: { id }
-    });
   }
 }
 
@@ -5331,14 +5236,6 @@ function toggleSearchTag(id) {
     renderMenuSearch();
     renderMenuPreview();
     updateGlobalSyncStatus();
-    recordActivityLog({
-      action: 'layout.menu_toggle_search_tag',
-      category: 'layout',
-      summary: `${item.enabled ? 'Enabled' : 'Disabled'} search tag "${item.label || id}" in Navigation Menu`,
-      target_id: item.id,
-      target_name: item.label,
-      details: { id: item.id, enabled: item.enabled }
-    });
   }
 }
 
@@ -5494,14 +5391,6 @@ function saveSeriesItem() {
   renderSeriesList();
   renderMenuPreview();
 
-  recordActivityLog({
-    action: editId ? 'layout.menu_edit_series' : 'layout.menu_add_series',
-    category: 'layout',
-    summary: `${editId ? 'Updated' : 'Added'} featured series "${title}" in Navigation Menu`,
-    target_id: editId || 'series-new',
-    target_name: title,
-    details: { title, href, description: desc, enabled }
-  });
 }
 
 function deleteSeriesItem(id) {
@@ -5511,14 +5400,6 @@ function deleteSeriesItem(id) {
   renderSeriesList();
   renderMenuPreview();
   if (item) {
-    recordActivityLog({
-      action: 'layout.menu_delete_series',
-      category: 'layout',
-      summary: `Deleted featured series "${item.title || id}" from Navigation Menu`,
-      target_id: id,
-      target_name: item.title || id,
-      details: { id }
-    });
   }
 }
 
@@ -5529,14 +5410,6 @@ function toggleSeriesItem(id) {
     item.enabled = (item.enabled === false ? true : false);
     renderSeriesList();
     renderMenuPreview();
-    recordActivityLog({
-      action: 'layout.menu_toggle_series',
-      category: 'layout',
-      summary: `${item.enabled ? 'Enabled' : 'Disabled'} featured series "${item.title || id}" in Navigation Menu`,
-      target_id: item.id,
-      target_name: item.title,
-      details: { seriesId: item.id, enabled: item.enabled, href: item.href }
-    });
   }
 }
 
@@ -5552,14 +5425,6 @@ function moveSeriesItem(id, dir) {
   items[newIdx] = temp;
   renderSeriesList();
   renderMenuPreview();
-  recordActivityLog({
-    action: 'layout.menu_reorder_series',
-    category: 'layout',
-    summary: `Reordered series "${temp.title || id}" (${dir < 0 ? 'Moved Up' : 'Moved Down'}) in Navigation Menu`,
-    target_id: id,
-    target_name: temp.title || id,
-    details: { id, dir }
-  });
 }
 
 // ── EXPLORE LINKS CRUD ───────────────────────────────────────────
@@ -5706,14 +5571,6 @@ function saveExploreItem() {
   renderExploreList();
   renderMenuPreview();
 
-  recordActivityLog({
-    action: editId ? 'layout.menu_edit_explore' : 'layout.menu_add_explore',
-    category: 'layout',
-    summary: `${editId ? 'Updated' : 'Added'} explore link "${label}" in Navigation Menu`,
-    target_id: editId || 'explore-new',
-    target_name: label,
-    details: { label, href, target, enabled }
-  });
 }
 
 function deleteExploreItem(id) {
@@ -5723,14 +5580,6 @@ function deleteExploreItem(id) {
   renderExploreList();
   renderMenuPreview();
   if (item) {
-    recordActivityLog({
-      action: 'layout.menu_delete_explore',
-      category: 'layout',
-      summary: `Deleted explore link "${item.label || id}" from Navigation Menu`,
-      target_id: id,
-      target_name: item.label || id,
-      details: { id }
-    });
   }
 }
 
@@ -5741,14 +5590,6 @@ function toggleExploreItem(id) {
     item.enabled = (item.enabled === false ? true : false);
     renderExploreList();
     renderMenuPreview();
-    recordActivityLog({
-      action: 'layout.menu_toggle_explore',
-      category: 'layout',
-      summary: `${item.enabled ? 'Enabled' : 'Disabled'} explore link "${item.label || id}" in Navigation Menu`,
-      target_id: item.id,
-      target_name: item.label,
-      details: { id: item.id, enabled: item.enabled, href: item.href }
-    });
   }
 }
 
@@ -5764,14 +5605,6 @@ function moveExploreItem(id, dir) {
   items[newIdx] = temp;
   renderExploreList();
   renderMenuPreview();
-  recordActivityLog({
-    action: 'layout.menu_reorder_explore',
-    category: 'layout',
-    summary: `Reordered explore link "${temp.label || id}" (${dir < 0 ? 'Moved Up' : 'Moved Down'}) in Navigation Menu`,
-    target_id: id,
-    target_name: temp.label || id,
-    details: { id, dir }
-  });
 }
 
 // ── READ THE LATEST CRUD ─────────────────────────────────────────
@@ -5901,14 +5734,6 @@ function saveLatestItem() {
   renderLatestList();
   renderMenuPreview();
 
-  recordActivityLog({
-    action: editId ? 'layout.menu_edit_latest' : 'layout.menu_add_latest',
-    category: 'layout',
-    summary: `${editId ? 'Updated' : 'Added'} story highlight "${title}" in Navigation Menu`,
-    target_id: editId || 'latest-new',
-    target_name: title,
-    details: { title, href, imageUrl, enabled }
-  });
 }
 
 function deleteLatestItem(id) {
@@ -5918,14 +5743,6 @@ function deleteLatestItem(id) {
   renderLatestList();
   renderMenuPreview();
   if (item) {
-    recordActivityLog({
-      action: 'layout.menu_delete_latest',
-      category: 'layout',
-      summary: `Deleted story highlight "${item.title || id}" from Navigation Menu`,
-      target_id: id,
-      target_name: item.title || id,
-      details: { id }
-    });
   }
 }
 
@@ -5936,14 +5753,6 @@ function toggleLatestItem(id) {
     item.enabled = (item.enabled === false ? true : false);
     renderLatestList();
     renderMenuPreview();
-    recordActivityLog({
-      action: 'layout.menu_toggle_latest',
-      category: 'layout',
-      summary: `${item.enabled ? 'Enabled' : 'Disabled'} story highlight "${item.title || id}" in Navigation Menu`,
-      target_id: item.id,
-      target_name: item.title,
-      details: { id: item.id, enabled: item.enabled }
-    });
   }
 }
 
@@ -5959,14 +5768,6 @@ function moveLatestItem(id, dir) {
   items[newIdx] = temp;
   renderLatestList();
   renderMenuPreview();
-  recordActivityLog({
-    action: 'layout.menu_reorder_latest',
-    category: 'layout',
-    summary: `Reordered story highlight "${temp.title || id}" (${dir < 0 ? 'Moved Up' : 'Moved Down'}) in Navigation Menu`,
-    target_id: id,
-    target_name: temp.title || id,
-    details: { id, dir }
-  });
 }
 
 // ── SECTIONS COLUMN IN MENU ──────────────────────────────────────
@@ -6072,14 +5873,6 @@ function onMenuSectionToggle() {
   renderMenuSectionsList();
   renderMenuPreview();
 
-  recordActivityLog({
-    action: 'layout.menu_toggle_section',
-    category: 'layout',
-    summary: `Updated visible sections in Navigation Menu column (${selected.join(', ') || 'None'})`,
-    target_id: 'menu_sections',
-    target_name: 'Navigation Menu Sections',
-    details: { enabledSections: selected }
-  });
 }
 
 // ── LIVE PREVIEW IN ADMIN ────────────────────────────────────────
@@ -7374,14 +7167,6 @@ function saveHpSlotModal() {
   renderActiveHpTab();
   showToast('success', 'Homepage slot updated');
 
-  recordActivityLog({
-    action: 'layout.homepage_slot_update',
-    category: 'layout',
-    summary: `Updated Homepage slot "${path}" ("${headline}")`,
-    target_id: path,
-    target_name: headline,
-    details: { path, title: headline, subtitle, link, enabled }
-  });
 }
 
 function closeHpSlotModal() {
@@ -7488,14 +7273,6 @@ function saveHpEventModal() {
   renderActiveHpTab();
   showToast('success', editId ? 'Event updated' : 'Event added');
 
-  recordActivityLog({
-    action: editId ? 'layout.homepage_edit_event' : 'layout.homepage_add_event',
-    category: 'layout',
-    summary: `${editId ? 'Updated' : 'Added'} event "${title}" on Homepage Events`,
-    target_id: editId || 'event-new',
-    target_name: title,
-    details: { date, title, meta, href: link, enabled }
-  });
 }
 
 function deleteHpEvent(id) {
@@ -7506,14 +7283,6 @@ function deleteHpEvent(id) {
   renderActiveHpTab();
   showToast('info', 'Event removed');
 
-  recordActivityLog({
-    action: 'layout.homepage_delete_event',
-    category: 'layout',
-    summary: `Deleted event "${ev?.title || id}" from Homepage Events`,
-    target_id: id,
-    target_name: ev?.title || id,
-    details: { id }
-  });
 }
 
 function moveHpEvent(id, dir) {
@@ -7530,14 +7299,6 @@ function moveHpEvent(id, dir) {
   renderActiveHpTab();
   showToast('info', 'Event reordered');
 
-  recordActivityLog({
-    action: 'layout.homepage_reorder_event',
-    category: 'layout',
-    summary: `Reordered event "${temp.title || id}" (${dir < 0 ? 'Moved Up' : 'Moved Down'}) in Homepage Events list`,
-    target_id: id,
-    target_name: temp.title || id,
-    details: { id, dir }
-  });
 }
 
 function toggleHpEvent(id) {
@@ -7549,14 +7310,6 @@ function toggleHpEvent(id) {
   renderActiveHpTab();
   showToast('info', ev.enabled ? 'Event enabled' : 'Event disabled');
 
-  recordActivityLog({
-    action: 'layout.homepage_toggle_event',
-    category: 'layout',
-    summary: `${ev.enabled ? 'Enabled' : 'Disabled'} event "${ev.title || id}" on Homepage`,
-    target_id: id,
-    target_name: ev.title || id,
-    details: { id, enabled: ev.enabled }
-  });
 }
 
 function closeHpEventModal() {
@@ -7611,14 +7364,6 @@ function addHpSubArticle(colIdx) {
   renderActiveHpTab();
   showToast('success', 'Sub-article headline added');
 
-  recordActivityLog({
-    action: 'layout.homepage_add_sub_article',
-    category: 'layout',
-    summary: `Added sub-article headline in Column ${colIdx + 1} (${col.label || 'Section'})`,
-    target_id: `col-${colIdx}`,
-    target_name: col.label || `Column ${colIdx + 1}`,
-    details: { colIdx }
-  });
 }
 
 function deleteHpSubArticle(colIdx, subIdx) {
@@ -7631,14 +7376,6 @@ function deleteHpSubArticle(colIdx, subIdx) {
   renderActiveHpTab();
   showToast('info', 'Sub-article headline removed');
 
-  recordActivityLog({
-    action: 'layout.homepage_delete_sub_article',
-    category: 'layout',
-    summary: `Removed sub-article headline "${removed?.title || ''}" from Column ${colIdx + 1} (${col.label || 'Section'})`,
-    target_id: `col-${colIdx}`,
-    target_name: col.label || `Column ${colIdx + 1}`,
-    details: { colIdx, subIdx }
-  });
 }
 
 // ── SAVE HOMEPAGE SETTINGS TO SUPABASE DATABASE ──────────────────
@@ -8411,14 +8148,6 @@ function onFooterSectionToggle(slug, checked) {
   }
   renderFooterSections();
   updateGlobalSyncStatus();
-  recordActivityLog({
-    action: 'layout.footer_toggle_section',
-    category: 'layout',
-    summary: `${checked ? 'Enabled' : 'Disabled'} section "${slug}" in Footer column`,
-    target_id: slug,
-    target_name: slug,
-    details: { slug, enabled: checked }
-  });
 }
 
 function selectAllFooterSections(enableAll) {
@@ -8429,14 +8158,6 @@ function selectAllFooterSections(enableAll) {
   updateGlobalSyncStatus();
   renderFooterSections();
   showToast('success', enableAll ? 'All sections enabled for footer.' : 'All sections hidden from footer.');
-  recordActivityLog({
-    action: 'layout.footer_toggle_all_sections',
-    category: 'layout',
-    summary: `${enableAll ? 'Enabled all' : 'Disabled all'} sections in Footer column`,
-    target_id: 'footer_sections_all',
-    target_name: 'Footer Sections',
-    details: { enableAll }
-  });
 }
 
 // ── TAB: BRAND & LEGAL LINKS ──────────────────────────────────────
@@ -8579,14 +8300,6 @@ function onFooterLogoSvgInput(svgCode) {
   footerDraftConfig.logoSvg = svgCode ? svgCode.trim() : '';
   updateGlobalSyncStatus();
   updateFooterLogoPreview();
-  recordActivityLog({
-    action: 'layout.footer_logo_update',
-    category: 'layout',
-    summary: `Updated Footer logo SVG in Footer Settings`,
-    target_id: 'footer_logo',
-    target_name: 'Footer Logo',
-    details: {}
-  });
 }
 
 function onFooterLogoHeightInput(heightVal) {
@@ -8598,14 +8311,6 @@ function onFooterLogoHeightInput(heightVal) {
   if (label) label.textContent = h;
   updateGlobalSyncStatus();
   updateFooterLogoPreview();
-  recordActivityLog({
-    action: 'layout.footer_logo_resize',
-    category: 'layout',
-    summary: `Resized Footer logo to ${h}px`,
-    target_id: 'footer_logo',
-    target_name: 'Footer Logo',
-    details: { height: h }
-  });
 }
 
 function resetFooterLogoToDefault() {
@@ -8622,14 +8327,6 @@ function resetFooterLogoToDefault() {
   updateGlobalSyncStatus();
   updateFooterLogoPreview();
   showToast('info', 'Footer logo reset to default.');
-  recordActivityLog({
-    action: 'layout.footer_logo_reset',
-    category: 'layout',
-    summary: `Reset Footer logo to default in Footer Settings`,
-    target_id: 'footer_logo',
-    target_name: 'Footer Logo',
-    details: {}
-  });
 }
 
 function updateFooterLogoPreview() {
@@ -8664,14 +8361,6 @@ function moveFooterItem(type, index, dir) {
   arr[index] = arr[targetIndex];
   arr[targetIndex] = temp;
   refreshActiveFooterTab();
-  recordActivityLog({
-    action: `layout.footer_reorder_${type}`,
-    category: 'layout',
-    summary: `Reordered item in Footer ${type} (${dir < 0 ? 'Moved Up' : 'Moved Down'})`,
-    target_id: temp?.id || type,
-    target_name: temp?.label || temp?.title || type,
-    details: { type, dir }
-  });
 }
 
 // ── MODALS: EXPLORE ───────────────────────────────────────────────
@@ -8732,14 +8421,6 @@ function saveFooterExploreModal() {
   renderFooterExplore();
   showToast('success', 'Explore link updated.');
 
-  recordActivityLog({
-    action: editId ? 'layout.footer_edit_explore' : 'layout.footer_add_explore',
-    category: 'layout',
-    summary: `${editId ? 'Updated' : 'Added'} explore link "${label}" in Footer`,
-    target_id: editId || 'footer-exp-new',
-    target_name: label,
-    details: { label, href, target }
-  });
 }
 
 function toggleFooterExplore(id) {
@@ -8750,14 +8431,6 @@ function toggleFooterExplore(id) {
   item.enabled = (item.enabled === false ? true : false);
   renderFooterExplore();
 
-  recordActivityLog({
-    action: 'layout.footer_toggle_explore',
-    category: 'layout',
-    summary: `${item.enabled ? 'Enabled' : 'Disabled'} explore link "${item.label || id}" in Footer`,
-    target_id: item.id,
-    target_name: item.label,
-    details: { id: item.id, enabled: item.enabled }
-  });
 }
 
 function deleteFooterExplore(id) {
@@ -8768,14 +8441,6 @@ function deleteFooterExplore(id) {
   renderFooterExplore();
   showToast('warning', 'Explore link removed.');
 
-  recordActivityLog({
-    action: 'layout.footer_delete_explore',
-    category: 'layout',
-    summary: `Deleted explore link "${item?.label || id}" from Footer`,
-    target_id: id,
-    target_name: item?.label || id,
-    details: { id }
-  });
 }
 
 // ── MODALS: SERIES ────────────────────────────────────────────────
@@ -8836,14 +8501,6 @@ function saveFooterSeriesModal() {
   renderFooterSeries();
   showToast('success', 'Series highlight updated.');
 
-  recordActivityLog({
-    action: editId ? 'layout.footer_edit_series' : 'layout.footer_add_series',
-    category: 'layout',
-    summary: `${editId ? 'Updated' : 'Added'} series highlight "${title}" in Footer`,
-    target_id: editId || 'footer-ser-new',
-    target_name: title,
-    details: { title, href, description: desc }
-  });
 }
 
 function toggleFooterSeries(id) {
@@ -8854,14 +8511,6 @@ function toggleFooterSeries(id) {
   item.enabled = (item.enabled === false ? true : false);
   renderFooterSeries();
 
-  recordActivityLog({
-    action: 'layout.footer_toggle_series',
-    category: 'layout',
-    summary: `${item.enabled ? 'Enabled' : 'Disabled'} series highlight "${item.title || id}" in Footer`,
-    target_id: item.id,
-    target_name: item.title,
-    details: { id: item.id, enabled: item.enabled }
-  });
 }
 
 function deleteFooterSeries(id) {
@@ -8872,14 +8521,6 @@ function deleteFooterSeries(id) {
   renderFooterSeries();
   showToast('warning', 'Series highlight removed.');
 
-  recordActivityLog({
-    action: 'layout.footer_delete_series',
-    category: 'layout',
-    summary: `Deleted series highlight "${item?.title || id}" from Footer`,
-    target_id: id,
-    target_name: item?.title || id,
-    details: { id }
-  });
 }
 
 // ── MODALS: SOCIAL ────────────────────────────────────────────────
@@ -8959,14 +8600,6 @@ function saveFooterSocialModal() {
   renderFooterSocial();
   showToast('success', 'Social channel updated.');
 
-  recordActivityLog({
-    action: editId ? 'layout.footer_edit_social' : 'layout.footer_add_social',
-    category: 'layout',
-    summary: `${editId ? 'Updated' : 'Added'} social channel "${label}" (${platform}) in Footer`,
-    target_id: editId || 'footer-soc-new',
-    target_name: label,
-    details: { platform, label, href }
-  });
 }
 
 function toggleFooterSocial(id) {
@@ -8977,14 +8610,6 @@ function toggleFooterSocial(id) {
   item.enabled = (item.enabled === false ? true : false);
   renderFooterSocial();
 
-  recordActivityLog({
-    action: 'layout.footer_toggle_social',
-    category: 'layout',
-    summary: `${item.enabled ? 'Enabled' : 'Disabled'} social channel "${item.label || id}" in Footer`,
-    target_id: item.id,
-    target_name: item.label,
-    details: { id: item.id, enabled: item.enabled }
-  });
 }
 
 function deleteFooterSocial(id) {
@@ -8995,14 +8620,6 @@ function deleteFooterSocial(id) {
   renderFooterSocial();
   showToast('warning', 'Social channel removed.');
 
-  recordActivityLog({
-    action: 'layout.footer_delete_social',
-    category: 'layout',
-    summary: `Deleted social channel "${item?.label || id}" from Footer`,
-    target_id: id,
-    target_name: item?.label || id,
-    details: { id }
-  });
 }
 
 // ── MODALS: BOTTOM LEGAL LINKS ────────────────────────────────────
@@ -9063,14 +8680,6 @@ function saveFooterBottomLinkModal() {
   renderFooterBrand();
   showToast('success', 'Legal link updated.');
 
-  recordActivityLog({
-    action: editId ? 'layout.footer_edit_bottom_link' : 'layout.footer_add_bottom_link',
-    category: 'layout',
-    summary: `${editId ? 'Updated' : 'Added'} legal link "${label}" in Footer`,
-    target_id: editId || 'footer-bot-new',
-    target_name: label,
-    details: { label, href, target }
-  });
 }
 
 function toggleFooterBottomLink(id) {
@@ -9081,14 +8690,6 @@ function toggleFooterBottomLink(id) {
   item.enabled = (item.enabled === false ? true : false);
   renderFooterBrand();
 
-  recordActivityLog({
-    action: 'layout.footer_toggle_bottom_link',
-    category: 'layout',
-    summary: `${item.enabled ? 'Enabled' : 'Disabled'} legal link "${item.label || id}" in Footer`,
-    target_id: item.id,
-    target_name: item.label,
-    details: { id: item.id, enabled: item.enabled }
-  });
 }
 
 function deleteFooterBottomLink(id) {
@@ -9099,14 +8700,6 @@ function deleteFooterBottomLink(id) {
   renderFooterBrand();
   showToast('warning', 'Legal link removed.');
 
-  recordActivityLog({
-    action: 'layout.footer_delete_bottom_link',
-    category: 'layout',
-    summary: `Deleted legal link "${item?.label || id}" from Footer`,
-    target_id: id,
-    target_name: item?.label || id,
-    details: { id }
-  });
 }
 
 // ── SAVE FOOTER TO DATABASE ───────────────────────────────────────
@@ -9496,8 +9089,8 @@ function renderActivityPage() {
           ${escapeHtml(ip)}
         </td>
         <td style="padding:12px 16px;vertical-align:middle;text-align:right;">
-          <button type="button" class="action-btn" title="Inspect Event Details" onclick="openActivityDetails('${log.id}')" style="padding:5px 8px;font-size:12px;display:inline-flex;align-items:center;gap:4px;color:var(--brand-navy,#0a528e);border:1px solid #cbd5e1;border-radius:6px;background:#fff;">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          <button type="button" class="activity-inspect-btn" title="Inspect Event Audit Details" onclick="openActivityDetails('${log.id}')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
             <span>Inspect</span>
           </button>
         </td>

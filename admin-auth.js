@@ -38,6 +38,41 @@
     }
   }
 
+  // ── Step 0b: Dynamic Favicon Support for Admin Panel ────────
+  function applyFavicon(url) {
+    if (!url || typeof url !== 'string' || !url.trim()) return;
+    const clean = url.trim();
+    let mimeType = 'image/x-icon';
+    if (clean.endsWith('.svg') || clean.includes('.svg')) mimeType = 'image/svg+xml';
+    else if (clean.endsWith('.png')) mimeType = 'image/png';
+    else if (clean.endsWith('.webp')) mimeType = 'image/webp';
+    else if (clean.endsWith('.gif')) mimeType = 'image/gif';
+
+    let iconLink = document.querySelector("link[rel='icon']");
+    if (!iconLink) {
+      iconLink = document.createElement('link');
+      iconLink.rel = 'icon';
+      document.head.appendChild(iconLink);
+    }
+    iconLink.type = mimeType;
+    iconLink.href = clean;
+
+    let shortcutLink = document.querySelector("link[rel='shortcut icon']");
+    if (!shortcutLink) {
+      shortcutLink = document.createElement('link');
+      shortcutLink.rel = 'shortcut icon';
+      document.head.appendChild(shortcutLink);
+    }
+    shortcutLink.type = mimeType;
+    shortcutLink.href = clean;
+  }
+  window.applyFaviconSettings = applyFavicon;
+
+  try {
+    const cachedFavicon = localStorage.getItem('privatian_custom_favicon');
+    if (cachedFavicon) applyFavicon(cachedFavicon);
+  } catch(e) {}
+
   function getToken() {
     return localStorage.getItem(TOKEN_KEY);
   }
