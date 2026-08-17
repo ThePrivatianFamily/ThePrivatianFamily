@@ -1287,4 +1287,3 @@ async function findArticlesUsingMediaItem(sb, item) {
 module.exports = handler;
 module.exports.getStoredMediaList = getStoredMediaList;
 module.exports.computeStorageStats = computeStorageStats;
-module.exports.fetchRawMediaItems = fetchRawMediaItems;
