@@ -127,16 +127,6 @@ module.exports = async function handler(req, res) {
     const { credential } = req.body || {};
     if (!credential) return res.status(400).json({ error: 'No credential provided' });
 
-    if (credential === 'bypass') {
-      const token = jwt.sign(
-        { email: 'rezwanahmed399@gmail.com', role: 'Admin', name: 'Rezwan Ahmed' },
-        process.env.SESSION_SECRET || 'the_privatian_family_super_secret_session_jwt_key_2026',
-        { expiresIn: '2h' }
-      );
-      res.setHeader('Set-Cookie', `privatian_session=${token}; HttpOnly; Secure; SameSite=Strict; Max-Age=7200; Path=/`);
-      return res.status(200).json({ success: true, token, user: { email: 'rezwanahmed399@gmail.com', role: 'Admin', name: 'Rezwan Ahmed' } });
-    }
-
     try {
       const gClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
       const ticket  = await gClient.verifyIdToken({
@@ -471,5 +461,3 @@ module.exports = async function handler(req, res) {
 
   return res.status(400).json({ error: 'Unknown action' });
 };
-
-// Test comment via dispatch
