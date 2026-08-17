@@ -17,7 +17,7 @@
   let _activeTab = 'gallery'; // 'gallery' | 'upload'
   let _activeFolder = 'all';
   let _activeProvider = 'all'; // 'all' | 'r2' | 'b2'
-  let _selectedUploadProvider = localStorage.getItem('privatian_default_upload_provider') || 'r2'; // 'r2' | 'b2' | 'auto'
+  let _selectedUploadProvider = 'r2'; // Always default to Cloudflare R2 Primary on each open
   let _cachedList = [];
   let _cachedFolders = [];
   let _cachedStats = null;
@@ -540,6 +540,16 @@
     _selectedItem = null;
     _activeFolder = options.targetFolder || 'all';
     _activeProvider = 'all';
+    _selectedUploadProvider = 'r2'; // Always reset target cloud to Cloudflare R2 (Primary)
+
+    const provSelect = document.getElementById('umm-upload-provider-select');
+    if (provSelect) {
+      provSelect.value = 'r2';
+    }
+    const label = document.getElementById('umm-active-provider-label');
+    if (label) {
+      label.textContent = 'Cloudflare R2';
+    }
 
     const titleEl = document.getElementById('umm-header-title');
     const subEl = document.getElementById('umm-header-sub');
@@ -569,6 +579,9 @@
     _modalCallback = null;
     _onUploadComplete = null;
     _selectedItem = null;
+    _selectedUploadProvider = 'r2'; // Reset target cloud back to R2 on close
+    const provSelect = document.getElementById('umm-upload-provider-select');
+    if (provSelect) provSelect.value = 'r2';
   };
 
   window._ummSwitchTab = function(tab) {
@@ -643,10 +656,9 @@
 
   window._ummOnUploadProviderChange = function(val) {
     _selectedUploadProvider = val || 'r2';
-    try { localStorage.setItem('privatian_default_upload_provider', _selectedUploadProvider); } catch(e) {}
     const label = document.getElementById('umm-active-provider-label');
     if (label) {
-      label.textContent = _selectedUploadProvider === 'b2' ? 'Backblaze B2' : 'Cloudflare R2';
+      label.textContent = _selectedUploadProvider === 'b2' ? 'Backblaze B2' : (_selectedUploadProvider === 'auto' ? 'Auto (Smart Routing)' : 'Cloudflare R2');
     }
   };
 
