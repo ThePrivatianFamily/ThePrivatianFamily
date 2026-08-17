@@ -228,9 +228,34 @@
   }
 
   /**
-   * Fetch media assets from /api/media
+   * Fetch media assets from /api/media with cross-page sessionStorage caching
    */
   async function fetchMediaList() {
+    // 1. Try memory cache first
+    if (_cachedList && _cachedList.length > 0) {
+      return _cachedList;
+    }
+
+    // 2. Try window._rawGalleryList
+    if (window._rawGalleryList && Array.isArray(window._rawGalleryList) && window._rawGalleryList.length > 0) {
+      _cachedList = window._rawGalleryList;
+      return _cachedList;
+    }
+
+    // 3. Try sessionStorage persistent cache (0ms instant across pages)
+    try {
+      const stored = sessionStorage.getItem('privatian_media_cache');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          _cachedList = parsed;
+          populateFolderDropdowns();
+          renderGalleryGrid(_lastSearchQuery, true);
+        }
+      }
+    } catch(e) {}
+
+    // 4. Fetch latest from API in background without blocking UI
     try {
       const tok = getAuthToken();
       const res = await fetch('/api/media?action=list', {
@@ -242,6 +267,9 @@
           _cachedList = Array.isArray(data.items) ? data.items : [];
           _cachedFolders = Array.isArray(data.folders) ? data.folders : [];
           _cachedStats = data.storage || null;
+          try {
+            sessionStorage.setItem('privatian_media_cache', JSON.stringify(_cachedList));
+          } catch(e) {}
           populateFolderDropdowns();
           return _cachedList;
         }
@@ -250,9 +278,6 @@
       console.warn('[UniversalMediaModal] Failed to fetch list from API:', err);
     }
 
-    if (window._rawGalleryList && Array.isArray(window._rawGalleryList)) {
-      _cachedList = window._rawGalleryList;
-    }
     return _cachedList;
   }
 
@@ -302,7 +327,7 @@
     }
   }
 
-  const BATCH_SIZE = 36;
+  const BATCH_SIZE = 18;
   let _renderBatchLimit = BATCH_SIZE;
 
   /**
@@ -314,6 +339,17 @@
 
     if (resetBatch) {
       _renderBatchLimit = BATCH_SIZE;
+    }
+
+    // If cache is empty, render smooth skeleton cards while loading
+    if (!_cachedList || _cachedList.length === 0) {
+      grid.innerHTML = Array(8).fill(0).map(() => `
+        <div class="umm-skeleton-card">
+          <div class="umm-skeleton-thumb"></div>
+          <div class="umm-skeleton-text"></div>
+        </div>
+      `).join('');
+      return;
     }
 
     let items = _cachedList.filter(x => !x.is_deleted);
@@ -596,9 +632,17 @@
     updateSelectedSummary();
 
     // 1. Instantly render from local/global cache if available (0ms instant open)
+    if (!_cachedList.length) {
+      try {
+        const stored = sessionStorage.getItem('privatian_media_cache');
+        if (stored) _cachedList = JSON.parse(stored) || [];
+      } catch(e) {}
+    }
     if ((_cachedList && _cachedList.length > 0) || (window._rawGalleryList && window._rawGalleryList.length > 0)) {
       if (!_cachedList.length && window._rawGalleryList) _cachedList = window._rawGalleryList;
       renderGalleryGrid(_lastSearchQuery, true);
+    } else {
+      renderGalleryGrid(_lastSearchQuery, true); // renders skeleton instantly
     }
 
     // 2. Fetch fresh updates in the background without locking the UI
