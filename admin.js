@@ -10134,6 +10134,7 @@ async function loadGalleryAssets() {
 
   if (!_rawGalleryList || !_rawGalleryList.length) {
     if (gridLoading) gridLoading.style.display = 'flex';
+    if (grid) grid.style.display = 'none';
     if (foldersLoading) foldersLoading.style.display = 'flex';
   }
 
@@ -10150,16 +10151,18 @@ async function loadGalleryAssets() {
       _syncFolderSelectDropdowns();
       _updateGalleryCounts(data.storage, data.syncStatus);
       if (gridLoading) gridLoading.style.display = 'none';
+      if (grid) grid.style.display = '';
       renderGalleryGrid();
     }
   } catch(e) {
     if (gridLoading) gridLoading.style.display = 'none';
+    if (grid) grid.style.display = '';
     if (foldersLoading) foldersLoading.style.display = 'none';
     if (grid && (!_rawGalleryList || !_rawGalleryList.length)) {
       grid.innerHTML = `
         <div class="gallery-empty-state">
           <div class="gallery-empty-icon" style="color:#ef4444;background:#fee2e2;">
-            <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="10" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
           </div>
           <h3 style="margin:0;font-size:15px;color:var(--text-primary);">Failed to load media library</h3>
           <p style="margin:0;font-size:12.5px;color:var(--text-muted);">${escapeHtml(e.message || 'Check connection')}</p>
@@ -10173,19 +10176,14 @@ async function loadGalleryAssets() {
 async function syncGalleryAssets() {
   const btn = document.getElementById('gallery-btn-sync-trigger');
   const btnText = document.getElementById('gallery-btn-sync-text');
+  const grid = document.getElementById('gallery-grid');
   const gridLoading = document.getElementById('gallery-grid-loading');
   const foldersLoading = document.getElementById('gallery-folders-loading');
 
   if (btn) btn.disabled = true;
   if (btnText) btnText.textContent = 'Syncing R2 & DB...';
-  if (gridLoading) {
-    gridLoading.style.display = 'flex';
-    const grid = document.getElementById('gallery-grid');
-    if (grid) {
-      grid.innerHTML = '';
-      grid.appendChild(gridLoading);
-    }
-  }
+  if (gridLoading) gridLoading.style.display = 'flex';
+  if (grid) grid.style.display = 'none';
   if (foldersLoading) foldersLoading.style.display = 'flex';
 
   try {
@@ -10204,6 +10202,7 @@ async function syncGalleryAssets() {
     showToast('error', 'Sync failed: ' + e.message);
   } finally {
     if (gridLoading) gridLoading.style.display = 'none';
+    if (grid) grid.style.display = '';
     if (foldersLoading) foldersLoading.style.display = 'none';
     if (btn) btn.disabled = false;
     if (btnText) btnText.textContent = 'Sync with R2 & DB';
@@ -11067,7 +11066,19 @@ function _readFileAsBase64(file) {
 function _handleGalleryProviderFilter(val) {
   _galleryProviderFilter = val || 'all';
   window._galleryRenderLimit = 24;
-  renderGalleryGrid();
+  const gridLoading = document.getElementById('gallery-grid-loading');
+  const grid = document.getElementById('gallery-grid');
+  if (gridLoading && grid) {
+    gridLoading.style.display = 'flex';
+    grid.style.display = 'none';
+    setTimeout(() => {
+      if (gridLoading) gridLoading.style.display = 'none';
+      if (grid) grid.style.display = '';
+      renderGalleryGrid();
+    }, 40);
+  } else {
+    renderGalleryGrid();
+  }
 }
 window._handleGalleryProviderFilter = _handleGalleryProviderFilter;
 
@@ -11077,7 +11088,19 @@ function _setGalleryFilter(filter) {
   document.querySelectorAll('.gallery-tab-pill').forEach(btn => {
     btn.classList.toggle('active', btn.id === `gallery-filter-${filter}`);
   });
-  renderGalleryGrid();
+  const gridLoading = document.getElementById('gallery-grid-loading');
+  const grid = document.getElementById('gallery-grid');
+  if (gridLoading && grid) {
+    gridLoading.style.display = 'flex';
+    grid.style.display = 'none';
+    setTimeout(() => {
+      if (gridLoading) gridLoading.style.display = 'none';
+      if (grid) grid.style.display = '';
+      renderGalleryGrid();
+    }, 40);
+  } else {
+    renderGalleryGrid();
+  }
 }
 
 var _gallerySearchDebounceTimer = null;

@@ -103,6 +103,15 @@
               </div>
             </div>
 
+            <!-- Loading Indicator for Universal Media Modal -->
+            <div id="umm-grid-loading" class="umm-loading-state" style="display:none;padding:50px 20px;text-align:center;">
+              <div class="umm-spinner-wrap" style="width:32px;height:32px;margin:0 auto 12px;position:relative;">
+                <div style="width:32px;height:32px;border:3px solid #e2e8f0;border-top-color:#0a528e;border-radius:50%;animation:ummSpin 0.75s linear infinite;"></div>
+              </div>
+              <div style="font-size:13px;font-weight:700;color:#0f172a;">Loading Media Library…</div>
+              <div style="font-size:11.5px;color:#64748b;margin-top:2px;">Scanning Cloudflare R2, Backblaze B2 &amp; Supabase assets</div>
+            </div>
+
             <div id="umm-grid" class="umm-grid">
               <!-- Dynamically populated lightweight GPU cards -->
             </div>
@@ -230,17 +239,24 @@
   }
 
   /**
-   * Fetch media assets from /api/media with cross-page sessionStorage caching
+   * Fetch media assets from /api/media with cross-page sessionStorage caching & multi-cloud fallback
    */
-  async function fetchMediaList() {
+  async function fetchMediaList(forceRefresh = false) {
+    const gridLoading = document.getElementById('umm-grid-loading');
+    const grid = document.getElementById('umm-grid');
+
     // 1. Try memory cache first
-    if (_cachedList && _cachedList.length > 0) {
+    if (!forceRefresh && _cachedList && _cachedList.length > 0) {
+      if (gridLoading) gridLoading.style.display = 'none';
+      if (grid) grid.style.display = '';
       return _cachedList;
     }
 
     // 2. Try window._rawGalleryList
-    if (window._rawGalleryList && Array.isArray(window._rawGalleryList) && window._rawGalleryList.length > 0) {
+    if (!forceRefresh && window._rawGalleryList && Array.isArray(window._rawGalleryList) && window._rawGalleryList.length > 0) {
       _cachedList = window._rawGalleryList;
+      if (gridLoading) gridLoading.style.display = 'none';
+      if (grid) grid.style.display = '';
       return _cachedList;
     }
 
@@ -254,10 +270,21 @@
           _cachedList = list;
           if (parsed && Array.isArray(parsed.folders)) _cachedFolders = parsed.folders;
           populateFolderDropdowns();
-          renderGalleryGrid(_lastSearchQuery, true);
+          if (!forceRefresh) {
+            if (gridLoading) gridLoading.style.display = 'none';
+            if (grid) grid.style.display = '';
+            renderGalleryGrid(_lastSearchQuery, true);
+            return _cachedList;
+          }
         }
       }
     } catch(e) {}
+
+    // Show loading state
+    if (!_cachedList || !_cachedList.length) {
+      if (gridLoading) gridLoading.style.display = 'block';
+      if (grid) grid.style.display = 'none';
+    }
 
     // 4. Fetch latest from API in background without blocking UI
     try {
@@ -272,9 +299,15 @@
           _cachedFolders = Array.isArray(data.folders) ? data.folders : [];
           _cachedStats = data.storage || null;
           try {
-            sessionStorage.setItem('privatian_media_cache', JSON.stringify(_cachedList));
+            sessionStorage.setItem('privatian_media_cache', JSON.stringify({
+              items: _cachedList,
+              folders: _cachedFolders,
+              storage: _cachedStats
+            }));
           } catch(e) {}
           populateFolderDropdowns();
+          if (gridLoading) gridLoading.style.display = 'none';
+          if (grid) grid.style.display = '';
           return _cachedList;
         }
       }
@@ -282,7 +315,24 @@
       console.warn('[UniversalMediaModal] Failed to fetch list from API:', err);
     }
 
-    return _cachedList;
+    // 5. Direct Supabase Fallback if API is unreachable
+    try {
+      const sb = window._sb || (window.initSupabaseClient && window.initSupabaseClient());
+      if (sb) {
+        const { data, error } = await sb.from('site_settings').select('*').eq('key', 'media_library_v2').maybeSingle();
+        if (!error && data && data.value && Array.isArray(data.value.items)) {
+          _cachedList = data.value.items;
+          _cachedFolders = Array.isArray(data.value.folders) ? data.value.folders : [];
+          populateFolderDropdowns();
+        }
+      }
+    } catch(err) {
+      console.warn('[UniversalMediaModal] Supabase fallback error:', err);
+    }
+
+    if (gridLoading) gridLoading.style.display = 'none';
+    if (grid) grid.style.display = '';
+    return _cachedList || [];
   }
 
   const DEFAULT_STANDARD_FOLDERS = ['Articles', 'Hero Banners', 'Authors', 'Logos & Icons', 'Heritage & Archive'];
@@ -339,11 +389,15 @@
    */
   function renderGalleryGrid(searchQuery = '', resetBatch = true) {
     const grid = document.getElementById('umm-grid');
+    const gridLoading = document.getElementById('umm-grid-loading');
     if (!grid) return;
 
     if (resetBatch) {
       _renderBatchLimit = BATCH_SIZE;
     }
+
+    if (gridLoading) gridLoading.style.display = 'none';
+    grid.style.display = '';
 
     // If cache is empty, render smooth skeleton cards while loading
     if (!_cachedList || _cachedList.length === 0) {
@@ -360,9 +414,11 @@
 
     // Provider filter
     if (_activeProvider === 'r2') {
-      items = items.filter(x => x.provider === 'r2' || (!x.provider && !x.url?.includes('backblazeb2')));
+      items = items.filter(x => x.provider === 'r2' || (!x.provider && !x.url?.includes('backblazeb2') && !x.url?.includes('supabase.co')));
     } else if (_activeProvider === 'b2') {
       items = items.filter(x => x.provider === 'b2' || x.url?.includes('backblazeb2'));
+    } else if (_activeProvider === 'supabase') {
+      items = items.filter(x => x.provider === 'supabase' || x.url?.includes('supabase.co/storage'));
     }
 
     // Folder filter
@@ -653,6 +709,8 @@
         if (stored) {
           const parsed = JSON.parse(stored);
           _cachedList = Array.isArray(parsed) ? parsed : (parsed && Array.isArray(parsed.items) ? parsed.items : []);
+          if (parsed && Array.isArray(parsed.folders)) _cachedFolders = parsed.folders;
+          populateFolderDropdowns(options.targetFolder || '');
         }
       } catch(e) {}
     }
@@ -686,13 +744,28 @@
     const btnUp = document.getElementById('umm-tab-btn-upload');
     const paneGal = document.getElementById('umm-pane-gallery');
     const paneUp = document.getElementById('umm-pane-upload');
+    const gridLoading = document.getElementById('umm-grid-loading');
+    const grid = document.getElementById('umm-grid');
 
     if (tab === 'gallery') {
       if (btnGal) btnGal.classList.add('active');
       if (btnUp) btnUp.classList.remove('active');
       if (paneGal) paneGal.classList.add('active');
       if (paneUp) paneUp.classList.remove('active');
-      renderGalleryGrid(_lastSearchQuery, true);
+
+      if (!_cachedList || !_cachedList.length) {
+        if (gridLoading) gridLoading.style.display = 'block';
+        if (grid) grid.style.display = 'none';
+        fetchMediaList().then(() => {
+          if (gridLoading) gridLoading.style.display = 'none';
+          if (grid) grid.style.display = '';
+          renderGalleryGrid(_lastSearchQuery, true);
+        });
+      } else {
+        if (gridLoading) gridLoading.style.display = 'none';
+        if (grid) grid.style.display = '';
+        renderGalleryGrid(_lastSearchQuery, true);
+      }
     } else {
       if (btnUp) btnUp.classList.add('active');
       if (btnGal) btnGal.classList.remove('active');
