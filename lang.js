@@ -496,11 +496,6 @@
 
     applyDocumentLangAttr();
 
-    // Smooth subtle transition
-    if (document.body) {
-      document.body.classList.add('lang-transitioning');
-    }
-
     // 1. Synchronously translate all page text in memory (0ms delay)
     translatePageDOM(_currentLang);
 
@@ -509,13 +504,6 @@
       detail: { lang: _currentLang, isBn: _currentLang === 'bn' }
     });
     document.dispatchEvent(ev);
-
-    // 3. Remove transition class smoothly after DOM sync
-    setTimeout(function() {
-      if (document.body) {
-        document.body.classList.remove('lang-transitioning');
-      }
-    }, 140);
   }
 
   function toggleLang() {

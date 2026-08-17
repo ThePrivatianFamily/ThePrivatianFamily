@@ -1295,7 +1295,7 @@
 
       document.addEventListener('click', function(e) {
         if (menuOverlay.classList.contains('is-open')) {
-          if (!menuBtn.contains(e.target) && !menuOverlay.contains(e.target)) {
+          if (!menuBtn.contains(e.target) && !menuOverlay.contains(e.target) && !e.target.closest('.header-lang-toggle')) {
             closeMenu();
           }
         }
@@ -1542,9 +1542,14 @@
     });
 
     // 2. Update Menu button label
-    var menuText = document.querySelector('#menu-toggle-btn .menu-btn-text');
-    if (menuText) {
-      menuText.textContent = isBn ? 'মেনু' : 'Menu';
+    var menuBtn = document.getElementById('menu-toggle-btn');
+    var menuOverlay = document.getElementById('menu-overlay');
+    if (menuBtn && menuOverlay) {
+      if (menuOverlay.classList.contains('is-open')) {
+        menuBtn.innerHTML = '<span style="font-size:16px">&#10005;</span> ' + (isBn ? 'বন্ধ' : 'Close');
+      } else {
+        menuBtn.innerHTML = '<span class="menu-hamburger">&#9776;</span> <span class="menu-btn-text">' + (isBn ? 'মেনু' : 'Menu') + '</span>';
+      }
     }
 
     // 3. Update Search placeholder & text
