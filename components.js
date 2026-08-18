@@ -183,21 +183,61 @@
     return s.name || '';
   }
 
-  // ── LIVE IN-MEMORY DATABASE STATE (Hydrated with synchronous cache fallback) ──
-  var _liveMenuSettings_en = null;
-  var _liveMenuSettings_bn = null;
-  var _liveSections = null;
-  var _liveFooterSettings_en = null;
-  var _liveFooterSettings_bn = null;
-  var _liveHeaderSettings_en = null;
-  var _liveHeaderSettings_bn = null;
+  // ── CACHE INTEGRITY & AUTO-EXPIRATION SYSTEM ─────────────────────────
+  var PRIVATIAN_CACHE_VERSION = '2026.08.19_v1';
+  var CACHE_MAX_AGE_MS = 6 * 60 * 60 * 1000; // 6 hours maximum TTL
 
-  try {
-    var cachedHEn = localStorage.getItem('privatian_header_settings_en');
-    if (cachedHEn) _liveHeaderSettings_en = JSON.parse(cachedHEn);
-    var cachedHBn = localStorage.getItem('privatian_header_settings_bn');
-    if (cachedHBn) _liveHeaderSettings_bn = JSON.parse(cachedHBn);
-  } catch(e) {}
+  function getValidatedCache(key) {
+    try {
+      var v = localStorage.getItem('privatian_cache_version');
+      if (v !== PRIVATIAN_CACHE_VERSION) {
+        localStorage.setItem('privatian_cache_version', PRIVATIAN_CACHE_VERSION);
+        localStorage.removeItem('privatian_sections');
+        localStorage.removeItem('privatian_header_settings_en');
+        localStorage.removeItem('privatian_header_settings_bn');
+        localStorage.removeItem('privatian_menu_settings_en');
+        localStorage.removeItem('privatian_menu_settings_bn');
+        localStorage.removeItem('privatian_footer_settings_en');
+        localStorage.removeItem('privatian_footer_settings_bn');
+        localStorage.removeItem('privatian_hp_config_en');
+        localStorage.removeItem('privatian_hp_config_bn');
+        return null;
+      }
+      var raw = localStorage.getItem(key);
+      if (!raw) return null;
+      var parsed = JSON.parse(raw);
+      if (parsed && typeof parsed === 'object') {
+        if (parsed._cache_ts && (Date.now() - parsed._cache_ts > CACHE_MAX_AGE_MS)) {
+          localStorage.removeItem(key);
+          return null;
+        }
+        return parsed._data !== undefined ? parsed._data : parsed;
+      }
+      return parsed;
+    } catch(e) {
+      return null;
+    }
+  }
+
+  function setValidatedCache(key, data) {
+    try {
+      localStorage.setItem('privatian_cache_version', PRIVATIAN_CACHE_VERSION);
+      localStorage.setItem(key, JSON.stringify({
+        _cache_ts: Date.now(),
+        _v: PRIVATIAN_CACHE_VERSION,
+        _data: data
+      }));
+    } catch(e) {}
+  }
+
+  // ── LIVE IN-MEMORY DATABASE STATE (Hydrated with validated cache) ──
+  var _liveMenuSettings_en = getValidatedCache('privatian_menu_settings_en');
+  var _liveMenuSettings_bn = getValidatedCache('privatian_menu_settings_bn');
+  var _liveSections = getValidatedCache('privatian_sections');
+  var _liveFooterSettings_en = getValidatedCache('privatian_footer_settings_en');
+  var _liveFooterSettings_bn = getValidatedCache('privatian_footer_settings_bn');
+  var _liveHeaderSettings_en = getValidatedCache('privatian_header_settings_en');
+  var _liveHeaderSettings_bn = getValidatedCache('privatian_header_settings_bn');
 
   function getMenuSettings() {
     var isBn = window.PrivatianLang && window.PrivatianLang.getLang() === 'bn';
@@ -220,12 +260,15 @@
   function getSections() {
     var allSec = { id: 'all', name: 'All', name_bn: 'সব খবর', slug: '' };
     var baseList = (_liveSections && Array.isArray(_liveSections) && _liveSections.length)
-      ? _liveSections.filter(function(s) { return !s.deleted && !s.locked; })
+      ? _liveSections.filter(function(s) { 
+          return s && !s.deleted && !s.locked && !String(s.id || '').startsWith('__') && !String(s.slug || '').startsWith('__') && !String(s.name || '').startsWith('{'); 
+        })
       : DEFAULT_SECTIONS;
 
     var cleaned = [];
     var seenAll = false;
     baseList.forEach(function(s) {
+      if (!s || !s.name) return;
       var isAll = (s.id === 'all' || s.slug === '' || s.slug === 'all');
       if (isAll) {
         if (!seenAll) {
@@ -1443,8 +1486,9 @@
         if (sb) {
           var { data: sData } = await sb.from('sections').select('*').eq('is_active', true).or('is_deleted.is.null,is_deleted.eq.false').order('display_order');
           if (Array.isArray(sData)) {
-            var sys = ['__homepage_config__', '__header_config__', '__menu_config__', '__footer_config__'];
-            data = sData.filter(function(s) { return !sys.includes(s.admin_id); });
+            data = sData.filter(function(s) { 
+              return s && s.admin_id && !s.admin_id.startsWith('__') && !String(s.slug || '').startsWith('__') && !String(s.name || '').startsWith('{'); 
+            });
           }
         }
       } catch(e) {}
@@ -1452,13 +1496,16 @@
 
     if (Array.isArray(data) && data.length) {
       var allSec = { id: 'all', name: 'All', name_bn: 'সব খবর', slug: '' };
-      var mapped = data.map(function(r) {
-        return { id: r.slug || r.admin_id, name: r.name, name_bn: r.name_bn || '', slug: r.slug || '' };
-      });
+      var mapped = data
+        .filter(function(r) { return r && !String(r.slug || '').startsWith('__') && !String(r.name || '').startsWith('{'); })
+        .map(function(r) {
+          return { id: r.slug || r.admin_id, name: r.name, name_bn: r.name_bn || '', slug: r.slug || '' };
+        });
       var hasAll = mapped.some(function(s) { return s.id === 'all' || s.slug === ''; });
       var finalMapped = hasAll ? mapped : [allSec].concat(mapped);
       if (finalMapped.length) {
         _liveSections = finalMapped;
+        setValidatedCache('privatian_sections', finalMapped);
         populateSections();
         populateFooterSections();
       }
@@ -1505,14 +1552,14 @@
         var dataEN = await resEN.json();
         if (dataEN && typeof dataEN === 'object') {
           _liveHeaderSettings_en = dataEN;
-          try { localStorage.setItem('privatian_header_settings_en', JSON.stringify(dataEN)); } catch(e) {}
+          setValidatedCache('privatian_header_settings_en', dataEN);
         }
       }
       if (resBN && resBN.ok) {
         var dataBN = await resBN.json();
         if (dataBN && typeof dataBN === 'object') {
           _liveHeaderSettings_bn = dataBN;
-          try { localStorage.setItem('privatian_header_settings_bn', JSON.stringify(dataBN)); } catch(e) {}
+          setValidatedCache('privatian_header_settings_bn', dataBN);
         }
       }
     } catch(err) {}
@@ -1525,14 +1572,20 @@
             var { data: sEN } = await sb.from('sections').select('name').eq('admin_id', '__header_config__').maybeSingle();
             if (sEN && sEN.name) {
               var pEN = JSON.parse(sEN.name);
-              if (pEN && typeof pEN === 'object') _liveHeaderSettings_en = pEN;
+              if (pEN && typeof pEN === 'object') {
+                _liveHeaderSettings_en = pEN;
+                setValidatedCache('privatian_header_settings_en', pEN);
+              }
             }
           }
           if (!_liveHeaderSettings_bn) {
             var { data: sBN } = await sb.from('sections').select('name').eq('admin_id', '__header_config_bn__').maybeSingle();
             if (sBN && sBN.name) {
               var pBN = JSON.parse(sBN.name);
-              if (pBN && typeof pBN === 'object') _liveHeaderSettings_bn = pBN;
+              if (pBN && typeof pBN === 'object') {
+                _liveHeaderSettings_bn = pBN;
+                setValidatedCache('privatian_header_settings_bn', pBN);
+              }
             }
           }
         }
@@ -1556,11 +1609,17 @@
       ]);
       if (resEN && resEN.ok) {
         var dataEN = await resEN.json();
-        if (dataEN && typeof dataEN === 'object') _liveMenuSettings_en = dataEN;
+        if (dataEN && typeof dataEN === 'object') {
+          _liveMenuSettings_en = dataEN;
+          setValidatedCache('privatian_menu_settings_en', dataEN);
+        }
       }
       if (resBN && resBN.ok) {
         var dataBN = await resBN.json();
-        if (dataBN && typeof dataBN === 'object') _liveMenuSettings_bn = dataBN;
+        if (dataBN && typeof dataBN === 'object') {
+          _liveMenuSettings_bn = dataBN;
+          setValidatedCache('privatian_menu_settings_bn', dataBN);
+        }
       }
     } catch(err) {}
 
@@ -1572,14 +1631,20 @@
             var { data: sEN } = await sb.from('sections').select('name').eq('admin_id', '__menu_config__').maybeSingle();
             if (sEN && sEN.name) {
               var pEN = JSON.parse(sEN.name);
-              if (pEN && typeof pEN === 'object') _liveMenuSettings_en = pEN;
+              if (pEN && typeof pEN === 'object') {
+                _liveMenuSettings_en = pEN;
+                setValidatedCache('privatian_menu_settings_en', pEN);
+              }
             }
           }
           if (!_liveMenuSettings_bn) {
             var { data: sBN } = await sb.from('sections').select('name').eq('admin_id', '__menu_config_bn__').maybeSingle();
             if (sBN && sBN.name) {
               var pBN = JSON.parse(sBN.name);
-              if (pBN && typeof pBN === 'object') _liveMenuSettings_bn = pBN;
+              if (pBN && typeof pBN === 'object') {
+                _liveMenuSettings_bn = pBN;
+                setValidatedCache('privatian_menu_settings_bn', pBN);
+              }
             }
           }
         }
@@ -1597,11 +1662,17 @@
       ]);
       if (resEN && resEN.ok) {
         var dataEN = await resEN.json();
-        if (dataEN && typeof dataEN === 'object') _liveFooterSettings_en = dataEN;
+        if (dataEN && typeof dataEN === 'object') {
+          _liveFooterSettings_en = dataEN;
+          setValidatedCache('privatian_footer_settings_en', dataEN);
+        }
       }
       if (resBN && resBN.ok) {
         var dataBN = await resBN.json();
-        if (dataBN && typeof dataBN === 'object') _liveFooterSettings_bn = dataBN;
+        if (dataBN && typeof dataBN === 'object') {
+          _liveFooterSettings_bn = dataBN;
+          setValidatedCache('privatian_footer_settings_bn', dataBN);
+        }
       }
     } catch(err) {}
 
@@ -1613,14 +1684,20 @@
             var { data: sEN } = await sb.from('sections').select('name').eq('admin_id', '__footer_config__').maybeSingle();
             if (sEN && sEN.name) {
               var pEN = JSON.parse(sEN.name);
-              if (pEN && typeof pEN === 'object') _liveFooterSettings_en = pEN;
+              if (pEN && typeof pEN === 'object') {
+                _liveFooterSettings_en = pEN;
+                setValidatedCache('privatian_footer_settings_en', pEN);
+              }
             }
           }
           if (!_liveFooterSettings_bn) {
             var { data: sBN } = await sb.from('sections').select('name').eq('admin_id', '__footer_config_bn__').maybeSingle();
             if (sBN && sBN.name) {
               var pBN = JSON.parse(sBN.name);
-              if (pBN && typeof pBN === 'object') _liveFooterSettings_bn = pBN;
+              if (pBN && typeof pBN === 'object') {
+                _liveFooterSettings_bn = pBN;
+                setValidatedCache('privatian_footer_settings_bn', pBN);
+              }
             }
           }
         }

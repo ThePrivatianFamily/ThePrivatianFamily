@@ -403,15 +403,43 @@ var DEFAULT_HOMEPAGE_CONFIG_BN = {
   }
 };
 
-var _cachedHomepageConfigEN = null;
-var _cachedHomepageConfigBN = null;
+// ── CACHE INTEGRITY & AUTO-EXPIRATION SYSTEM ─────────────────────────
+var PRIVATIAN_CACHE_VERSION = '2026.08.19_v1';
+var CACHE_MAX_AGE_MS = 6 * 60 * 60 * 1000; // 6 hours maximum TTL
 
-try {
-  var sBN = localStorage.getItem('privatian_hp_config_bn');
-  if (sBN) _cachedHomepageConfigBN = JSON.parse(sBN);
-  var sEN = localStorage.getItem('privatian_hp_config_en');
-  if (sEN) _cachedHomepageConfigEN = JSON.parse(sEN);
-} catch(e) {}
+function getValidatedCache(key) {
+  try {
+    var v = localStorage.getItem('privatian_cache_version');
+    if (v !== PRIVATIAN_CACHE_VERSION) return null;
+    var raw = localStorage.getItem(key);
+    if (!raw) return null;
+    var parsed = JSON.parse(raw);
+    if (parsed && typeof parsed === 'object') {
+      if (parsed._cache_ts && (Date.now() - parsed._cache_ts > CACHE_MAX_AGE_MS)) {
+        localStorage.removeItem(key);
+        return null;
+      }
+      return parsed._data !== undefined ? parsed._data : parsed;
+    }
+    return parsed;
+  } catch(e) {
+    return null;
+  }
+}
+
+function setValidatedCache(key, data) {
+  try {
+    localStorage.setItem('privatian_cache_version', PRIVATIAN_CACHE_VERSION);
+    localStorage.setItem(key, JSON.stringify({
+      _cache_ts: Date.now(),
+      _v: PRIVATIAN_CACHE_VERSION,
+      _data: data
+    }));
+  } catch(e) {}
+}
+
+var _cachedHomepageConfigEN = getValidatedCache('privatian_hp_config_en');
+var _cachedHomepageConfigBN = getValidatedCache('privatian_hp_config_bn');
 
 function getActiveHomepageConfig() {
   var isBn = window.PrivatianLang && window.PrivatianLang.getLang() === 'bn';
@@ -463,14 +491,14 @@ async function fetchHomepageConfigFromAPI() {
       const dataEN = await resEN.json();
       if (dataEN && typeof dataEN === 'object') {
         _cachedHomepageConfigEN = dataEN;
-        try { localStorage.setItem('privatian_hp_config_en', JSON.stringify(dataEN)); } catch(e){}
+        setValidatedCache('privatian_hp_config_en', dataEN);
       }
     }
     if (resBN && resBN.ok) {
       const dataBN = await resBN.json();
       if (dataBN && typeof dataBN === 'object') {
         _cachedHomepageConfigBN = dataBN;
-        try { localStorage.setItem('privatian_hp_config_bn', JSON.stringify(dataBN)); } catch(e){}
+        setValidatedCache('privatian_hp_config_bn', dataBN);
       }
     }
   } catch(err) {}
