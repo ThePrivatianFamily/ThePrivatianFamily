@@ -10463,10 +10463,12 @@ function openGalleryUniversalUpload(targetFolder) {
   const folder = targetFolder !== undefined ? targetFolder : (_galleryActiveFolder !== 'all' && _galleryActiveFolder !== '__root__' ? _galleryActiveFolder : '');
   if (typeof window.openUniversalMediaModal === 'function') {
     window.openUniversalMediaModal({
-      title: 'Universal Media Uploader',
+      title: 'Upload Media to Cloud Storage',
+      subtitle: 'Direct upload to Cloudflare R2, Backblaze B2, or Supabase',
       defaultTab: 'upload',
+      hideBrowseTab: true,
       targetFolder: folder,
-      onSelect: () => {
+      onUploadComplete: () => {
         if (typeof loadGalleryAssets === 'function') {
           loadGalleryAssets();
         }

@@ -633,9 +633,15 @@
       if (typeof window.loadGalleryAssets === 'function') {
         try { window.loadGalleryAssets(); } catch(e) {}
       }
-      setTimeout(() => {
-        window._ummSwitchTab('gallery');
-      }, 1000);
+      if (!_hideBrowseTab) {
+        setTimeout(() => {
+          window._ummSwitchTab('gallery');
+        }, 1000);
+      } else {
+        setTimeout(() => {
+          window.closeUniversalMediaModal();
+        }, 1200);
+      }
     }
   }
 
@@ -675,6 +681,22 @@
     _activeFolder = options.targetFolder || 'all';
     _activeProvider = 'all';
     _selectedUploadProvider = 'r2'; // Always reset target cloud to Cloudflare R2 (Primary)
+    _hideBrowseTab = !!options.hideBrowseTab;
+
+    const tabsContainer = document.getElementById('umm-tabs-container');
+    const galTabBtn = document.getElementById('umm-tab-btn-gallery');
+    const footerConfirmBtn = document.getElementById('umm-btn-confirm');
+    const selectedSummary = document.getElementById('umm-selected-summary');
+
+    if (_hideBrowseTab) {
+      if (tabsContainer) tabsContainer.style.display = 'none';
+      if (footerConfirmBtn) footerConfirmBtn.style.display = 'none';
+      if (selectedSummary) selectedSummary.style.display = 'none';
+    } else {
+      if (tabsContainer) tabsContainer.style.display = 'flex';
+      if (footerConfirmBtn) footerConfirmBtn.style.display = 'inline-flex';
+      if (selectedSummary) selectedSummary.style.display = 'block';
+    }
 
     const provSelect = document.getElementById('umm-upload-provider-select');
     if (provSelect) {
@@ -692,7 +714,7 @@
 
     populateFolderDropdowns(options.targetFolder || '');
 
-    const initialTab = options.defaultTab === 'upload' ? 'upload' : 'gallery';
+    const initialTab = _hideBrowseTab ? 'upload' : (options.defaultTab === 'upload' ? 'upload' : 'gallery');
     window._ummSwitchTab(initialTab);
 
     const overlay = document.getElementById('universal-media-modal-overlay');
@@ -702,29 +724,31 @@
 
     updateSelectedSummary();
 
-    // 1. Instantly render from local/global cache if available (0ms instant open)
-    if (!_cachedList.length) {
-      try {
-        const stored = sessionStorage.getItem('privatian_media_cache');
-        if (stored) {
-          const parsed = JSON.parse(stored);
-          _cachedList = Array.isArray(parsed) ? parsed : (parsed && Array.isArray(parsed.items) ? parsed.items : []);
-          if (parsed && Array.isArray(parsed.folders)) _cachedFolders = parsed.folders;
-          populateFolderDropdowns(options.targetFolder || '');
-        }
-      } catch(e) {}
-    }
-    if ((_cachedList && _cachedList.length > 0) || (window._rawGalleryList && window._rawGalleryList.length > 0)) {
-      if (!_cachedList.length && window._rawGalleryList) _cachedList = window._rawGalleryList;
-      renderGalleryGrid(_lastSearchQuery, true);
-    } else {
-      renderGalleryGrid(_lastSearchQuery, true); // renders skeleton instantly
-    }
+    if (!_hideBrowseTab) {
+      // 1. Instantly render from local/global cache if available (0ms instant open)
+      if (!_cachedList.length) {
+        try {
+          const stored = sessionStorage.getItem('privatian_media_cache');
+          if (stored) {
+            const parsed = JSON.parse(stored);
+            _cachedList = Array.isArray(parsed) ? parsed : (parsed && Array.isArray(parsed.items) ? parsed.items : []);
+            if (parsed && Array.isArray(parsed.folders)) _cachedFolders = parsed.folders;
+            populateFolderDropdowns(options.targetFolder || '');
+          }
+        } catch(e) {}
+      }
+      if ((_cachedList && _cachedList.length > 0) || (window._rawGalleryList && window._rawGalleryList.length > 0)) {
+        if (!_cachedList.length && window._rawGalleryList) _cachedList = window._rawGalleryList;
+        renderGalleryGrid(_lastSearchQuery, true);
+      } else {
+        renderGalleryGrid(_lastSearchQuery, true); // renders skeleton instantly
+      }
 
-    // 2. Fetch fresh updates in the background without locking the UI
-    fetchMediaList().then(() => {
-      renderGalleryGrid(_lastSearchQuery, true);
-    });
+      // 2. Fetch fresh updates in the background without locking the UI
+      fetchMediaList().then(() => {
+        renderGalleryGrid(_lastSearchQuery, true);
+      });
+    }
   };
 
   window.closeUniversalMediaModal = function() {
