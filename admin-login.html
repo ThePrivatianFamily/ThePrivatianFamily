@@ -563,7 +563,7 @@
         </svg>
       </div>
       <h2 class="sent-title" id="sent-view-title">Enter Verification Code</h2>
-      <p class="sent-desc" id="sent-view-desc">Verification code for: <strong id="sent-email-target"></strong></p>
+      <p class="sent-desc" id="sent-view-desc"><span id="sent-desc-prefix">Verification code for:</span> <strong id="sent-email-target"></strong></p>
       
       <!-- Modern 6-Slot Segmented OTP Form -->
       <div class="otp-card-inner">
@@ -891,9 +891,11 @@
           submitBtn.innerHTML = '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg><span>Send 6-Digit Code (OTP)</span>';
           
           _lastSentEmail = checkData.email || email;
-          document.getElementById('sent-email-target').textContent = _lastSentEmail;
+          const prefixEl = document.getElementById('sent-desc-prefix');
+          if (prefixEl) prefixEl.textContent = 'A code was already sent to:';
+          const targetEl = document.getElementById('sent-email-target');
+          if (targetEl) targetEl.textContent = _lastSentEmail;
           document.getElementById('sent-view-title').textContent = 'Enter Existing Verification Code';
-          document.getElementById('sent-view-desc').innerHTML = 'A code was already sent to: <strong id="sent-email-target">' + _lastSentEmail + '</strong>';
           document.getElementById('auth-main-wrap').style.display = 'none';
           document.getElementById('email-sent-wrap').style.display = 'block';
 
@@ -930,9 +932,11 @@
           submitBtn.innerHTML = '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg><span>Send 6-Digit Code (OTP)</span>';
           
           _lastSentEmail = checkData.email || email;
-          document.getElementById('sent-email-target').textContent = _lastSentEmail;
+          const prefixEl2 = document.getElementById('sent-desc-prefix');
+          if (prefixEl2) prefixEl2.textContent = 'A code was already sent to:';
+          const targetEl2 = document.getElementById('sent-email-target');
+          if (targetEl2) targetEl2.textContent = _lastSentEmail;
           document.getElementById('sent-view-title').textContent = 'Enter Existing Verification Code';
-          document.getElementById('sent-view-desc').innerHTML = 'A code was already sent to: <strong id="sent-email-target">' + _lastSentEmail + '</strong>';
           document.getElementById('auth-main-wrap').style.display = 'none';
           document.getElementById('email-sent-wrap').style.display = 'block';
 
@@ -956,9 +960,11 @@
         } catch(recErr) {}
 
         // Transition to OTP verification screen
-        document.getElementById('sent-email-target').textContent = _lastSentEmail;
+        const prefixEl3 = document.getElementById('sent-desc-prefix');
+        if (prefixEl3) prefixEl3.textContent = 'We just sent a fresh 6-digit OTP code to:';
+        const targetEl3 = document.getElementById('sent-email-target');
+        if (targetEl3) targetEl3.textContent = _lastSentEmail;
         document.getElementById('sent-view-title').textContent = 'Code Sent to Your Email';
-        document.getElementById('sent-view-desc').innerHTML = 'We just sent a fresh 6-digit OTP code to: <strong id="sent-email-target">' + _lastSentEmail + '</strong>';
         document.getElementById('auth-main-wrap').style.display = 'none';
         document.getElementById('email-sent-wrap').style.display = 'block';
 

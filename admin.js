@@ -462,7 +462,7 @@ editingId  = null;   // for modal edit mode
 pendingDeleteId = null;  // for confirm modal
 undoTimer  = null;
 
-// â”€â”€ DOM refs â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── DOM refs ───────────────────────────────────────────────────────────
 const sectionsTable  = document.getElementById('sections-tbody');
 const trashTable     = document.getElementById('trash-tbody');
 const countActive    = document.getElementById('count-active');
@@ -491,7 +491,7 @@ const confirmSectionName= document.getElementById('confirm-section-name');
 const confirmDeleteBtn  = document.getElementById('confirm-delete-btn');
 const confirmCancelBtn  = document.getElementById('confirm-cancel-btn');
 
-// â”€â”€ Render â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Render ─────────────────────────────────────────────────────────────
 function render() {
   const active = sections.filter(s => !s.deleted);
   const trash  = sections.filter(s =>  s.deleted);
@@ -869,7 +869,7 @@ async function permanentlyDelete(id) {
   }
 }
 
-// â”€â”€ Modal — Add / Edit â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Modal — Add / Edit ─────────────────────────────────────────────────
 const slugInput   = document.getElementById('section-slug-input');
 const slugPreview = document.getElementById('slug-preview');
 let slugManuallyEdited = false;
@@ -1420,7 +1420,7 @@ nameInput.addEventListener('keydown', e => { if (e.key === 'Enter') modalSaveBtn
 modalCancelBtn.addEventListener('click', closeModal);
 modalOverlay.addEventListener('click', e => { if (e.target === modalOverlay) closeModal(); });
 
-// â”€â”€ Confirm Delete Modal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Confirm Delete Modal ───────────────────────────────────────────────
 function openConfirmDelete(id) {
   const s = sections.find(s => s.id === id);
   if (!s) return;
@@ -1441,7 +1441,7 @@ confirmDeleteBtn.addEventListener('click', async () => {
 confirmCancelBtn.addEventListener('click', closeConfirmModal);
 confirmOverlay.addEventListener('click', e => { if (e.target === confirmOverlay) closeConfirmModal(); });
 
-// â”€â”€ Keyboard shortcuts â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Keyboard shortcuts ─────────────────────────────────────────────────
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') {
     if (!modalOverlay.hidden) closeModal();
@@ -1449,7 +1449,7 @@ document.addEventListener('keydown', e => {
   }
 });
 
-// â”€â”€ Tab switching â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Tab switching ──────────────────────────────────────────────────────
 function switchTab(tab) {
   currentTab = tab;
   tabActiveBtn.classList.toggle('active', tab === 'active');
@@ -7292,7 +7292,7 @@ function renderHomepageVisualCanvas() {
           <div class="hp-slot-badge">Hero Main Story ${heroMain.enabled === false ? '(Disabled)' : ''}</div>
           <div class="hp-slot-edit-hint">${ICONS.pencil} Click to edit</div>
           <div class="hp-canvas-img-wrap hp-canvas-img-wrap--hero">
-            <img src="${escapeHtml(heroMain.imageUrl || 'img1.png')}" alt="" class="hp-canvas-img" onerror="this.src='img1.png'" />
+            <img src="${escapeHtml(heroMain.imageUrl || 'img1.png')}" alt="" class="hp-canvas-img" onerror="this.onerror=null;this.src='img1.png'" />
           </div>
           <h2 class="hp-canvas-headline hp-canvas-headline--hero">${escapeHtml(heroMain.title || 'Untitled Lead Story')}</h2>
           <p class="hp-canvas-subtitle">${escapeHtml(heroMain.subtitle || '')}</p>
@@ -7306,7 +7306,7 @@ function renderHomepageVisualCanvas() {
               <div class="hp-slot-badge hp-slot-badge--sidebar">Sidebar Story ${sIdx + 1} ${side.enabled === false ? '(Disabled)' : ''}</div>
               <div class="hp-slot-edit-hint">${ICONS.pencil} Click to edit</div>
               <div class="hp-canvas-img-wrap hp-canvas-img-wrap--side">
-                <img src="${escapeHtml(side.imageUrl || 'img5.png')}" alt="" class="hp-canvas-img" onerror="this.src='img5.png'" />
+                <img src="${escapeHtml(side.imageUrl || 'img5.png')}" alt="" class="hp-canvas-img" onerror="this.onerror=null;this.src='img5.png'" />
               </div>
               <h3 class="hp-canvas-headline" style="font-size:15px;">${escapeHtml(side.title || 'Untitled Sidebar')}</h3>
               <p class="hp-canvas-subtitle" style="font-size:12.5px;">${escapeHtml(side.description || '')}</p>
@@ -7332,7 +7332,7 @@ function renderHomepageVisualCanvas() {
             <div class="hp-slot-badge hp-slot-badge--card">Card ${cIdx + 1} ${card.enabled === false ? '(Disabled)' : ''}</div>
             <div class="hp-slot-edit-hint">${ICONS.pencil} Click to edit</div>
             <div class="hp-canvas-img-wrap">
-              <img src="${escapeHtml(card.imageUrl || 'img2.png')}" alt="" class="hp-canvas-img" onerror="this.src='img2.png'" />
+              <img src="${escapeHtml(card.imageUrl || 'img2.png')}" alt="" class="hp-canvas-img" onerror="this.onerror=null;this.src='img2.png'" />
             </div>
             <h3 class="hp-canvas-headline" style="font-size:15px;">${escapeHtml(card.title || 'Untitled Card')}</h3>
             <div class="hp-canvas-link-url">${escapeHtml(card.href || '#')}</div>
@@ -7390,7 +7390,7 @@ function renderHomepageVisualCanvas() {
           <div class="hp-slot-badge hp-slot-badge--events">Featured Spotlight ${featured.enabled === false ? '(Disabled)' : ''}</div>
           <div class="hp-slot-edit-hint">${ICONS.pencil} Click to edit</div>
           <div class="hp-canvas-img-wrap" style="height:200px;">
-            <img src="${escapeHtml(featured.imageUrl || 'img5.png')}" alt="" class="hp-canvas-img" onerror="this.src='img5.png'" />
+            <img src="${escapeHtml(featured.imageUrl || 'img5.png')}" alt="" class="hp-canvas-img" onerror="this.onerror=null;this.src='img5.png'" />
           </div>
           <h3 class="hp-canvas-headline">${escapeHtml(featured.title || 'Untitled Featured Story')}</h3>
           <p class="hp-canvas-subtitle">${escapeHtml(featured.description || '')}</p>
@@ -7419,7 +7419,7 @@ function renderHomepageVisualCanvas() {
               <div class="hp-slot-badge hp-slot-badge--col">Column Lead</div>
               <div class="hp-slot-edit-hint">${ICONS.pencil} Edit</div>
               <div class="hp-canvas-img-wrap" style="height:120px;">
-                <img src="${escapeHtml((col.lead && col.lead.imageUrl) || 'img1.png')}" alt="" class="hp-canvas-img" onerror="this.src='img1.png'" />
+                <img src="${escapeHtml((col.lead && col.lead.imageUrl) || 'img1.png')}" alt="" class="hp-canvas-img" onerror="this.onerror=null;this.src='img1.png'" />
               </div>
               <h4 class="hp-canvas-headline" style="font-size:14px;">${escapeHtml((col.lead && col.lead.title) || 'Untitled Story')}</h4>
               <div class="hp-canvas-link-url">${escapeHtml((col.lead && col.lead.href) || '#')}</div>
@@ -7463,7 +7463,7 @@ function renderHeroEditor() {
         <button type="button" class="btn btn--primary btn--sm" onclick="openHpSlotModal('hero.main', 'Hero Main Lead Story')">Edit Lead Story</button>
       </div>
       <div style="display:grid;grid-template-columns:120px 1fr;gap:18px;align-items:center;">
-        <img src="${escapeHtml(main.imageUrl || 'img1.png')}" alt="" style="width:120px;height:80px;object-fit:cover;border-radius:6px;border:1px solid var(--border);" onerror="this.src='img1.png'" />
+        <img src="${escapeHtml(main.imageUrl || 'img1.png')}" alt="" style="width:120px;height:80px;object-fit:cover;border-radius:6px;border:1px solid var(--border);" onerror="this.onerror=null;this.src='img1.png'" />
         <div>
           <h4 style="font-family:'Libre Baskerville',serif;font-size:16px;font-weight:700;margin:0 0 6px;">${escapeHtml(main.title || 'Untitled')}</h4>
           <p style="font-size:13px;color:var(--text-muted);margin:0 0 4px;">${escapeHtml(main.subtitle || '')}</p>
@@ -7482,7 +7482,7 @@ function renderHeroEditor() {
                 <span class="hp-slot-badge hp-slot-badge--sidebar">Sidebar Story ${idx + 1}</span>
                 <span style="font-size:11px;color:${s.enabled !== false ? '#16a34a' : '#94a3b8'};font-weight:600;">${s.enabled !== false ? 'Active' : 'Disabled'}</span>
               </div>
-              <img src="${escapeHtml(s.imageUrl || 'img5.png')}" alt="" style="width:100%;height:110px;object-fit:cover;border-radius:6px;margin-bottom:10px;" onerror="this.src='img5.png'" />
+              <img src="${escapeHtml(s.imageUrl || 'img5.png')}" alt="" style="width:100%;height:110px;object-fit:cover;border-radius:6px;margin-bottom:10px;" onerror="this.onerror=null;this.src='img5.png'" />
               <h4 style="font-size:14px;font-weight:700;margin:0 0 6px;">${escapeHtml(s.title || 'Untitled')}</h4>
               <p style="font-size:12.5px;color:var(--text-muted);margin:0 0 6px;">${escapeHtml(s.description || '')}</p>
               ${s.tag ? `<span class="hp-canvas-tag">${escapeHtml(s.tag)}</span>` : ''}
@@ -7516,7 +7516,7 @@ function renderCardsEditor() {
                 <span class="hp-slot-badge hp-slot-badge--card">Card ${idx + 1}</span>
                 <span style="font-size:11px;color:${c.enabled !== false ? '#16a34a' : '#94a3b8'};font-weight:600;">${c.enabled !== false ? 'Active' : 'Disabled'}</span>
               </div>
-              <img src="${escapeHtml(c.imageUrl || 'img2.png')}" alt="" style="width:100%;height:130px;object-fit:cover;border-radius:6px;margin-bottom:10px;" onerror="this.src='img2.png'" />
+              <img src="${escapeHtml(c.imageUrl || 'img2.png')}" alt="" style="width:100%;height:130px;object-fit:cover;border-radius:6px;margin-bottom:10px;" onerror="this.onerror=null;this.src='img2.png'" />
               <h4 style="font-size:14px;font-weight:700;margin:0 0 6px;">${escapeHtml(c.title || 'Untitled')}</h4>
             </div>
             <div style="margin-top:12px;display:flex;justify-content:space-between;align-items:center;">
@@ -7616,7 +7616,7 @@ function renderEventsEditor() {
           <h4 style="font-size:14px;font-weight:700;margin:0;">Featured Spotlight Story</h4>
           <button type="button" class="btn btn--primary btn--sm" onclick="openHpSlotModal('eventsSection.featured', 'Events Featured Spotlight Story')">Edit Spotlight</button>
         </div>
-        <img src="${escapeHtml(featured.imageUrl || 'img5.png')}" alt="" style="width:100%;height:160px;object-fit:cover;border-radius:6px;margin-bottom:12px;" onerror="this.src='img5.png'" />
+        <img src="${escapeHtml(featured.imageUrl || 'img5.png')}" alt="" style="width:100%;height:160px;object-fit:cover;border-radius:6px;margin-bottom:12px;" onerror="this.onerror=null;this.src='img5.png'" />
         <h4 style="font-family:'Libre Baskerville',serif;font-size:16px;font-weight:700;margin:0 0 6px;">${escapeHtml(featured.title || 'Untitled')}</h4>
         <p style="font-size:13px;color:var(--text-muted);margin:0 0 8px;">${escapeHtml(featured.description || '')}</p>
         <span class="hs-slug-chip">${escapeHtml(featured.href || '#')}</span>
