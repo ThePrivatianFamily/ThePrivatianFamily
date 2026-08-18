@@ -2070,7 +2070,6 @@ button, input, select, textarea, [contenteditable] {
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="supabase-config.js"></script>
-<script src="admin-auth.js"></script>
 <script src="universal-media-modal.js"></script>
 <script>
 /* ════════════════════════════════════════════════════════════
@@ -2805,7 +2804,7 @@ function recordActivityLog({ action, category, summary, target_id, target_name, 
   };
 
   try {
-    api('/api/activity_logs?action=record', {
+    api('/api/activity-log?action=log', {
       method: 'POST',
       body: JSON.stringify(payload)
     }).catch(() => {});

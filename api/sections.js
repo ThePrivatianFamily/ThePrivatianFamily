@@ -2182,9 +2182,15 @@ module.exports = async function handler(req, res) {
     if (!name) return res.status(400).json({ error: 'name is required' });
     if (!slug) return res.status(400).json({ error: 'slug is required' });
 
-    // Check uniqueness
+    // Check uniqueness safely against commas/spaces in section names
+    const safeName = name.replace(/"/g, '\\"');
+    const safeSlug = slug.replace(/"/g, '\\"');
+    const safeAdminId = adminId.replace(/"/g, '\\"');
     const { data: existing } = await sb.from('sections')
-      .select('id').or(`name.eq.${name},slug.eq.${slug},admin_id.eq.${adminId}`).eq('is_deleted', false).limit(1);
+      .select('id')
+      .or(`name.eq."${safeName}",slug.eq."${safeSlug}",admin_id.eq."${safeAdminId}"`)
+      .eq('is_deleted', false)
+      .limit(1);
     if (existing && existing.length > 0) {
       return res.status(409).json({ error: 'A section with that name or slug already exists.' });
     }

@@ -51,7 +51,10 @@ module.exports = async function handler(req, res) {
         query = query.ilike('actor_email', `%${actor}%`);
       }
       if (search) {
-        query = query.or(`summary.ilike.%${search}%,actor_email.ilike.%${search}%,actor_name.ilike.%${search}%,target_name.ilike.%${search}%,action.ilike.%${search}%`);
+        const cleanSearch = search.replace(/[,%_"\\]/g, ' ').trim();
+        if (cleanSearch) {
+          query = query.or(`summary.ilike."*${cleanSearch}*",actor_email.ilike."*${cleanSearch}*",actor_name.ilike."*${cleanSearch}*",target_name.ilike."*${cleanSearch}*",action.ilike."*${cleanSearch}*"`);
+        }
       }
 
       query = query.range(offset, offset + limit - 1);
