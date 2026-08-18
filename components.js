@@ -116,8 +116,8 @@
       exploreLabel_bn: 'দ্রুত খুঁজুন:',
       closeText: 'Close',
       closeText_bn: 'বন্ধ করুন',
-      hintText: 'Start typing to search or select a topic above…',
-      hintText_bn: 'অনুসন্ধান করতে লিখুন অথবা ওপরের বিষয় বেছে নিন…',
+      hintText: 'Start typing to search…',
+      hintText_bn: 'অনুসন্ধান করতে লিখুন…',
       noResultsText: 'No matching stories found',
       noResultsText_bn: 'কোনো ফলাফল পাওয়া যায়নি',
       quickTags: [
@@ -334,7 +334,6 @@
           <span class="search-close-text">${escapeHTML(searchClose)}</span>
         </button>
       </div>
-      <div class="search-quick-tags" id="search-quick-tags"></div>
       <div id="search-results" class="search-results" aria-live="polite"></div>
     </div>
   </div>
@@ -1061,7 +1060,6 @@
     var searchResults      = document.getElementById('search-results');
     var searchClearBtn     = document.getElementById('search-clear-btn');
     var searchCloseBtn     = document.getElementById('search-close-btn');
-    var searchQuickTagsEl  = document.getElementById('search-quick-tags');
 
     function getSearchConfig() {
       var menuCfg = getMenuSettings();
@@ -1071,7 +1069,7 @@
         placeholder: 'Search articles, stories, topics...',
         exploreLabel: 'Explore:',
         closeText: 'Close',
-        hintText: 'Start typing to search or select a topic above…',
+        hintText: 'Start typing to search…',
         noResultsText: 'No matching stories found',
         quickTags: [
           { id: 'tag-1', label: 'Findings', label_bn: 'অনুসন্ধিৎসু', query: 'Findings', enabled: true },
@@ -1128,39 +1126,6 @@
 
     var articleIndex = [];
 
-    function renderQuickTags() {
-      if (!searchQuickTagsEl) return;
-      var isBn = window.PrivatianLang && window.PrivatianLang.getLang() === 'bn';
-      var cfg = getSearchConfig();
-      var rawTags = Array.isArray(cfg.quickTags) ? cfg.quickTags.filter(function(t) { return t.enabled !== false; }) : [];
-
-      if (rawTags.length === 0) {
-        searchQuickTagsEl.innerHTML = '';
-        return;
-      }
-
-      var prefix = isBn ? (cfg.exploreLabel_bn || cfg.exploreLabel || 'দ্রুত খুঁজুন:') : (cfg.exploreLabel || 'Explore:');
-      var html = '<span class="search-quick-label">' + escapeHTML(prefix) + '</span>';
-      rawTags.forEach(function(t) {
-        var label = isBn ? (t.label_bn || t.label) : (t.label || t.label_bn);
-        var query = t.query || t.label || t.label_bn;
-        html += '<button type="button" class="search-quick-tag" data-tag="' + escapeHTML(query) + '">' + escapeHTML(label) + '</button>';
-      });
-      searchQuickTagsEl.innerHTML = html;
-
-      searchQuickTagsEl.querySelectorAll('.search-quick-tag').forEach(function(btn) {
-        btn.addEventListener('click', function(e) {
-          e.preventDefault();
-          var tagVal = btn.getAttribute('data-tag');
-          if (searchInput) {
-            searchInput.value = tagVal;
-            if (searchClearBtn) searchClearBtn.style.display = 'flex';
-            performSearch(tagVal);
-          }
-        });
-      });
-    }
-
     function openSearch() {
       if (!searchOverlay) return;
       if (typeof window.PrivatianCloseMenu === 'function') {
@@ -1170,7 +1135,6 @@
       var cfg = getSearchConfig();
 
       articleIndex = buildArticleIndex();
-      renderQuickTags();
 
       // Dynamic placeholder & close button
       if (searchInput) {
@@ -1197,7 +1161,7 @@
       document.documentElement.style.overflow = 'hidden';
 
       if (searchResults) {
-        var hint = isBn ? (cfg.hintText_bn || cfg.hintText || 'অনুসন্ধান করতে লিখুন অথবা ওপরের বিষয় বেছে নিন…') : (cfg.hintText || 'Start typing to search or select a topic above…');
+        var hint = isBn ? (cfg.hintText_bn || cfg.hintText || 'অনুসন্ধান করতে লিখুন…') : (cfg.hintText || 'Start typing to search…');
         searchResults.innerHTML = '<p class="search-hint">' + escapeHTML(hint) + '</p>';
       }
     }

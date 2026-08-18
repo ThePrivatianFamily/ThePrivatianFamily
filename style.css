@@ -1269,7 +1269,7 @@ input[type="search"]::-ms-reveal {
   flex: 1;
   overflow-y: auto;
   max-height: calc(85vh - 100px);
-  padding: 6px 2px 24px;
+  padding: 14px 2px 24px;
   box-sizing: border-box;
   scrollbar-width: thin;
   scrollbar-color: rgba(138, 174, 200, 0.3) transparent;
