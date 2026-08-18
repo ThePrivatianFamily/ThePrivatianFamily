@@ -237,7 +237,6 @@
     "Menu": "মেনু",
     "Upcoming Events": "আসন্ন ইভেন্ট ও আয়োজন",
     "See all events": "সকল ইভেন্ট দেখুন",
-    "Heritage Archive": "ঐতিহ্য সংরক্ষণাগার",
     "Wondering": "ভাবনা ও জিজ্ঞাসা",
     "Life | Heritage": "জীবন ও ঐতিহ্য",
 

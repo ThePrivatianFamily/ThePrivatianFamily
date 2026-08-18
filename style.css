@@ -45,10 +45,23 @@
 html { 
   scroll-behavior: smooth; 
   scrollbar-gutter: stable;
+  background-color: #ffffff;
 }
+
+html[lang="bn"],
+html.lang-bn,
 html[data-lang="bn"] {
-  --font-serif: 'Noto Serif Bengali', 'Libre Baskerville', Georgia, serif;
-  --font-sans:  'Hind Siliguri', 'Source Sans 3', 'Helvetica Neue', Arial, sans-serif;
+  --font-serif: 'Noto Serif Bengali', 'SolaimanLipi', 'Kalpurush', 'Nirmala UI', 'Libre Baskerville', Georgia, serif;
+  --font-sans:  'Hind Siliguri', 'SolaimanLipi', 'Kalpurush', 'Nirmala UI', 'Source Sans 3', 'Helvetica Neue', Arial, sans-serif;
+}
+
+.font-preloader {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+  opacity: 0;
+  pointer-events: none;
 }
 body { font-family: var(--font-sans); font-size: 16px; color: var(--text-primary); background-color: var(--bg-page); line-height: 1.5; -webkit-font-smoothing: antialiased; }
 

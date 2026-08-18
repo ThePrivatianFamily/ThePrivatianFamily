@@ -1737,9 +1737,18 @@ module.exports = async function handler(req, res) {
     const fallbackId = isBn ? '__homepage_config_bn__' : '__homepage_config__';
 
     if (req.method === 'GET') {
+      function cleanConfig(c) {
+        if (c && c.hero && Array.isArray(c.hero.sidebar)) {
+          c.hero.sidebar.forEach(s => {
+            if (s.tag && (s.tag.toLowerCase() === 'heritage archive' || s.tag === 'ঐতিহ্য সংরক্ষণাগার' || s.tag === 'ঐতিহ্য সংগ্রহশালা')) s.tag = '';
+          });
+        }
+        return c;
+      }
+
       try {
         const { data } = await sb.from('site_settings').select('value').eq('key', settingsKey).maybeSingle();
-        if (data && data.value) return res.status(200).json(data.value);
+        if (data && data.value) return res.status(200).json(cleanConfig(data.value));
       } catch(e) {}
 
       // Fallback read from sections table
@@ -1747,11 +1756,11 @@ module.exports = async function handler(req, res) {
         const { data: sData } = await sb.from('sections').select('name').eq('admin_id', fallbackId).maybeSingle();
         if (sData && sData.name) {
           const parsed = JSON.parse(sData.name);
-          if (parsed && typeof parsed === 'object') return res.status(200).json(parsed);
+          if (parsed && typeof parsed === 'object') return res.status(200).json(cleanConfig(parsed));
         }
       } catch(e) {}
 
-      return res.status(200).json(isBn ? DEFAULT_HOMEPAGE_CONFIG_BN : DEFAULT_HOMEPAGE_CONFIG);
+      return res.status(200).json(cleanConfig(isBn ? DEFAULT_HOMEPAGE_CONFIG_BN : DEFAULT_HOMEPAGE_CONFIG));
     }
 
     if (req.method === 'POST') {

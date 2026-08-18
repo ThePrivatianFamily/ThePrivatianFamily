@@ -536,9 +536,13 @@ function applyHomepageConfig(cfg) {
 
             var sTag = sideEl.querySelector('.hero-sidebar-tag');
             if (sTag) {
-              if (s.tag) {
+              var sTagVal = (s.tag || '').trim();
+              if (sTagVal.toLowerCase() === 'heritage archive' || sTagVal === 'ঐতিহ্য সংরক্ষণাগার' || sTagVal === 'ঐতিহ্য সংগ্রহশালা') {
+                sTagVal = '';
+              }
+              if (sTagVal) {
                 sTag.style.display = '';
-                sTag.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg> ` + escapeHtmlText(s.tag);
+                sTag.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg> ` + escapeHtmlText(sTagVal);
               } else {
                 sTag.style.display = 'none';
               }
