@@ -4646,11 +4646,15 @@ function filterArticles() {
 
   const filtered = _allArticles.filter(a => {
     const matchQ = !q ||
-      (a.title   || '').toLowerCase().includes(q) ||
-      (a.author  || '').toLowerCase().includes(q) ||
-      (a.slug    || '').toLowerCase().includes(q) ||
-      (a.section || '').toLowerCase().includes(q) ||
-      (a.id      || '').toLowerCase().includes(q);
+      (a.title      || '').toLowerCase().includes(q) ||
+      (a.title_bn   || '').toLowerCase().includes(q) ||
+      (a.deck       || '').toLowerCase().includes(q) ||
+      (a.deck_bn    || '').toLowerCase().includes(q) ||
+      (a.author     || '').toLowerCase().includes(q) ||
+      (a.author_bn  || '').toLowerCase().includes(q) ||
+      (a.slug       || '').toLowerCase().includes(q) ||
+      (a.section    || '').toLowerCase().includes(q) ||
+      (a.id         || '').toLowerCase().includes(q);
     const matchStatus  = !status  || a.status === status;
     const matchSection = !section || a.section === section;
     return matchQ && matchStatus && matchSection;
@@ -4912,7 +4916,7 @@ async function _loadArticleTrash() {
       if (sb) {
         const { data, error } = await sb
           .from('articles')
-          .select('id, slug, title, section, author, status, deleted_at, hero_img_url')
+          .select('id, slug, title, title_bn, section, author, author_bn, status, deleted_at, hero_img_url')
           .eq('is_deleted', true)
           .order('deleted_at', { ascending: false });
         if (!error && Array.isArray(data)) arts = data;
@@ -4924,7 +4928,7 @@ async function _loadArticleTrash() {
   if (arts.length === 0) {
     try {
       if (typeof PRIVATIAN_SUPABASE_URL !== 'undefined' && typeof PRIVATIAN_SUPABASE_KEY !== 'undefined') {
-        const res = await fetch(`${PRIVATIAN_SUPABASE_URL}/rest/v1/articles?select=id,slug,title,section,author,status,deleted_at,hero_img_url&is_deleted=eq.true&order=deleted_at.desc`, {
+        const res = await fetch(`${PRIVATIAN_SUPABASE_URL}/rest/v1/articles?select=id,slug,title,title_bn,section,author,author_bn,status,deleted_at,hero_img_url&is_deleted=eq.true&order=deleted_at.desc`, {
           headers: {
             'apikey': PRIVATIAN_SUPABASE_KEY,
             'Authorization': 'Bearer ' + PRIVATIAN_SUPABASE_KEY
@@ -4950,11 +4954,12 @@ async function _loadArticleTrash() {
   const fmt = iso => iso ? _format24hDateTime(iso) : '—';
   const isAdmin = Boolean(window.PRIVATIAN_USER && window.PRIVATIAN_USER.role === 'Admin');
   tbody.innerHTML = arts.map(a => {
+    const displayTitle = a.title || a.title_bn || 'Untitled';
     const thumb = a.hero_img_url
       ? `<img src="${escapeHtml(a.hero_img_url)}" alt="" class="art-thumb" style="opacity:.75;" loading="lazy"/>`
       : `<div class="art-thumb-ph"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>`;
     const permDeleteBtn = isAdmin
-      ? `<button type="button" onclick="permanentDeleteArticleConfirm('${a.id}','${escapeHtml((a.title||'Untitled').replace(/'/g,"\\'"))}')" class="art-action-btn art-action-btn--delete-perm" title="Permanently delete from database (Admin only)">
+      ? `<button type="button" onclick="permanentDeleteArticleConfirm('${a.id}','${escapeHtml(displayTitle.replace(/'/g,"\\'"))}')" class="art-action-btn art-action-btn--delete-perm" title="Permanently delete from database (Admin only)">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/><path d="M9 6V4h6v2"/></svg>
           Delete Forever
         </button>`
@@ -4964,7 +4969,7 @@ async function _loadArticleTrash() {
         <div class="art-media-wrap">
           ${thumb}
           <div class="art-title-meta">
-            <div class="art-row-title" style="color:#64748b;" title="${escapeHtml(a.title||'Untitled')}">${escapeHtml(a.title||'Untitled')}</div>
+            <div class="art-row-title" style="color:#64748b;" title="${escapeHtml(displayTitle)}">${escapeHtml(displayTitle)}</div>
             <div class="art-row-slug" title="/article/${escapeHtml(a.slug || a.id)}">${escapeHtml(a.slug || a.id)}</div>
           </div>
         </div>
@@ -4973,7 +4978,7 @@ async function _loadArticleTrash() {
       <td><span class="art-date-txt" style="color:#dc2626;font-weight:600;">${fmt(a.deleted_at)}</span></td>
       <td class="tar">
         <div class="art-btn-group">
-          <button type="button" onclick="restoreArticleConfirm('${a.id}','${escapeHtml((a.title||'Untitled').replace(/'/g,"\\'"))}')" class="art-action-btn art-action-btn--restore" title="Restore back to active articles">
+          <button type="button" onclick="restoreArticleConfirm('${a.id}','${escapeHtml(displayTitle.replace(/'/g,"\\'"))}')" class="art-action-btn art-action-btn--restore" title="Restore back to active articles">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
             Restore
           </button>
@@ -5580,22 +5585,32 @@ function updateUndoRedoButtons() {
 
 function undoMenuAction() {
   if (menuUndoStack.length === 0) return;
-  menuRedoStack.push(JSON.stringify(menuDraftConfig));
-  menuDraftConfig = JSON.parse(menuUndoStack.pop());
-  syncMenuDraftToUI();
-  updateUndoRedoButtons();
-  updateGlobalSyncStatus();
-  showToast('info', 'Undone last menu change');
+  try {
+    menuRedoStack.push(JSON.stringify(menuDraftConfig));
+    const popped = menuUndoStack.pop();
+    if (popped) {
+      menuDraftConfig = JSON.parse(popped);
+      syncMenuDraftToUI();
+      updateUndoRedoButtons();
+      updateGlobalSyncStatus();
+      showToast('info', 'Undone last menu change');
+    }
+  } catch(e) {}
 }
 
 function redoMenuAction() {
   if (menuRedoStack.length === 0) return;
-  menuUndoStack.push(JSON.stringify(menuDraftConfig));
-  menuDraftConfig = JSON.parse(menuRedoStack.pop());
-  syncMenuDraftToUI();
-  updateUndoRedoButtons();
-  updateGlobalSyncStatus();
-  showToast('info', 'Redone menu change');
+  try {
+    menuUndoStack.push(JSON.stringify(menuDraftConfig));
+    const popped = menuRedoStack.pop();
+    if (popped) {
+      menuDraftConfig = JSON.parse(popped);
+      syncMenuDraftToUI();
+      updateUndoRedoButtons();
+      updateGlobalSyncStatus();
+      showToast('info', 'Redone menu change');
+    }
+  } catch(e) {}
 }
 
 function markMenuDirty() {
@@ -7203,24 +7218,32 @@ function pushHomepageHistory() {
 
 function undoHomepageAction() {
   if (!homepageUndoStack.length) return;
-  homepageRedoStack.push(JSON.stringify(homepageDraftConfig));
-  const prev = homepageUndoStack.pop();
-  homepageDraftConfig = JSON.parse(prev);
-  renderActiveHpTab();
-  updateHomepageUndoRedoBtns();
-  updateGlobalSyncStatus();
-  showToast('info', 'Undone last change');
+  try {
+    homepageRedoStack.push(JSON.stringify(homepageDraftConfig));
+    const prev = homepageUndoStack.pop();
+    if (prev) {
+      homepageDraftConfig = JSON.parse(prev);
+      renderActiveHpTab();
+      updateHomepageUndoRedoBtns();
+      updateGlobalSyncStatus();
+      showToast('info', 'Undone last change');
+    }
+  } catch(e) {}
 }
 
 function redoHomepageAction() {
   if (!homepageRedoStack.length) return;
-  homepageUndoStack.push(JSON.stringify(homepageDraftConfig));
-  const next = homepageRedoStack.pop();
-  homepageDraftConfig = JSON.parse(next);
-  renderActiveHpTab();
-  updateHomepageUndoRedoBtns();
-  updateGlobalSyncStatus();
-  showToast('info', 'Redone change');
+  try {
+    homepageUndoStack.push(JSON.stringify(homepageDraftConfig));
+    const next = homepageRedoStack.pop();
+    if (next) {
+      homepageDraftConfig = JSON.parse(next);
+      renderActiveHpTab();
+      updateHomepageUndoRedoBtns();
+      updateGlobalSyncStatus();
+      showToast('info', 'Redone change');
+    }
+  } catch(e) {}
 }
 
 function updateHomepageUndoRedoBtns() {

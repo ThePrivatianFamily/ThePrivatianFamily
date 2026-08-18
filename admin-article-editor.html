@@ -3207,7 +3207,7 @@ function buildPayload() {
     author_id:        _selectedAuthorId || null,
     slug:             currentSlug || undefined,
     status:           STATUS || 'draft',
-    section:          g('sec-lbl').textContent === 'Select Section' ? '' : g('sec-lbl').textContent,
+    section:          (!g('sec-lbl') || g('sec-lbl').textContent.trim() === 'Select Section') ? '' : g('sec-lbl').textContent.trim(),
     author_photo_url: _authorPhotoUrl || '',
     hero_img_url:     _featImgUrl || '',
     hero_img_alt:     (g('sd-feat-alt')?.value  || '').trim(),
