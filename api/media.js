@@ -13,6 +13,7 @@
 const { S3Client, ListObjectsV2Command, PutObjectCommand, DeleteObjectCommand, GetObjectCommand } = require('@aws-sdk/client-s3');
 const { createClient } = require('@supabase/supabase-js');
 const { requireAuth } = require('./_lib/auth');
+const { handleCors } = require('./_lib/cors');
 const { logActivity } = require('./_lib/activity');
 
 // ── 1. CLOUDFLARE R2 CONFIGURATION ───────────────────────────────────────
@@ -463,13 +464,7 @@ async function removeMediaItemMetadata(sb, uniqueId) {
 
 // ── MAIN SERVERLESS HANDLER ──────────────────────────────────────────────
 async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
-
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
-  }
+  if (handleCors(req, res, 'GET, POST, PUT, DELETE, OPTIONS')) return;
 
   const action = (req.query && req.query.action) || 'list';
   const sb = getSupabase();

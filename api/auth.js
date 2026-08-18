@@ -2,23 +2,24 @@
  * api/auth.js — Single endpoint for all auth operations
  * Routes via ?action= query param
  *
- * POST /api/auth?action=verify   — Google OAuth login
- * GET  /api/auth?action=me       — get current session info
- * POST /api/auth?action=logout   — clear session cookie
+ * POST /api/auth?action=verify           — Google OAuth login
+ * GET  /api/auth?action=me               — get current session info
+ * POST /api/auth?action=logout           — clear session cookie
+ * POST /api/auth?action=refresh          — sliding session extension
+ * POST /api/auth?action=check-whitelist  — verify email authorization & rate limits
+ * POST /api/auth?action=record-otp-sent  — record authorized OTP dispatch
+ * POST /api/auth?action=verify-otp       — verify Supabase OTP & issue JWT
  */
 
 const { OAuth2Client } = require('google-auth-library');
 const { createClient }  = require('@supabase/supabase-js');
 const jwt               = require('jsonwebtoken');
-const { verifySession, requireAuth } = require('./_lib/auth');
+const { getJwtSecret, verifySession, requireAuth } = require('./_lib/auth');
+const { handleCors }    = require('./_lib/cors');
 const { logActivity }   = require('./_lib/activity');
 
 module.exports = async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', req.headers.origin || '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type');
-  res.setHeader('Access-Control-Allow-Credentials', 'true');
-  if (req.method === 'OPTIONS') return res.status(200).end();
+  if (handleCors(req, res, 'GET, POST, OPTIONS')) return;
 
   const { action } = req.query;
 
@@ -95,7 +96,7 @@ module.exports = async function handler(req, res) {
 
       const freshToken = jwt.sign(
         { email: admin.email, role: admin.role, name: displayName, full_name: admin.full_name || '', picture: displayPic, profile_pic: displayPic },
-        process.env.SESSION_SECRET || 'the_privatian_family_super_secret_session_jwt_key_2026',
+        getJwtSecret(),
         { expiresIn: '2h' }
       );
 
@@ -136,7 +137,7 @@ module.exports = async function handler(req, res) {
       const gp = ticket.getPayload();
       if (!gp.email_verified) return res.status(401).json({ error: 'Email not verified with Google' });
 
-      const email   = gp.email.toLowerCase();
+      const email = gp.email.toLowerCase();
       const sb = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
       const { data: admin, error } = await sb
         .from('allowed_admins')
@@ -165,13 +166,18 @@ module.exports = async function handler(req, res) {
 
       const token = jwt.sign(
         { email: admin.email, role: admin.role, name: displayName, full_name: admin.full_name || gp.name || '', picture: displayPic, profile_pic: displayPic },
-        process.env.SESSION_SECRET || 'the_privatian_family_super_secret_session_jwt_key_2026',
+        getJwtSecret(),
         { expiresIn: '2h' }
       );
 
       res.setHeader('Set-Cookie',
         `privatian_session=${token}; HttpOnly; Secure; SameSite=Strict; Max-Age=7200; Path=/`
       );
+
+      // Clear any previous rate limit streaks on successful authentication
+      try {
+        await sb.from('otp_rate_limits').delete().eq('email', admin.email);
+      } catch(rateErr) {}
 
       // Record Activity Log for login
       try {
@@ -303,7 +309,7 @@ module.exports = async function handler(req, res) {
     }
   }
 
-  // ── RECORD OTP SENT (Called ONLY when Supabase sends OTP email) ───
+  // ── RECORD OTP SENT (Protected: Validates Email On Whitelist) ────
   if (action === 'record-otp-sent' && req.method === 'POST') {
     const { email } = req.body || {};
     if (!email) return res.status(400).json({ error: 'Email required' });
@@ -311,8 +317,20 @@ module.exports = async function handler(req, res) {
     try {
       const sb = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
       const emailNorm = email.trim().toLowerCase();
-      const now = new Date();
 
+      // Guard: Ensure email exists on active admin whitelist before mutating rate limit tables
+      const { data: admin } = await sb
+        .from('allowed_admins')
+        .select('id')
+        .ilike('email', emailNorm)
+        .eq('status', 'active')
+        .single();
+
+      if (!admin) {
+        return res.status(403).json({ error: 'Unauthorized email address' });
+      }
+
+      const now = new Date();
       const { data: rateRow } = await sb
         .from('otp_rate_limits')
         .select('*')
@@ -404,7 +422,7 @@ module.exports = async function handler(req, res) {
 
       const token = jwt.sign(
         { email: admin.email, role: admin.role, name: displayName, full_name: admin.full_name || '', picture: displayPic, profile_pic: displayPic },
-        process.env.SESSION_SECRET || 'the_privatian_family_super_secret_session_jwt_key_2026',
+        getJwtSecret(),
         { expiresIn: '2h' }
       );
 

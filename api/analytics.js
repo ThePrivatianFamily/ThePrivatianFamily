@@ -19,6 +19,7 @@
 const crypto = require('crypto');
 const { createClient } = require('@supabase/supabase-js');
 const { requireAuth, requireAdmin } = require('./_lib/auth');
+const { handleCors } = require('./_lib/cors');
 
 function sb() {
   const supabaseUrl = process.env.SUPABASE_URL || 'https://aenhajqjsgskimfzvlfr.supabase.co';
@@ -189,11 +190,7 @@ function categorizeReferrer(refUrl, siteHost) {
 }
 
 module.exports = async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', req.headers.origin || '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type, X-Privatian-Session, X-Privatian-Visitor');
-  res.setHeader('Access-Control-Allow-Credentials', 'true');
-  if (req.method === 'OPTIONS') return res.status(200).end();
+  if (handleCors(req, res, 'GET, POST, OPTIONS')) return;
 
   const action = req.query.action || (req.method === 'POST' ? 'collect' : 'stats');
   const client = sb();

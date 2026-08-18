@@ -8,6 +8,7 @@
  */
 
 const { requireAdmin } = require('./_lib/auth');
+const { handleCors } = require('./_lib/cors');
 const { logActivity } = require('./_lib/activity');
 const { createClient } = require('@supabase/supabase-js');
 const https = require('https');
@@ -80,11 +81,7 @@ function patchSupabaseAuthConfig(payload) {
 }
 
 module.exports = async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', req.headers.origin || '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PATCH, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type');
-  res.setHeader('Access-Control-Allow-Credentials', 'true');
-  if (req.method === 'OPTIONS') return res.status(200).end();
+  if (handleCors(req, res, 'GET, POST, PATCH, OPTIONS')) return;
 
   const session = await requireAdmin(req, res);
   if (!session) return;

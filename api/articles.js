@@ -10,6 +10,7 @@
  */
 
 const { requireAuth, requireAdmin } = require('./_lib/auth');
+const { handleCors } = require('./_lib/cors');
 const { logActivity } = require('./_lib/activity');
 const { createClient } = require('@supabase/supabase-js');
 
@@ -29,11 +30,7 @@ function slugify(text) {
 }
 
 module.exports = async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', req.headers.origin || '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type');
-  res.setHeader('Access-Control-Allow-Credentials', 'true');
-  if (req.method === 'OPTIONS') return res.status(200).end();
+  if (handleCors(req, res, 'GET, POST, DELETE, OPTIONS')) return;
 
   const { action, id } = req.query;
 

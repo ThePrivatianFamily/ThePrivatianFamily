@@ -13,6 +13,7 @@
 const https = require('https');
 const { createClient } = require('@supabase/supabase-js');
 const { verifySession, requireAuth, requireAdmin } = require('./_lib/auth');
+const { handleCors } = require('./_lib/cors');
 const { logActivity } = require('./_lib/activity');
 const { getStoredMediaList, computeStorageStats } = require('./media');
 
@@ -365,9 +366,7 @@ function syncFooterStructures(source, target, sourceIsBn) {
 }
 
 module.exports = async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
+  if (handleCors(req, res)) return;
   res.setHeader('Cache-Control', 'no-store');
 
   const supabaseUrl = process.env.SUPABASE_URL || 'https://aenhajqjsgskimfzvlfr.supabase.co';
@@ -479,8 +478,8 @@ module.exports = async function handler(req, res) {
 
   // ── RESET ANALYTICS STORE (Admin Only) ─────────────────────────────────
   if (action === 'reset_analytics' && req.method === 'POST') {
-    const session = verifySession(req);
-    if (!session) return res.status(401).json({ error: 'Unauthorized' });
+    const session = await requireAdmin(req, res);
+    if (!session) return;
 
     const now = new Date();
     const cleanStore = {
@@ -512,7 +511,8 @@ module.exports = async function handler(req, res) {
 
   // ── DASHBOARD STATS AGGREGATOR ─────────────────────────────────────────
   if (action === 'dashboard_stats') {
-    const session = verifySession(req);
+    const session = await requireAuth(req, res);
+    if (!session) return;
 
     const now = new Date();
     const todayStr = now.toISOString().slice(0, 10);
