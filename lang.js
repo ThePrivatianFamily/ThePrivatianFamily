@@ -574,17 +574,29 @@
 
     applyDocumentLangAttr();
 
-    // 1. Synchronously translate all page text in memory (0ms delay)
-    translatePageDOM(_currentLang);
+    function performUpdate() {
+      // 1. Synchronously translate all page text in memory
+      translatePageDOM(_currentLang);
 
-    // 2. Update reactive document.title and meta publication tags
-    updatePageTitleAndMeta(_currentLang);
+      // 2. Update reactive document.title and meta publication tags
+      updatePageTitleAndMeta(_currentLang);
 
-    // 3. Dispatch global event for components and scripts
-    var ev = new CustomEvent('privatian:language-changed', {
-      detail: { lang: _currentLang, isBn: _currentLang === 'bn' }
-    });
-    document.dispatchEvent(ev);
+      // 3. Dispatch global event for components and scripts
+      var ev = new CustomEvent('privatian:language-changed', {
+        detail: { lang: _currentLang, isBn: _currentLang === 'bn' }
+      });
+      document.dispatchEvent(ev);
+    }
+
+    // If switching to Bengali, ensure the Bengali font is loaded in GPU memory before painting
+    if (_currentLang === 'bn' && document.fonts && document.fonts.load) {
+      Promise.all([
+        document.fonts.load('16px "Hind Siliguri"'),
+        document.fonts.load('20px "Noto Serif Bengali"')
+      ]).then(performUpdate).catch(performUpdate);
+    } else {
+      performUpdate();
+    }
   }
 
   function toggleLang() {
