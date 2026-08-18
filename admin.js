@@ -5548,7 +5548,7 @@ const DEFAULT_MENU_CONFIG = {
       { id: 'tag-4', label: 'Privacy & Values', label_bn: 'মূল্যবোধ', query: 'Privacy & Values', enabled: true },
       { id: 'tag-5', label: 'Nation & World', label_bn: 'দেশ ও বিশ্ব', query: 'Nation & World', enabled: true },
       { id: 'tag-6', label: 'Arts & Legacy', label_bn: 'শিল্প ও উত্তরাধিকার', query: 'Arts & Legacy', enabled: true },
-      { id: 'tag-7', label: 'Events', label_bn: 'অনুষ্ঠান', query: 'Events', enabled: true }
+      { id: 'tag-7', label: 'Events', label_bn: 'ইভেন্ট ও আয়োজন', query: 'Events', enabled: true }
     ]
   },
   enabledMenuSections: []
@@ -5725,7 +5725,7 @@ function renderMenuSearch() {
         { id: 'tag-4', label: 'Privacy & Values', label_bn: 'মূল্যবোধ', query: 'Privacy & Values', enabled: true },
         { id: 'tag-5', label: 'Nation & World', label_bn: 'দেশ ও বিশ্ব', query: 'Nation & World', enabled: true },
         { id: 'tag-6', label: 'Arts & Legacy', label_bn: 'শিল্প ও উত্তরাধিকার', query: 'Arts & Legacy', enabled: true },
-        { id: 'tag-7', label: 'Events', label_bn: 'অনুষ্ঠান', query: 'Events', enabled: true }
+        { id: 'tag-7', label: 'Events', label_bn: 'ইভেন্ট ও আয়োজন', query: 'Events', enabled: true }
       ]
     };
   }

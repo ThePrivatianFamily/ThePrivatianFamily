@@ -747,7 +747,7 @@
     var metaDescEl = g('sec-meta');
     if (metaDescEl) {
       if (isBn) {
-        metaDescEl.textContent = _loadedCustomConfig.description_bn || ('প্রাইভেসিয়ান পরিবারে ' + sectionName + ' বিভাগের গবেষণা, ঐতিহ্য ও প্রবন্ধসমূহ পড়ুন।');
+        metaDescEl.textContent = _loadedCustomConfig.description_bn || ('দ্য প্রাইভেটিয়ান ফ্যামিলিতে ' + sectionName + ' বিভাগের গবেষণা, ঐতিহ্য ও প্রবন্ধসমূহ পড়ুন।');
       } else {
         metaDescEl.textContent = _loadedCustomConfig.description || ('Explore insightful reporting, research, and perspectives in ' + sectionName + '.');
       }
@@ -767,7 +767,7 @@
       var artHref = heroArt.slug ? '/article/' + heroArt.slug : '/article/' + heroArt.id;
       var hTitle = isBn ? (heroArt.title_bn || heroArt.title) : heroArt.title;
       var hDeck = isBn ? (heroArt.deck_bn !== undefined ? heroArt.deck_bn : heroArt.deck) : heroArt.deck;
-      var hAuthor = isBn ? (heroArt.author_bn || heroArt.author || 'দ্য প্রাইভেসিয়ান পরিবার') : (heroArt.author || 'The Privatian Family');
+      var hAuthor = isBn ? (heroArt.author_bn || heroArt.author || 'দ্য প্রাইভেটিয়ান ফ্যামিলি') : (heroArt.author || 'The Privatian Family');
       var hSec = isBn ? (heroArt.section_bn || heroArt.section || sectionName) : (heroArt.section || sectionName);
 
       if (heroLink) { heroLink.href = artHref; heroLink.textContent = hTitle; }

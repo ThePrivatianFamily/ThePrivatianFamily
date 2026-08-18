@@ -992,7 +992,7 @@ module.exports = async function handler(req, res) {
           { id: 'tag-4', label: 'Privacy & Values', label_bn: 'মূল্যবোধ', query: 'Privacy & Values', enabled: true },
           { id: 'tag-5', label: 'Nation & World', label_bn: 'দেশ ও বিশ্ব', query: 'Nation & World', enabled: true },
           { id: 'tag-6', label: 'Arts & Legacy', label_bn: 'শিল্প ও উত্তরাধিকার', query: 'Arts & Legacy', enabled: true },
-          { id: 'tag-7', label: 'Events', label_bn: 'অনুষ্ঠান', query: 'Events', enabled: true }
+          { id: 'tag-7', label: 'Events', label_bn: 'ইভেন্ট ও আয়োজন', query: 'Events', enabled: true }
         ]
       }
     };
@@ -1577,8 +1577,8 @@ module.exports = async function handler(req, res) {
         }
       ],
       eventsSection: {
-        eventsHeading: 'আসন্ন অনুষ্ঠানসমূহ',
-        seeAllText: 'সকল অনুষ্ঠান দেখুন',
+        eventsHeading: 'আসন্ন ইভেন্ট ও আয়োজন',
+        seeAllText: 'সকল ইভেন্ট দেখুন',
         seeAllHref: '/events',
         events: [
           {

@@ -264,8 +264,8 @@ var DEFAULT_HOMEPAGE_CONFIG_BN = {
     }
   ],
   eventsSection: {
-    eventsHeading: 'আসন্ন অনুষ্ঠানসমূহ',
-    seeAllText: 'সকল অনুষ্ঠান দেখুন',
+    eventsHeading: 'আসন্ন ইভেন্ট ও আয়োজন',
+    seeAllText: 'সকল ইভেন্ট দেখুন',
     seeAllHref: '/events',
     events: [
       {
@@ -561,11 +561,11 @@ function applyHomepageConfig(cfg) {
     var evPanel = document.getElementById('events-panel');
     if (evPanel) {
       var headingEl = evPanel.querySelector('.section-heading-label');
-      var eventsHeading = evSec.eventsHeading || (isBn ? 'আসন্ন অনুষ্ঠানসমূহ' : 'Upcoming Events');
+      var eventsHeading = evSec.eventsHeading || (isBn ? 'আসন্ন ইভেন্ট ও আয়োজন' : 'Upcoming Events');
       if (headingEl && eventsHeading) headingEl.textContent = eventsHeading;
 
       var seeAllEl = document.getElementById('see-all-events-link');
-      var seeAllText = evSec.seeAllText || (isBn ? 'সকল অনুষ্ঠান দেখুন' : 'See all events');
+      var seeAllText = evSec.seeAllText || (isBn ? 'সকল ইভেন্ট দেখুন' : 'See all events');
       if (seeAllEl) {
         seeAllEl.textContent = seeAllText;
         seeAllEl.href = evSec.seeAllHref || '/events';

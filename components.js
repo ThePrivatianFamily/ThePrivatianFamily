@@ -79,9 +79,9 @@
       }
     ],
     exploreTitle: 'Explore the Privatian',
-    exploreTitle_bn: 'প্রাইভেসিয়ান পরিবার এক্সপ্লোর করুন',
+    exploreTitle_bn: 'দ্য প্রাইভেটিয়ান ফ্যামিলি এক্সপ্লোর করুন',
     explore: [
-      { id: 'exp-1', label: 'Events', label_bn: 'ইভেন্টসমূহ', href: '/events', target: '_self', enabled: true },
+      { id: 'exp-1', label: 'Events', label_bn: 'ইভেন্ট ও আয়োজন', href: '/events', target: '_self', enabled: true },
       { id: 'exp-2', label: 'Article archive', label_bn: 'আর্টিকেল আর্কাইভ', href: '/', target: '_self', enabled: true },
       { id: 'exp-3', label: 'About us', label_bn: 'আমাদের সম্পর্কে', href: '/', target: '_self', enabled: true },
       { id: 'exp-4', label: 'News+', label_bn: 'সংবাদ+', href: '/', target: '_self', enabled: true },
@@ -127,16 +127,16 @@
         { id: 'tag-4', label: 'Privacy & Values', label_bn: 'মূল্যবোধ', query: 'Privacy & Values', enabled: true },
         { id: 'tag-5', label: 'Nation & World', label_bn: 'দেশ ও বিশ্ব', query: 'Nation & World', enabled: true },
         { id: 'tag-6', label: 'Arts & Legacy', label_bn: 'শিল্প ও উত্তরাধিকার', query: 'Arts & Legacy', enabled: true },
-        { id: 'tag-7', label: 'Events', label_bn: 'অনুষ্ঠান', query: 'Events', enabled: true }
+        { id: 'tag-7', label: 'Events', label_bn: 'ইভেন্ট ও আয়োজন', query: 'Events', enabled: true }
       ]
     }
   };
 
   var DEFAULT_SUBSECTIONS = [
     { id: 'sub-1', label: 'FAMILY LEGACY', label_bn: 'পারিবারিক ঐতিহ্য', href: '/section/community-heritage', icon: null, enabled: true },
-    { id: 'sub-2', label: 'EXPERIENCE', label_bn: 'অভিজ্ঞতা ও সংস্কৃতি', href: '/section/culture', icon: null, enabled: true },
-    { id: 'sub-3', label: 'THE PRIVATIAN READS', label_bn: 'প্রাইভেসিয়ান পঠন', href: '/section/findings', icon: null, enabled: true },
-    { id: 'sub-4', label: 'EVENTS', label_bn: 'অনুষ্ঠানসমূহ', href: '/events', icon: 'calendar', enabled: true }
+    { id: 'sub-2', label: 'EXPERIENCE', label_bn: 'অভিজ্ঞতা', href: '/section/culture', icon: null, enabled: true },
+    { id: 'sub-3', label: 'THE PRIVATIAN READS', label_bn: 'প্রাইভেটিয়ান পাঠ', href: '/section/findings', icon: null, enabled: true },
+    { id: 'sub-4', label: 'EVENTS', label_bn: 'ইভেন্ট ও আয়োজন', href: '/events', icon: 'calendar', enabled: true }
   ];
 
   var DEFAULT_SECTIONS = [
@@ -183,7 +183,7 @@
     return s.name || '';
   }
 
-  // ── LIVE IN-MEMORY DATABASE STATE (No localStorage data caching) ──
+  // ── LIVE IN-MEMORY DATABASE STATE (Hydrated with synchronous cache fallback) ──
   var _liveMenuSettings_en = null;
   var _liveMenuSettings_bn = null;
   var _liveSections = null;
@@ -191,6 +191,13 @@
   var _liveFooterSettings_bn = null;
   var _liveHeaderSettings_en = null;
   var _liveHeaderSettings_bn = null;
+
+  try {
+    var cachedHEn = localStorage.getItem('privatian_header_settings_en');
+    if (cachedHEn) _liveHeaderSettings_en = JSON.parse(cachedHEn);
+    var cachedHBn = localStorage.getItem('privatian_header_settings_bn');
+    if (cachedHBn) _liveHeaderSettings_bn = JSON.parse(cachedHBn);
+  } catch(e) {}
 
   function getMenuSettings() {
     var isBn = window.PrivatianLang && window.PrivatianLang.getLang() === 'bn';
@@ -387,11 +394,11 @@
     };
 
     var sectionsTitle = pick(cfg.sectionsTitle || 'Sections', cfg.sectionsTitle_bn || (window.PrivatianLang ? window.PrivatianLang.t('sections') : 'বিভাগসমূহ'));
-    var exploreTitle  = pick(cfg.exploreTitle || 'Explore the Privatian', cfg.exploreTitle_bn || (window.PrivatianLang ? window.PrivatianLang.t('explorePrivatian') : 'প্রাইভেসিয়ান পরিবার এক্সপ্লোর করুন'));
+    var exploreTitle  = pick(cfg.exploreTitle || 'Explore the Privatian', cfg.exploreTitle_bn || (window.PrivatianLang ? window.PrivatianLang.t('explorePrivatian') : 'দ্য প্রাইভেটিয়ান ফ্যামিলি এক্সপ্লোর করুন'));
     var seriesTitle   = pick(cfg.seriesTitle || 'Our recent series', cfg.seriesTitle_bn || (window.PrivatianLang ? window.PrivatianLang.t('recentSeries') : 'আমাদের সাম্প্রতিক সিরিজ'));
     var socialTitle   = pick(cfg.socialTitle || 'Follow us on', cfg.socialTitle_bn || (window.PrivatianLang ? window.PrivatianLang.t('followUs') : 'অনুসরণ করুন'));
-    var tagline       = pick(cfg.tagline || 'The Official Publication of The Privatian Society — Cambridge, Massachusetts', cfg.tagline_bn || 'দ্য প্রাইভেসিয়ান সোসাইটির আনুষ্ঠানিক প্রকাশনা — কেমব্রিজ, ম্যাসাচুসেটস');
-    var copyright     = pick(cfg.copyright || '© 2026 The Privatian Family. All rights reserved.', cfg.copyright_bn || '© ২০২৬ দ্য প্রাইভেসিয়ান পরিবার। সর্বস্বত্ব সংরক্ষিত।');
+    var tagline       = pick(cfg.tagline || 'The Official Publication of The Privatian Society — Cambridge, Massachusetts', cfg.tagline_bn || 'দ্য প্রাইভেটিয়ান সোসাইটির অফিশিয়াল প্রকাশনা — ক্যামব্রিজ, ম্যাসাচুসেটস');
+    var copyright     = pick(cfg.copyright || '© 2026 The Privatian Family. All rights reserved.', cfg.copyright_bn || '© ২০২৬ দ্য প্রাইভেটিয়ান ফ্যামিলি। সর্বস্বত্ব সংরক্ষিত।');
 
     var exploreHtml = (cfg.explore || []).filter(function(e) { return e.enabled !== false; }).map(function(e) {
       var label = pick(e.label, e.label_bn);
@@ -1008,7 +1015,7 @@
     // 3. Column 2: Explore the Privatian
     var titleExploreEl = document.getElementById('mo-title-explore');
     if (titleExploreEl) {
-      titleExploreEl.textContent = pick(menuConfig.exploreTitle || 'Explore the Privatian', menuConfig.exploreTitle_bn || (window.PrivatianLang ? window.PrivatianLang.t('explorePrivatian') : 'প্রাইভেসিয়ান পরিবার এক্সপ্লোর করুন'));
+      titleExploreEl.textContent = pick(menuConfig.exploreTitle || 'Explore the Privatian', menuConfig.exploreTitle_bn || (window.PrivatianLang ? window.PrivatianLang.t('explorePrivatian') : 'দ্য প্রাইভেটিয়ান ফ্যামিলি এক্সপ্লোর করুন'));
     }
     var exploreListEl = document.getElementById('mo-explore-list');
     if (exploreListEl) {
@@ -1073,7 +1080,7 @@
           { id: 'tag-4', label: 'Privacy & Values', label_bn: 'মূল্যবোধ', query: 'Privacy & Values', enabled: true },
           { id: 'tag-5', label: 'Nation & World', label_bn: 'দেশ ও বিশ্ব', query: 'Nation & World', enabled: true },
           { id: 'tag-6', label: 'Arts & Legacy', label_bn: 'শিল্প ও উত্তরাধিকার', query: 'Arts & Legacy', enabled: true },
-          { id: 'tag-7', label: 'Events', label_bn: 'অনুষ্ঠান', query: 'Events', enabled: true }
+          { id: 'tag-7', label: 'Events', label_bn: 'ইভেন্ট ও আয়োজন', query: 'Events', enabled: true }
         ]
       };
     }
