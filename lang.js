@@ -566,6 +566,28 @@
       localStorage.setItem(STORAGE_KEY, _currentLang);
     } catch(e) {}
 
+    // Apply micro cross-fade state
+    if (document.documentElement) {
+      document.documentElement.classList.add('lang-switching');
+      setTimeout(function() {
+        if (document.documentElement) document.documentElement.classList.remove('lang-switching');
+      }, 130);
+    }
+
+    // Sync URL search params without reloading page
+    try {
+      if (window.history && window.history.replaceState) {
+        var u = new URL(window.location.href);
+        if (_currentLang === 'bn') {
+          u.searchParams.set('lang', 'bn');
+        } else {
+          u.searchParams.delete('lang');
+        }
+        var newRelative = u.pathname + (u.search ? u.search : '') + (u.hash ? u.hash : '');
+        window.history.replaceState(null, '', newRelative);
+      }
+    } catch(e) {}
+
     applyDocumentLangAttr();
 
     // 1. Synchronously translate all page text in memory (0ms latency)

@@ -2,6 +2,23 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <script>
+    (function(){
+      try {
+        var p = new URLSearchParams(window.location.search);
+        var l = p.get('lang') || localStorage.getItem('privatian_site_lang');
+        if (l === 'bn') {
+          document.documentElement.lang = 'bn';
+          document.documentElement.setAttribute('data-lang', 'bn');
+          document.documentElement.classList.add('lang-bn');
+        } else {
+          document.documentElement.lang = 'en';
+          document.documentElement.setAttribute('data-lang', 'en');
+          document.documentElement.classList.add('lang-en');
+        }
+      } catch(e) {}
+    })();
+  </script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>The Privatian Family — Insights, Stories &amp; Heritage</title>
   <meta name="description" content="The Privatian Family — Explore stories, findings, community, culture, and heritage." />

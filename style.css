@@ -3,6 +3,50 @@
    Theme: Deep Navy Blue #0a528e - from brand logo
    ============================================================ */
 
+/* ── SELF-HOSTED ULTRA-FAST BENGALI TYPOGRAPHY (0ms External DNS/TLS) ── */
+@font-face {
+  font-family: 'Hind Siliguri';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/hind-siliguri-400.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Hind Siliguri';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('/fonts/hind-siliguri-600.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Hind Siliguri';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('/fonts/hind-siliguri-700.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Noto Serif Bengali';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/noto-serif-bengali-400.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Noto Serif Bengali';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('/fonts/noto-serif-bengali-600.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Noto Serif Bengali';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('/fonts/noto-serif-bengali-700.woff2') format('woff2');
+}
+
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
@@ -48,11 +92,49 @@ html {
   background-color: #ffffff;
 }
 
+/* ── BENGALI TYPOGRAPHY & DIACRITIC PROTECTION ── */
 html[lang="bn"],
 html.lang-bn,
 html[data-lang="bn"] {
   --font-serif: 'Noto Serif Bengali', 'SolaimanLipi', 'Kalpurush', 'Nirmala UI', 'Libre Baskerville', Georgia, serif;
   --font-sans:  'Hind Siliguri', 'SolaimanLipi', 'Kalpurush', 'Nirmala UI', 'Source Sans 3', 'Helvetica Neue', Arial, sans-serif;
+  letter-spacing: normal !important;
+}
+
+html[lang="bn"] .hero-headline,
+html[lang="bn"] .hero-headline a,
+html[lang="bn"] .events-hero-title,
+html[lang="bn"] .id-title,
+html[lang="bn"] .article-title,
+html[lang="bn"] .sec-block-title,
+html[lang="bn"] .news-main-title {
+  line-height: 1.35;
+  letter-spacing: 0;
+}
+
+html[lang="bn"] .hero-subtitle,
+html[lang="bn"] .hero-sidebar-desc,
+html[lang="bn"] .article-subtitle,
+html[lang="bn"] .events-hero-sub {
+  line-height: 1.6;
+}
+
+/* ── SMOOTH LANGUAGE CROSS-FADE TRANSITION ── */
+.lang-fade-layer,
+#main-content,
+#article-layout,
+.events-main-wrap,
+.id-bar,
+.selected-wrap {
+  transition: opacity 0.12s ease-out;
+}
+
+.lang-switching #main-content,
+.lang-switching #article-layout,
+.lang-switching .events-main-wrap,
+.lang-switching .id-bar,
+.lang-switching .selected-wrap {
+  opacity: 0.88;
 }
 
 .font-preloader {
