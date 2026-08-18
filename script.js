@@ -22,7 +22,7 @@ var DEFAULT_HOMEPAGE_CONFIG_EN = {
         title: 'Part legacy, part field study: the Privatian story across generations',
         description: 'From a family archive, the Privatian tradition sees pathways forged through private endeavors',
         imageUrl: 'img5.png',
-        tag: 'Heritage Archive',
+        tag: '',
         href: '/section/community-heritage',
         enabled: true
       },
@@ -221,7 +221,7 @@ var DEFAULT_HOMEPAGE_CONFIG_BN = {
         title: 'অর্ধেক ঐতিহ্য, অর্ধেক পর্যবেক্ষণ: প্রজন্ম থেকে প্রজন্মে প্রাইভেসিয়ানদের পথচলা',
         description: 'পারিবারিক সংরক্ষণাগার থেকে, প্রাইভেসিয়ান ঐতিহ্য ব্যক্তিগত প্রচেষ্টার মাধ্যমে নতুন পথ তৈরি করে',
         imageUrl: 'img5.png',
-        tag: 'ঐতিহ্য সংরক্ষণাগার',
+        tag: '',
         href: '/section/community-heritage',
         enabled: true
       },

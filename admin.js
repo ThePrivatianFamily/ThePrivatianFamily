@@ -6898,7 +6898,7 @@ const DEFAULT_HOMEPAGE_CONFIG = {
         title: 'Part legacy, part field study: the Privatian story across generations',
         description: 'From a family archive, the Privatian tradition sees pathways forged through private endeavors',
         imageUrl: 'img5.png',
-        tag: 'Heritage Archive',
+        tag: '',
         href: '/section/community-heritage',
         enabled: true
       },
