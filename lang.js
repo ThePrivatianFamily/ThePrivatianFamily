@@ -566,14 +566,6 @@
       localStorage.setItem(STORAGE_KEY, _currentLang);
     } catch(e) {}
 
-    // Apply micro cross-fade state
-    if (document.documentElement) {
-      document.documentElement.classList.add('lang-switching');
-      setTimeout(function() {
-        if (document.documentElement) document.documentElement.classList.remove('lang-switching');
-      }, 130);
-    }
-
     // Sync URL search params without reloading page
     try {
       if (window.history && window.history.replaceState) {

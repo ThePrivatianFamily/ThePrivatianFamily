@@ -119,24 +119,6 @@ html[lang="bn"] .events-hero-sub {
   line-height: 1.6;
 }
 
-/* ── SMOOTH LANGUAGE CROSS-FADE TRANSITION ── */
-.lang-fade-layer,
-#main-content,
-#article-layout,
-.events-main-wrap,
-.id-bar,
-.selected-wrap {
-  transition: opacity 0.12s ease-out;
-}
-
-.lang-switching #main-content,
-.lang-switching #article-layout,
-.lang-switching .events-main-wrap,
-.lang-switching .id-bar,
-.lang-switching .selected-wrap {
-  opacity: 0.88;
-}
-
 .font-preloader {
   position: absolute;
   width: 0;
