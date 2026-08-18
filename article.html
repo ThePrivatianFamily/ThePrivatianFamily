@@ -396,7 +396,7 @@
 
           // ── Section pill & breadcrumb ──
           var secRaw = art.section || '';
-          var secDisplay = isBn ? (art.section_bn || secRaw) : secRaw;
+          var secDisplay = isBn ? (art.section_bn || (window.PrivatianLang && window.PrivatianLang.translateStatic ? window.PrivatianLang.translateStatic(secRaw, 'bn') : secRaw)) : secRaw;
           var secSlug = slugify(secRaw);
           var secHref = secRaw ? '/section/' + secSlug : '/';
           var pill = g('article-section-pill');

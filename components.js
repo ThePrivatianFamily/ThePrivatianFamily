@@ -1525,121 +1525,138 @@
   }
 
   async function fetchHeaderSettingsFromAPI() {
-    var isBn = window.PrivatianLang && window.PrivatianLang.getLang() === 'bn';
-    var data = null;
     try {
-      var res = await fetch('/api/sections?action=header' + (isBn ? '&lang=bn' : ''));
-      if (res.ok) data = await res.json();
+      var [resEN, resBN] = await Promise.all([
+        fetch('/api/sections?action=header&lang=en').catch(function() { return null; }),
+        fetch('/api/sections?action=header&lang=bn').catch(function() { return null; })
+      ]);
+      if (resEN && resEN.ok) {
+        var dataEN = await resEN.json();
+        if (dataEN && typeof dataEN === 'object') {
+          _liveHeaderSettings_en = dataEN;
+          try { localStorage.setItem('privatian_header_settings_en', JSON.stringify(dataEN)); } catch(e) {}
+        }
+      }
+      if (resBN && resBN.ok) {
+        var dataBN = await resBN.json();
+        if (dataBN && typeof dataBN === 'object') {
+          _liveHeaderSettings_bn = dataBN;
+          try { localStorage.setItem('privatian_header_settings_bn', JSON.stringify(dataBN)); } catch(e) {}
+        }
+      }
     } catch(err) {}
 
-    if (!data) {
+    if (!_liveHeaderSettings_en || !_liveHeaderSettings_bn) {
       try {
         var sb = window._sb || (window.initSupabaseClient && window.initSupabaseClient());
         if (sb) {
-          var targetId = isBn ? '__header_config_bn__' : '__header_config__';
-          var { data: sData } = await sb.from('sections').select('name').eq('admin_id', targetId).maybeSingle();
-          if (sData && sData.name) {
-            var parsed = JSON.parse(sData.name);
-            if (parsed && typeof parsed === 'object') data = parsed;
+          if (!_liveHeaderSettings_en) {
+            var { data: sEN } = await sb.from('sections').select('name').eq('admin_id', '__header_config__').maybeSingle();
+            if (sEN && sEN.name) {
+              var pEN = JSON.parse(sEN.name);
+              if (pEN && typeof pEN === 'object') _liveHeaderSettings_en = pEN;
+            }
+          }
+          if (!_liveHeaderSettings_bn) {
+            var { data: sBN } = await sb.from('sections').select('name').eq('admin_id', '__header_config_bn__').maybeSingle();
+            if (sBN && sBN.name) {
+              var pBN = JSON.parse(sBN.name);
+              if (pBN && typeof pBN === 'object') _liveHeaderSettings_bn = pBN;
+            }
           }
         }
       } catch(e) {}
     }
 
-    if (data && typeof data === 'object') {
-      if (isBn) {
-        _liveHeaderSettings_bn = data;
-        try { localStorage.setItem('privatian_header_settings_bn', JSON.stringify(data)); } catch(e) {}
-      } else {
-        _liveHeaderSettings_en = data;
-        try { localStorage.setItem('privatian_header_settings_en', JSON.stringify(data)); } catch(e) {}
-      }
-      applyLogoSettings();
-      populateSections();
-      populateSubHeader();
-      if (data.cloudflareAnalyticsToken) {
-        initCloudflareAnalytics(data.cloudflareAnalyticsToken);
-      }
+    applyLogoSettings();
+    populateSections();
+    populateSubHeader();
+    var cur = getHeaderSettings();
+    if (cur && cur.cloudflareAnalyticsToken) {
+      initCloudflareAnalytics(cur.cloudflareAnalyticsToken);
     }
   }
 
   async function fetchMenuFromAPI() {
-    var isBn = window.PrivatianLang && window.PrivatianLang.getLang() === 'bn';
-    var data = null;
     try {
-      var res = await fetch('/api/sections?action=menu' + (isBn ? '&lang=bn' : ''));
-      if (res.ok) data = await res.json();
+      var [resEN, resBN] = await Promise.all([
+        fetch('/api/sections?action=menu&lang=en').catch(function() { return null; }),
+        fetch('/api/sections?action=menu&lang=bn').catch(function() { return null; })
+      ]);
+      if (resEN && resEN.ok) {
+        var dataEN = await resEN.json();
+        if (dataEN && typeof dataEN === 'object') _liveMenuSettings_en = dataEN;
+      }
+      if (resBN && resBN.ok) {
+        var dataBN = await resBN.json();
+        if (dataBN && typeof dataBN === 'object') _liveMenuSettings_bn = dataBN;
+      }
     } catch(err) {}
 
-    if (!data) {
+    if (!_liveMenuSettings_en || !_liveMenuSettings_bn) {
       try {
         var sb = window._sb || (window.initSupabaseClient && window.initSupabaseClient());
         if (sb) {
-          var targetId = isBn ? '__menu_config_bn__' : '__menu_config__';
-          var { data: sData } = await sb.from('sections').select('name').eq('admin_id', targetId).maybeSingle();
-          if (sData && sData.name) {
-            var parsed = JSON.parse(sData.name);
-            if (parsed && typeof parsed === 'object') data = parsed;
+          if (!_liveMenuSettings_en) {
+            var { data: sEN } = await sb.from('sections').select('name').eq('admin_id', '__menu_config__').maybeSingle();
+            if (sEN && sEN.name) {
+              var pEN = JSON.parse(sEN.name);
+              if (pEN && typeof pEN === 'object') _liveMenuSettings_en = pEN;
+            }
+          }
+          if (!_liveMenuSettings_bn) {
+            var { data: sBN } = await sb.from('sections').select('name').eq('admin_id', '__menu_config_bn__').maybeSingle();
+            if (sBN && sBN.name) {
+              var pBN = JSON.parse(sBN.name);
+              if (pBN && typeof pBN === 'object') _liveMenuSettings_bn = pBN;
+            }
           }
         }
       } catch(e) {}
     }
 
-    if (data && typeof data === 'object') {
-      if (isBn) _liveMenuSettings_bn = data;
-      else _liveMenuSettings_en = data;
-      populateMenuOverlay();
-    }
+    populateMenuOverlay();
   }
 
   async function fetchFooterFromAPI() {
-    var isBn = window.PrivatianLang && window.PrivatianLang.getLang() === 'bn';
-    var data = null;
     try {
-      var res = await fetch('/api/sections?action=footer' + (isBn ? '&lang=bn' : ''));
-      if (res.ok) data = await res.json();
+      var [resEN, resBN] = await Promise.all([
+        fetch('/api/sections?action=footer&lang=en').catch(function() { return null; }),
+        fetch('/api/sections?action=footer&lang=bn').catch(function() { return null; })
+      ]);
+      if (resEN && resEN.ok) {
+        var dataEN = await resEN.json();
+        if (dataEN && typeof dataEN === 'object') _liveFooterSettings_en = dataEN;
+      }
+      if (resBN && resBN.ok) {
+        var dataBN = await resBN.json();
+        if (dataBN && typeof dataBN === 'object') _liveFooterSettings_bn = dataBN;
+      }
     } catch(err) {}
 
-    if (!data) {
+    if (!_liveFooterSettings_en || !_liveFooterSettings_bn) {
       try {
         var sb = window._sb || (window.initSupabaseClient && window.initSupabaseClient());
         if (sb) {
-          var targetId = isBn ? '__footer_config_bn__' : '__footer_config__';
-          var { data: sData } = await sb.from('sections').select('name').eq('admin_id', targetId).maybeSingle();
-          if (sData && sData.name) {
-            var parsed = JSON.parse(sData.name);
-            if (parsed && typeof parsed === 'object') data = parsed;
-          }
-        }
-      } catch(e) {}
-    }
-
-    if (!data) {
-      try {
-        if (typeof PRIVATIAN_SUPABASE_URL !== 'undefined' && typeof PRIVATIAN_SUPABASE_KEY !== 'undefined') {
-          var targetId = isBn ? '__footer_config_bn__' : '__footer_config__';
-          var sRes = await fetch(PRIVATIAN_SUPABASE_URL + '/rest/v1/sections?admin_id=eq.' + targetId + '&select=name', {
-            headers: {
-              'apikey': PRIVATIAN_SUPABASE_KEY,
-              'Authorization': 'Bearer ' + PRIVATIAN_SUPABASE_KEY
+          if (!_liveFooterSettings_en) {
+            var { data: sEN } = await sb.from('sections').select('name').eq('admin_id', '__footer_config__').maybeSingle();
+            if (sEN && sEN.name) {
+              var pEN = JSON.parse(sEN.name);
+              if (pEN && typeof pEN === 'object') _liveFooterSettings_en = pEN;
             }
-          });
-          if (sRes.ok) {
-            var arr = await sRes.json();
-            if (arr && arr[0] && arr[0].name) {
-              var parsed = JSON.parse(arr[0].name);
-              if (parsed && typeof parsed === 'object') data = parsed;
+          }
+          if (!_liveFooterSettings_bn) {
+            var { data: sBN } = await sb.from('sections').select('name').eq('admin_id', '__footer_config_bn__').maybeSingle();
+            if (sBN && sBN.name) {
+              var pBN = JSON.parse(sBN.name);
+              if (pBN && typeof pBN === 'object') _liveFooterSettings_bn = pBN;
             }
           }
         }
       } catch(e) {}
     }
 
-    if (data && typeof data === 'object') {
-      if (isBn) _liveFooterSettings_bn = data;
-      else _liveFooterSettings_en = data;
-      renderFooter();
-    }
+    renderFooter();
   }
 
   var _headerReady = false;
