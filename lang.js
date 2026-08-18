@@ -468,28 +468,24 @@
     // 2. Traversal of all content nodes
     SELECTORS_TO_TRANSLATE.forEach(function(sel) {
       document.querySelectorAll(sel).forEach(function(el) {
-        // Skip elements that contain other nested complex structures unless it's pure text
-        if (el.children.length > 0 && !el.querySelector('svg')) {
-          // If element only has an svg + text child
-          var hasSvg = !!el.querySelector('svg');
-          if (hasSvg && el.childNodes.length <= 3) {
-            // translate text node only
-            el.childNodes.forEach(function(n) {
-              if (n.nodeType === 3 /* Node.TEXT_NODE */) {
-                var txt = n.nodeValue.trim();
-                if (txt) {
-                  if (isBn) {
-                    if (!el.getAttribute('data-orig-en')) el.setAttribute('data-orig-en', txt);
-                    var tr = STATIC_TEXT_MAP_BN[txt] || STATIC_TEXT_MAP_BN[txt.toUpperCase()];
-                    if (tr) n.nodeValue = ' ' + tr;
-                  } else {
-                    var orig = el.getAttribute('data-orig-en') || STATIC_TEXT_MAP_EN[txt];
-                    if (orig) n.nodeValue = ' ' + orig;
-                  }
+        // If element has an SVG icon inside (like back button, event button, calendar), preserve the SVG
+        var svg = el.querySelector('svg');
+        if (svg) {
+          el.childNodes.forEach(function(n) {
+            if (n.nodeType === 3 /* Node.TEXT_NODE */) {
+              var txt = n.nodeValue.trim();
+              if (txt) {
+                if (isBn) {
+                  if (!el.getAttribute('data-orig-en')) el.setAttribute('data-orig-en', txt);
+                  var tr = STATIC_TEXT_MAP_BN[txt] || STATIC_TEXT_MAP_BN[txt.toUpperCase()];
+                  if (tr) n.nodeValue = ' ' + tr;
+                } else {
+                  var orig = el.getAttribute('data-orig-en') || STATIC_TEXT_MAP_EN[txt];
+                  if (orig) n.nodeValue = ' ' + orig;
                 }
               }
-            });
-          }
+            }
+          });
           return;
         }
 
@@ -497,7 +493,6 @@
         if (!currentText) return;
 
         if (isBn) {
-          // Store original English text if not already stored
           if (!el.getAttribute('data-orig-en') && !STATIC_TEXT_MAP_EN[currentText]) {
             el.setAttribute('data-orig-en', currentText);
           }
@@ -507,7 +502,6 @@
             el.textContent = translated;
           }
         } else {
-          // Restore English
           var orig = el.getAttribute('data-orig-en') || STATIC_TEXT_MAP_EN[currentText];
           if (orig) {
             el.textContent = orig;
@@ -574,29 +568,17 @@
 
     applyDocumentLangAttr();
 
-    function performUpdate() {
-      // 1. Synchronously translate all page text in memory
-      translatePageDOM(_currentLang);
+    // 1. Synchronously translate all page text in memory (0ms latency)
+    translatePageDOM(_currentLang);
 
-      // 2. Update reactive document.title and meta publication tags
-      updatePageTitleAndMeta(_currentLang);
+    // 2. Update reactive document.title and meta publication tags
+    updatePageTitleAndMeta(_currentLang);
 
-      // 3. Dispatch global event for components and scripts
-      var ev = new CustomEvent('privatian:language-changed', {
-        detail: { lang: _currentLang, isBn: _currentLang === 'bn' }
-      });
-      document.dispatchEvent(ev);
-    }
-
-    // If switching to Bengali, ensure the Bengali font is loaded in GPU memory before painting
-    if (_currentLang === 'bn' && document.fonts && document.fonts.load) {
-      Promise.all([
-        document.fonts.load('16px "Hind Siliguri"'),
-        document.fonts.load('20px "Noto Serif Bengali"')
-      ]).then(performUpdate).catch(performUpdate);
-    } else {
-      performUpdate();
-    }
+    // 3. Dispatch global event for components and scripts
+    var ev = new CustomEvent('privatian:language-changed', {
+      detail: { lang: _currentLang, isBn: _currentLang === 'bn' }
+    });
+    document.dispatchEvent(ev);
   }
 
   function toggleLang() {
