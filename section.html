@@ -716,9 +716,10 @@
     if (isAll) {
       sectionName = isBn ? 'সকল প্রতিবেদন' : 'All Articles';
     } else if (cur) {
-      sectionName = isBn ? (cur.name_bn || cur.name) : cur.name;
+      sectionName = isBn ? (cur.name_bn || (window.PrivatianLang ? window.PrivatianLang.getSectionName(cur.name, 'bn') : cur.name)) : cur.name;
     } else {
-      sectionName = slug.charAt(0).toUpperCase() + slug.slice(1).replace(/-/g, ' ');
+      var rawName = slug.charAt(0).toUpperCase() + slug.slice(1).replace(/-/g, ' ');
+      sectionName = isBn ? (window.PrivatianLang ? window.PrivatianLang.getSectionName(slug, 'bn') : rawName) : rawName;
     }
 
     var siteSuffix = isBn ? 'দ্য প্রাইভেটিয়ান ফ্যামিলি' : 'The Privatian Family';
@@ -734,6 +735,15 @@
 
     ['sec-title', 'bc'].forEach(function(id){ var e = g(id); if (e) e.textContent = sectionName; });
     var hb = g('hero-badge'); if (hb) hb.textContent = sectionName;
+
+    var featTag = document.querySelector('.hero-featured-tag');
+    if (featTag) featTag.textContent = isBn ? '★ নির্বাচিত প্রতিবেদন' : '★ Featured Story';
+
+    var top5Tag = document.querySelector('.hero-sb-hd-tag');
+    if (top5Tag) top5Tag.textContent = isBn ? 'শীর্ষ ৫' : 'TOP 5';
+
+    var edPicks = document.querySelector('.sec-block-cnt');
+    if (edPicks && !edPicks.id) edPicks.textContent = isBn ? 'সম্পাদকের পছন্দ' : "Editor's Picks";
 
     var allLbl = g('all-grid-lbl');
     if (allLbl) allLbl.textContent = isBn ? (sectionName + ' বিভাগের সকল প্রতিবেদন') : ('All Articles in ' + sectionName);
@@ -768,7 +778,7 @@
       var hTitle = isBn ? (heroArt.title_bn || heroArt.title) : heroArt.title;
       var hDeck = isBn ? (heroArt.deck_bn !== undefined ? heroArt.deck_bn : heroArt.deck) : heroArt.deck;
       var hAuthor = isBn ? (heroArt.author_bn || heroArt.author || 'দ্য প্রাইভেটিয়ান ফ্যামিলি') : (heroArt.author || 'The Privatian Family');
-      var hSec = isBn ? (heroArt.section_bn || heroArt.section || sectionName) : (heroArt.section || sectionName);
+      var hSec = isBn ? (heroArt.section_bn || (window.PrivatianLang ? window.PrivatianLang.getSectionName(heroArt.section || sectionName, 'bn') : (heroArt.section || sectionName))) : (heroArt.section || sectionName);
 
       if (heroLink) { heroLink.href = artHref; heroLink.textContent = hTitle; }
       var heroImg = g('hero-img');
@@ -802,7 +812,7 @@
           var artHref = a.slug ? '/article/' + a.slug : '/article/' + a.id;
           var numPad = isBn ? (window.PrivatianLang ? window.PrivatianLang.toBengaliNumber(idx + 1) : String(idx + 1)) : String(idx + 1).padStart(2, '0');
           var aTitle = isBn ? (a.title_bn || a.title) : a.title;
-          var aSec = isBn ? (a.section_bn || a.section || sectionName) : (a.section || sectionName);
+          var aSec = isBn ? (a.section_bn || (window.PrivatianLang ? window.PrivatianLang.getSectionName(a.section || sectionName, 'bn') : (a.section || sectionName))) : (a.section || sectionName);
           return '<li class="hero-sb-item">' +
             '<a href="' + artHref + '">' +
               '<span class="hs-num">' + numPad + '</span>' +
@@ -841,7 +851,7 @@
           ? '<img src="' + a.hero_img_url + '" alt="' + escH(a.title) + '" loading="lazy" />'
           : '<div style="width:100%;height:100%;background:#e2e8f0;"></div>';
         var aTitle = isBn ? (a.title_bn || a.title) : a.title;
-        var aSec = isBn ? (a.section_bn || a.section || sectionName) : (a.section || sectionName);
+        var aSec = isBn ? (a.section_bn || (window.PrivatianLang ? window.PrivatianLang.getSectionName(a.section || sectionName, 'bn') : (a.section || sectionName))) : (a.section || sectionName);
         var aAuthor = isBn ? (a.author_bn || a.author) : a.author;
         return '<a href="' + artHref + '" class="sel-card">' +
           '<div class="sel-card-img-wrap">' + thumb + '</div>' +
@@ -886,7 +896,7 @@
             : '<div style="width:100%;height:100%;background:#e2e8f0;"></div>';
           var aTitle = isBn ? (a.title_bn || a.title) : a.title;
           var aDeck = isBn ? (a.deck_bn !== undefined ? a.deck_bn : a.deck) : a.deck;
-          var aSec = isBn ? (a.section_bn || a.section || sectionName) : (a.section || sectionName);
+          var aSec = isBn ? (a.section_bn || (window.PrivatianLang ? window.PrivatianLang.getSectionName(a.section || sectionName, 'bn') : (a.section || sectionName))) : (a.section || sectionName);
           var aAuthor = isBn ? (a.author_bn || a.author) : a.author;
           return '<article class="ac">' +
             '<a href="' + artHref + '" class="ac-img-wrap">' + thumb + '</a>' +

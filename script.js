@@ -406,6 +406,13 @@ var DEFAULT_HOMEPAGE_CONFIG_BN = {
 var _cachedHomepageConfigEN = null;
 var _cachedHomepageConfigBN = null;
 
+try {
+  var sBN = localStorage.getItem('privatian_hp_config_bn');
+  if (sBN) _cachedHomepageConfigBN = JSON.parse(sBN);
+  var sEN = localStorage.getItem('privatian_hp_config_en');
+  if (sEN) _cachedHomepageConfigEN = JSON.parse(sEN);
+} catch(e) {}
+
 function getActiveHomepageConfig() {
   var isBn = window.PrivatianLang && window.PrivatianLang.getLang() === 'bn';
   if (isBn) {
@@ -414,29 +421,32 @@ function getActiveHomepageConfig() {
   return _cachedHomepageConfigEN || DEFAULT_HOMEPAGE_CONFIG_EN;
 }
 
+function initHomepage() {
+  var cfg = getActiveHomepageConfig();
+  applyHomepageConfig(cfg);
+  if (window.PrivatianLang && window.PrivatianLang.getLang() === 'bn') {
+    window.PrivatianLang.translatePageDOM('bn');
+  }
+}
+
+// 1. Instant synchronous render right as script tag executes
+initHomepage();
+
+// 2. DOMContentLoaded event listener
 document.addEventListener('DOMContentLoaded', function () {
-
-  // 1. Instant synchronous initial render from hot memory
-  applyHomepageConfig(getActiveHomepageConfig());
-
-  // 2. Background database sync
+  initHomepage();
   fetchHomepageConfigFromAPI();
 
-  // 3. Listen for sections-loaded event for column slugs
+  // Listen for sections-loaded event for column slugs
   document.addEventListener('privatian:sections-loaded', function(e) {
     var sections = e && e.detail && e.detail.sections;
     if (sections) updateAllNewsLabels(sections);
   });
 
-  // 4. Instant synchronous language change handler (0ms latency)
+  // Instant synchronous language change handler (0ms latency)
   document.addEventListener('privatian:language-changed', function() {
-    var cfg = getActiveHomepageConfig();
-    applyHomepageConfig(cfg);
-    if (window.PrivatianLang && window.PrivatianLang.translatePageDOM) {
-      window.PrivatianLang.translatePageDOM();
-    }
+    initHomepage();
   });
-
 });
 
 /**
@@ -451,11 +461,17 @@ async function fetchHomepageConfigFromAPI() {
 
     if (resEN && resEN.ok) {
       const dataEN = await resEN.json();
-      if (dataEN && typeof dataEN === 'object') _cachedHomepageConfigEN = dataEN;
+      if (dataEN && typeof dataEN === 'object') {
+        _cachedHomepageConfigEN = dataEN;
+        try { localStorage.setItem('privatian_hp_config_en', JSON.stringify(dataEN)); } catch(e){}
+      }
     }
     if (resBN && resBN.ok) {
       const dataBN = await resBN.json();
-      if (dataBN && typeof dataBN === 'object') _cachedHomepageConfigBN = dataBN;
+      if (dataBN && typeof dataBN === 'object') {
+        _cachedHomepageConfigBN = dataBN;
+        try { localStorage.setItem('privatian_hp_config_bn', JSON.stringify(dataBN)); } catch(e){}
+      }
     }
   } catch(err) {}
 

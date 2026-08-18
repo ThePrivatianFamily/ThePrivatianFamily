@@ -395,8 +395,11 @@
           var isBn = window.PrivatianLang && window.PrivatianLang.getLang() === 'bn';
 
           // ── Section pill & breadcrumb ──
+          var crumbHome = document.querySelector('.breadcrumb-home');
+          if (crumbHome) crumbHome.textContent = isBn ? 'মূল পাতা' : 'Home';
+
           var secRaw = art.section || '';
-          var secDisplay = isBn ? (art.section_bn || (window.PrivatianLang && window.PrivatianLang.translateStatic ? window.PrivatianLang.translateStatic(secRaw, 'bn') : secRaw)) : secRaw;
+          var secDisplay = isBn ? (art.section_bn || (window.PrivatianLang && window.PrivatianLang.getSectionName ? window.PrivatianLang.getSectionName(secRaw, 'bn') : (window.PrivatianLang && window.PrivatianLang.translateStatic ? window.PrivatianLang.translateStatic(secRaw, 'bn') : secRaw))) : (window.PrivatianLang && window.PrivatianLang.getSectionName ? window.PrivatianLang.getSectionName(secRaw, 'en') : secRaw);
           var secSlug = slugify(secRaw);
           var secHref = secRaw ? '/section/' + secSlug : '/';
           var pill = g('article-section-pill');
@@ -565,7 +568,7 @@
                   : '<div style="width:100%;height:100%;background:#e8f1f9"></div>';
                 var rDate = window.PrivatianLang ? window.PrivatianLang.formatDisplayDate(r.published_at) : fmt(r.published_at);
                 var rTitle = isBn ? (r.title_bn || r.title) : r.title;
-                var rSecName = isBn ? (r.section_bn || (window.PrivatianLang && window.PrivatianLang.translateStatic ? window.PrivatianLang.translateStatic(r.section || '', 'bn') : (r.section || ''))) : (r.section || '');
+                var rSecName = isBn ? (r.section_bn || (window.PrivatianLang && window.PrivatianLang.getSectionName ? window.PrivatianLang.getSectionName(r.section || '', 'bn') : (r.section || ''))) : (r.section || '');
                 return '<article class="related-card">'
                   +'<a href="'+artUrl+'" class="related-card-img-link"><div class="related-card-img-wrap">'+thumb+'</div></a>'
                   +'<div class="related-card-body">'

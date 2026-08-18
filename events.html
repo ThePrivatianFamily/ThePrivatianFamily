@@ -302,11 +302,11 @@
         var countFormatted = isBn ? (window.PrivatianLang ? window.PrivatianLang.toBengaliNumber(activeEvents.length) : activeEvents.length) : activeEvents.length;
 
         if (countBadgeEl) {
-          countBadgeEl.innerHTML = isBn ? (countFormatted + ' টি নির্ধারিত অনুষ্ঠান প্রদর্শিত হচ্ছে') : ('Showing <strong id="events-count-display">' + countFormatted + '</strong> Scheduled Events');
+          countBadgeEl.innerHTML = isBn ? (countFormatted + ' টি নির্ধারিত ইভেন্ট প্রদর্শিত হচ্ছে') : ('Showing <strong id="events-count-display">' + countFormatted + '</strong> Scheduled Events');
         }
 
         if (activeEvents.length === 0) {
-          container.innerHTML = '<div class="events-empty-state"><p style="font-size:16px;font-weight:600;margin:0 0 6px;">' + (isBn ? 'বর্তমানে কোনো নির্ধারিত অনুষ্ঠান নেই।' : 'No upcoming events currently scheduled.') + '</p><p style="font-size:13px;margin:0;">' + (isBn ? 'আমাদের সাম্প্রতিক সেমিনার ও আলোচনার জন্য শীঘ্রই আবার দেখুন।' : 'Please check back soon for our latest forum discussions and intellectual gatherings.') + '</p></div>';
+          container.innerHTML = '<div class="events-empty-state"><p style="font-size:16px;font-weight:600;margin:0 0 6px;">' + (isBn ? 'বর্তমানে কোনো নির্ধারিত ইভেন্ট নেই।' : 'No upcoming events currently scheduled.') + '</p><p style="font-size:13px;margin:0;">' + (isBn ? 'আমাদের সাম্প্রতিক সেমিনার ও আলোচনার জন্য শীঘ্রই আবার দেখুন।' : 'Please check back soon for our latest forum discussions and intellectual gatherings.') + '</p></div>';
           return;
         }
 
@@ -315,7 +315,7 @@
           var title = pick(ev.title, ev.title_bn);
           var meta = pick(ev.meta, ev.meta_bn);
           var link = ev.href || 'index.html#events';
-          var btnText = isBn ? 'অনুষ্ঠানের বিবরণী &rarr;' : 'Event Details &rarr;';
+          var btnText = isBn ? 'ইভেন্টের বিবরণী &rarr;' : 'Event Details &rarr;';
 
           return '<article class="event-card">' +
             '<div class="event-date-box">' +

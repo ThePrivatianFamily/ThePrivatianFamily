@@ -115,31 +115,66 @@
 
   // ── 2. STATIC TEXT TRANSLATIONS (BIDIRECTIONAL) ──────────────
   var STATIC_TEXT_MAP_BN = {
+    // Navigation & Common Breadcrumbs
+    "Home": "মূল পাতা",
+    "HOME": "মূল পাতা",
+    "home": "মূল পাতা",
+
     // Section Names & All News Category Labels
     "FINDINGS": "অনুসন্ধিৎসু",
     "Findings": "অনুসন্ধিৎসু",
+    "findings": "অনুসন্ধিৎসু",
     "COMMUNITY & HERITAGE": "সমাজ ও ঐতিহ্য",
     "Community & Heritage": "সমাজ ও ঐতিহ্য",
+    "community & heritage": "সমাজ ও ঐতিহ্য",
+    "community-heritage": "সমাজ ও ঐতিহ্য",
     "CULTURE": "সংস্কৃতি",
     "Culture": "সংস্কৃতি",
+    "culture": "সংস্কৃতি",
     "PRIVACY & VALUES": "মূল্যবোধ",
     "Privacy & Values": "মূল্যবোধ",
+    "privacy & values": "মূল্যবোধ",
+    "privacy-values": "মূল্যবোধ",
     "NATION & WORLD": "দেশ ও বিশ্ব",
     "Nation & World": "দেশ ও বিশ্ব",
+    "nation & world": "দেশ ও বিশ্ব",
+    "nation-world": "দেশ ও বিশ্ব",
     "ARTS & LEGACY": "শিল্প ও উত্তরাধিকার",
     "Arts & Legacy": "শিল্প ও উত্তরাধিকার",
+    "arts & legacy": "শিল্প ও উত্তরাধিকার",
+    "arts-legacy": "শিল্প ও উত্তরাধিকার",
     "WORK & ECONOMY": "কর্ম ও অর্থনীতি",
     "Work & Economy": "কর্ম ও অর্থনীতি",
+    "work & economy": "কর্ম ও অর্থনীতি",
+    "work-economy": "কর্ম ও অর্থনীতি",
     "STUDENTS": "শিক্ষার্থীবৃন্দ",
     "Students": "শিক্ষার্থীবৃন্দ",
+    "students": "শিক্ষার্থীবৃন্দ",
     "SCIENCE": "বিজ্ঞান",
     "Science": "বিজ্ঞান",
+    "science": "বিজ্ঞান",
     "SOCIETY": "সমাজ",
     "Society": "সমাজ",
+    "society": "সমাজ",
     "ALL": "সব খবর",
     "All": "সব খবর",
+    "all": "সব খবর",
     "All News": "সকল খবর",
     "ALL NEWS": "সকল খবর",
+    "all news": "সকল খবর",
+    "all-news": "সকল খবর",
+
+    // Story Badges & Section Page UI
+    "Featured Story": "নির্বাচিত প্রতিবেদন",
+    "★ Featured Story": "★ নির্বাচিত প্রতিবেদন",
+    "FEATURED STORY": "নির্বাচিত প্রতিবেদন",
+    "featured story": "নির্বাচিত প্রতিবেদন",
+    "Top 5": "শীর্ষ ৫",
+    "TOP 5": "শীর্ষ ৫",
+    "top 5": "শীর্ষ ৫",
+    "Editor's Picks": "সম্পাদকের পছন্দ",
+    "EDITOR'S PICKS": "সম্পাদকের পছন্দ",
+    "editor's picks": "সম্পাদকের পছন্দ",
 
     // Sub-header tabs
     "FAMILY LEGACY": "পারিবারিক ঐতিহ্য",
@@ -290,14 +325,33 @@
 
     if (lang === 'bn') {
       if (STATIC_TEXT_MAP_BN[trimmed]) return STATIC_TEXT_MAP_BN[trimmed];
-      // Case-insensitive lookup for uppercase headings
       var upper = trimmed.toUpperCase();
       if (STATIC_TEXT_MAP_BN[upper]) return STATIC_TEXT_MAP_BN[upper];
+      var lower = trimmed.toLowerCase();
+      if (STATIC_TEXT_MAP_BN[lower]) return STATIC_TEXT_MAP_BN[lower];
+      var slug = lower.replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+      if (STATIC_TEXT_MAP_BN[slug]) return STATIC_TEXT_MAP_BN[slug];
       return text;
     } else {
       if (STATIC_TEXT_MAP_EN[trimmed]) return STATIC_TEXT_MAP_EN[trimmed];
+      var upperEn = trimmed.toUpperCase();
+      if (STATIC_TEXT_MAP_EN[upperEn]) return STATIC_TEXT_MAP_EN[upperEn];
       return text;
     }
+  }
+
+  function getSectionName(sec, lang) {
+    if (!sec || typeof sec !== 'string') return '';
+    var targetLang = lang || _currentLang;
+    var trimmed = sec.trim();
+    if (targetLang === 'bn') {
+      return translateStatic(trimmed, 'bn') || trimmed;
+    }
+    // Return standard English name if known
+    var enName = translateStatic(trimmed, 'en');
+    if (enName && enName !== trimmed) return enName;
+    if (STATIC_TEXT_MAP_BN[trimmed]) return trimmed;
+    return trimmed;
   }
 
   function t(key, defaultText) {
@@ -363,9 +417,21 @@
     '.small-article-title',
     '.section-heading-label',
     '.see-all-link',
+    '.see-all-events',
+    '.news-category-label',
+    '.breadcrumb-home',
+    '.breadcrumb-section',
+    '.hero-featured-tag',
+    '.hero-sb-hd span',
+    '.hero-sb-hd-tag',
+    '.sec-block-title span',
+    '.sec-block-cnt',
+    '.id-crumb a',
+    '.id-back',
     '.event-date',
     '.event-title',
     '.event-meta',
+    '.event-btn',
     '.all-news-heading',
     '.news-col-label',
     '.news-main-title',
@@ -381,6 +447,9 @@
     '.footer-brand p',
     '.footer-copyright',
     '.footer-bottom-links a',
+    '.article-section-pill',
+    '.article-section-link',
+    '.related-card-section',
     '[data-t]',
     '[data-translate]'
   ];
@@ -654,6 +723,7 @@
     toggleLang: toggleLang,
     t: t,
     translateStatic: translateStatic,
+    getSectionName: getSectionName,
     translatePageDOM: translatePageDOM,
     updatePageTitleAndMeta: updatePageTitleAndMeta,
     toBengaliNumber: toBengaliNumber,
