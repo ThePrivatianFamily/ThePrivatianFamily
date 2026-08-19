@@ -2367,6 +2367,135 @@
       </div>
     </section>
 
+    <!-- MODAL: Custom Font Uploader & Management Studio -->
+    <div id="modal-font-upload" class="font-modal-backdrop" hidden>
+      <div class="font-modal-dialog">
+        <!-- Modal Header -->
+        <div class="font-modal-header">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div class="font-modal-icon">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg>
+            </div>
+            <div>
+              <h3 class="font-modal-title">Custom Font Studio</h3>
+              <p class="font-modal-subtitle">Upload &amp; manage custom web fonts (.woff2, .woff, .ttf, .otf)</p>
+            </div>
+          </div>
+          <button type="button" class="btn-modal-close" onclick="closeFontUploadModal()" title="Close modal">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+
+        <!-- Modal Nav Tabs -->
+        <div class="font-modal-tabs">
+          <button type="button" class="font-modal-tab-btn active" id="tab-btn-font-upload" onclick="switchFontUploadModalTab('upload')">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            <span>Upload New Font</span>
+          </button>
+          <button type="button" class="font-modal-tab-btn" id="tab-btn-font-library" onclick="switchFontUploadModalTab('library')">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+            <span>Font Library</span>
+            <span class="custom-fonts-count-pill" id="custom-fonts-count-badge">0</span>
+          </button>
+        </div>
+
+        <!-- Modal Body: Tab 1 (Upload) -->
+        <div class="font-modal-body" id="font-modal-tab-upload">
+          <!-- Dropzone -->
+          <div class="font-upload-dropzone" id="font-upload-dropzone" onclick="document.getElementById('font-file-input').click()">
+            <input type="file" id="font-file-input" accept=".woff2,.woff,.ttf,.otf" style="display:none;" onchange="if(this.files && this.files[0]) handleFontFileSelected(this.files[0])">
+            
+            <div id="font-dropzone-empty" style="display:flex;flex-direction:column;align-items:center;gap:8px;">
+              <div class="font-dropzone-icon-circle">
+                <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+              </div>
+              <p style="font-size:14px;font-weight:700;color:var(--text-primary);margin:0;">Click to upload or drag &amp; drop font file</p>
+              <p style="font-size:12px;color:var(--text-muted);margin:0;">Supports WOFF2 (recommended), WOFF, TTF, OTF (Max 10MB)</p>
+            </div>
+
+            <div id="font-dropzone-loaded" style="display:none;flex-direction:column;align-items:center;gap:6px;">
+              <div style="width:36px;height:36px;border-radius:50%;background:#dcfce7;color:#15803d;display:flex;align-items:center;justify-content:center;">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              </div>
+              <div id="font-loaded-filename" style="font-size:13.5px;font-weight:700;color:#0f172a;">filename.woff2</div>
+              <div id="font-loaded-meta" style="font-size:11.5px;color:#64748b;">WOFF2 • 45 KB</div>
+              <button type="button" class="btn btn--xs btn--ghost" onclick="event.stopPropagation(); clearUploadedFontFile()" style="margin-top:6px;color:#dc2626;font-size:11px;">Remove File</button>
+            </div>
+          </div>
+
+          <!-- Live Font Specimen Preview Box (Dynamic) -->
+          <div id="font-upload-preview-container" style="display:none;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:14px;margin-top:14px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+              <span style="font-size:10px;font-weight:700;color:#0a528e;text-transform:uppercase;letter-spacing:0.04em;">Font Rendering Live Specimen</span>
+              <span id="font-preview-family-badge" style="font-size:11px;font-weight:600;color:#475569;background:#e2e8f0;padding:2px 8px;border-radius:4px;">Family: PreviewFont</span>
+            </div>
+            <p id="font-upload-specimen-text" style="font-size:20px;line-height:1.4;margin:0;color:#0f172a;">
+              The quick brown fox jumps over the lazy dog. ১ ২ ৩ ৪ ৫ ৬ ৭ ৮ ৯ ০
+            </p>
+          </div>
+
+          <!-- Metadata Fields Form -->
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px;">
+            <div class="form-group" style="margin:0;grid-column: span 2;">
+              <label style="display:block;font-size:11.5px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.04em;margin-bottom:4px;">Font Family Name *</label>
+              <input type="text" id="upload-font-name-input" class="form-input" placeholder="e.g., Kalpurush, Outfit Luxury, Futura..." oninput="updateFontUploadLivePreview()">
+            </div>
+
+            <div class="form-group" style="margin:0;">
+              <label style="display:block;font-size:11.5px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.04em;margin-bottom:4px;">Language Scope</label>
+              <select id="upload-font-lang-select" class="form-select">
+                <option value="all" selected>Universal (Both EN &amp; BN)</option>
+                <option value="en">English (EN Only)</option>
+                <option value="bn">Bengali (বাংলা Only)</option>
+              </select>
+            </div>
+
+            <div class="form-group" style="margin:0;">
+              <label style="display:block;font-size:11.5px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.04em;margin-bottom:4px;">Default Weight</label>
+              <select id="upload-font-weight-select" class="form-select" onchange="updateFontUploadLivePreview()">
+                <option value="300">300 - Light</option>
+                <option value="400" selected>400 - Regular</option>
+                <option value="500">500 - Medium</option>
+                <option value="600">600 - Semi-Bold</option>
+                <option value="700">700 - Bold</option>
+                <option value="800">800 - Extra Bold</option>
+              </select>
+            </div>
+
+            <div class="form-group" style="margin:0;display:none;">
+              <select id="upload-font-style-select">
+                <option value="normal" selected>Normal</option>
+                <option value="italic">Italic</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Modal Body: Tab 2 (Library) -->
+        <div class="font-modal-body" id="font-modal-tab-library" style="display:none;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;gap:10px;">
+            <div class="fonts-search-wrap" style="flex:1;">
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <input type="text" placeholder="Search installed custom fonts…" oninput="filterCustomFontsLibrary(this.value)">
+            </div>
+          </div>
+
+          <div id="custom-fonts-list-container" style="display:flex;flex-direction:column;gap:10px;max-height:360px;overflow-y:auto;padding-right:4px;">
+            <!-- Rendered dynamically by admin.js -->
+          </div>
+        </div>
+
+        <!-- Modal Footer -->
+        <div class="font-modal-footer">
+          <button type="button" class="btn btn--ghost btn--sm" onclick="closeFontUploadModal()">Cancel</button>
+          <button type="button" class="btn btn--primary btn--sm" id="btn-submit-font-upload" onclick="saveUploadedFont()">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            <span>Save &amp; Install Font</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- PAGE: SETTINGS (Admin Login Verification Email Studio) -->
     <section class="page" id="page-settings">
       <!-- Settings Header -->
