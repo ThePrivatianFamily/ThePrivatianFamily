@@ -12548,7 +12548,7 @@ window.resetEmailTemplateToDefault = resetEmailTemplateToDefault;
 /* ═══════════════════════════════════════════════════════════════
    FONTS & TYPOGRAPHY STUDIO
    Comprehensive font customizer for all 12 core website components
-   with synchronized live preview and sticky studio controls
+   with in-card live specimen strips, preset themes, and sticky live mockups
 ═══════════════════════════════════════════════════════════════ */
 
 const CURATED_FONTS_EN = [
@@ -12587,39 +12587,45 @@ const FONT_AREAS_META = [
   {
     key: 'header_topbar',
     category: 'header',
-    iconSvg: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>',
+    iconSvg: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>',
     title_en: 'Header Topbar & Subheader',
     title_bn: 'হেডার টপবার ও সাবহেডার',
     desc_en: 'Date display, edition pill, location, and weather ticker styling.',
     desc_bn: 'তারিখ, এডিশন ট্যাগ, অবস্থান ও আবহাওয়া প্রদর্শনের ফন্ট ও স্টাইল।',
+    sample_en: 'Wednesday, August 19, 2026 • Cambridge Edition • 72°F Sunny',
+    sample_bn: 'বুধবার, ১৯ আগস্ট ২০২৬ • ক্যামব্রিজ সংস্করণ • ২২° সে. রৌদ্রোজ্জ্বল',
     previewId: 'pv-header-topbar',
-    previewBlockId: 'pv-block-header_topbar',
+    previewBlockId: 'pv-view-header-container',
     hasTransform: false,
     hasStyle: false
   },
   {
     key: 'header_nav',
     category: 'header',
-    iconSvg: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/></svg>',
+    iconSvg: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/></svg>',
     title_en: 'Header Navigation Links',
     title_bn: 'হেডার নেভিগেশন লিংক',
-    desc_en: 'Typography for main header section links (Findings, Culture, Values, Heritage).',
+    desc_en: 'Typography for main header section links (Findings, Culture, Heritage, Values).',
     desc_bn: 'প্রধান হেডার সেকশন নেভিগেশন লিংক এবং ক্যাটাগরি বাটনের ফন্ট।',
+    sample_en: 'FINDINGS • COMMUNITY & HERITAGE • CULTURE • VALUES • NATION & WORLD',
+    sample_bn: 'অনুসন্ধিৎসু • সমাজ ও ঐতিহ্য • সংস্কৃতি • মূল্যবোধ • দেশ ও বিশ্ব',
     previewId: 'pv-header-nav',
-    previewBlockId: 'pv-block-header_nav',
+    previewBlockId: 'pv-view-header-container',
     hasTransform: true,
     hasStyle: false
   },
   {
     key: 'menu_drawer',
     category: 'header',
-    iconSvg: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>',
+    iconSvg: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>',
     title_en: 'Navigation Drawer & Menu',
     title_bn: 'নেভিগেশন ড্রয়ার ও মেনু ওভারলে',
     desc_en: 'Full-screen slide-out drawer menu links, series labels, and explore items.',
     desc_bn: 'ফুল-স্ক্রিন ড্রয়ার মেনুর লিংক, সিরিজ ও এক্সপ্লোর আইটেমের ফন্ট।',
+    sample_en: 'Explore The Privatian → Article Archives & News+ → Events & Gatherings →',
+    sample_bn: 'প্রাইভেটিয়ান ফ্যামিলি এক্সপ্লোর করুন → নিবন্ধ আর্কাইভ ও নিউজ+ → ইভেন্ট ও সম্মিলন →',
     previewId: 'pv-menu-drawer',
-    previewBlockId: 'pv-block-menu_drawer',
+    previewBlockId: 'pv-view-header-container',
     hasTransform: false,
     hasStyle: false
   },
@@ -12628,78 +12634,90 @@ const FONT_AREAS_META = [
   {
     key: 'article_title',
     category: 'article',
-    iconSvg: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>',
+    iconSvg: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>',
     title_en: 'Article Title / Headlines (H1)',
     title_bn: 'আর্টিকেল প্রধান শিরোনাম (H1)',
     desc_en: 'Main story titles, hero lead headlines, and featured article headlines.',
     desc_bn: 'মূল প্রতিবেদন ও প্রধান খবরের বড় শিরোনামের ফন্ট ও সাইজ।',
+    sample_en: 'The Architecture of Living Heritage and Moral Purpose',
+    sample_bn: 'জ্ঞান, ঐতিহ্য ও জীবনের মানবিক উৎকর্ষতার অবিচল সাধনা',
     previewId: 'pv-art-title',
-    previewBlockId: 'pv-block-article_title',
+    previewBlockId: 'pv-view-article-container',
     hasTransform: false,
     hasStyle: true
   },
   {
     key: 'article_subtitle',
     category: 'article',
-    iconSvg: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>',
+    iconSvg: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>',
     title_en: 'Article Standfirst / Deck',
     title_bn: 'আর্টিকেল ডেক / ভূমিকা (Standfirst)',
     desc_en: 'Article summary deck, lead introduction paragraph, and sub-headline.',
     desc_bn: 'প্রতিবেদনের সংক্ষিপ্ত ভূমিকা, ডেক ও সাবহেড লেখার ফন্ট।',
+    sample_en: 'An exclusive exploration of family heritage, intellectual tradition, and the enduring power of private knowledge.',
+    sample_bn: 'প্রজন্ম থেকে প্রজন্মান্তরে পারিবারিক প্রথা ও মূল্যবোধ যেভাবে আমাদের সামাজিক বন্ধন সুদৃঢ় রাখে।',
     previewId: 'pv-art-subtitle',
-    previewBlockId: 'pv-block-article_subtitle',
+    previewBlockId: 'pv-view-article-container',
     hasTransform: false,
     hasStyle: true
   },
   {
     key: 'article_meta',
     category: 'article',
-    iconSvg: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>',
+    iconSvg: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>',
     title_en: 'Article Meta & Author Byline',
     title_bn: 'লেখক ও তারিখ (Byline / Meta)',
     desc_en: 'Author name, publish date, reading time badge, and image captions.',
     desc_bn: 'লেখকের নাম, প্রকাশের তারিখ, পাঠের সময় ও ছবির ক্যাপশন ফন্ট।',
+    sample_en: 'By Dr. Eleanor Vance • October 24, 2026 • 7 Min Read',
+    sample_bn: 'ড. এলিনর ভ্যান্স দ্বারা • ২৪ অক্টোবর ২০২৬ • ৭ মিনিট পাঠ',
     previewId: 'pv-art-meta',
-    previewBlockId: 'pv-block-article_meta',
+    previewBlockId: 'pv-view-article-container',
     hasTransform: true,
     hasStyle: false
   },
   {
     key: 'article_headings',
     category: 'article',
-    iconSvg: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg>',
+    iconSvg: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg>',
     title_en: 'Article Subheadings (H2, H3, H4)',
     title_bn: 'আর্টিকেলের উপ-শিরোনাম (H2, H3)',
     desc_en: 'Section dividers and content subheadings inside long-form articles.',
     desc_bn: 'প্রতিবেদনের ভেতরের উপ-শিরোনাম ও সেকশন হেডিং ফন্ট।',
+    sample_en: 'I. The Roots of Intergenerational Wisdom & Civic Duty',
+    sample_bn: '১. আন্তঃপ্রজন্মীয় প্রজ্ঞার আদি উৎস ও সামাজিক দায়বদ্ধতা',
     previewId: 'pv-art-h2',
-    previewBlockId: 'pv-block-article_headings',
+    previewBlockId: 'pv-view-article-container',
     hasTransform: false,
     hasStyle: true
   },
   {
     key: 'article_body',
     category: 'article',
-    iconSvg: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><line x1="21" y1="10" x2="3" y2="10"/><line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="14" x2="3" y2="14"/><line x1="21" y1="18" x2="3" y2="18"/></svg>',
+    iconSvg: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><line x1="21" y1="10" x2="3" y2="10"/><line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="14" x2="3" y2="14"/><line x1="21" y1="18" x2="3" y2="18"/></svg>',
     title_en: 'Article Reading Body Text',
     title_bn: 'আর্টিকেল মূল টেক্সট (Reading Text)',
     desc_en: 'Main story paragraphs, editorial reading text, and drop-caps.',
     desc_bn: 'নিবন্ধ ও প্রতিবেদন পড়ার মূল বডি প্যারাগ্রাফের ফন্ট ও লাইন-হাইট।',
+    sample_en: 'Across generations, the enduring values of thoughtful scholarship and deliberate reflection have formed the foundation of the Privatian family ethos. In an era marked by rapid change, the preservation of intellectual dignity remains our primary beacon.',
+    sample_bn: 'শতাব্দীর পর শতাব্দী ধরে প্রাইভেটিয়ান পরিবারের মূল ভিত্তি হিসেবে কাজ করেছে গভীর জ্ঞানানুশীলন ও আত্মিক শুদ্ধি। পরিবর্তনশীল বিশ্বের ঘূর্ণাবর্তে মানবিক মূল্যবোধ রক্ষা করাই আমাদের আজন্ম অঙ্গীকার।',
     previewId: 'pv-art-body',
-    previewBlockId: 'pv-block-article_body',
+    previewBlockId: 'pv-view-article-container',
     hasTransform: false,
     hasStyle: true
   },
   {
     key: 'article_quote',
     category: 'article',
-    iconSvg: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>',
+    iconSvg: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>',
     title_en: 'Blockquotes & Citations',
     title_bn: 'উদ্ধৃতি ও ব্লককোট (Quotes)',
     desc_en: 'Pull-quotes, blockquotes, citations, and highlight statements.',
     desc_bn: 'উদ্ধৃতি, ব্লককোট, বক্তব্য ও সাইটেশন প্রদর্শনের ফন্ট ও স্টাইল।',
+    sample_en: '“Tradition is not the worship of ashes, but the preservation of fire.” — Privatian Family Archives',
+    sample_bn: '“ঐতিহ্য মানে ভস্মের পূজা নয়, বরং শাশ্বত প্রদীপের শিখা প্রজ্বলিত রাখা।” — প্রাইভেটিয়ান ফ্যামিলি আর্কাইভ',
     previewId: 'pv-art-quote',
-    previewBlockId: 'pv-block-article_quote',
+    previewBlockId: 'pv-view-article-container',
     hasTransform: false,
     hasStyle: true
   },
@@ -12708,26 +12726,30 @@ const FONT_AREAS_META = [
   {
     key: 'section_headers',
     category: 'cards',
-    iconSvg: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>',
+    iconSvg: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>',
     title_en: 'Section Titles & Category Badges',
     title_bn: 'সেকশন ও ক্যাটাগরি শিরোনাম',
     desc_en: 'Section studio page headers, banner ribbons, and category badges.',
     desc_bn: 'সেকশন পেজের প্রধান শিরোনাম ও ক্যাটাগরি ব্যাজের ফন্ট।',
+    sample_en: 'COMMUNITY & HERITAGE — EDITORIAL ESSAYS',
+    sample_bn: 'সমাজ ও ঐতিহ্য বিভাগ — বিশেষ নিবন্ধমালা',
     previewId: 'pv-sec-header',
-    previewBlockId: 'pv-block-section_headers',
+    previewBlockId: 'pv-view-cards-container',
     hasTransform: true,
     hasStyle: false
   },
   {
     key: 'card_titles',
     category: 'cards',
-    iconSvg: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>',
+    iconSvg: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>',
     title_en: 'Cards, Grids & Sidebar Stories',
     title_bn: 'কার্ড, গ্রিড ও সাইডবার শিরোনাম',
     desc_en: 'Story cards, 4-column showcase grid headlines, and event titles.',
     desc_bn: 'হোমপেজ কার্ড গ্রিড, সাইডবার ও ইভেন্ট শিরোনামের ফন্ট।',
-    previewId: 'pv-card-title',
-    previewBlockId: 'pv-block-card_titles',
+    sample_en: "For families in transition, 'not all traditions are equal'",
+    sample_bn: 'পরিবর্তনশীল পরিবারের জন্য সকল ঐতিহ্য সমান নয়',
+    previewId: 'pv-card-title-1',
+    previewBlockId: 'pv-view-cards-container',
     hasTransform: false,
     hasStyle: true
   },
@@ -12736,254 +12758,85 @@ const FONT_AREAS_META = [
   {
     key: 'footer_typography',
     category: 'footer',
-    iconSvg: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="15" width="20" height="6" rx="1"/><line x1="2" y1="10" x2="22" y2="10"/><line x1="2" y1="5" x2="13" y2="5"/></svg>',
+    iconSvg: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="15" width="20" height="6" rx="1"/><line x1="2" y1="10" x2="22" y2="10"/><line x1="2" y1="5" x2="13" y2="5"/></svg>',
     title_en: 'Footer & Copyright Typography',
     title_bn: 'ফুটার ও কপিরাইট ফন্ট',
     desc_en: 'Footer navigation columns, publication tagline, copyright, and legal links.',
     desc_bn: 'ফুটার নেভিগেশন কলাম, পাবলিকেশন ট্যাগলাইন ও কপিরাইটের ফন্ট।',
+    sample_en: 'The Official Publication of The Privatian Society — Cambridge, MA • © 2026 All rights reserved.',
+    sample_bn: 'দ্য অফিশিয়াল পাবলিকেশন অব দ্য প্রাইভেটিয়ান সোসাইটি — ক্যামব্রিজ, ম্যাসাচুসেটস • © ২০২৬ সর্বস্বত্ব সংরক্ষিত।',
     previewId: 'pv-footer-typo',
-    previewBlockId: 'pv-block-footer_typography',
+    previewBlockId: 'pv-view-footer-container',
     hasTransform: false,
     hasStyle: false
   }
 ];
 
 const DEFAULT_TYPOGRAPHY_EN = {
-  header_topbar: {
-    fontFamily: 'Source Sans 3',
-    fontSize: 12,
-    fontWeight: '400',
-    lineHeight: 1.4,
-    letterSpacing: '0.02em',
-    textTransform: 'none',
-    fontStyle: 'normal'
-  },
-  header_nav: {
-    fontFamily: 'Source Sans 3',
-    fontSize: 13,
-    fontWeight: '600',
-    lineHeight: 1.2,
-    letterSpacing: '0.06em',
-    textTransform: 'uppercase',
-    fontStyle: 'normal'
-  },
-  menu_drawer: {
-    fontFamily: 'Source Sans 3',
-    fontSize: 15,
-    fontWeight: '600',
-    lineHeight: 1.4,
-    letterSpacing: '0em',
-    textTransform: 'none',
-    fontStyle: 'normal'
-  },
-  article_title: {
-    fontFamily: 'Libre Baskerville',
-    fontSize: 38,
-    fontWeight: '700',
-    lineHeight: 1.25,
-    letterSpacing: '-0.02em',
-    textTransform: 'none',
-    fontStyle: 'normal'
-  },
-  article_subtitle: {
-    fontFamily: 'Libre Baskerville',
-    fontSize: 18,
-    fontWeight: '400',
-    lineHeight: 1.5,
-    letterSpacing: '0em',
-    textTransform: 'none',
-    fontStyle: 'italic'
-  },
-  article_meta: {
-    fontFamily: 'Source Sans 3',
-    fontSize: 12.5,
-    fontWeight: '600',
-    lineHeight: 1.4,
-    letterSpacing: '0.04em',
-    textTransform: 'uppercase',
-    fontStyle: 'normal'
-  },
-  article_headings: {
-    fontFamily: 'Libre Baskerville',
-    fontSize: 24,
-    fontWeight: '700',
-    lineHeight: 1.35,
-    letterSpacing: '-0.01em',
-    textTransform: 'none',
-    fontStyle: 'normal'
-  },
-  article_body: {
-    fontFamily: 'Source Sans 3',
-    fontSize: 17,
-    fontWeight: '400',
-    lineHeight: 1.75,
-    letterSpacing: '0em',
-    textTransform: 'none',
-    fontStyle: 'normal'
-  },
-  article_quote: {
-    fontFamily: 'Libre Baskerville',
-    fontSize: 20,
-    fontWeight: '400',
-    lineHeight: 1.55,
-    letterSpacing: '0em',
-    textTransform: 'none',
-    fontStyle: 'italic'
-  },
-  section_headers: {
-    fontFamily: 'Source Sans 3',
-    fontSize: 26,
-    fontWeight: '700',
-    lineHeight: 1.3,
-    letterSpacing: '0.02em',
-    textTransform: 'uppercase',
-    fontStyle: 'normal'
-  },
-  card_titles: {
-    fontFamily: 'Libre Baskerville',
-    fontSize: 17,
-    fontWeight: '700',
-    lineHeight: 1.35,
-    letterSpacing: '0em',
-    textTransform: 'none',
-    fontStyle: 'normal'
-  },
-  footer_typography: {
-    fontFamily: 'Source Sans 3',
-    fontSize: 13,
-    fontWeight: '400',
-    lineHeight: 1.6,
-    letterSpacing: '0em',
-    textTransform: 'none',
-    fontStyle: 'normal'
-  }
+  header_topbar: { fontFamily: 'Source Sans 3', fontSize: 12, fontWeight: '400', lineHeight: 1.4, letterSpacing: '0.02em', textTransform: 'none', fontStyle: 'normal' },
+  header_nav: { fontFamily: 'Source Sans 3', fontSize: 13, fontWeight: '600', lineHeight: 1.2, letterSpacing: '0.06em', textTransform: 'uppercase', fontStyle: 'normal' },
+  menu_drawer: { fontFamily: 'Source Sans 3', fontSize: 15, fontWeight: '600', lineHeight: 1.4, letterSpacing: '0em', textTransform: 'none', fontStyle: 'normal' },
+  article_title: { fontFamily: 'Libre Baskerville', fontSize: 38, fontWeight: '700', lineHeight: 1.25, letterSpacing: '-0.02em', textTransform: 'none', fontStyle: 'normal' },
+  article_subtitle: { fontFamily: 'Libre Baskerville', fontSize: 18, fontWeight: '400', lineHeight: 1.5, letterSpacing: '0em', textTransform: 'none', fontStyle: 'italic' },
+  article_meta: { fontFamily: 'Source Sans 3', fontSize: 12.5, fontWeight: '600', lineHeight: 1.4, letterSpacing: '0.04em', textTransform: 'uppercase', fontStyle: 'normal' },
+  article_headings: { fontFamily: 'Libre Baskerville', fontSize: 24, fontWeight: '700', lineHeight: 1.35, letterSpacing: '-0.01em', textTransform: 'none', fontStyle: 'normal' },
+  article_body: { fontFamily: 'Source Sans 3', fontSize: 17, fontWeight: '400', lineHeight: 1.75, letterSpacing: '0em', textTransform: 'none', fontStyle: 'normal' },
+  article_quote: { fontFamily: 'Libre Baskerville', fontSize: 20, fontWeight: '400', lineHeight: 1.55, letterSpacing: '0em', textTransform: 'none', fontStyle: 'italic' },
+  section_headers: { fontFamily: 'Source Sans 3', fontSize: 26, fontWeight: '700', lineHeight: 1.3, letterSpacing: '0.02em', textTransform: 'uppercase', fontStyle: 'normal' },
+  card_titles: { fontFamily: 'Libre Baskerville', fontSize: 17, fontWeight: '700', lineHeight: 1.35, letterSpacing: '0em', textTransform: 'none', fontStyle: 'normal' },
+  footer_typography: { fontFamily: 'Source Sans 3', fontSize: 13, fontWeight: '400', lineHeight: 1.6, letterSpacing: '0em', textTransform: 'none', fontStyle: 'normal' }
 };
 
 const DEFAULT_TYPOGRAPHY_BN = {
-  header_topbar: {
-    fontFamily: 'Hind Siliguri',
-    fontSize: 12.5,
-    fontWeight: '400',
-    lineHeight: 1.4,
-    letterSpacing: '0em',
-    textTransform: 'none',
-    fontStyle: 'normal'
-  },
-  header_nav: {
-    fontFamily: 'Hind Siliguri',
-    fontSize: 14,
-    fontWeight: '600',
-    lineHeight: 1.2,
-    letterSpacing: '0em',
-    textTransform: 'none',
-    fontStyle: 'normal'
-  },
-  menu_drawer: {
-    fontFamily: 'Hind Siliguri',
-    fontSize: 15.5,
-    fontWeight: '600',
-    lineHeight: 1.4,
-    letterSpacing: '0em',
-    textTransform: 'none',
-    fontStyle: 'normal'
-  },
-  article_title: {
-    fontFamily: 'Noto Serif Bengali',
-    fontSize: 36,
-    fontWeight: '700',
-    lineHeight: 1.3,
-    letterSpacing: '0em',
-    textTransform: 'none',
-    fontStyle: 'normal'
-  },
-  article_subtitle: {
-    fontFamily: 'Noto Serif Bengali',
-    fontSize: 17.5,
-    fontWeight: '400',
-    lineHeight: 1.55,
-    letterSpacing: '0em',
-    textTransform: 'none',
-    fontStyle: 'normal'
-  },
-  article_meta: {
-    fontFamily: 'Hind Siliguri',
-    fontSize: 13,
-    fontWeight: '600',
-    lineHeight: 1.4,
-    letterSpacing: '0em',
-    textTransform: 'none',
-    fontStyle: 'normal'
-  },
-  article_headings: {
-    fontFamily: 'Noto Serif Bengali',
-    fontSize: 23,
-    fontWeight: '700',
-    lineHeight: 1.4,
-    letterSpacing: '0em',
-    textTransform: 'none',
-    fontStyle: 'normal'
-  },
-  article_body: {
-    fontFamily: 'Noto Serif Bengali',
-    fontSize: 17.5,
-    fontWeight: '400',
-    lineHeight: 1.8,
-    letterSpacing: '0em',
-    textTransform: 'none',
-    fontStyle: 'normal'
-  },
-  article_quote: {
-    fontFamily: 'Noto Serif Bengali',
-    fontSize: 19.5,
-    fontWeight: '600',
-    lineHeight: 1.6,
-    letterSpacing: '0em',
-    textTransform: 'none',
-    fontStyle: 'normal'
-  },
-  section_headers: {
-    fontFamily: 'Hind Siliguri',
-    fontSize: 25,
-    fontWeight: '700',
-    lineHeight: 1.3,
-    letterSpacing: '0em',
-    textTransform: 'none',
-    fontStyle: 'normal'
-  },
-  card_titles: {
-    fontFamily: 'Noto Serif Bengali',
-    fontSize: 16.5,
-    fontWeight: '700',
-    lineHeight: 1.4,
-    letterSpacing: '0em',
-    textTransform: 'none',
-    fontStyle: 'normal'
-  },
-  footer_typography: {
-    fontFamily: 'Hind Siliguri',
-    fontSize: 13.5,
-    fontWeight: '400',
-    lineHeight: 1.6,
-    letterSpacing: '0em',
-    textTransform: 'none',
-    fontStyle: 'normal'
-  }
+  header_topbar: { fontFamily: 'Hind Siliguri', fontSize: 12.5, fontWeight: '400', lineHeight: 1.4, letterSpacing: '0em', textTransform: 'none', fontStyle: 'normal' },
+  header_nav: { fontFamily: 'Hind Siliguri', fontSize: 14, fontWeight: '600', lineHeight: 1.2, letterSpacing: '0em', textTransform: 'none', fontStyle: 'normal' },
+  menu_drawer: { fontFamily: 'Hind Siliguri', fontSize: 15.5, fontWeight: '600', lineHeight: 1.4, letterSpacing: '0em', textTransform: 'none', fontStyle: 'normal' },
+  article_title: { fontFamily: 'Noto Serif Bengali', fontSize: 36, fontWeight: '700', lineHeight: 1.3, letterSpacing: '0em', textTransform: 'none', fontStyle: 'normal' },
+  article_subtitle: { fontFamily: 'Noto Serif Bengali', fontSize: 17.5, fontWeight: '400', lineHeight: 1.55, letterSpacing: '0em', textTransform: 'none', fontStyle: 'normal' },
+  article_meta: { fontFamily: 'Hind Siliguri', fontSize: 13, fontWeight: '600', lineHeight: 1.4, letterSpacing: '0em', textTransform: 'none', fontStyle: 'normal' },
+  article_headings: { fontFamily: 'Noto Serif Bengali', fontSize: 23, fontWeight: '700', lineHeight: 1.4, letterSpacing: '0em', textTransform: 'none', fontStyle: 'normal' },
+  article_body: { fontFamily: 'Noto Serif Bengali', fontSize: 17.5, fontWeight: '400', lineHeight: 1.8, letterSpacing: '0em', textTransform: 'none', fontStyle: 'normal' },
+  article_quote: { fontFamily: 'Noto Serif Bengali', fontSize: 19.5, fontWeight: '600', lineHeight: 1.6, letterSpacing: '0em', textTransform: 'none', fontStyle: 'normal' },
+  section_headers: { fontFamily: 'Hind Siliguri', fontSize: 25, fontWeight: '700', lineHeight: 1.3, letterSpacing: '0em', textTransform: 'none', fontStyle: 'normal' },
+  card_titles: { fontFamily: 'Noto Serif Bengali', fontSize: 16.5, fontWeight: '700', lineHeight: 1.4, letterSpacing: '0em', textTransform: 'none', fontStyle: 'normal' },
+  footer_typography: { fontFamily: 'Hind Siliguri', fontSize: 13.5, fontWeight: '400', lineHeight: 1.6, letterSpacing: '0em', textTransform: 'none', fontStyle: 'normal' }
 };
 
 var _currentTypographyLang = 'en';
 var _currentTypographyCategory = 'all';
 var _typographySearchQuery = '';
-var _fontPreviewMode = 'all';
+var _fontPreviewMode = 'article';
 var _typographyDrafts = {
   en: JSON.parse(JSON.stringify(DEFAULT_TYPOGRAPHY_EN)),
   bn: JSON.parse(JSON.stringify(DEFAULT_TYPOGRAPHY_BN))
 };
 var _isTypographyLoaded = false;
+var _loadedGoogleFonts = {};
+
+// Helper: Dynamically load Google Font styles on demand
+function loadGoogleFontSpecimen(fontFamily) {
+  if (!fontFamily || typeof fontFamily !== 'string') return;
+  const clean = fontFamily.split(',')[0].replace(/['"]/g, '').trim();
+  const systemFonts = ['georgia', 'helvetica neue', 'arial', 'sans-serif', 'serif', 'solaimanlipi', 'kalpurush', 'nirmala ui'];
+  if (systemFonts.includes(clean.toLowerCase()) || _loadedGoogleFonts[clean]) return;
+
+  _loadedGoogleFonts[clean] = true;
+  const linkId = `gfont-specimen-${clean.toLowerCase().replace(/[^a-z0-9]/g, '-')}`;
+  if (document.getElementById(linkId)) return;
+
+  const link = document.createElement('link');
+  link.id = linkId;
+  link.rel = 'stylesheet';
+  const query = encodeURIComponent(clean) + ':ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400;1,700';
+  link.href = `https://fonts.googleapis.com/css2?family=${query}&display=swap`;
+  document.head.appendChild(link);
+}
 
 async function initFontsPage() {
   await loadTypographySettings();
   renderTypographyEditor();
   updateTypographyLivePreview();
+  switchFontPreviewMode(_fontPreviewMode);
 }
 
 async function loadTypographySettings() {
@@ -13039,9 +12892,6 @@ function filterTypographyCategory(cat) {
   document.querySelectorAll('.font-cat-pill').forEach(btn => {
     const isAct = btn.getAttribute('data-cat') === _currentTypographyCategory;
     btn.classList.toggle('active', isAct);
-    btn.style.background = isAct ? '#0a528e' : '#f8fafc';
-    btn.style.color = isAct ? '#fff' : 'var(--text-secondary)';
-    btn.style.border = isAct ? 'none' : '1px solid #e2e8f0';
   });
   renderTypographyEditor();
 }
@@ -13052,42 +12902,70 @@ function filterTypographySearch(q) {
 }
 
 function switchFontPreviewMode(mode) {
-  _fontPreviewMode = mode || 'all';
-  const modes = ['all', 'article', 'header', 'cards', 'footer'];
+  _fontPreviewMode = mode || 'article';
+  const modes = ['article', 'header', 'cards', 'footer', 'all'];
   modes.forEach(m => {
     const b = document.getElementById(`btn-pvmode-${m}`);
     if (b) b.classList.toggle('active', m === _fontPreviewMode);
   });
 
-  FONT_AREAS_META.forEach(meta => {
-    const el = document.getElementById(meta.previewBlockId);
-    if (!el) return;
-    if (_fontPreviewMode === 'all') {
-      el.style.display = 'block';
-    } else if (_fontPreviewMode === meta.category) {
-      el.style.display = 'block';
-    } else {
-      el.style.display = 'none';
-    }
-  });
+  const artContainer = document.getElementById('pv-view-article-container');
+  const hdrContainer = document.getElementById('pv-view-header-container');
+  const crdContainer = document.getElementById('pv-view-cards-container');
+  const ftrContainer = document.getElementById('pv-view-footer-container');
+  const allContainer = document.getElementById('pv-view-all-container');
+
+  if (_fontPreviewMode === 'article') {
+    if (artContainer) artContainer.style.display = 'block';
+    if (hdrContainer) hdrContainer.style.display = 'none';
+    if (crdContainer) crdContainer.style.display = 'none';
+    if (ftrContainer) ftrContainer.style.display = 'none';
+    if (allContainer) allContainer.style.display = 'none';
+  } else if (_fontPreviewMode === 'header') {
+    if (artContainer) artContainer.style.display = 'none';
+    if (hdrContainer) hdrContainer.style.display = 'block';
+    if (crdContainer) crdContainer.style.display = 'none';
+    if (ftrContainer) ftrContainer.style.display = 'none';
+    if (allContainer) allContainer.style.display = 'none';
+  } else if (_fontPreviewMode === 'cards') {
+    if (artContainer) artContainer.style.display = 'none';
+    if (hdrContainer) hdrContainer.style.display = 'none';
+    if (crdContainer) crdContainer.style.display = 'block';
+    if (ftrContainer) ftrContainer.style.display = 'none';
+    if (allContainer) allContainer.style.display = 'none';
+  } else if (_fontPreviewMode === 'footer') {
+    if (artContainer) artContainer.style.display = 'none';
+    if (hdrContainer) hdrContainer.style.display = 'none';
+    if (crdContainer) crdContainer.style.display = 'none';
+    if (ftrContainer) ftrContainer.style.display = 'block';
+    if (allContainer) allContainer.style.display = 'none';
+  } else {
+    // All 12 Components Stack
+    if (artContainer) artContainer.style.display = 'block';
+    if (hdrContainer) hdrContainer.style.display = 'block';
+    if (crdContainer) crdContainer.style.display = 'block';
+    if (ftrContainer) ftrContainer.style.display = 'block';
+    if (allContainer) allContainer.style.display = 'none';
+  }
 }
 
-function focusTypographyPreview(previewBlockId) {
-  const el = document.getElementById(previewBlockId);
-  if (!el) return;
-  
-  // If hidden due to mode filter, switch to 'all' mode
-  if (el.style.display === 'none') {
-    switchFontPreviewMode('all');
+function focusTypographyPreview(previewBlockId, targetCategory) {
+  if (targetCategory && _fontPreviewMode !== targetCategory && _fontPreviewMode !== 'all') {
+    switchFontPreviewMode(targetCategory);
   }
 
+  const el = document.getElementById(previewBlockId);
+  if (!el) return;
+
   el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-  el.style.transition = 'box-shadow 0.3s ease, border-color 0.3s ease';
-  el.style.boxShadow = '0 0 0 3px rgba(10, 82, 142, 0.35)';
+  el.style.transition = 'box-shadow 0.3s ease, border-color 0.3s ease, transform 0.3s ease';
+  el.style.boxShadow = '0 0 0 3px rgba(10, 82, 142, 0.4)';
   el.style.borderColor = '#0a528e';
+  el.style.transform = 'scale(1.01)';
   setTimeout(() => {
     el.style.boxShadow = '';
     el.style.borderColor = '';
+    el.style.transform = '';
   }, 1400);
 }
 
@@ -13123,11 +13001,11 @@ function renderTypographyEditor() {
 
   if (filteredMeta.length === 0) {
     container.innerHTML = `
-      <div class="card" style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:32px;text-align:center;">
-        <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.6" style="margin:0 auto 10px;color:#94a3b8;"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-        <p style="font-size:13.5px;color:var(--text-secondary);margin:0;font-weight:600;">No font sections matched your search.</p>
-        <p style="font-size:12px;color:var(--text-muted);margin:4px 0 12px;">Try a different keyword or switch to another category.</p>
-        <button type="button" class="btn btn--sm btn--ghost" onclick="filterTypographyCategory('all'); document.getElementById('font-section-search').value=''; _typographySearchQuery='';" style="font-size:12px;border:1px solid #cbd5e1;">View All Sections</button>
+      <div class="card" style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:36px 20px;text-align:center;">
+        <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="1.5" style="margin:0 auto 12px;color:#94a3b8;"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <p style="font-size:14px;color:var(--text-secondary);margin:0;font-weight:700;">No font components matched your search.</p>
+        <p style="font-size:12px;color:var(--text-muted);margin:4px 0 14px;">Try a different keyword or reset your filter.</p>
+        <button type="button" class="btn btn--sm btn--ghost" onclick="filterTypographyCategory('all'); document.getElementById('font-section-search').value=''; _typographySearchQuery='';" style="font-size:12px;border:1px solid #cbd5e1;">View All 12 Sections</button>
       </div>
     `;
     return;
@@ -13140,60 +13018,78 @@ function renderTypographyEditor() {
     const cur = cfg[key] || (isBn ? (DEFAULT_TYPOGRAPHY_BN[key] || {}) : (DEFAULT_TYPOGRAPHY_EN[key] || {}));
     const title = isBn ? area.title_bn : area.title_en;
     const desc = isBn ? area.desc_bn : area.desc_en;
+    const sampleText = isBn ? area.sample_bn : area.sample_en;
 
+    loadGoogleFontSpecimen(cur.fontFamily);
     const matchedFont = fontList.some(f => f.name.toLowerCase() === (cur.fontFamily || '').toLowerCase());
 
     html += `
-      <div class="card font-area-card" id="card-${key}" style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:16px 18px;box-shadow:0 1px 3px rgba(0,0,0,0.03);transition:border-color 0.2s;">
+      <div class="font-area-card" id="card-${key}">
         
         <!-- Card Header -->
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;border-bottom:1px solid #f1f5f9;padding-bottom:10px;flex-wrap:wrap;gap:8px;">
-          <div style="display:flex;align-items:center;gap:10px;">
-            <div style="width:32px;height:32px;border-radius:8px;background:#f0f7ff;color:#0a528e;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+        <div class="font-area-card-header">
+          <div class="font-area-title-group">
+            <div class="font-area-icon-box">
               ${area.iconSvg}
             </div>
             <div>
-              <h3 style="font-size:14px;font-weight:700;color:var(--text-primary);margin:0;display:flex;align-items:center;gap:6px;">
-                <span>${title}</span>
-              </h3>
-              <p style="font-size:11.5px;color:var(--text-muted);margin:2px 0 0;">${desc}</p>
+              <h3 class="font-area-title">${title}</h3>
+              <p class="font-area-desc">${desc}</p>
             </div>
           </div>
 
           <div style="display:flex;align-items:center;gap:8px;">
-            <button type="button" class="btn btn--sm btn--ghost" onclick="focusTypographyPreview('${area.previewBlockId}')" style="font-size:11px;padding:3px 8px;border:1px solid #cbd5e1;border-radius:4px;display:inline-flex;align-items:center;gap:4px;color:#0a528e;" title="Scroll sticky preview to this section">
+            <button type="button" class="btn btn--sm btn--ghost" onclick="focusTypographyPreview('${area.previewId}', '${area.category}')" style="font-size:11px;padding:4px 9px;border:1px solid #cbd5e1;border-radius:6px;display:inline-flex;align-items:center;gap:4px;color:#0a528e;font-weight:600;" title="View in live preview studio">
               <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/></svg>
               <span>View</span>
             </button>
-            <code style="font-size:10.5px;font-weight:600;padding:2px 6px;border-radius:4px;background:#f1f5f9;color:#475569;">${key}</code>
+            <code style="font-size:10.5px;font-weight:600;padding:3px 7px;border-radius:4px;background:#f1f5f9;color:#475569;">${key}</code>
           </div>
         </div>
 
-        <!-- Row 1: Font Family, Size Slider, Weight -->
-        <div style="display:grid;grid-template-columns:1.5fr 1fr 1fr;gap:12px;margin-bottom:12px;">
+        <!-- In-Card Live Specimen Strip -->
+        <div class="font-specimen-banner" id="specimen-box-${key}">
+          <div class="font-specimen-meta">
+            <span style="display:flex;align-items:center;gap:4px;">
+              <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#0a528e;"></span>
+              <span>Live Specimen Sample</span>
+            </span>
+            <span id="specimen-meta-${key}" style="color:#0a528e;font-weight:700;">${cur.fontFamily || 'Default'} • ${cur.fontSize || 14}px • ${cur.fontWeight || '400'}</span>
+          </div>
+          <p class="font-specimen-text" id="specimen-text-${key}" style="font-family:'${cur.fontFamily || 'inherit'}', sans-serif; font-size:${Math.min(Math.max(cur.fontSize || 15, 13), 26)}px; font-weight:${cur.fontWeight || '400'}; line-height:${cur.lineHeight || 1.4}; letter-spacing:${cur.letterSpacing || '0em'}; font-style:${cur.fontStyle || 'normal'}; text-transform:${cur.textTransform || 'none'};">
+            ${sampleText}
+          </p>
+        </div>
+
+        <!-- Controls Grid -->
+        <div class="font-controls-grid">
           
           <!-- Font Family Selection -->
-          <div class="form-group" style="margin:0;">
-            <label style="display:block;font-size:11px;font-weight:700;color:var(--text-secondary);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.02em;">Font Family</label>
-            <select class="form-select" style="width:100%;font-size:12px;padding:6px 8px;border:1px solid #cbd5e1;border-radius:6px;" onchange="onTypographyFieldChange('${key}', 'fontFamily', this.value)">
+          <div class="form-group" style="margin:0;grid-column: span 2;">
+            <div class="font-field-label">
+              <span>Font Family</span>
+            </div>
+            <select class="font-select-custom" onchange="onTypographyFieldChange('${key}', 'fontFamily', this.value)">
               ${fontList.map(f => `<option value="${f.name}" ${cur.fontFamily === f.name ? 'selected' : ''}>${f.label}</option>`).join('')}
               ${!matchedFont && cur.fontFamily ? `<option value="${cur.fontFamily}" selected>Custom: ${cur.fontFamily}</option>` : ''}
             </select>
           </div>
 
-          <!-- Font Size (px) Slider & Input -->
+          <!-- Font Size (px) Slider & Direct Input -->
           <div class="form-group" style="margin:0;">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
-              <label style="font-size:11px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.02em;">Size (px)</label>
-              <span id="val-${key}-size" style="font-size:11px;font-weight:700;color:#0a528e;background:#e0f2fe;padding:1px 5px;border-radius:4px;">${cur.fontSize || 14}px</span>
+            <div class="font-field-label">
+              <span>Size</span>
+              <span id="val-${key}-size" class="font-badge-val">${cur.fontSize || 14}px</span>
             </div>
-            <input type="range" min="10" max="68" step="0.5" value="${cur.fontSize || 14}" style="width:100%;cursor:pointer;" oninput="onTypographyRangeChange('${key}', 'fontSize', this.value, 'px')">
+            <input type="range" class="font-range-input" min="10" max="64" step="0.5" value="${cur.fontSize || 14}" oninput="onTypographyRangeChange('${key}', 'fontSize', this.value, 'px')">
           </div>
 
           <!-- Font Weight -->
           <div class="form-group" style="margin:0;">
-            <label style="display:block;font-size:11px;font-weight:700;color:var(--text-secondary);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.02em;">Weight</label>
-            <select class="form-select" style="width:100%;font-size:12px;padding:6px 8px;border:1px solid #cbd5e1;border-radius:6px;" onchange="onTypographyFieldChange('${key}', 'fontWeight', this.value)">
+            <div class="font-field-label">
+              <span>Weight</span>
+            </div>
+            <select class="font-select-custom" onchange="onTypographyFieldChange('${key}', 'fontWeight', this.value)">
               <option value="300" ${cur.fontWeight === '300' ? 'selected' : ''}>300 - Light</option>
               <option value="400" ${cur.fontWeight === '400' ? 'selected' : ''}>400 - Regular</option>
               <option value="500" ${cur.fontWeight === '500' ? 'selected' : ''}>500 - Medium</option>
@@ -13202,24 +13098,22 @@ function renderTypographyEditor() {
               <option value="800" ${cur.fontWeight === '800' ? 'selected' : ''}>800 - Extra Bold</option>
             </select>
           </div>
-        </div>
 
-        <!-- Row 2: Line Height, Letter Spacing, Style, Transform -->
-        <div style="display:grid;grid-template-columns:${area.hasStyle || area.hasTransform ? '1.2fr 1fr 1fr' : '1.2fr 1fr'};gap:12px;">
-          
           <!-- Line Height Slider -->
           <div class="form-group" style="margin:0;">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
-              <label style="font-size:11px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.02em;">Line Height</label>
-              <span id="val-${key}-lh" style="font-size:11px;font-weight:700;color:#0a528e;background:#e0f2fe;padding:1px 5px;border-radius:4px;">${cur.lineHeight || 1.4}</span>
+            <div class="font-field-label">
+              <span>Line Height</span>
+              <span id="val-${key}-lh" class="font-badge-val">${cur.lineHeight || 1.4}</span>
             </div>
-            <input type="range" min="1.0" max="2.4" step="0.05" value="${cur.lineHeight || 1.4}" style="width:100%;cursor:pointer;" oninput="onTypographyRangeChange('${key}', 'lineHeight', this.value, '')">
+            <input type="range" class="font-range-input" min="1.0" max="2.4" step="0.05" value="${cur.lineHeight || 1.4}" oninput="onTypographyRangeChange('${key}', 'lineHeight', this.value, '')">
           </div>
 
           <!-- Letter Spacing -->
           <div class="form-group" style="margin:0;">
-            <label style="display:block;font-size:11px;font-weight:700;color:var(--text-secondary);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.02em;">Letter Spacing</label>
-            <select class="form-select" style="width:100%;font-size:12px;padding:6px 8px;border:1px solid #cbd5e1;border-radius:6px;" onchange="onTypographyFieldChange('${key}', 'letterSpacing', this.value)">
+            <div class="font-field-label">
+              <span>Letter Spacing</span>
+            </div>
+            <select class="font-select-custom" onchange="onTypographyFieldChange('${key}', 'letterSpacing', this.value)">
               <option value="-0.04em" ${cur.letterSpacing === '-0.04em' ? 'selected' : ''}>Tight (-0.04em)</option>
               <option value="-0.02em" ${cur.letterSpacing === '-0.02em' ? 'selected' : ''}>Compact (-0.02em)</option>
               <option value="0em" ${cur.letterSpacing === '0em' || cur.letterSpacing === '0' ? 'selected' : ''}>Normal (0em)</option>
@@ -13231,10 +13125,12 @@ function renderTypographyEditor() {
           </div>
 
           ${area.hasStyle ? `
-          <!-- Font Style (Normal / Italic) -->
+          <!-- Font Style -->
           <div class="form-group" style="margin:0;">
-            <label style="display:block;font-size:11px;font-weight:700;color:var(--text-secondary);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.02em;">Style</label>
-            <select class="form-select" style="width:100%;font-size:12px;padding:6px 8px;border:1px solid #cbd5e1;border-radius:6px;" onchange="onTypographyFieldChange('${key}', 'fontStyle', this.value)">
+            <div class="font-field-label">
+              <span>Style</span>
+            </div>
+            <select class="font-select-custom" onchange="onTypographyFieldChange('${key}', 'fontStyle', this.value)">
               <option value="normal" ${cur.fontStyle === 'normal' ? 'selected' : ''}>Normal</option>
               <option value="italic" ${cur.fontStyle === 'italic' ? 'selected' : ''}>Italic</option>
             </select>
@@ -13243,8 +13139,10 @@ function renderTypographyEditor() {
           ${area.hasTransform ? `
           <!-- Text Transform -->
           <div class="form-group" style="margin:0;">
-            <label style="display:block;font-size:11px;font-weight:700;color:var(--text-secondary);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.02em;">Transform</label>
-            <select class="form-select" style="width:100%;font-size:12px;padding:6px 8px;border:1px solid #cbd5e1;border-radius:6px;" onchange="onTypographyFieldChange('${key}', 'textTransform', this.value)">
+            <div class="font-field-label">
+              <span>Transform</span>
+            </div>
+            <select class="font-select-custom" onchange="onTypographyFieldChange('${key}', 'textTransform', this.value)">
               <option value="none" ${cur.textTransform === 'none' ? 'selected' : ''}>None</option>
               <option value="uppercase" ${cur.textTransform === 'uppercase' ? 'selected' : ''}>UPPERCASE</option>
               <option value="capitalize" ${cur.textTransform === 'capitalize' ? 'selected' : ''}>Capitalize</option>
@@ -13262,6 +13160,14 @@ function onTypographyFieldChange(key, prop, value) {
   if (!_typographyDrafts[_currentTypographyLang]) _typographyDrafts[_currentTypographyLang] = {};
   if (!_typographyDrafts[_currentTypographyLang][key]) _typographyDrafts[_currentTypographyLang][key] = {};
   _typographyDrafts[_currentTypographyLang][key][prop] = value;
+
+  if (prop === 'fontFamily') {
+    loadGoogleFontSpecimen(value);
+  }
+
+  // Update In-Card Live Specimen Text immediately
+  updateInCardSpecimen(key);
+  // Update Live Preview Studio
   updateTypographyLivePreview();
 }
 
@@ -13273,6 +13179,30 @@ function onTypographyRangeChange(key, prop, value, unit) {
   if (label) label.textContent = `${parsed}${unit || ''}`;
 }
 
+function updateInCardSpecimen(key) {
+  const isBn = _currentTypographyLang === 'bn';
+  const cfg = _typographyDrafts[_currentTypographyLang] || (isBn ? DEFAULT_TYPOGRAPHY_BN : DEFAULT_TYPOGRAPHY_EN);
+  const cur = cfg[key];
+  if (!cur) return;
+
+  const specText = document.getElementById(`specimen-text-${key}`);
+  const specMeta = document.getElementById(`specimen-meta-${key}`);
+
+  if (specText) {
+    specText.style.fontFamily = `"${cur.fontFamily || 'inherit'}", sans-serif`;
+    specText.style.fontSize = `${Math.min(Math.max(cur.fontSize || 15, 13), 26)}px`;
+    specText.style.fontWeight = cur.fontWeight || '400';
+    specText.style.lineHeight = cur.lineHeight || 1.4;
+    specText.style.letterSpacing = cur.letterSpacing || '0em';
+    specText.style.fontStyle = cur.fontStyle || 'normal';
+    specText.style.textTransform = cur.textTransform || 'none';
+  }
+
+  if (specMeta) {
+    specMeta.textContent = `${cur.fontFamily || 'Default'} • ${cur.fontSize || 14}px • ${cur.fontWeight || '400'}`;
+  }
+}
+
 function updateTypographyLivePreview() {
   const isBn = _currentTypographyLang === 'bn';
   const cfg = _typographyDrafts[_currentTypographyLang] || (isBn ? DEFAULT_TYPOGRAPHY_BN : DEFAULT_TYPOGRAPHY_EN);
@@ -13281,6 +13211,7 @@ function updateTypographyLivePreview() {
   const pvHdrTop = document.getElementById('pv-header-topbar');
   if (pvHdrTop && cfg.header_topbar) {
     const c = cfg.header_topbar;
+    loadGoogleFontSpecimen(c.fontFamily);
     pvHdrTop.style.fontFamily = `"${c.fontFamily}", sans-serif`;
     pvHdrTop.style.fontSize = `${c.fontSize}px`;
     pvHdrTop.style.fontWeight = c.fontWeight || '400';
@@ -13295,6 +13226,7 @@ function updateTypographyLivePreview() {
   const pvHdrNav = document.getElementById('pv-header-nav');
   if (pvHdrNav && cfg.header_nav) {
     const c = cfg.header_nav;
+    loadGoogleFontSpecimen(c.fontFamily);
     pvHdrNav.style.fontFamily = `"${c.fontFamily}", sans-serif`;
     pvHdrNav.style.fontSize = `${c.fontSize}px`;
     pvHdrNav.style.fontWeight = c.fontWeight || '600';
@@ -13310,6 +13242,7 @@ function updateTypographyLivePreview() {
   const pvMenu = document.getElementById('pv-menu-drawer');
   if (pvMenu && cfg.menu_drawer) {
     const c = cfg.menu_drawer;
+    loadGoogleFontSpecimen(c.fontFamily);
     pvMenu.style.fontFamily = `"${c.fontFamily}", sans-serif`;
     pvMenu.style.fontSize = `${c.fontSize}px`;
     pvMenu.style.fontWeight = c.fontWeight || '600';
@@ -13324,6 +13257,7 @@ function updateTypographyLivePreview() {
   const pvTitle = document.getElementById('pv-art-title');
   if (pvTitle && cfg.article_title) {
     const c = cfg.article_title;
+    loadGoogleFontSpecimen(c.fontFamily);
     pvTitle.style.fontFamily = `"${c.fontFamily}", serif`;
     pvTitle.style.fontSize = `${c.fontSize}px`;
     pvTitle.style.fontWeight = c.fontWeight || '700';
@@ -13339,6 +13273,7 @@ function updateTypographyLivePreview() {
   const pvSubtitle = document.getElementById('pv-art-subtitle');
   if (pvSubtitle && cfg.article_subtitle) {
     const c = cfg.article_subtitle;
+    loadGoogleFontSpecimen(c.fontFamily);
     pvSubtitle.style.fontFamily = `"${c.fontFamily}", serif`;
     pvSubtitle.style.fontSize = `${c.fontSize}px`;
     pvSubtitle.style.fontWeight = c.fontWeight || '400';
@@ -13354,6 +13289,7 @@ function updateTypographyLivePreview() {
   const pvMeta = document.getElementById('pv-art-meta');
   if (pvMeta && cfg.article_meta) {
     const c = cfg.article_meta;
+    loadGoogleFontSpecimen(c.fontFamily);
     pvMeta.style.fontFamily = `"${c.fontFamily}", sans-serif`;
     pvMeta.style.fontSize = `${c.fontSize}px`;
     pvMeta.style.fontWeight = c.fontWeight || '600';
@@ -13369,6 +13305,7 @@ function updateTypographyLivePreview() {
   const pvH2 = document.getElementById('pv-art-h2');
   if (pvH2 && cfg.article_headings) {
     const c = cfg.article_headings;
+    loadGoogleFontSpecimen(c.fontFamily);
     pvH2.style.fontFamily = `"${c.fontFamily}", serif`;
     pvH2.style.fontSize = `${c.fontSize}px`;
     pvH2.style.fontWeight = c.fontWeight || '700';
@@ -13384,6 +13321,7 @@ function updateTypographyLivePreview() {
   const pvBody = document.getElementById('pv-art-body');
   if (pvBody && cfg.article_body) {
     const c = cfg.article_body;
+    loadGoogleFontSpecimen(c.fontFamily);
     pvBody.style.fontFamily = `"${c.fontFamily}", sans-serif`;
     pvBody.style.fontSize = `${c.fontSize}px`;
     pvBody.style.fontWeight = c.fontWeight || '400';
@@ -13399,6 +13337,7 @@ function updateTypographyLivePreview() {
   const pvQuote = document.getElementById('pv-art-quote');
   if (pvQuote && cfg.article_quote) {
     const c = cfg.article_quote;
+    loadGoogleFontSpecimen(c.fontFamily);
     pvQuote.style.fontFamily = `"${c.fontFamily}", serif`;
     pvQuote.style.fontSize = `${c.fontSize}px`;
     pvQuote.style.fontWeight = c.fontWeight || '400';
@@ -13414,6 +13353,7 @@ function updateTypographyLivePreview() {
   const pvSecHdr = document.getElementById('pv-sec-header');
   if (pvSecHdr && cfg.section_headers) {
     const c = cfg.section_headers;
+    loadGoogleFontSpecimen(c.fontFamily);
     pvSecHdr.style.fontFamily = `"${c.fontFamily}", sans-serif`;
     pvSecHdr.style.fontSize = `${c.fontSize}px`;
     pvSecHdr.style.fontWeight = c.fontWeight || '700';
@@ -13424,24 +13364,30 @@ function updateTypographyLivePreview() {
   }
 
   // 11. Card Titles Preview
-  const pvCard = document.getElementById('pv-card-title');
-  if (pvCard && cfg.card_titles) {
+  const pvCard1 = document.getElementById('pv-card-title-1');
+  const pvCard2 = document.getElementById('pv-card-title-2');
+  if (cfg.card_titles) {
     const c = cfg.card_titles;
-    pvCard.style.fontFamily = `"${c.fontFamily}", serif`;
-    pvCard.style.fontSize = `${c.fontSize}px`;
-    pvCard.style.fontWeight = c.fontWeight || '700';
-    pvCard.style.fontStyle = c.fontStyle || 'normal';
-    pvCard.style.lineHeight = c.lineHeight || 1.35;
-    pvCard.style.letterSpacing = c.letterSpacing || '0em';
-    pvCard.textContent = isBn
-      ? 'পরিবর্তনশীল পরিবারের জন্য সকল ঐতিহ্য সমান নয়'
-      : "For families in transition, 'not all traditions are equal'";
+    loadGoogleFontSpecimen(c.fontFamily);
+    [pvCard1, pvCard2].forEach(el => {
+      if (el) {
+        el.style.fontFamily = `"${c.fontFamily}", serif`;
+        el.style.fontSize = `${c.fontSize}px`;
+        el.style.fontWeight = c.fontWeight || '700';
+        el.style.fontStyle = c.fontStyle || 'normal';
+        el.style.lineHeight = c.lineHeight || 1.35;
+        el.style.letterSpacing = c.letterSpacing || '0em';
+      }
+    });
+    if (pvCard1) pvCard1.textContent = isBn ? 'পরিবর্তনশীল পরিবারের জন্য সকল ঐতিহ্য সমান নয়' : "For families in transition, 'not all traditions are equal'";
+    if (pvCard2) pvCard2.textContent = isBn ? 'ঐতিহাসিক গ্রন্থ ও সাহিত্য সংরক্ষণের চিরন্তন ভূমিকা' : "The enduring impact of classical scholarly literature";
   }
 
   // 12. Footer Preview
   const pvFooter = document.getElementById('pv-footer-typo');
   if (pvFooter && cfg.footer_typography) {
     const c = cfg.footer_typography;
+    loadGoogleFontSpecimen(c.fontFamily);
     pvFooter.style.fontFamily = `"${c.fontFamily}", sans-serif`;
     pvFooter.style.fontSize = `${c.fontSize}px`;
     pvFooter.style.fontWeight = c.fontWeight || '400';
@@ -13451,6 +13397,116 @@ function updateTypographyLivePreview() {
       ? '<div style="color:#ffffff;">দ্য অফিশিয়াল পাবলিকেশন অব দ্য প্রাইভেটিয়ান সোসাইটি — ক্যামব্রিজ, ম্যাসাচুসেটস</div><div style="color:#94a3b8;">© ২০২৬ দ্য প্রাইভেটিয়ান ফ্যামিলি। সর্বস্বত্ব সংরক্ষিত। • গোপনীয়তা নীতি • ডিজিটাল অ্যাক্সেসিবিলিটি</div>'
       : '<div style="color:#ffffff;">The Official Publication of The Privatian Society — Cambridge, MA</div><div style="color:#94a3b8;">© 2026 The Privatian Family. All rights reserved. • Privacy Policy • Digital Accessibility</div>';
   }
+}
+
+// Preset Themes Applicator
+function applyTypographyPreset(presetKey) {
+  if (!presetKey) return;
+  const isBn = _currentTypographyLang === 'bn';
+
+  if (presetKey === 'editorial') {
+    _typographyDrafts[_currentTypographyLang] = JSON.parse(JSON.stringify(isBn ? DEFAULT_TYPOGRAPHY_BN : DEFAULT_TYPOGRAPHY_EN));
+  } else if (presetKey === 'modern_sans') {
+    if (isBn) {
+      _typographyDrafts.bn = {
+        header_topbar: { fontFamily: 'Hind Siliguri', fontSize: 12, fontWeight: '400', lineHeight: 1.4, letterSpacing: '0em', textTransform: 'none', fontStyle: 'normal' },
+        header_nav: { fontFamily: 'Hind Siliguri', fontSize: 13.5, fontWeight: '700', lineHeight: 1.2, letterSpacing: '0em', textTransform: 'none', fontStyle: 'normal' },
+        menu_drawer: { fontFamily: 'Hind Siliguri', fontSize: 15, fontWeight: '600', lineHeight: 1.4, letterSpacing: '0em', textTransform: 'none', fontStyle: 'normal' },
+        article_title: { fontFamily: 'Anek Bangla', fontSize: 36, fontWeight: '800', lineHeight: 1.25, letterSpacing: '0em', textTransform: 'none', fontStyle: 'normal' },
+        article_subtitle: { fontFamily: 'Hind Siliguri', fontSize: 17, fontWeight: '400', lineHeight: 1.5, letterSpacing: '0em', textTransform: 'none', fontStyle: 'normal' },
+        article_meta: { fontFamily: 'Hind Siliguri', fontSize: 12.5, fontWeight: '600', lineHeight: 1.4, letterSpacing: '0em', textTransform: 'none', fontStyle: 'normal' },
+        article_headings: { fontFamily: 'Anek Bangla', fontSize: 23, fontWeight: '700', lineHeight: 1.35, letterSpacing: '0em', textTransform: 'none', fontStyle: 'normal' },
+        article_body: { fontFamily: 'Hind Siliguri', fontSize: 17, fontWeight: '400', lineHeight: 1.75, letterSpacing: '0em', textTransform: 'none', fontStyle: 'normal' },
+        article_quote: { fontFamily: 'Anek Bangla', fontSize: 19, fontWeight: '600', lineHeight: 1.55, letterSpacing: '0em', textTransform: 'none', fontStyle: 'normal' },
+        section_headers: { fontFamily: 'Anek Bangla', fontSize: 24, fontWeight: '800', lineHeight: 1.3, letterSpacing: '0em', textTransform: 'none', fontStyle: 'normal' },
+        card_titles: { fontFamily: 'Anek Bangla', fontSize: 16.5, fontWeight: '700', lineHeight: 1.35, letterSpacing: '0em', textTransform: 'none', fontStyle: 'normal' },
+        footer_typography: { fontFamily: 'Hind Siliguri', fontSize: 13, fontWeight: '400', lineHeight: 1.6, letterSpacing: '0em', textTransform: 'none', fontStyle: 'normal' }
+      };
+    } else {
+      _typographyDrafts.en = {
+        header_topbar: { fontFamily: 'Inter', fontSize: 12, fontWeight: '400', lineHeight: 1.4, letterSpacing: '0.02em', textTransform: 'none', fontStyle: 'normal' },
+        header_nav: { fontFamily: 'Inter', fontSize: 13, fontWeight: '600', lineHeight: 1.2, letterSpacing: '0.04em', textTransform: 'uppercase', fontStyle: 'normal' },
+        menu_drawer: { fontFamily: 'Inter', fontSize: 15, fontWeight: '600', lineHeight: 1.4, letterSpacing: '0em', textTransform: 'none', fontStyle: 'normal' },
+        article_title: { fontFamily: 'Montserrat', fontSize: 36, fontWeight: '800', lineHeight: 1.2, letterSpacing: '-0.02em', textTransform: 'none', fontStyle: 'normal' },
+        article_subtitle: { fontFamily: 'Inter', fontSize: 17.5, fontWeight: '400', lineHeight: 1.5, letterSpacing: '0em', textTransform: 'none', fontStyle: 'normal' },
+        article_meta: { fontFamily: 'Inter', fontSize: 12.5, fontWeight: '600', lineHeight: 1.4, letterSpacing: '0.04em', textTransform: 'uppercase', fontStyle: 'normal' },
+        article_headings: { fontFamily: 'Montserrat', fontSize: 22, fontWeight: '700', lineHeight: 1.3, letterSpacing: '-0.01em', textTransform: 'none', fontStyle: 'normal' },
+        article_body: { fontFamily: 'Inter', fontSize: 16.5, fontWeight: '400', lineHeight: 1.7, letterSpacing: '0em', textTransform: 'none', fontStyle: 'normal' },
+        article_quote: { fontFamily: 'Montserrat', fontSize: 19, fontWeight: '600', lineHeight: 1.5, letterSpacing: '0em', textTransform: 'none', fontStyle: 'italic' },
+        section_headers: { fontFamily: 'Montserrat', fontSize: 24, fontWeight: '800', lineHeight: 1.3, letterSpacing: '0.03em', textTransform: 'uppercase', fontStyle: 'normal' },
+        card_titles: { fontFamily: 'Montserrat', fontSize: 16.5, fontWeight: '700', lineHeight: 1.35, letterSpacing: '0em', textTransform: 'none', fontStyle: 'normal' },
+        footer_typography: { fontFamily: 'Inter', fontSize: 13, fontWeight: '400', lineHeight: 1.6, letterSpacing: '0em', textTransform: 'none', fontStyle: 'normal' }
+      };
+    }
+  } else if (presetKey === 'classic_serif') {
+    if (isBn) {
+      _typographyDrafts.bn = {
+        header_topbar: { fontFamily: 'Tiro Bangla', fontSize: 13, fontWeight: '400', lineHeight: 1.4, letterSpacing: '0em', textTransform: 'none', fontStyle: 'normal' },
+        header_nav: { fontFamily: 'Tiro Bangla', fontSize: 14.5, fontWeight: '700', lineHeight: 1.2, letterSpacing: '0em', textTransform: 'none', fontStyle: 'normal' },
+        menu_drawer: { fontFamily: 'Tiro Bangla', fontSize: 16, fontWeight: '600', lineHeight: 1.4, letterSpacing: '0em', textTransform: 'none', fontStyle: 'normal' },
+        article_title: { fontFamily: 'Tiro Bangla', fontSize: 38, fontWeight: '700', lineHeight: 1.3, letterSpacing: '0em', textTransform: 'none', fontStyle: 'normal' },
+        article_subtitle: { fontFamily: 'Tiro Bangla', fontSize: 18, fontWeight: '400', lineHeight: 1.55, letterSpacing: '0em', textTransform: 'none', fontStyle: 'normal' },
+        article_meta: { fontFamily: 'Tiro Bangla', fontSize: 13, fontWeight: '600', lineHeight: 1.4, letterSpacing: '0em', textTransform: 'none', fontStyle: 'normal' },
+        article_headings: { fontFamily: 'Tiro Bangla', fontSize: 24, fontWeight: '700', lineHeight: 1.4, letterSpacing: '0em', textTransform: 'none', fontStyle: 'normal' },
+        article_body: { fontFamily: 'Tiro Bangla', fontSize: 18, fontWeight: '400', lineHeight: 1.8, letterSpacing: '0em', textTransform: 'none', fontStyle: 'normal' },
+        article_quote: { fontFamily: 'Tiro Bangla', fontSize: 20, fontWeight: '600', lineHeight: 1.6, letterSpacing: '0em', textTransform: 'none', fontStyle: 'normal' },
+        section_headers: { fontFamily: 'Tiro Bangla', fontSize: 26, fontWeight: '700', lineHeight: 1.3, letterSpacing: '0em', textTransform: 'none', fontStyle: 'normal' },
+        card_titles: { fontFamily: 'Tiro Bangla', fontSize: 17.5, fontWeight: '700', lineHeight: 1.4, letterSpacing: '0em', textTransform: 'none', fontStyle: 'normal' },
+        footer_typography: { fontFamily: 'Tiro Bangla', fontSize: 14, fontWeight: '400', lineHeight: 1.6, letterSpacing: '0em', textTransform: 'none', fontStyle: 'normal' }
+      };
+    } else {
+      _typographyDrafts.en = {
+        header_topbar: { fontFamily: 'EB Garamond', fontSize: 13, fontWeight: '400', lineHeight: 1.4, letterSpacing: '0.02em', textTransform: 'none', fontStyle: 'normal' },
+        header_nav: { fontFamily: 'EB Garamond', fontSize: 14, fontWeight: '600', lineHeight: 1.2, letterSpacing: '0.06em', textTransform: 'uppercase', fontStyle: 'normal' },
+        menu_drawer: { fontFamily: 'EB Garamond', fontSize: 16, fontWeight: '600', lineHeight: 1.4, letterSpacing: '0em', textTransform: 'none', fontStyle: 'normal' },
+        article_title: { fontFamily: 'EB Garamond', fontSize: 40, fontWeight: '700', lineHeight: 1.2, letterSpacing: '-0.01em', textTransform: 'none', fontStyle: 'normal' },
+        article_subtitle: { fontFamily: 'EB Garamond', fontSize: 19, fontWeight: '400', lineHeight: 1.5, letterSpacing: '0em', textTransform: 'none', fontStyle: 'italic' },
+        article_meta: { fontFamily: 'EB Garamond', fontSize: 13.5, fontWeight: '600', lineHeight: 1.4, letterSpacing: '0.04em', textTransform: 'uppercase', fontStyle: 'normal' },
+        article_headings: { fontFamily: 'EB Garamond', fontSize: 26, fontWeight: '700', lineHeight: 1.35, letterSpacing: '0em', textTransform: 'none', fontStyle: 'normal' },
+        article_body: { fontFamily: 'EB Garamond', fontSize: 18.5, fontWeight: '400', lineHeight: 1.75, letterSpacing: '0em', textTransform: 'none', fontStyle: 'normal' },
+        article_quote: { fontFamily: 'EB Garamond', fontSize: 22, fontWeight: '400', lineHeight: 1.5, letterSpacing: '0em', textTransform: 'none', fontStyle: 'italic' },
+        section_headers: { fontFamily: 'EB Garamond', fontSize: 28, fontWeight: '700', lineHeight: 1.3, letterSpacing: '0.04em', textTransform: 'uppercase', fontStyle: 'normal' },
+        card_titles: { fontFamily: 'EB Garamond', fontSize: 18, fontWeight: '700', lineHeight: 1.35, letterSpacing: '0em', textTransform: 'none', fontStyle: 'normal' },
+        footer_typography: { fontFamily: 'EB Garamond', fontSize: 14, fontWeight: '400', lineHeight: 1.6, letterSpacing: '0em', textTransform: 'none', fontStyle: 'normal' }
+      };
+    }
+  } else if (presetKey === 'luxury') {
+    if (isBn) {
+      _typographyDrafts.bn = {
+        header_topbar: { fontFamily: 'Hind Siliguri', fontSize: 12.5, fontWeight: '400', lineHeight: 1.4, letterSpacing: '0em', textTransform: 'none', fontStyle: 'normal' },
+        header_nav: { fontFamily: 'Galada', fontSize: 15, fontWeight: '400', lineHeight: 1.2, letterSpacing: '0em', textTransform: 'none', fontStyle: 'normal' },
+        menu_drawer: { fontFamily: 'Hind Siliguri', fontSize: 15.5, fontWeight: '600', lineHeight: 1.4, letterSpacing: '0em', textTransform: 'none', fontStyle: 'normal' },
+        article_title: { fontFamily: 'Galada', fontSize: 38, fontWeight: '400', lineHeight: 1.3, letterSpacing: '0em', textTransform: 'none', fontStyle: 'normal' },
+        article_subtitle: { fontFamily: 'Noto Serif Bengali', fontSize: 17.5, fontWeight: '400', lineHeight: 1.55, letterSpacing: '0em', textTransform: 'none', fontStyle: 'normal' },
+        article_meta: { fontFamily: 'Hind Siliguri', fontSize: 13, fontWeight: '600', lineHeight: 1.4, letterSpacing: '0em', textTransform: 'none', fontStyle: 'normal' },
+        article_headings: { fontFamily: 'Galada', fontSize: 24, fontWeight: '400', lineHeight: 1.4, letterSpacing: '0em', textTransform: 'none', fontStyle: 'normal' },
+        article_body: { fontFamily: 'Noto Serif Bengali', fontSize: 17.5, fontWeight: '400', lineHeight: 1.8, letterSpacing: '0em', textTransform: 'none', fontStyle: 'normal' },
+        article_quote: { fontFamily: 'Galada', fontSize: 20, fontWeight: '400', lineHeight: 1.6, letterSpacing: '0em', textTransform: 'none', fontStyle: 'normal' },
+        section_headers: { fontFamily: 'Galada', fontSize: 26, fontWeight: '400', lineHeight: 1.3, letterSpacing: '0em', textTransform: 'none', fontStyle: 'normal' },
+        card_titles: { fontFamily: 'Galada', fontSize: 17, fontWeight: '400', lineHeight: 1.4, letterSpacing: '0em', textTransform: 'none', fontStyle: 'normal' },
+        footer_typography: { fontFamily: 'Hind Siliguri', fontSize: 13.5, fontWeight: '400', lineHeight: 1.6, letterSpacing: '0em', textTransform: 'none', fontStyle: 'normal' }
+      };
+    } else {
+      _typographyDrafts.en = {
+        header_topbar: { fontFamily: 'Montserrat', fontSize: 11.5, fontWeight: '400', lineHeight: 1.4, letterSpacing: '0.04em', textTransform: 'uppercase', fontStyle: 'normal' },
+        header_nav: { fontFamily: 'Cinzel', fontSize: 13, fontWeight: '600', lineHeight: 1.2, letterSpacing: '0.08em', textTransform: 'uppercase', fontStyle: 'normal' },
+        menu_drawer: { fontFamily: 'Montserrat', fontSize: 14.5, fontWeight: '600', lineHeight: 1.4, letterSpacing: '0.02em', textTransform: 'none', fontStyle: 'normal' },
+        article_title: { fontFamily: 'Playfair Display', fontSize: 42, fontWeight: '700', lineHeight: 1.2, letterSpacing: '-0.02em', textTransform: 'none', fontStyle: 'normal' },
+        article_subtitle: { fontFamily: 'Playfair Display', fontSize: 18.5, fontWeight: '400', lineHeight: 1.5, letterSpacing: '0em', textTransform: 'none', fontStyle: 'italic' },
+        article_meta: { fontFamily: 'Montserrat', fontSize: 12, fontWeight: '600', lineHeight: 1.4, letterSpacing: '0.06em', textTransform: 'uppercase', fontStyle: 'normal' },
+        article_headings: { fontFamily: 'Playfair Display', fontSize: 25, fontWeight: '700', lineHeight: 1.35, letterSpacing: '0em', textTransform: 'none', fontStyle: 'normal' },
+        article_body: { fontFamily: 'Source Sans 3', fontSize: 17, fontWeight: '400', lineHeight: 1.75, letterSpacing: '0em', textTransform: 'none', fontStyle: 'normal' },
+        article_quote: { fontFamily: 'Playfair Display', fontSize: 21, fontWeight: '400', lineHeight: 1.55, letterSpacing: '0em', textTransform: 'none', fontStyle: 'italic' },
+        section_headers: { fontFamily: 'Cinzel', fontSize: 26, fontWeight: '700', lineHeight: 1.3, letterSpacing: '0.06em', textTransform: 'uppercase', fontStyle: 'normal' },
+        card_titles: { fontFamily: 'Playfair Display', fontSize: 17.5, fontWeight: '700', lineHeight: 1.35, letterSpacing: '0em', textTransform: 'none', fontStyle: 'normal' },
+        footer_typography: { fontFamily: 'Montserrat', fontSize: 12.5, fontWeight: '400', lineHeight: 1.6, letterSpacing: '0.02em', textTransform: 'none', fontStyle: 'normal' }
+      };
+    }
+  }
+
+  renderTypographyEditor();
+  updateTypographyLivePreview();
+  showToast('info', `Applied ${presetKey.replace('_', ' ').toUpperCase()} preset.`);
 }
 
 async function saveTypographySettings() {
@@ -13519,6 +13575,7 @@ window.filterTypographyCategory = filterTypographyCategory;
 window.filterTypographySearch = filterTypographySearch;
 window.switchFontPreviewMode = switchFontPreviewMode;
 window.focusTypographyPreview = focusTypographyPreview;
+window.applyTypographyPreset = applyTypographyPreset;
 window.onTypographyFieldChange = onTypographyFieldChange;
 window.onTypographyRangeChange = onTypographyRangeChange;
 window.updateTypographyLivePreview = updateTypographyLivePreview;
