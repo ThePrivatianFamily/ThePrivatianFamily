@@ -13038,10 +13038,14 @@ function renderTypographyEditor() {
             </div>
           </div>
 
-          <div style="display:flex;align-items:center;gap:8px;">
-            <button type="button" class="btn btn--sm btn--ghost" onclick="focusTypographyPreview('${area.previewId}', '${area.category}')" style="font-size:11px;padding:4px 9px;border:1px solid #cbd5e1;border-radius:6px;display:inline-flex;align-items:center;gap:4px;color:#0a528e;font-weight:600;" title="View in live preview studio">
+          <div class="font-card-actions">
+            <button type="button" class="btn-font-card-view" onclick="focusTypographyPreview('${area.previewId}', '${area.category}')" title="View in live preview studio">
               <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/></svg>
               <span>View</span>
+            </button>
+            <button type="button" class="btn-font-card-reset" onclick="resetSingleFontSection('${key}')" title="Reset this section to brand default">
+              <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+              <span>Reset</span>
             </button>
             <code style="font-size:10.5px;font-weight:600;padding:3px 7px;border-radius:4px;background:#f1f5f9;color:#475569;">${key}</code>
           </div>
@@ -13569,6 +13573,26 @@ function resetTypographyToDefault() {
   });
 }
 
+function resetSingleFontSection(key) {
+  if (!key) return;
+  const isBn = _currentTypographyLang === 'bn';
+  const defaultVal = isBn ? DEFAULT_TYPOGRAPHY_BN[key] : DEFAULT_TYPOGRAPHY_EN[key];
+  if (!defaultVal) return;
+
+  if (!_typographyDrafts[_currentTypographyLang]) {
+    _typographyDrafts[_currentTypographyLang] = {};
+  }
+  _typographyDrafts[_currentTypographyLang][key] = JSON.parse(JSON.stringify(defaultVal));
+
+  loadGoogleFontSpecimen(defaultVal.fontFamily);
+  renderTypographyEditor();
+  updateTypographyLivePreview();
+
+  const area = FONT_AREAS_META.find(a => a.key === key);
+  const title = isBn ? (area ? area.title_bn : key) : (area ? area.title_en : key);
+  showToast('info', `${title} reset to brand default.`);
+}
+
 window.initFontsPage = initFontsPage;
 window.switchTypographyLang = switchTypographyLang;
 window.filterTypographyCategory = filterTypographyCategory;
@@ -13581,6 +13605,8 @@ window.onTypographyRangeChange = onTypographyRangeChange;
 window.updateTypographyLivePreview = updateTypographyLivePreview;
 window.saveTypographySettings = saveTypographySettings;
 window.resetTypographyToDefault = resetTypographyToDefault;
+window.resetSingleFontSection = resetSingleFontSection;
+
 
 
 

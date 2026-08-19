@@ -2105,14 +2105,22 @@
           </div>
 
           <!-- Language Tab Switcher -->
-          <div class="btn-group" style="display:inline-flex;border:1px solid #cbd5e1;border-radius:6px;overflow:hidden;background:#fff;">
-            <button type="button" class="btn btn--sm active" id="btn-font-lang-en" onclick="switchTypographyLang('en')" style="font-size:12px;padding:6px 14px;font-weight:600;">English Fonts</button>
-            <button type="button" class="btn btn--sm" id="btn-font-lang-bn" onclick="switchTypographyLang('bn')" style="font-size:12px;padding:6px 14px;font-weight:600;">বাংলা ফন্ট</button>
+          <div class="fonts-lang-toggle-bar">
+            <button type="button" class="fonts-lang-toggle-btn active" id="btn-font-lang-en" onclick="switchTypographyLang('en')" title="Switch to English Typography Settings">
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+              <span>English</span>
+              <span class="lang-badge">EN</span>
+            </button>
+            <button type="button" class="fonts-lang-toggle-btn" id="btn-font-lang-bn" onclick="switchTypographyLang('bn')" title="বাংলা ফন্ট সেটিংসে পরিবর্তন করুন">
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+              <span>বাংলা</span>
+              <span class="lang-badge">BN</span>
+            </button>
           </div>
 
-          <button type="button" class="btn btn--ghost btn--sm" onclick="resetTypographyToDefault()" style="font-size:12.5px;padding:6px 14px;display:inline-flex;align-items:center;gap:6px;border:1px solid #cbd5e1;border-radius:6px;" title="Reset typography back to brand defaults">
+          <button type="button" class="btn btn--ghost btn--sm" onclick="resetTypographyToDefault()" style="font-size:12.5px;padding:6px 14px;display:inline-flex;align-items:center;gap:6px;border:1px solid #cbd5e1;border-radius:6px;" title="Reset all 12 sections to brand defaults">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
-            <span>Reset Default</span>
+            <span>Reset All</span>
           </button>
 
           <button type="button" class="btn btn--primary btn--sm" id="btn-save-typography-settings" onclick="saveTypographySettings()" style="font-size:12.5px;padding:7px 18px;display:inline-flex;align-items:center;gap:6px;border-radius:6px;font-weight:600;">
@@ -2173,18 +2181,33 @@
           <!-- Sticky Preview Top Header -->
           <div class="fonts-preview-header">
             <div style="display:flex;align-items:center;gap:8px;">
-              <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#10b981;box-shadow:0 0 0 2px rgba(16,185,129,0.2);"></span>
+              <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#10b981;box-shadow:0 0 0 3px rgba(16,185,129,0.2);"></span>
               <span style="font-size:12px;font-weight:700;color:var(--text-primary);text-transform:uppercase;letter-spacing:0.04em;">Live Studio</span>
               <span id="font-preview-lang-pill" style="font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:10px;background:#e0f2fe;color:#0369a1;">English</span>
             </div>
 
-            <!-- Preview View Mode Selector -->
-            <div class="btn-group" style="display:inline-flex;border:1px solid #cbd5e1;border-radius:6px;overflow:hidden;background:#fff;">
-              <button type="button" class="btn btn--sm active" id="btn-pvmode-article" onclick="switchFontPreviewMode('article')" style="font-size:11px;padding:4px 9px;font-weight:600;" title="Article Reading View">Article</button>
-              <button type="button" class="btn btn--sm" id="btn-pvmode-header" onclick="switchFontPreviewMode('header')" style="font-size:11px;padding:4px 9px;font-weight:600;" title="Header & Navigation">Header</button>
-              <button type="button" class="btn btn--sm" id="btn-pvmode-cards" onclick="switchFontPreviewMode('cards')" style="font-size:11px;padding:4px 9px;font-weight:600;" title="Cards & Homepage">Cards</button>
-              <button type="button" class="btn btn--sm" id="btn-pvmode-footer" onclick="switchFontPreviewMode('footer')" style="font-size:11px;padding:4px 9px;font-weight:600;" title="Footer View">Footer</button>
-              <button type="button" class="btn btn--sm" id="btn-pvmode-all" onclick="switchFontPreviewMode('all')" style="font-size:11px;padding:4px 9px;font-weight:600;" title="All 12 Components Stack">All (12)</button>
+            <!-- Preview View Mode Selector (Segmented Pill Bar) -->
+            <div class="fonts-studio-nav-bar">
+              <button type="button" class="fonts-studio-nav-btn active" id="btn-pvmode-article" onclick="switchFontPreviewMode('article')" title="Article Reading View">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+                <span>Article</span>
+              </button>
+              <button type="button" class="fonts-studio-nav-btn" id="btn-pvmode-header" onclick="switchFontPreviewMode('header')" title="Header & Navigation">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                <span>Header</span>
+              </button>
+              <button type="button" class="fonts-studio-nav-btn" id="btn-pvmode-cards" onclick="switchFontPreviewMode('cards')" title="Cards & Homepage">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+                <span>Cards</span>
+              </button>
+              <button type="button" class="fonts-studio-nav-btn" id="btn-pvmode-footer" onclick="switchFontPreviewMode('footer')" title="Footer View">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="15" width="20" height="6" rx="1"/><line x1="2" y1="9" x2="22" y2="9"/></svg>
+                <span>Footer</span>
+              </button>
+              <button type="button" class="fonts-studio-nav-btn" id="btn-pvmode-all" onclick="switchFontPreviewMode('all')" title="All 12 Components Stack">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                <span>All (12)</span>
+              </button>
             </div>
           </div>
 
