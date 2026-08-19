@@ -26,7 +26,7 @@ function slugify(text) {
     .replace(/[^\w\s-]/g, '')
     .replace(/[\s_]+/g, '-')
     .replace(/^-+|-+$/g, '')
-    .substring(0, 100) || 'untitled';
+    .substring(0, 100) || '';
 }
 
 module.exports = async function handler(req, res) {
@@ -234,10 +234,18 @@ module.exports = async function handler(req, res) {
 
       return res.status(200).json(data);
     } else {
-      // CREATE — custom slug or auto unique slug from title
-      const baseTitle = title || title_bn || 'untitled';
-      let rawSlug = (bodySlug || '').trim() ? slugify(bodySlug) : slugify(baseTitle);
-      if (!rawSlug) rawSlug = 'draft-' + Date.now().toString(36);
+      // CREATE — custom slug or clean unique slug
+      let rawSlug = (bodySlug || '').trim() ? slugify(bodySlug) : '';
+      if (!rawSlug) {
+        if (title && title.trim()) {
+          rawSlug = slugify(title);
+        } else if (title_bn && title_bn.trim()) {
+          rawSlug = 'article-' + Date.now().toString(36);
+        } else {
+          rawSlug = 'draft-' + Date.now().toString(36);
+        }
+      }
+      if (!rawSlug || rawSlug === 'untitled') rawSlug = 'draft-' + Date.now().toString(36);
       let slug = rawSlug;
       const { data: existingSlugs } = await client.from('articles').select('id, slug').ilike('slug', rawSlug + '%');
       if (existingSlugs && existingSlugs.length > 0) {

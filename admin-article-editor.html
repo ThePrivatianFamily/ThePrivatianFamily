@@ -260,8 +260,8 @@ body{font-family:var(--sans);background:var(--bg);padding-top:calc(var(--tb) + v
 /* Rich text area */
 #ed-rt{outline:none;font:400 18.5px/1.78 var(--serif);color:#1a2d3e;
   min-height:360px;caret-color:var(--navy);word-break:break-word}
-#ed-rt:empty::before{content:'Start writing your article here…\A\AUse the toolbar above to format text, insert headings,\Aquotes, or images anywhere in the body.';
-  white-space:pre;color:#b0c0cc;pointer-events:none;font-style:italic;font-size:17px}
+#ed-rt[data-ph]:empty::before{content:attr(data-ph);
+  white-space:pre-line;color:#b0c0cc;pointer-events:none;font-style:italic;font-size:16.5px;line-height:1.65;display:block}
 #ed-rt p{margin:0 0 1.5em}
 /* ─ International heading hierarchy ───────────────────────── */
 #ed-rt h2{font:700 30px/1.22 var(--serif);color:var(--dark);letter-spacing:-.015em;
@@ -1397,7 +1397,7 @@ button, input, select, textarea, [contenteditable] {
     <!-- Slug / Permalink Input -->
     <div class="tb-slug-g">
       <span class="tb-lbl">Slug</span>
-      <input type="text" id="tb-slug" placeholder="article-slug" oninput="syncSlug(this.value, 'tb'); DIRTY=true;" title="Article URL Slug" />
+      <input type="text" id="tb-slug" placeholder="article-slug (manual)" oninput="syncSlug(this.value, 'tb'); DIRTY=true;" title="Article URL Slug (Manual)" />
     </div>
     
     <div class="tb-vr"></div>
@@ -1780,7 +1780,8 @@ button, input, select, textarea, [contenteditable] {
   <!-- BODY -->
   <div id="ed-body">
     <div id="ed-rt" contenteditable="true" spellcheck="true"
-         role="textbox" aria-multiline="true" aria-label="Article body"></div>
+         role="textbox" aria-multiline="true" aria-label="Article body"
+         data-ph="Start writing your article here…&#10;&#10;Use the toolbar above to format text, insert headings, quotes, or images anywhere in the body."></div>
   </div>
 
   <!-- AUTHOR BIO (Linked from Authors Directory) -->
@@ -1955,7 +1956,7 @@ button, input, select, textarea, [contenteditable] {
           <label class="sd-lbl">Article URL Identifier (Slug)</label>
           <div style="display:flex;align-items:center;background:#f8fafc;border:1px solid var(--border);border-radius:6px;overflow:hidden;padding:0 8px;">
             <span style="font:600 11.5px/1 var(--sans);color:#64748b;white-space:nowrap;">/article/</span>
-            <input type="text" class="sd-inp" id="sd-slug-input" placeholder="article-slug" style="border:none;background:transparent;padding-left:4px;font-family:monospace;font-size:12px;"
+            <input type="text" class="sd-inp" id="sd-slug-input" placeholder="article-slug (manual)" style="border:none;background:transparent;padding-left:4px;font-family:monospace;font-size:12px;"
               oninput="syncSlug(this.value, 'sd'); DIRTY=true;" />
           </div>
           <div id="sd-slug-lock-note" style="display:none;font:600 11px/1.3 var(--sans);color:#d97706;background:#fffbeb;border:1px solid #fde68a;border-radius:4px;padding:4px 8px;margin-top:6px;display:flex;align-items:center;gap:4px;">
@@ -1963,7 +1964,7 @@ button, input, select, textarea, [contenteditable] {
             <span>URL &amp; Slug are unified in the backend and defined strictly in English.</span>
           </div>
           <div id="sd-slug-preview" style="font:400 11px/1.4 var(--sans);color:#64748b;margin-top:7px;word-break:break-all;">
-            Live Link: <span style="color:#0a528e;font-weight:600;">theprivatianfamily.vercel.app/article/<span id="sd-slug-val">untitled</span></span>
+            Live Link: <span style="color:#0a528e;font-weight:600;">theprivatianfamily.vercel.app/article/<span id="sd-slug-val">—</span></span>
           </div>
         </div>
       </div>
@@ -2369,8 +2370,8 @@ function loadBufferToInputs(lang) {
   if (rt) {
     rt.innerHTML = data.content_html || '';
     rt.setAttribute('data-ph', isBn 
-      ? 'এখানে আপনার মূল প্রতিবেদন লেখা শুরু করুন… ফরম্যাটিংয়ের জন্য টুলবার ব্যবহার করুন।' 
-      : 'Start writing your story here… Use the toolbar or keyboard shortcuts for formatting.');
+      ? 'এখানে আপনার প্রতিবেদন লেখা শুরু করুন…\n\nউপরে থাকা টুলবার ব্যবহার করে টেক্সট ফরম্যাট করুন, শিরোনাম (Heading), উদ্ধৃতি (Quotes) বা ছবি যুক্ত করুন।' 
+      : 'Start writing your article here…\n\nUse the toolbar above to format text, insert headings, quotes, or images anywhere in the body.');
   }
 
   if (g('ed-by-lbl')) g('ed-by-lbl').textContent = isBn ? 'প্রতিবেদক:' : 'By';
@@ -2659,7 +2660,8 @@ function fill(a) {
     tags: a.tags_bn ? a.tags_bn.split(',').filter(Boolean).filter(t => !t.startsWith('feat_pos:')) : []
   };
 
-  syncSlug(a.slug || '', 'load');
+  const initialSlug = (a.slug && a.slug !== 'untitled' && !a.slug.startsWith('draft-')) ? a.slug : '';
+  syncSlug(initialSlug, 'load');
   if (a.section) setSec(a.section);
   fetchAndPopulateAuthors(a.author_id, a.author || a.author_bn);
   if (a.author_photo_url) showAuthorPhoto(a.author_photo_url);
@@ -2690,7 +2692,7 @@ function syncSlug(val, src) {
   if (src !== 'tb' && g('tb-slug')) g('tb-slug').value = clean;
   if (src !== 'sd' && g('sd-slug-input')) g('sd-slug-input').value = clean;
   const slugVal = g('sd-slug-val');
-  if (slugVal) slugVal.textContent = clean || 'untitled';
+  if (slugVal) slugVal.textContent = clean || '—';
   const spUrl = g('sp-url');
   if (spUrl) spUrl.textContent = 'theprivatianfamily.vercel.app/article/' + (clean || '…');
 }
@@ -2879,7 +2881,7 @@ async function saveArt(silent = false) {
             hero_caption_bn: payload.hero_caption_bn || '',
             hero_credit: payload.hero_credit || '',
             hero_credit_bn: payload.hero_credit_bn || '',
-            slug: payload.slug || 'untitled',
+            slug: payload.slug || '',
             seo_title: payload.seo_title || '',
             seo_title_bn: payload.seo_title_bn || '',
             meta_description: payload.meta_description || '',
@@ -2918,7 +2920,7 @@ async function saveArt(silent = false) {
             hero_caption_bn: payload.hero_caption_bn || '',
             hero_credit: payload.hero_credit || '',
             hero_credit_bn: payload.hero_credit_bn || '',
-            slug: payload.slug || 'untitled',
+            slug: payload.slug || '',
             seo_title: payload.seo_title || '',
             seo_title_bn: payload.seo_title_bn || '',
             meta_description: payload.meta_description || '',
@@ -2940,7 +2942,9 @@ async function saveArt(silent = false) {
       ART_ID = savedData.id;
       const u = new URL(location.href); u.searchParams.set('id', ART_ID);
       history.replaceState({}, '', u.toString());
-      if (g('tb-slug')) g('tb-slug').value = savedData.slug || '';
+      if (savedData.slug && savedData.slug !== 'untitled' && !savedData.slug.startsWith('draft-')) {
+        syncSlug(savedData.slug, 'load');
+      }
     }
     if (savedData.status) STATUS = savedData.status;
     refreshArticleIdDisplay();
