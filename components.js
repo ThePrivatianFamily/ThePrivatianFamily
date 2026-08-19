@@ -1248,7 +1248,7 @@
       var cfg = getSearchConfig();
       var q = (query || '').trim();
       if (!q) {
-        var hint = isBn ? (cfg.hintText_bn || cfg.hintText || 'অনুসন্ধান করতে লিখুন অথবা ওপরের বিষয় বেছে নিন…') : (cfg.hintText || 'Start typing to search or select a topic above…');
+        var hint = isBn ? (cfg.hintText_bn || cfg.hintText || 'নিবন্ধ ও খবর অনুসন্ধান করতে লিখুন…') : (cfg.hintText || 'Start typing to search articles and news…');
         searchResults.innerHTML = '<p class="search-hint">' + escapeHTML(hint) + '</p>';
         return;
       }

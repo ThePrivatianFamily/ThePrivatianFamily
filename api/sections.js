@@ -983,7 +983,7 @@ module.exports = async function handler(req, res) {
         placeholder: isBn ? 'নিবন্ধ, গল্প, বিষয় খুঁজুন...' : 'Search articles, stories, topics...',
         exploreLabel: isBn ? 'দ্রুত খুঁজুন:' : 'Explore:',
         closeText: isBn ? 'বন্ধ করুন' : 'Close',
-        hintText: isBn ? 'অনুসন্ধান করতে লিখুন অথবা ওপরের বিষয় বেছে নিন…' : 'Start typing to search or select a topic above…',
+        hintText: isBn ? 'নিবন্ধ ও খবর অনুসন্ধান করতে লিখুন…' : 'Start typing to search articles and news…',
         noResultsText: isBn ? 'কোনো ফলাফল পাওয়া যায়নি' : 'No matching stories found',
         quickTags: [
           { id: 'tag-1', label: 'Findings', label_bn: 'অনুসন্ধিৎসু', query: 'Findings', enabled: true },

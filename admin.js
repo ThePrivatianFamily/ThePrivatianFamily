@@ -251,7 +251,18 @@ window.setHomepageLang = function(lang) {
   if (typeof showToast === 'function') {
     showToast('info', _homepageLang === 'bn' ? 'Homepage editor switched to Bengali (বাংলা)' : 'Homepage editor switched to English');
   }
-  if (typeof initHomepagePage === 'function') initHomepagePage();
+  if (!_hpDrafts || !_hpDrafts.en || !_hpDrafts.bn) {
+    if (typeof initHomepagePage === 'function') initHomepagePage();
+  } else {
+    // Structural sync before switching view
+    if (_homepageLang === 'bn') {
+      _hpDrafts.bn = syncClientHomepageStructures(_hpDrafts.en, _hpDrafts.bn, true);
+    } else {
+      _hpDrafts.en = syncClientHomepageStructures(_hpDrafts.bn, _hpDrafts.en, false);
+    }
+    homepageDraftConfig = _hpDrafts[_homepageLang] || _hpDrafts.en;
+    if (typeof renderActiveHpTab === 'function') renderActiveHpTab();
+  }
 };
 
 window.setFooterLang = function(lang) {
@@ -5541,7 +5552,7 @@ const DEFAULT_MENU_CONFIG = {
     placeholder: 'Search articles, stories, topics...',
     exploreLabel: 'Explore:',
     closeText: 'Close',
-    hintText: 'Start typing to search or select a topic above…',
+    hintText: 'Start typing to search articles and news…',
     noResultsText: 'No matching stories found',
     quickTags: [
       { id: 'tag-1', label: 'Findings', label_bn: 'অনুসন্ধিৎসু', query: 'Findings', enabled: true },
@@ -5718,7 +5729,7 @@ function renderMenuSearch() {
       placeholder: _menuLang === 'bn' ? 'নিবন্ধ, গল্প, বিষয় খুঁজুন...' : 'Search articles, stories, topics...',
       exploreLabel: _menuLang === 'bn' ? 'দ্রুত খুঁজুন:' : 'Explore:',
       closeText: _menuLang === 'bn' ? 'বন্ধ করুন' : 'Close',
-      hintText: _menuLang === 'bn' ? 'অনুসন্ধান করতে লিখুন অথবা ওপরের বিষয় বেছে নিন…' : 'Start typing to search or select a topic above…',
+      hintText: _menuLang === 'bn' ? 'নিবন্ধ ও খবর অনুসন্ধান করতে লিখুন…' : 'Start typing to search articles and news…',
       noResultsText: _menuLang === 'bn' ? 'কোনো ফলাফল পাওয়া যায়নি' : 'No matching stories found',
       quickTags: [
         { id: 'tag-1', label: 'Findings', label_bn: 'অনুসন্ধিৎসু', query: 'Findings', enabled: true },
@@ -5802,7 +5813,7 @@ function onAdminSpPreviewSearch(query) {
   }
 
   if (!q) {
-    const hint = s.hintText || (isBn ? 'অনুসন্ধান করতে লিখুন অথবা ওপরের বিষয় বেছে নিন…' : 'Start typing to search or select a topic above…');
+    const hint = s.hintText || (isBn ? 'নিবন্ধ ও খবর অনুসন্ধান করতে লিখুন…' : 'Start typing to search articles and news…');
     resultsContainer.innerHTML = `
       <div class="admin-sp-hint" id="menu-search-preview-hint">
         <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
@@ -6862,23 +6873,6 @@ async function saveMenuSettings() {
   }
 }
 
-// Global Keyboard Shortcut for Undo/Redo in Navigation Menu
-document.addEventListener('keydown', (e) => {
-  const activePage = document.querySelector('.sidebar-nav-item.active');
-  if (!activePage || activePage.dataset.page !== 'menu') return;
-
-  const isInput = ['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement ? document.activeElement.tagName : '');
-  if (isInput) return; // Allow browser text undo inside inputs
-
-  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z' && !e.shiftKey) {
-    e.preventDefault();
-    undoMenuAction();
-  } else if ((e.ctrlKey || e.metaKey) && (e.key.toLowerCase() === 'y' || (e.key.toLowerCase() === 'z' && e.shiftKey))) {
-    e.preventDefault();
-    redoMenuAction();
-  }
-});
-
 // ═══════════════════════════════════════════════════════════════════════════
 // HOMEPAGE MANAGER (Full Database Sync & Visual Interactive Editor)
 // ═══════════════════════════════════════════════════════════════════════════
@@ -7098,12 +7092,355 @@ const DEFAULT_HOMEPAGE_CONFIG = {
   }
 };
 
+const DEFAULT_HOMEPAGE_CONFIG_BN = {
+  hero: {
+    main: {
+      articleId: null,
+      title: 'ব্যক্তিগত প্রজ্ঞার শিল্প: কীভাবে প্রাইভেসিয়ান পরিবারগুলো সংস্কৃতি ও ঐতিহ্য গড়ে তোলে।',
+      subtitle: 'পারিবারিক ঐতিহ্য, বুদ্ধিবৃত্তিক পরম্পরা এবং নিজস্ব জ্ঞানের চিরস্থায়ী ক্ষমতার এক অনন্য অনুসন্ধান।',
+      imageUrl: 'img1.png',
+      href: '/section/findings',
+      enabled: true
+    },
+    sidebar: [
+      {
+        id: 'h-side-1',
+        articleId: null,
+        title: 'অর্ধেক ঐতিহ্য, অর্ধেক পর্যবেক্ষণ: প্রজন্ম থেকে প্রজন্মে প্রাইভেসিয়ানদের পথচলা',
+        description: 'পারিবারিক সংরক্ষণাগার থেকে, প্রাইভেসিয়ান ঐতিহ্য ব্যক্তিগত প্রচেষ্টার মাধ্যমে নতুন পথ তৈরি করে',
+        imageUrl: 'img5.png',
+        tag: '',
+        href: '/section/community-heritage',
+        enabled: true
+      },
+      {
+        id: 'h-side-2',
+        articleId: null,
+        title: 'কীভাবে প্রাইভেসিয়ান ঐতিহ্য ব্যক্তিগত উৎকর্ষের এক নতুন যুগকে সংজ্ঞায়িত করেছে',
+        description: 'সংস্কৃতি, শিল্পকলা এবং বুদ্ধিবৃত্তিক চিন্তাধারায় পরিবারের প্রভাব সাধারণ ধারণার চেয়েও গভীর',
+        imageUrl: 'img6.png',
+        tag: '',
+        href: '/section/culture',
+        enabled: true
+      }
+    ]
+  },
+  smallArticles: [
+    {
+      id: 'sm-1',
+      articleId: null,
+      title: 'যখন প্রাইভেসিয়ানরা মিলিত হয়: সম্প্রদায়ের নিভৃত শক্তি',
+      imageUrl: 'img2.png',
+      href: '/section/community-heritage',
+      enabled: true
+    },
+    {
+      id: 'sm-2',
+      articleId: null,
+      title: 'কেন হাতে লেখা চিঠিপত্র আবার ব্যক্তিগত জগতে ফিরে আসছে',
+      imageUrl: 'img3.png',
+      href: '/section/culture',
+      enabled: true
+    },
+    {
+      id: 'sm-3',
+      articleId: null,
+      title: 'কেমব্রিজের পাঠাগারের অন্তরালে: সংরক্ষণ, স্মৃতি ও মনন',
+      imageUrl: 'img4.png',
+      href: '/section/privacy-values',
+      enabled: true
+    }
+  ],
+  eventsSection: {
+    eventsHeading: 'আসন্ন ইভেন্ট ও আয়োজন',
+    seeAllText: 'সকল ইভেন্ট দেখুন',
+    seeAllHref: '/events',
+    events: [
+      {
+        id: 'ev-1',
+        date: '২৮ মার্চ, ২০২৬',
+        title: 'বসন্তকালীন সম্মেলন: পারিবারিক সংরক্ষণাগারের ভবিষ্যৎ ও সুরক্ষা',
+        meta: 'সন্ধ্যা ৬:০০ ■ কেমব্রিজ, এমএ; সরাসরি সম্প্রচার',
+        href: '/events',
+        enabled: true
+      },
+      {
+        id: 'ev-2',
+        date: '১৪ এপ্রিল, ২০২৬',
+        title: 'বার্ষিক ঐতিহ্য বক্তৃতা ও মুক্ত আলোচনা সভা',
+        meta: 'বিকাল ৪:৩০ ■ বোস্টন, এমএ; প্রাইভেসিয়ান সেন্টার',
+        href: '/events',
+        enabled: true
+      },
+      {
+        id: 'ev-3',
+        date: '১২ নভেম্বর, ২০২৬',
+        title: 'বার্ষিক মিলনমেলা: প্রাইভেসিয়ান ফেলোশিপের ১২০ বছর উদযাপন',
+        meta: 'দুপুর ২:০০ ■ কেমব্রিজ হেরিটেজ লাইব্রেরি',
+        href: '/events',
+        enabled: true
+      },
+      {
+        id: 'ev-4',
+        date: '০৪ ডিসেম্বর, ২০২৬',
+        title: 'বার্ষিক প্রাইভেসিয়ান সাহিত্য সম্মাননা ও ফেলোশিপ অ্যাওয়ার্ড প্রদান',
+        meta: 'সন্ধ্যা ৬:০০ ■ গ্র্যান্ড বলরুম, দ্য প্রাইভেসিয়ান সোসাইটি',
+        href: '/events',
+        enabled: true
+      }
+    ],
+    featured: {
+      articleId: null,
+      title: "রুবির রহস্য উন্মোচন: 'ঐতিহ্য হলো সামগ্রিক পরিচয়ের একটি অংশ'",
+      description: 'নতুন প্রাইভেসিয়ান প্রদর্শনীতে দুর্লভ পারিবারিক স্মারক ও ঐতিহাসিক উত্তরাধিকার',
+      imageUrl: 'img5.png',
+      href: '/section/community-heritage',
+      enabled: true
+    }
+  },
+  allNews: {
+    heading: 'সকল খবর',
+    columns: [
+      {
+        id: 'col-1',
+        label: 'সমাজ ও ঐতিহ্য',
+        sectionSlug: 'community-heritage',
+        lead: {
+          articleId: null,
+          title: "পারিবারিক সংরক্ষণাগার থেকে গবেষকদের নতুন দৃষ্টিভঙ্গি ও সাফল্য",
+          imageUrl: 'img2.png',
+          href: '/section/community-heritage',
+          enabled: true
+        },
+        subArticles: [
+          { id: 'sub-1-1', title: 'পারিবারিক ঐতিহ্যের অলিখিত নিয়মাবলী: সংরক্ষণাগার আমাদের কী বার্তা দেয়', href: '/section/community-heritage', enabled: true },
+          { id: 'sub-1-2', title: 'আত্মানুসন্ধান: পরিচয়ের ওপর নতুন গবেষণা ও অনুসন্ধান', href: '/section/community-heritage', enabled: true },
+          { id: 'sub-1-3', title: '১৯ শতকের হিসাবের খাতা বিশ্বাস সম্পর্কে কী প্রকাশ করে', href: '/section/community-heritage', enabled: true },
+          { id: 'sub-1-4', title: 'ব্যক্তিগত প্রতিষ্ঠান এবং সত্যের সুরক্ষা', href: '/section/community-heritage', enabled: true }
+        ]
+      },
+      {
+        id: 'col-2',
+        label: 'সংস্কৃতি',
+        sectionSlug: 'culture',
+        lead: {
+          articleId: null,
+          title: "নীরব উৎকর্ষের সংস্কৃতি: কেন সংযত পারদর্শিতা মূল্যবান",
+          imageUrl: 'img1.png',
+          href: '/section/culture',
+          enabled: true
+        },
+        subArticles: [
+          { id: 'sub-2-1', title: 'তরুণ প্রাইভেসিয়ান সদস্যদের মাঝে সৃজনশীল লেখায় কৃত্রিম বুদ্ধিমত্তার বিস্তার', href: '/section/culture', enabled: true },
+          { id: 'sub-2-2', title: 'কলমের কালি রিফিল? এগিয়ে চলুন, বলছে ক্যালিগ্রাফি সোসাইটি', href: '/section/culture', enabled: true },
+          { id: 'sub-2-3', title: 'সঙ্গীত রেসিডেন্সি মূলত আন্তরিক সংযোগের মাধ্যম', href: '/section/culture', enabled: true }
+        ]
+      },
+      {
+        id: 'col-3',
+        label: 'গোপনীয়তা ও মূল্যবোধ',
+        sectionSlug: 'privacy-values',
+        lead: {
+          articleId: null,
+          title: 'আপনার কি কোনো ব্যক্তিগত এআই গোপন তথ্য আছে?',
+          imageUrl: 'img4.png',
+          href: '/section/privacy-values',
+          enabled: true
+        },
+        subArticles: [
+          { id: 'sub-3-1', title: 'পরিবার একা হতে পারে, তবে সমাজকে পর্যবেক্ষণ করা ভিন্ন বিষয়', href: '/section/privacy-values', enabled: true },
+          { id: 'sub-3-2', title: 'তিনি কি আসলেই পরিবারের সদস্য—এবং এই নিয়ম কারা নির্ধারণ করে?', href: '/section/privacy-values', enabled: true },
+          { id: 'sub-3-3', title: 'একাকী কাটানো সময় নয়, বরং পরিবার এখনও নিয়মিত মিলিত হয়', href: '/section/privacy-values', enabled: true }
+        ]
+      },
+      {
+        id: 'col-4',
+        label: 'দেশ ও বিশ্ব',
+        sectionSlug: 'nation-world',
+        lead: {
+          articleId: null,
+          title: 'বিশ্বায়নের যুগে কীভাবে প্রাইভেসিয়ান প্রবাসী সম্প্রদায় ঐতিহ্য বাঁচিয়ে রেখেছে',
+          imageUrl: 'img6.png',
+          href: '/section/nation-world',
+          enabled: true
+        },
+        subArticles: [
+          { id: 'sub-4-1', title: 'গোপনীয়তার বৈশ্বিক পাঠ: প্রাইভেসিয়ান মডেল আমাদের কী শেখায়', href: '/section/nation-world', enabled: true },
+          { id: 'sub-4-2', title: 'বিশ্বাসের ভিত্তি: যেভাবে গড়ে উঠেছে আন্তর্জাতিক নেটওয়ার্ক', href: '/section/nation-world', enabled: true }
+        ]
+      },
+      {
+        id: 'col-5',
+        label: 'শিল্প ও উত্তরাধিকার',
+        sectionSlug: 'arts-legacy',
+        lead: {
+          articleId: null,
+          title: 'নতুন গবেষণায় দেখা গেছে: হাতে লেখার অভ্যাস স্মৃতিশক্তি ও বুদ্ধি প্রখর করে',
+          imageUrl: 'img3.png',
+          href: '/section/arts-legacy',
+          enabled: true
+        },
+        subArticles: [
+          { id: 'sub-5-1', title: 'খেলাধুলা ও শিল্পকলার পাশাপাশি কলমের গুরুত্ব অনন্য', href: '/section/arts-legacy', enabled: true },
+          { id: 'sub-5-2', title: 'ঔপন্যাসিকদের মতে বিশ্বের আরও সুচিন্তিত চিঠিপত্র প্রয়োজন', href: '/section/arts-legacy', enabled: true },
+          { id: 'sub-5-3', title: 'সোসাইটির প্রতিটি পর্যায়ে সাংস্কৃতিক উত্তরাধিকার বজায় রাখা জরুরি', href: '/section/arts-legacy', enabled: true }
+        ]
+      },
+      {
+        id: 'col-6',
+        label: 'কর্ম ও অর্থনীতি',
+        sectionSlug: 'work-economy',
+        lead: {
+          articleId: null,
+          title: 'আধুনিক অর্থনীতিতে শীর্ষ পেশাজীবীরা নতুন মাত্রা যোগ করছেন',
+          imageUrl: 'img5.png',
+          href: '/section/work-economy',
+          enabled: true
+        },
+        subArticles: [
+          { id: 'sub-6-1', title: "গ্রামীণ অর্থনীতি: ব্যক্তিগত জমিতে পরিবারের যুগান্তকারী বিনিয়োগ", href: '/section/work-economy', enabled: true },
+          { id: 'sub-6-2', title: 'অর্থনৈতিক উপদেষ্টার সঙ্গে পারিবারিক সম্পদের বর্তমান অবস্থা নিয়ে আলোচনা', href: '/section/work-economy', enabled: true },
+          { id: 'sub-6-3', title: 'আইনের ধারা: পরিবারের নীতিমালা সংস্কারে আইনজ্ঞদের ভূমিকা', href: '/section/work-economy', enabled: true }
+        ]
+      }
+    ]
+  }
+};
+
+// In-Memory Dual Language Drafts
+var _hpDrafts = {
+  en: null,
+  bn: null
+};
+var _lastMatchedArticleForHpSlot = null;
+
 homepageDraftConfig = null;
 appliedHomepageConfig = null;
 homepageUndoStack = [];
 homepageRedoStack = [];
 homepageArticlesList = [];
 activeHpTab = 'canvas';
+
+// ── BIDIRECTIONAL CLIENT STRUCTURAL SYNCHRONIZER ────────────────────────
+function syncClientHomepageStructures(source, target, sourceIsBn) {
+  if (!source || typeof source !== 'object') return target;
+  if (!target || typeof target !== 'object') target = JSON.parse(JSON.stringify(sourceIsBn ? DEFAULT_HOMEPAGE_CONFIG_BN : DEFAULT_HOMEPAGE_CONFIG));
+  const res = JSON.parse(JSON.stringify(target));
+
+  // 1. Hero Main
+  if (source.hero && source.hero.main) {
+    if (!res.hero) res.hero = {};
+    if (!res.hero.main) res.hero.main = {};
+    res.hero.main.enabled = source.hero.main.enabled !== false;
+    if (source.hero.main.imageUrl) res.hero.main.imageUrl = source.hero.main.imageUrl;
+    if (source.hero.main.href) res.hero.main.href = source.hero.main.href;
+    if (source.hero.main.articleId !== undefined) res.hero.main.articleId = source.hero.main.articleId;
+    if (!res.hero.main.title) res.hero.main.title = source.hero.main.title || '';
+    if (!res.hero.main.subtitle) res.hero.main.subtitle = source.hero.main.subtitle || '';
+  }
+
+  // 2. Hero Sidebar
+  if (source.hero && Array.isArray(source.hero.sidebar)) {
+    if (!res.hero) res.hero = {};
+    const tgtSide = Array.isArray(res.hero.sidebar) ? res.hero.sidebar : [];
+    res.hero.sidebar = source.hero.sidebar.map((srcItem, idx) => {
+      const match = tgtSide.find(t => t.id === srcItem.id) || tgtSide[idx] || {};
+      return {
+        id: srcItem.id || match.id || `h-side-${idx + 1}`,
+        articleId: srcItem.articleId !== undefined ? srcItem.articleId : match.articleId,
+        title: match.title || srcItem.title || '',
+        description: match.description || srcItem.description || '',
+        imageUrl: srcItem.imageUrl || match.imageUrl || 'img5.png',
+        tag: srcItem.tag !== undefined ? srcItem.tag : (match.tag || ''),
+        href: srcItem.href || match.href || '#',
+        enabled: srcItem.enabled !== false
+      };
+    });
+  }
+
+  // 3. Small Articles (3-Card Grid)
+  if (Array.isArray(source.smallArticles)) {
+    const tgtCards = Array.isArray(res.smallArticles) ? res.smallArticles : [];
+    res.smallArticles = source.smallArticles.map((srcItem, idx) => {
+      const match = tgtCards.find(t => t.id === srcItem.id) || tgtCards[idx] || {};
+      return {
+        id: srcItem.id || match.id || `sm-${idx + 1}`,
+        articleId: srcItem.articleId !== undefined ? srcItem.articleId : match.articleId,
+        title: match.title || srcItem.title || '',
+        imageUrl: srcItem.imageUrl || match.imageUrl || 'img2.png',
+        href: srcItem.href || match.href || '#',
+        enabled: srcItem.enabled !== false
+      };
+    });
+  }
+
+  // 4. Events Section & Featured Spotlight
+  if (source.eventsSection) {
+    if (!res.eventsSection) res.eventsSection = {};
+    if (source.eventsSection.featured) {
+      if (!res.eventsSection.featured) res.eventsSection.featured = {};
+      res.eventsSection.featured.enabled = source.eventsSection.featured.enabled !== false;
+      if (source.eventsSection.featured.imageUrl) res.eventsSection.featured.imageUrl = source.eventsSection.featured.imageUrl;
+      if (source.eventsSection.featured.href) res.eventsSection.featured.href = source.eventsSection.featured.href;
+      if (source.eventsSection.featured.articleId !== undefined) res.eventsSection.featured.articleId = source.eventsSection.featured.articleId;
+      if (!res.eventsSection.featured.title) res.eventsSection.featured.title = source.eventsSection.featured.title || '';
+      if (!res.eventsSection.featured.description) res.eventsSection.featured.description = source.eventsSection.featured.description || '';
+    }
+    if (Array.isArray(source.eventsSection.events)) {
+      const tgtEvents = Array.isArray(res.eventsSection.events) ? res.eventsSection.events : [];
+      res.eventsSection.events = source.eventsSection.events.map((srcEv, idx) => {
+        const match = tgtEvents.find(t => t.id === srcEv.id) || tgtEvents[idx] || {};
+        return {
+          id: srcEv.id || match.id || `ev-${idx + 1}`,
+          date: srcEv.date || match.date || '',
+          title: match.title || srcEv.title || '',
+          meta: match.meta || srcEv.meta || '',
+          href: srcEv.href || match.href || '/events',
+          enabled: srcEv.enabled !== false
+        };
+      });
+    }
+  }
+
+  // 5. All News 6 Columns & Sub-Articles
+  if (source.allNews && Array.isArray(source.allNews.columns)) {
+    if (!res.allNews) res.allNews = {};
+    const tgtCols = Array.isArray(res.allNews.columns) ? res.allNews.columns : [];
+    res.allNews.columns = source.allNews.columns.map((srcCol, cIdx) => {
+      const matchCol = tgtCols.find(t => t.id === srcCol.id) || tgtCols[cIdx] || {};
+      const colRes = {
+        id: srcCol.id || matchCol.id || `col-${cIdx + 1}`,
+        label: matchCol.label || srcCol.label || (sourceIsBn ? `বিভাগ ${cIdx + 1}` : `COLUMN ${cIdx + 1}`),
+        sectionSlug: srcCol.sectionSlug || matchCol.sectionSlug || 'community-heritage',
+        lead: {
+          articleId: srcCol.lead?.articleId !== undefined ? srcCol.lead?.articleId : matchCol.lead?.articleId,
+          title: matchCol.lead?.title || srcCol.lead?.title || '',
+          imageUrl: srcCol.lead?.imageUrl || matchCol.lead?.imageUrl || 'img1.png',
+          href: srcCol.lead?.href || matchCol.lead?.href || '#',
+          enabled: srcCol.lead ? srcCol.lead.enabled !== false : true
+        },
+        subArticles: []
+      };
+
+      if (Array.isArray(srcCol.subArticles)) {
+        const tgtSubs = Array.isArray(matchCol.subArticles) ? matchCol.subArticles : [];
+        colRes.subArticles = srcCol.subArticles.map((srcSub, sIdx) => {
+          const matchSub = tgtSubs.find(t => t.id === srcSub.id) || tgtSubs[sIdx] || {};
+          return {
+            id: srcSub.id || matchSub.id || `sub-${cIdx + 1}-${sIdx + 1}`,
+            articleId: srcSub.articleId !== undefined ? srcSub.articleId : matchSub.articleId,
+            title: matchSub.title || srcSub.title || '',
+            href: srcSub.href || matchSub.href || '#',
+            enabled: srcSub.enabled !== false
+          };
+        });
+      }
+      return colRes;
+    });
+  }
+
+  return res;
+}
 
 // ── INIT HOMEPAGE PAGE ───────────────────────────────────────────
 async function initHomepagePage() {
@@ -7134,7 +7471,7 @@ async function loadArticlesForHomepagePicker() {
       if (sb) {
         const { data, error } = await sb
           .from('articles')
-          .select('id, slug, title, deck, section, author, status, created_at, updated_at, published_at, hero_img_url')
+          .select('id, slug, title, title_bn, deck, deck_bn, section, author, author_bn, status, created_at, updated_at, published_at, hero_img_url')
           .or('is_deleted.is.null,is_deleted.eq.false')
           .order('updated_at', { ascending: false });
         if (!error && Array.isArray(data)) {
@@ -7147,7 +7484,7 @@ async function loadArticlesForHomepagePicker() {
   if (homepageArticlesList.length === 0) {
     try {
       if (typeof PRIVATIAN_SUPABASE_URL !== 'undefined' && typeof PRIVATIAN_SUPABASE_KEY !== 'undefined') {
-        const res = await fetch(`${PRIVATIAN_SUPABASE_URL}/rest/v1/articles?select=id,slug,title,deck,section,author,status,created_at,updated_at,published_at,hero_img_url&or=(is_deleted.is.null,is_deleted.eq.false)&order=updated_at.desc`, {
+        const res = await fetch(`${PRIVATIAN_SUPABASE_URL}/rest/v1/articles?select=id,slug,title,title_bn,deck,deck_bn,section,author,author_bn,status,created_at,updated_at,published_at,hero_img_url&or=(is_deleted.is.null,is_deleted.eq.false)&order=updated_at.desc`, {
           headers: {
             'apikey': PRIVATIAN_SUPABASE_KEY,
             'Authorization': 'Bearer ' + PRIVATIAN_SUPABASE_KEY
@@ -7163,31 +7500,45 @@ async function loadArticlesForHomepagePicker() {
 }
 
 async function loadHomepageSettings() {
-  let loaded = null;
+  let loadedEn = null;
+  let loadedBn = null;
   try {
-    const data = await _apiGet('/api/sections?action=homepage' + (_homepageLang === 'bn' ? '&lang=bn' : ''));
-    if (data && typeof data === 'object') loaded = data;
+    const [dataEn, dataBn] = await Promise.all([
+      _apiGet('/api/sections?action=homepage&lang=en'),
+      _apiGet('/api/sections?action=homepage&lang=bn')
+    ]);
+    if (dataEn && typeof dataEn === 'object') loadedEn = dataEn;
+    if (dataBn && typeof dataBn === 'object') loadedBn = dataBn;
   } catch(err) {}
 
-  if (!loaded) {
+  if (!loadedEn || !loadedBn) {
     try {
       const sb = window._sb || (window.initSupabaseClient && window.initSupabaseClient());
       if (sb) {
-        const targetAdminId = _homepageLang === 'bn' ? '__homepage_config_bn__' : '__homepage_config__';
-        const { data: sData } = await sb.from('sections').select('name').eq('admin_id', targetAdminId).maybeSingle();
-        if (sData && sData.name) {
-          const parsed = JSON.parse(sData.name);
-          if (parsed && typeof parsed === 'object') loaded = parsed;
+        if (!loadedEn) {
+          const { data: sEn } = await sb.from('sections').select('name').eq('admin_id', '__homepage_config__').maybeSingle();
+          if (sEn && sEn.name) {
+            try { loadedEn = JSON.parse(sEn.name); } catch(e) {}
+          }
+        }
+        if (!loadedBn) {
+          const { data: sBn } = await sb.from('sections').select('name').eq('admin_id', '__homepage_config_bn__').maybeSingle();
+          if (sBn && sBn.name) {
+            try { loadedBn = JSON.parse(sBn.name); } catch(e) {}
+          }
         }
       }
     } catch(e) {}
   }
 
-  if (!loaded) {
-    loaded = JSON.parse(JSON.stringify(DEFAULT_HOMEPAGE_CONFIG));
-  }
+  if (!loadedEn) loadedEn = JSON.parse(JSON.stringify(DEFAULT_HOMEPAGE_CONFIG));
+  if (!loadedBn) loadedBn = JSON.parse(JSON.stringify(DEFAULT_HOMEPAGE_CONFIG_BN));
 
-  homepageDraftConfig = loaded ? JSON.parse(JSON.stringify(loaded)) : JSON.parse(JSON.stringify(DEFAULT_HOMEPAGE_CONFIG));
+  // Perform bidirectional structural sync between both configurations
+  _hpDrafts.en = syncClientHomepageStructures(loadedEn, loadedEn, false);
+  _hpDrafts.bn = syncClientHomepageStructures(_hpDrafts.en, loadedBn, true);
+
+  homepageDraftConfig = _hpDrafts[_homepageLang] || _hpDrafts.en;
   ensureHomepageConfigDefaults();
   appliedHomepageConfig = JSON.parse(JSON.stringify(homepageDraftConfig));
   homepageUndoStack = [];
@@ -7197,22 +7548,30 @@ async function loadHomepageSettings() {
 }
 
 function ensureHomepageConfigDefaults() {
-  if (!homepageDraftConfig) homepageDraftConfig = JSON.parse(JSON.stringify(DEFAULT_HOMEPAGE_CONFIG));
-  if (!homepageDraftConfig.hero) homepageDraftConfig.hero = JSON.parse(JSON.stringify(DEFAULT_HOMEPAGE_CONFIG.hero));
-  if (!homepageDraftConfig.hero.main) homepageDraftConfig.hero.main = JSON.parse(JSON.stringify(DEFAULT_HOMEPAGE_CONFIG.hero.main));
-  if (!Array.isArray(homepageDraftConfig.hero.sidebar)) homepageDraftConfig.hero.sidebar = JSON.parse(JSON.stringify(DEFAULT_HOMEPAGE_CONFIG.hero.sidebar));
-  if (!Array.isArray(homepageDraftConfig.smallArticles)) homepageDraftConfig.smallArticles = JSON.parse(JSON.stringify(DEFAULT_HOMEPAGE_CONFIG.smallArticles));
-  if (!homepageDraftConfig.eventsSection) homepageDraftConfig.eventsSection = JSON.parse(JSON.stringify(DEFAULT_HOMEPAGE_CONFIG.eventsSection));
-  if (!Array.isArray(homepageDraftConfig.eventsSection.events)) homepageDraftConfig.eventsSection.events = JSON.parse(JSON.stringify(DEFAULT_HOMEPAGE_CONFIG.eventsSection.events));
-  if (!homepageDraftConfig.eventsSection.featured) homepageDraftConfig.eventsSection.featured = JSON.parse(JSON.stringify(DEFAULT_HOMEPAGE_CONFIG.eventsSection.featured));
-  if (!homepageDraftConfig.allNews) homepageDraftConfig.allNews = JSON.parse(JSON.stringify(DEFAULT_HOMEPAGE_CONFIG.allNews));
-  if (!Array.isArray(homepageDraftConfig.allNews.columns)) homepageDraftConfig.allNews.columns = JSON.parse(JSON.stringify(DEFAULT_HOMEPAGE_CONFIG.allNews.columns));
+  if (!_hpDrafts.en) _hpDrafts.en = JSON.parse(JSON.stringify(DEFAULT_HOMEPAGE_CONFIG));
+  if (!_hpDrafts.bn) _hpDrafts.bn = JSON.parse(JSON.stringify(DEFAULT_HOMEPAGE_CONFIG_BN));
+
+  ['en', 'bn'].forEach(l => {
+    const cfg = _hpDrafts[l];
+    const def = l === 'bn' ? DEFAULT_HOMEPAGE_CONFIG_BN : DEFAULT_HOMEPAGE_CONFIG;
+    if (!cfg.hero) cfg.hero = JSON.parse(JSON.stringify(def.hero));
+    if (!cfg.hero.main) cfg.hero.main = JSON.parse(JSON.stringify(def.hero.main));
+    if (!Array.isArray(cfg.hero.sidebar)) cfg.hero.sidebar = JSON.parse(JSON.stringify(def.hero.sidebar));
+    if (!Array.isArray(cfg.smallArticles)) cfg.smallArticles = JSON.parse(JSON.stringify(def.smallArticles));
+    if (!cfg.eventsSection) cfg.eventsSection = JSON.parse(JSON.stringify(def.eventsSection));
+    if (!Array.isArray(cfg.eventsSection.events)) cfg.eventsSection.events = JSON.parse(JSON.stringify(def.eventsSection.events));
+    if (!cfg.eventsSection.featured) cfg.eventsSection.featured = JSON.parse(JSON.stringify(def.eventsSection.featured));
+    if (!cfg.allNews) cfg.allNews = JSON.parse(JSON.stringify(def.allNews));
+    if (!Array.isArray(cfg.allNews.columns)) cfg.allNews.columns = JSON.parse(JSON.stringify(def.allNews.columns));
+  });
+
+  homepageDraftConfig = _hpDrafts[_homepageLang] || _hpDrafts.en;
 }
 
 // ── UNDO / REDO HISTORY ──────────────────────────────────────────
 function pushHomepageHistory() {
-  if (!homepageDraftConfig) return;
-  homepageUndoStack.push(JSON.stringify(homepageDraftConfig));
+  if (!_hpDrafts.en || !_hpDrafts.bn) return;
+  homepageUndoStack.push(JSON.stringify(_hpDrafts));
   if (homepageUndoStack.length > 50) homepageUndoStack.shift();
   homepageRedoStack = [];
   updateHomepageUndoRedoBtns();
@@ -7221,10 +7580,11 @@ function pushHomepageHistory() {
 function undoHomepageAction() {
   if (!homepageUndoStack.length) return;
   try {
-    homepageRedoStack.push(JSON.stringify(homepageDraftConfig));
+    homepageRedoStack.push(JSON.stringify(_hpDrafts));
     const prev = homepageUndoStack.pop();
     if (prev) {
-      homepageDraftConfig = JSON.parse(prev);
+      _hpDrafts = JSON.parse(prev);
+      homepageDraftConfig = _hpDrafts[_homepageLang] || _hpDrafts.en;
       renderActiveHpTab();
       updateHomepageUndoRedoBtns();
       updateGlobalSyncStatus();
@@ -7236,10 +7596,11 @@ function undoHomepageAction() {
 function redoHomepageAction() {
   if (!homepageRedoStack.length) return;
   try {
-    homepageUndoStack.push(JSON.stringify(homepageDraftConfig));
+    homepageUndoStack.push(JSON.stringify(_hpDrafts));
     const next = homepageRedoStack.pop();
     if (next) {
-      homepageDraftConfig = JSON.parse(next);
+      _hpDrafts = JSON.parse(next);
+      homepageDraftConfig = _hpDrafts[_homepageLang] || _hpDrafts.en;
       renderActiveHpTab();
       updateHomepageUndoRedoBtns();
       updateGlobalSyncStatus();
@@ -7359,7 +7720,7 @@ function renderHomepageVisualCanvas() {
             <div class="hp-canvas-img-wrap">
               <img src="${escapeHtml(card.imageUrl || 'img2.png')}" alt="" class="hp-canvas-img" onerror="this.onerror=null;this.src='img2.png'" />
             </div>
-            <h3 class="hp-canvas-headline" style="font-size:15px;">${escapeHtml(card.title || 'Untitled Card')}</h3>
+            <h3 class="hp-canvas-headline" style="font-size:14px;">${escapeHtml(card.title || 'Untitled Card')}</h3>
             <div class="hp-canvas-link-url">${escapeHtml(card.href || '#')}</div>
           </div>
         `).join('')}
@@ -7368,57 +7729,36 @@ function renderHomepageVisualCanvas() {
 
     <hr class="hp-canvas-section-divider" />
 
-    <!-- SECTION 3: EVENTS & SPOTLIGHT -->
+    <!-- SECTION 3: EVENTS PANEL & FEATURED SPOTLIGHT -->
     <div style="margin-bottom:28px;">
       <div class="hp-section-header-box">
         <span class="hp-section-header-title">Events Panel &amp; Featured Spotlight</span>
         <button type="button" class="btn btn--ghost btn--sm" onclick="switchHpTab('events')">Edit In Detail</button>
       </div>
       <div class="hp-canvas-events-grid">
-        <!-- Events Left Panel -->
-        <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:18px;">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
-            <div>
-              <h3 style="font-size:16px;font-weight:700;color:#0f172a;margin:0;">${escapeHtml(evSec.eventsHeading || 'Upcoming Events')}</h3>
-              <span style="font-size:11px;color:#64748b;">Showing top 2 active events on Homepage</span>
+        <!-- Events List -->
+        <div class="card" style="padding:16px;">
+          <div style="font-size:12px;font-weight:700;letter-spacing:0.05em;color:#0a528e;text-transform:uppercase;margin-bottom:14px;">
+            ${escapeHtml(evSec.eventsHeading || 'Upcoming Events')}
+          </div>
+          ${events.slice(0, 4).map((ev, idx) => `
+            <div style="padding:8px 0;border-bottom:1px solid #f1f5f9;opacity:${ev.enabled === false ? '0.4' : '1'};">
+              <div style="font-size:11px;font-weight:700;color:var(--text-muted);">${escapeHtml(ev.date)}</div>
+              <div style="font-size:13px;font-weight:700;color:#0f172a;margin:2px 0;">${escapeHtml(ev.title)}</div>
+              <div style="font-size:11px;color:var(--text-muted);">${escapeHtml(ev.meta)}</div>
             </div>
-            <button type="button" class="btn btn--primary btn--sm" onclick="switchHpTab('events')">Manage All Events</button>
-          </div>
-          ${(() => {
-            const activeEvents = events.filter(e => e.enabled !== false);
-            const top2 = activeEvents.slice(0, 2);
-            if (top2.length === 0) return '<div style="font-size:12.5px;color:#94a3b8;padding:16px 0;">No active events to display on homepage.</div>';
-            return top2.map((ev, eIdx) => `
-              <div class="hp-event-item-card" onclick="openHpEventModal('${ev.id}')" style="cursor:pointer;margin-bottom:8px;">
-                <div>
-                  <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
-                    <span class="hp-event-date-chip">${escapeHtml(ev.date || 'TBA')}</span>
-                    <span style="background:${eIdx === 0 ? '#16a34a' : '#0284c7'};color:#fff;font-size:9.5px;font-weight:700;padding:1px 5px;border-radius:3px;">Homepage #${eIdx + 1}</span>
-                  </div>
-                  <div style="font-size:13.5px;font-weight:600;color:#0f172a;">${escapeHtml(ev.title || 'Untitled Event')}</div>
-                  <div style="font-size:12px;color:#64748b;margin-top:2px;">${escapeHtml(ev.meta || '')}</div>
-                </div>
-                <div style="display:flex;gap:4px;">
-                  <button type="button" class="art-action-btn art-action-btn--edit" title="Edit Event">${ICONS.pencil}</button>
-                </div>
-              </div>
-            `).join('');
-          })()}
-          ${events.length > 2 ? `<div style="font-size:11.5px;color:#64748b;margin-top:8px;padding:4px 8px;background:#f1f5f9;border-radius:4px;display:inline-block;">+ ${events.length - 2} more event(s) listed on <a href="/events" target="_blank" style="color:#0a528e;font-weight:600;">/events</a></div>` : ''}
-          <div style="margin-top:10px;font-size:13px;font-weight:600;color:#0a528e;cursor:pointer;" onclick="switchHpTab('events')">
-            ${escapeHtml(evSec.seeAllText || 'See all events')} &rarr;
-          </div>
+          `).join('')}
         </div>
 
-        <!-- Featured Spotlight Right -->
-        <div class="hp-slot-card ${featured.enabled === false ? 'hp-slot-card--disabled' : ''}" onclick="openHpSlotModal('eventsSection.featured', 'Events Featured Spotlight Story')">
-          <div class="hp-slot-badge hp-slot-badge--events">Featured Spotlight ${featured.enabled === false ? '(Disabled)' : ''}</div>
+        <!-- Featured Spotlight -->
+        <div class="hp-slot-card ${featured.enabled === false ? 'hp-slot-card--disabled' : ''}" onclick="openHpSlotModal('eventsSection.featured', 'Events Featured Spotlight')">
+          <div class="hp-slot-badge hp-slot-badge--spotlight">Featured Spotlight ${featured.enabled === false ? '(Disabled)' : ''}</div>
           <div class="hp-slot-edit-hint">${ICONS.pencil} Click to edit</div>
-          <div class="hp-canvas-img-wrap" style="height:200px;">
+          <div class="hp-canvas-img-wrap">
             <img src="${escapeHtml(featured.imageUrl || 'img5.png')}" alt="" class="hp-canvas-img" onerror="this.onerror=null;this.src='img5.png'" />
           </div>
-          <h3 class="hp-canvas-headline">${escapeHtml(featured.title || 'Untitled Featured Story')}</h3>
-          <p class="hp-canvas-subtitle">${escapeHtml(featured.description || '')}</p>
+          <h3 class="hp-canvas-headline" style="font-size:15px;">${escapeHtml(featured.title || 'Untitled Spotlight')}</h3>
+          <p class="hp-canvas-subtitle" style="font-size:12.5px;">${escapeHtml(featured.description || '')}</p>
           <div class="hp-canvas-link-url">${escapeHtml(featured.href || '#')}</div>
         </div>
       </div>
@@ -7426,40 +7766,38 @@ function renderHomepageVisualCanvas() {
 
     <hr class="hp-canvas-section-divider" />
 
-    <!-- SECTION 4 & 5: ALL NEWS COLUMNS -->
+    <!-- SECTION 4: ALL NEWS 6 COLUMNS -->
     <div>
       <div class="hp-section-header-box">
         <span class="hp-section-header-title">${escapeHtml(allNews.heading || 'All News')} (6 Columns Grid)</span>
         <button type="button" class="btn btn--ghost btn--sm" onclick="switchHpTab('news')">Edit In Detail</button>
       </div>
-      <div class="hp-canvas-news-grid">
-        ${columns.map((col, colIdx) => `
-          <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:16px;display:flex;flex-direction:column;gap:14px;">
-            <div style="font-size:13px;font-weight:800;color:#0a528e;text-transform:uppercase;letter-spacing:0.06em;border-bottom:2px solid #0a528e;padding-bottom:4px;">
-              ${escapeHtml(col.label || `COLUMN ${colIdx + 1}`)}
+      <div class="hp-canvas-columns-grid">
+        ${columns.map((col, cIdx) => `
+          <div class="card" style="padding:14px;background:#f8fafc;">
+            <div style="font-size:11px;font-weight:800;color:#0a528e;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:10px;border-bottom:1.5px solid #e2e8f0;padding-bottom:6px;">
+              ${escapeHtml(col.label || `COLUMN ${cIdx + 1}`)}
             </div>
 
             <!-- Column Lead Story -->
-            <div class="hp-slot-card ${col.lead && col.lead.enabled === false ? 'hp-slot-card--disabled' : ''}" onclick="openHpSlotModal('allNews.columns.${colIdx}.lead', '${escapeHtml(col.label)}: Lead Article')">
-              <div class="hp-slot-badge hp-slot-badge--col">Column Lead</div>
-              <div class="hp-slot-edit-hint">${ICONS.pencil} Edit</div>
-              <div class="hp-canvas-img-wrap" style="height:120px;">
+            <div class="hp-slot-card ${(col.lead && col.lead.enabled === false) ? 'hp-slot-card--disabled' : ''}" style="margin-bottom:12px;padding:8px;" onclick="openHpSlotModal('allNews.columns.${cIdx}.lead', '${escapeHtml(col.label)}: Lead Story')">
+              <div class="hp-slot-badge hp-slot-badge--col" style="font-size:9.5px;">Lead Story</div>
+              <div class="hp-canvas-img-wrap" style="height:80px;margin-bottom:6px;">
                 <img src="${escapeHtml((col.lead && col.lead.imageUrl) || 'img1.png')}" alt="" class="hp-canvas-img" onerror="this.onerror=null;this.src='img1.png'" />
               </div>
-              <h4 class="hp-canvas-headline" style="font-size:14px;">${escapeHtml((col.lead && col.lead.title) || 'Untitled Story')}</h4>
-              <div class="hp-canvas-link-url">${escapeHtml((col.lead && col.lead.href) || '#')}</div>
+              <div style="font-size:12.5px;font-weight:700;line-height:1.3;color:#0f172a;">${escapeHtml((col.lead && col.lead.title) || 'Untitled Lead')}</div>
             </div>
 
-            <!-- Column Sub Articles List -->
-            <div>
-              <div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;">
-                <span>Sub-Articles (${(col.subArticles || []).length})</span>
-                <button type="button" class="btn btn--ghost btn--sm" style="padding:2px 6px;font-size:10px;" onclick="event.stopPropagation(); addHpSubArticle(${colIdx})">+ Add</button>
+            <!-- Column Sub-articles -->
+            <div style="display:flex;flex-direction:column;gap:6px;">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px;">
+                <span style="font-size:11px;font-weight:700;color:var(--text-muted);">Sub-Headlines (${(col.subArticles || []).length})</span>
+                <button type="button" class="btn btn--ghost btn--sm" style="padding:1px 6px;font-size:10.5px;" onclick="addHpSubArticle(${cIdx})">+ Add</button>
               </div>
               ${(col.subArticles || []).map((sub, sIdx) => `
-                <div class="hp-sub-headline-item" onclick="openHpSlotModal('allNews.columns.${colIdx}.subArticles.${sIdx}', '${escapeHtml(col.label)}: Sub Story ${sIdx + 1}')" style="cursor:pointer;">
-                  <span style="flex:1;line-height:1.35;${sub.enabled === false ? 'text-decoration:line-through;opacity:0.5;' : ''}">${escapeHtml(sub.title || 'Untitled Headline')}</span>
-                  <button type="button" class="art-action-btn art-action-btn--edit" title="Edit">${ICONS.pencil}</button>
+                <div class="hp-sub-headline-item" onclick="openHpSlotModal('allNews.columns.${cIdx}.subArticles.${sIdx}', '${escapeHtml(col.label)}: Sub Story ${sIdx + 1}')">
+                  <span style="font-size:11.5px;color:#334155;line-height:1.35;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(sub.title || 'Untitled Sub Story')}</span>
+                  <button type="button" class="art-action-btn art-action-btn--trash" style="width:20px;height:20px;padding:0;" onclick="event.stopPropagation();deleteHpSubArticle(${cIdx}, ${sIdx})">${ICONS.trash}</button>
                 </div>
               `).join('')}
             </div>
@@ -7472,85 +7810,85 @@ function renderHomepageVisualCanvas() {
   container.innerHTML = html;
 }
 
-// ── RENDER HERO EDITOR TAB ───────────────────────────────────────
+// ── RENDER HERO TAB ──────────────────────────────────────────────
 function renderHeroEditor() {
   const container = document.getElementById('hp-hero-editor-container');
   if (!container || !homepageDraftConfig) return;
 
-  const hero = homepageDraftConfig.hero;
-  const main = hero.main || {};
-  const side = hero.sidebar || [];
+  const heroMain = homepageDraftConfig.hero.main || {};
+  const heroSide = homepageDraftConfig.hero.sidebar || [];
 
   container.innerHTML = `
-    <div class="card" style="padding:22px;margin-bottom:20px;">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;border-bottom:1px solid var(--border);padding-bottom:10px;">
-        <h3 style="font-size:16px;font-weight:700;color:var(--text-primary);margin:0;">Hero Main Lead Story</h3>
-        <button type="button" class="btn btn--primary btn--sm" onclick="openHpSlotModal('hero.main', 'Hero Main Lead Story')">Edit Lead Story</button>
-      </div>
-      <div style="display:grid;grid-template-columns:120px 1fr;gap:18px;align-items:center;">
-        <img src="${escapeHtml(main.imageUrl || 'img1.png')}" alt="" style="width:120px;height:80px;object-fit:cover;border-radius:6px;border:1px solid var(--border);" onerror="this.onerror=null;this.src='img1.png'" />
-        <div>
-          <h4 style="font-family:'Libre Baskerville',serif;font-size:16px;font-weight:700;margin:0 0 6px;">${escapeHtml(main.title || 'Untitled')}</h4>
-          <p style="font-size:13px;color:var(--text-muted);margin:0 0 4px;">${escapeHtml(main.subtitle || '')}</p>
-          <span class="hs-slug-chip">${escapeHtml(main.href || '#')}</span>
+    <div style="display:grid;grid-template-columns:1.2fr 1fr;gap:20px;">
+      <!-- Hero Main Story Card -->
+      <div class="card" style="padding:22px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+          <div>
+            <h3 style="font-size:15px;font-weight:700;color:var(--text-primary);margin:0 0 2px;">Main Lead Headline Article</h3>
+            <p style="font-size:12px;color:var(--text-muted);margin:0;">The large hero centerpiece on the homepage</p>
+          </div>
+          <button type="button" class="btn btn--primary btn--sm" onclick="openHpSlotModal('hero.main', 'Hero Main Lead Story')">Edit Main Slot</button>
+        </div>
+        <div class="hp-slot-card" style="padding:14px;background:#f8fafc;" onclick="openHpSlotModal('hero.main', 'Hero Main Lead Story')">
+          <div class="hp-canvas-img-wrap hp-canvas-img-wrap--hero" style="margin-bottom:10px;">
+            <img src="${escapeHtml(heroMain.imageUrl || 'img1.png')}" alt="" class="hp-canvas-img" onerror="this.onerror=null;this.src='img1.png'" />
+          </div>
+          <h2 class="hp-canvas-headline hp-canvas-headline--hero">${escapeHtml(heroMain.title || 'Untitled Story')}</h2>
+          <p class="hp-canvas-subtitle">${escapeHtml(heroMain.subtitle || '')}</p>
+          <div class="hp-canvas-link-url">${escapeHtml(heroMain.href || '#')}</div>
         </div>
       </div>
-    </div>
 
-    <div class="card" style="padding:22px;">
-      <h3 style="font-size:16px;font-weight:700;color:var(--text-primary);margin:0 0 16px;border-bottom:1px solid var(--border);padding-bottom:10px;">Hero Sidebar Stories (2 Slots)</h3>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;">
-        ${side.map((s, idx) => `
-          <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:16px;display:flex;flex-direction:column;justify-content:space-between;">
-            <div>
-              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
-                <span class="hp-slot-badge hp-slot-badge--sidebar">Sidebar Story ${idx + 1}</span>
-                <span style="font-size:11px;color:${s.enabled !== false ? '#16a34a' : '#94a3b8'};font-weight:600;">${s.enabled !== false ? 'Active' : 'Disabled'}</span>
-              </div>
-              <img src="${escapeHtml(s.imageUrl || 'img5.png')}" alt="" style="width:100%;height:110px;object-fit:cover;border-radius:6px;margin-bottom:10px;" onerror="this.onerror=null;this.src='img5.png'" />
-              <h4 style="font-size:14px;font-weight:700;margin:0 0 6px;">${escapeHtml(s.title || 'Untitled')}</h4>
-              <p style="font-size:12.5px;color:var(--text-muted);margin:0 0 6px;">${escapeHtml(s.description || '')}</p>
-              ${s.tag ? `<span class="hp-canvas-tag">${escapeHtml(s.tag)}</span>` : ''}
-            </div>
-            <div style="margin-top:12px;display:flex;justify-content:space-between;align-items:center;">
-              <span class="hs-slug-chip">${escapeHtml(s.href || '#')}</span>
-              <button type="button" class="btn btn--ghost btn--sm" onclick="openHpSlotModal('hero.sidebar.${idx}', 'Hero Sidebar Story ${idx + 1}')">Edit</button>
-            </div>
+      <!-- Hero Sidebar Stories List -->
+      <div class="card" style="padding:22px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+          <div>
+            <h3 style="font-size:15px;font-weight:700;color:var(--text-primary);margin:0 0 2px;">Hero Sidebar Stories (${heroSide.length})</h3>
+            <p style="font-size:12px;color:var(--text-muted);margin:0;">Curated high-profile articles in hero sidebar</p>
           </div>
-        `).join('')}
+        </div>
+        <div style="display:flex;flex-direction:column;gap:14px;">
+          ${heroSide.map((side, sIdx) => `
+            <div class="hp-slot-card" style="padding:12px;background:#f8fafc;" onclick="openHpSlotModal('hero.sidebar.${sIdx}', 'Hero Sidebar Story ${sIdx + 1}')">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+                <span class="hp-slot-badge hp-slot-badge--sidebar">Sidebar Story ${sIdx + 1}</span>
+                <span style="font-size:11px;color:var(--primary);font-weight:600;">Edit Slot &rarr;</span>
+              </div>
+              <div style="font-size:13.5px;font-weight:700;color:#0f172a;margin-bottom:4px;">${escapeHtml(side.title || 'Untitled Sidebar')}</div>
+              <div style="font-size:12px;color:var(--text-muted);margin-bottom:6px;">${escapeHtml(side.description || '')}</div>
+              <div class="hp-canvas-link-url">${escapeHtml(side.href || '#')}</div>
+            </div>
+          `).join('')}
+        </div>
       </div>
     </div>
   `;
 }
 
-// ── RENDER 3-CARDS TAB ───────────────────────────────────────────
+// ── RENDER SMALL CARDS TAB ───────────────────────────────────────
 function renderCardsEditor() {
   const container = document.getElementById('hp-cards-editor-container');
   if (!container || !homepageDraftConfig) return;
 
-  const cards = homepageDraftConfig.smallArticles || [];
+  const smallCards = homepageDraftConfig.smallArticles || [];
 
   container.innerHTML = `
-    <div class="card" style="padding:22px;">
-      <h3 style="font-size:16px;font-weight:700;color:var(--text-primary);margin:0 0 16px;border-bottom:1px solid var(--border);padding-bottom:10px;">3 Small Articles Row</h3>
-      <div style="display:grid;grid-template-columns:repeat(3, 1fr);gap:18px;">
-        ${cards.map((c, idx) => `
-          <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:16px;display:flex;flex-direction:column;justify-content:space-between;">
-            <div>
-              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
-                <span class="hp-slot-badge hp-slot-badge--card">Card ${idx + 1}</span>
-                <span style="font-size:11px;color:${c.enabled !== false ? '#16a34a' : '#94a3b8'};font-weight:600;">${c.enabled !== false ? 'Active' : 'Disabled'}</span>
-              </div>
-              <img src="${escapeHtml(c.imageUrl || 'img2.png')}" alt="" style="width:100%;height:130px;object-fit:cover;border-radius:6px;margin-bottom:10px;" onerror="this.onerror=null;this.src='img2.png'" />
-              <h4 style="font-size:14px;font-weight:700;margin:0 0 6px;">${escapeHtml(c.title || 'Untitled')}</h4>
-            </div>
-            <div style="margin-top:12px;display:flex;justify-content:space-between;align-items:center;">
-              <span class="hs-slug-chip">${escapeHtml(c.href || '#')}</span>
-              <button type="button" class="btn btn--ghost btn--sm" onclick="openHpSlotModal('smallArticles.${idx}', 'Card ${idx + 1}')">Edit</button>
-            </div>
+    <div style="display:grid;grid-template-columns:repeat(3, 1fr);gap:20px;">
+      ${smallCards.map((card, cIdx) => `
+        <div class="card" style="padding:20px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+            <span class="hp-slot-badge hp-slot-badge--card">Card Slot ${cIdx + 1}</span>
+            <button type="button" class="btn btn--primary btn--sm" onclick="openHpSlotModal('smallArticles.${cIdx}', 'Small Card ${cIdx + 1}')">Edit Card</button>
           </div>
-        `).join('')}
-      </div>
+          <div class="hp-slot-card" style="padding:10px;background:#f8fafc;" onclick="openHpSlotModal('smallArticles.${cIdx}', 'Small Card ${cIdx + 1}')">
+            <div class="hp-canvas-img-wrap" style="height:120px;margin-bottom:8px;">
+              <img src="${escapeHtml(card.imageUrl || 'img2.png')}" alt="" class="hp-canvas-img" onerror="this.onerror=null;this.src='img2.png'" />
+            </div>
+            <h3 class="hp-canvas-headline" style="font-size:14px;">${escapeHtml(card.title || 'Untitled Card')}</h3>
+            <div class="hp-canvas-link-url">${escapeHtml(card.href || '#')}</div>
+          </div>
+        </div>
+      `).join('')}
     </div>
   `;
 }
@@ -7564,156 +7902,81 @@ function renderEventsEditor() {
   const events = evSec.events || [];
   const featured = evSec.featured || {};
 
-  let activeCount = 0;
-
   container.innerHTML = `
     <div style="display:grid;grid-template-columns:1.2fr 1fr;gap:20px;">
-      <!-- Events Settings Card -->
+      <!-- Events List Configuration -->
       <div class="card" style="padding:22px;">
-        <div style="background:#e0f2fe;border:1px solid #bae6fd;border-radius:8px;padding:12px 14px;margin-bottom:18px;font-size:12.5px;color:#0369a1;line-height:1.45;display:flex;align-items:flex-start;gap:8px;">
-          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#0284c7" stroke-width="2" style="flex-shrink:0;margin-top:2px;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-          <div><strong>Event Display Rule:</strong> The top <strong>2 active events</strong> in this list will automatically show on the Homepage "Upcoming Events" section. All scheduled events will be displayed on the dedicated <a href="/events" target="_blank" style="color:#0284c7;font-weight:700;text-decoration:underline;">All Events Page (/events)</a>. Use the arrow buttons to reorder events.</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">
+          <div>
+            <h3 style="font-size:15px;font-weight:700;color:var(--text-primary);margin:0 0 2px;">Upcoming Events Schedule</h3>
+            <p style="font-size:12px;color:var(--text-muted);margin:0;">Displayed in the events sidebar on homepage</p>
+          </div>
+          <button type="button" class="btn btn--primary btn--sm" onclick="openHpEventModal()">+ Add Event</button>
         </div>
 
-        <div class="form-group" style="margin-bottom:16px;">
-          <label class="form-label" for="hp-events-heading-input">Homepage Events Heading</label>
+        <div class="form-group" style="margin-bottom:14px;">
+          <label class="form-label" for="hp-events-heading-input">Events Block Title</label>
           <input type="text" id="hp-events-heading-input" class="form-input" value="${escapeHtml(evSec.eventsHeading || 'Upcoming Events')}" oninput="onHpSectionTitleInput('eventsHeading', this.value)" />
         </div>
+
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px;">
-          <div class="form-group">
-            <label class="form-label" for="hp-events-seeall-text">"See All" Text</label>
+          <div class="form-group" style="margin-bottom:0;">
+            <label class="form-label" for="hp-events-seeall-text">"See All" Button Text</label>
             <input type="text" id="hp-events-seeall-text" class="form-input" value="${escapeHtml(evSec.seeAllText || 'See all events')}" oninput="onHpSectionTitleInput('seeAllText', this.value)" />
           </div>
-          <div class="form-group">
-            <label class="form-label" for="hp-events-seeall-href">"See All" Link URL</label>
+          <div class="form-group" style="margin-bottom:0;">
+            <label class="form-label" for="hp-events-seeall-href">"See All" Target Link</label>
             <input type="text" id="hp-events-seeall-href" class="form-input" value="${escapeHtml(evSec.seeAllHref || '/events')}" oninput="onHpSectionTitleInput('seeAllHref', this.value)" />
           </div>
         </div>
 
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;border-top:1px solid var(--border);padding-top:14px;">
-          <div>
-            <h4 style="font-size:14px;font-weight:700;margin:0;">All Events List (${events.length})</h4>
-            <span style="font-size:11px;color:var(--text-muted);">Reorder to pick which 2 events appear on the Homepage</span>
-          </div>
-          <button type="button" class="btn btn--primary btn--sm" onclick="openHpEventModal()">+ Add Event</button>
-        </div>
-        ${events.length === 0 ? `<div style="font-size:12.5px;color:var(--text-muted);padding:16px 0;">No events listed yet. Click "+ Add Event" above.</div>` : ''}
-        ${events.map((ev, idx) => {
-          const isActive = ev.enabled !== false;
-          let slotBadge = '';
-          if (isActive) {
-            activeCount++;
-            if (activeCount === 1) slotBadge = `<span style="background:#16a34a;color:#fff;font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;text-transform:uppercase;">Homepage #1</span>`;
-            else if (activeCount === 2) slotBadge = `<span style="background:#0284c7;color:#fff;font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;text-transform:uppercase;">Homepage #2</span>`;
-          }
-
-          return `
-            <div class="hp-event-item-card ${!isActive ? 'menu-item-card--disabled' : ''}">
-              <div class="menu-item-reorder-btns">
-                <button type="button" class="menu-reorder-btn" title="Move Up" ${idx === 0 ? 'disabled style="opacity:0.3;"' : ''} onclick="moveHpEvent('${ev.id}', -1)">${MENU_ICONS.up}</button>
-                <button type="button" class="menu-reorder-btn" title="Move Down" ${idx === events.length - 1 ? 'disabled style="opacity:0.3;"' : ''} onclick="moveHpEvent('${ev.id}', 1)">${MENU_ICONS.down}</button>
+        <div style="display:flex;flex-direction:column;gap:10px;">
+          ${events.map((ev, eIdx) => `
+            <div class="card" style="padding:12px;background:#f8fafc;display:flex;align-items:center;justify-content:space-between;gap:12px;opacity:${ev.enabled === false ? '0.5' : '1'};">
+              <div style="flex:1;overflow:hidden;">
+                <div style="font-size:11.5px;font-weight:700;color:var(--text-muted);">${escapeHtml(ev.date)}</div>
+                <div style="font-size:13px;font-weight:700;color:#0f172a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(ev.title)}</div>
+                <div style="font-size:11px;color:var(--text-muted);">${escapeHtml(ev.meta)}</div>
               </div>
-              <div style="flex:1;min-width:0;">
-                <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap;">
-                  <span class="hp-event-date-chip">${escapeHtml(ev.date || 'TBA')}</span>
-                  ${slotBadge}
-                  <span style="font-size:11px;color:${isActive ? '#16a34a' : '#94a3b8'};">${isActive ? 'Active' : 'Disabled'}</span>
-                </div>
-                <div style="font-size:13.5px;font-weight:600;color:var(--text-primary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(ev.title || 'Untitled Event')}</div>
-                <div style="font-size:12px;color:var(--text-muted);">${escapeHtml(ev.meta || '')}</div>
-              </div>
-              <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">
-                <label class="hs-toggle" title="Toggle visibility">
-                  <input type="checkbox" ${isActive ? 'checked' : ''} onchange="toggleHpEvent('${ev.id}')" />
-                  <span class="hs-toggle-track"><span class="hs-toggle-thumb"></span></span>
-                </label>
-                <button type="button" class="art-action-btn art-action-btn--edit" onclick="openHpEventModal('${ev.id}')" title="Edit Event">${ICONS.pencil}</button>
-                <button type="button" class="art-action-btn art-action-btn--trash" onclick="deleteHpEvent('${ev.id}')" title="Delete Event">${ICONS.trash}</button>
+              <div style="display:flex;gap:4px;align-items:center;">
+                <button type="button" class="art-action-btn" style="width:28px;height:28px;" onclick="moveHpEvent('${ev.id}', -1)" ${eIdx === 0 ? 'disabled' : ''} title="Move Up">${MENU_ICONS.up}</button>
+                <button type="button" class="art-action-btn" style="width:28px;height:28px;" onclick="moveHpEvent('${ev.id}', 1)" ${eIdx === events.length - 1 ? 'disabled' : ''} title="Move Down">${MENU_ICONS.down}</button>
+                <button type="button" class="art-action-btn art-action-btn--edit" style="width:28px;height:28px;" onclick="openHpEventModal('${ev.id}')" title="Edit">${ICONS.pencil}</button>
+                <button type="button" class="art-action-btn art-action-btn--trash" style="width:28px;height:28px;" onclick="deleteHpEvent('${ev.id}')" title="Delete">${ICONS.trash}</button>
               </div>
             </div>
-          `;
-        }).join('')}
+          `).join('')}
+        </div>
       </div>
 
-      <!-- Featured Spotlight Card -->
+      <!-- Featured Spotlight Article -->
       <div class="card" style="padding:22px;">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;border-bottom:1px solid var(--border);padding-bottom:10px;">
-          <h4 style="font-size:14px;font-weight:700;margin:0;">Featured Spotlight Story</h4>
-          <button type="button" class="btn btn--primary btn--sm" onclick="openHpSlotModal('eventsSection.featured', 'Events Featured Spotlight Story')">Edit Spotlight</button>
-        </div>
-        <img src="${escapeHtml(featured.imageUrl || 'img5.png')}" alt="" style="width:100%;height:160px;object-fit:cover;border-radius:6px;margin-bottom:12px;" onerror="this.onerror=null;this.src='img5.png'" />
-        <h4 style="font-family:'Libre Baskerville',serif;font-size:16px;font-weight:700;margin:0 0 6px;">${escapeHtml(featured.title || 'Untitled')}</h4>
-        <p style="font-size:13px;color:var(--text-muted);margin:0 0 8px;">${escapeHtml(featured.description || '')}</p>
-        <span class="hs-slug-chip">${escapeHtml(featured.href || '#')}</span>
-      </div>
-    </div>
-  `;
-}
-
-// ── RENDER ALL NEWS TAB ──────────────────────────────────────────
-function renderNewsEditor() {
-  const container = document.getElementById('hp-news-editor-container');
-  if (!container || !homepageDraftConfig) return;
-
-  const allNews = homepageDraftConfig.allNews || {};
-  const cols = allNews.columns || [];
-
-  container.innerHTML = `
-    <div class="card" style="padding:22px;margin-bottom:20px;">
-      <div class="form-group" style="max-width:400px;">
-        <label class="form-label" for="hp-allnews-heading-input">All News Section Main Title</label>
-        <input type="text" id="hp-allnews-heading-input" class="form-input" value="${escapeHtml(allNews.heading || 'All News')}" oninput="onHpSectionTitleInput('allNewsHeading', this.value)" />
-      </div>
-    </div>
-
-    <div style="display:grid;grid-template-columns:repeat(3, 1fr);gap:20px;">
-      ${cols.map((col, cIdx) => `
-        <div class="card" style="padding:18px;background:#ffffff;">
-          <div class="form-group" style="margin-bottom:12px;">
-            <label class="form-label" style="font-size:11px;font-weight:700;">Column ${cIdx + 1} Label</label>
-            <input type="text" class="form-input" value="${escapeHtml(col.label || '')}" oninput="onHpColumnLabelInput(${cIdx}, this.value)" style="font-weight:700;color:#0a528e;" />
-          </div>
-          <div class="form-group" style="margin-bottom:14px;">
-            <label class="form-label" style="font-size:11px;">Section Slug Link ${_homepageLang === 'bn' ? '<span style="color:#d97706;font-size:10px;font-weight:600;">([Locked] Set in English)</span>' : ''}</label>
-            <input type="text" class="form-input" value="${escapeHtml(col.sectionSlug || '')}" ${_homepageLang === 'bn' ? 'readonly style="opacity:0.55;cursor:not-allowed;background:#f8fafc;" title="[Locked] Section Slug is unified in backend and defined strictly in English"' : `oninput="onHpColumnSlugInput(${cIdx}, this.value)"`} placeholder="e.g. culture" />
-          </div>
-
-          <!-- Lead Story Preview -->
-          <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;padding:10px;margin-bottom:12px;">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
-              <span class="hp-slot-badge hp-slot-badge--col" style="font-size:9.5px;">Lead Story</span>
-              <button type="button" class="btn btn--ghost btn--sm" style="padding:2px 7px;font-size:11px;" onclick="openHpSlotModal('allNews.columns.${cIdx}.lead', '${escapeHtml(col.label)}: Lead Article')">Edit</button>
-            </div>
-            <div style="font-size:12.5px;font-weight:700;line-height:1.3;color:#0f172a;">${escapeHtml((col.lead && col.lead.title) || 'Untitled')}</div>
-          </div>
-
-          <!-- Sub Articles List -->
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
           <div>
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-              <span style="font-size:11.5px;font-weight:700;color:var(--text-muted);">Sub-Headlines (${(col.subArticles || []).length})</span>
-              <button type="button" class="btn btn--ghost btn--sm" style="padding:2px 7px;font-size:11px;" onclick="addHpSubArticle(${cIdx})">+ Add</button>
-            </div>
-            ${(col.subArticles || []).map((sub, sIdx) => `
-              <div class="hp-sub-headline-item" style="padding:6px 10px;">
-                <span style="font-size:12px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(sub.title || 'Untitled')}</span>
-                <div style="display:flex;gap:4px;">
-                  <button type="button" class="art-action-btn art-action-btn--edit" style="width:24px;height:24px;padding:0;" onclick="openHpSlotModal('allNews.columns.${cIdx}.subArticles.${sIdx}', '${escapeHtml(col.label)}: Sub Story ${sIdx + 1}')">${ICONS.pencil}</button>
-                  <button type="button" class="art-action-btn art-action-btn--trash" style="width:24px;height:24px;padding:0;" onclick="deleteHpSubArticle(${cIdx}, ${sIdx})">${ICONS.trash}</button>
-                </div>
-              </div>
-            `).join('')}
+            <h3 style="font-size:15px;font-weight:700;color:var(--text-primary);margin:0 0 2px;">Featured Spotlight Story</h3>
+            <p style="font-size:12px;color:var(--text-muted);margin:0;">Right-side spotlight card next to events</p>
           </div>
+          <button type="button" class="btn btn--primary btn--sm" onclick="openHpSlotModal('eventsSection.featured', 'Events Featured Spotlight')">Edit Spotlight</button>
         </div>
-      `).join('')}
+        <div class="hp-slot-card" style="padding:14px;background:#f8fafc;" onclick="openHpSlotModal('eventsSection.featured', 'Events Featured Spotlight')">
+          <div class="hp-canvas-img-wrap" style="height:140px;margin-bottom:10px;">
+            <img src="${escapeHtml(featured.imageUrl || 'img5.png')}" alt="" class="hp-canvas-img" onerror="this.onerror=null;this.src='img5.png'" />
+          </div>
+          <h3 class="hp-canvas-headline" style="font-size:15px;">${escapeHtml(featured.title || 'Untitled Spotlight')}</h3>
+          <p class="hp-canvas-subtitle" style="font-size:12.5px;">${escapeHtml(featured.description || '')}</p>
+          <div class="hp-canvas-link-url">${escapeHtml(featured.href || '#')}</div>
+        </div>
+      </div>
     </div>
   `;
 }
 
 // ── SLOT MODAL & ARTICLE PICKER ──────────────────────────────────
-function getHpObjectByPath(path) {
-  if (!homepageDraftConfig) return null;
+function getHpObjectByPath(path, root) {
+  const base = root || homepageDraftConfig;
+  if (!base) return null;
   const parts = path.split('.');
-  let curr = homepageDraftConfig;
+  let curr = base;
   for (const part of parts) {
     if (curr == null) return null;
     curr = curr[part];
@@ -7721,10 +7984,11 @@ function getHpObjectByPath(path) {
   return curr;
 }
 
-function setHpObjectByPath(path, val) {
-  if (!homepageDraftConfig) return;
+function setHpObjectByPath(path, val, root) {
+  const base = root || homepageDraftConfig;
+  if (!base) return;
   const parts = path.split('.');
-  let curr = homepageDraftConfig;
+  let curr = base;
   for (let i = 0; i < parts.length - 1; i++) {
     const part = parts[i];
     if (curr[part] == null) curr[part] = {};
@@ -7753,6 +8017,7 @@ function openHpSlotModal(path, roleName) {
 
   if (!modal) return;
 
+  _lastMatchedArticleForHpSlot = null;
   pathInput.value = path;
   titleEl.textContent = 'Edit Homepage Slot';
   badgeEl.textContent = roleName || path;
@@ -7760,30 +8025,28 @@ function openHpSlotModal(path, roleName) {
   if (idSearchInput) idSearchInput.value = '';
   if (matchedChip) matchedChip.style.display = 'none';
 
-  // Populate Published Article Selector dropdown with [ID] prefix
+  const isBn = _homepageLang === 'bn';
+
+  // Populate Published Article Selector dropdown with localized Title
   if (articleSelect) {
     articleSelect.innerHTML = `<option value="">— Or pick from recent database articles list —</option>` +
       homepageArticlesList.map(a => {
         const sid = a.id ? a.id.slice(0, 8) : '';
-        return `<option value="${escapeHtml(a.id || a.slug)}">${sid ? `[${sid}] ` : ''}${escapeHtml(a.title)} (${escapeHtml(a.section || 'General')})</option>`;
+        const artTitle = isBn ? (a.title_bn || a.title) : (a.title || a.title_bn);
+        return `<option value="${escapeHtml(a.id || a.slug)}">${sid ? `[${sid}] ` : ''}${escapeHtml(artTitle)} (${escapeHtml(a.section || 'General')})</option>`;
       }).join('');
   }
 
   const slotData = getHpObjectByPath(path) || {};
 
-  const isBn = _homepageLang === 'bn';
   headlineInput.value = slotData.title || '';
   if (subtitleInput) subtitleInput.value = slotData.subtitle || slotData.description || '';
   if (linkInput) {
     linkInput.value = slotData.href || '';
-    linkInput.readOnly = isBn;
-    linkInput.style.opacity = isBn ? '0.55' : '1';
-    linkInput.style.backgroundColor = isBn ? '#f8fafc' : '';
-    linkInput.style.cursor = isBn ? 'not-allowed' : '';
-    linkInput.title = isBn ? '[Locked] URL is unified in backend and defined strictly in English' : '';
+    linkInput.readOnly = false;
   }
   const linkLockNote = document.getElementById('hp-slot-link-lock-note');
-  if (linkLockNote) linkLockNote.style.display = isBn ? 'block' : 'none';
+  if (linkLockNote) linkLockNote.style.display = 'none';
 
   if (imageInput) imageInput.value = slotData.imageUrl || '';
   if (tagInput) tagInput.value = slotData.tag || '';
@@ -7808,447 +8071,6 @@ function openHpSlotModal(path, roleName) {
   updateHpSlotImagePreview();
   modal.removeAttribute('hidden');
   headlineInput.focus();
-}
-
-function showHpSlotMatchedArticle(article) {
-  const matchedChip = document.getElementById('hp-slot-matched-article');
-  const matchedTitle = document.getElementById('hp-slot-matched-title');
-  const matchedId = document.getElementById('hp-slot-matched-id');
-  const idSearchInput = document.getElementById('hp-slot-id-search');
-  const articleSelect = document.getElementById('hp-slot-article-select');
-
-  if (matchedChip && matchedTitle && matchedId) {
-    matchedTitle.textContent = article.title || 'Untitled Article';
-    matchedId.textContent = article.id ? `ID: ${article.id.slice(0, 8)}...` : '';
-    matchedId.title = `Full Unique ID: ${article.id || ''}`;
-    matchedChip.style.display = 'flex';
-  }
-  if (idSearchInput && article.id) {
-    idSearchInput.value = article.id;
-  }
-  if (articleSelect) {
-    articleSelect.value = article.id || article.slug || '';
-  }
-}
-
-function clearHpSlotArticleSelection() {
-  const matchedChip = document.getElementById('hp-slot-matched-article');
-  const idSearchInput = document.getElementById('hp-slot-id-search');
-  const articleSelect = document.getElementById('hp-slot-article-select');
-  if (matchedChip) matchedChip.style.display = 'none';
-  if (idSearchInput) idSearchInput.value = '';
-  if (articleSelect) articleSelect.value = '';
-}
-
-function onHpArticleIdInput(value) {
-  const q = (value || '').trim();
-  if (!q) {
-    clearHpSlotArticleSelection();
-    return;
-  }
-  // Fast match in memory if typed/pasted 8+ chars of ID or exact slug
-  const directMatch = homepageArticlesList.find(a =>
-    a.id === q ||
-    (a.id && a.id.toLowerCase().startsWith(q.toLowerCase()) && q.length >= 8) ||
-    a.slug === q
-  ) || _allArticles.find(a =>
-    a.id === q ||
-    (a.id && a.id.toLowerCase().startsWith(q.toLowerCase()) && q.length >= 8) ||
-    a.slug === q
-  );
-
-  if (directMatch) {
-    applyHpArticleToSlot(directMatch);
-  }
-}
-
-async function fetchArticleByIdForHpSlot(searchQuery) {
-  const q = (searchQuery || '').trim();
-  if (!q) {
-    showToast('info', 'Please enter an Article Unique ID or Title to search');
-    return;
-  }
-
-  // 1. Search locally in homepageArticlesList and _allArticles
-  let match = homepageArticlesList.find(a =>
-    a.id === q ||
-    (a.id && a.id.toLowerCase().includes(q.toLowerCase())) ||
-    (a.slug && a.slug.toLowerCase().includes(q.toLowerCase())) ||
-    (a.title && a.title.toLowerCase().includes(q.toLowerCase()))
-  ) || _allArticles.find(a =>
-    a.id === q ||
-    (a.id && a.id.toLowerCase().includes(q.toLowerCase())) ||
-    (a.slug && a.slug.toLowerCase().includes(q.toLowerCase())) ||
-    (a.title && a.title.toLowerCase().includes(q.toLowerCase()))
-  );
-
-  // 2. If not found in memory, query live Supabase database
-  if (!match) {
-    try {
-      const sb = window._sb || (window.initSupabaseClient && window.initSupabaseClient());
-      if (sb) {
-        // Try exact ID match first
-        const { data: byId } = await sb.from('articles').select('*').eq('id', q).single();
-        if (byId) {
-          match = byId;
-        } else {
-          // Try search by slug or title
-          const { data: byText } = await sb.from('articles')
-            .select('*')
-            .or(`slug.eq.${q},title.ilike.%${q}%`)
-            .limit(1);
-          if (byText && byText[0]) match = byText[0];
-        }
-      }
-    } catch(e) {}
-  }
-
-  if (match) {
-    applyHpArticleToSlot(match);
-    showToast('success', `Found article: "${match.title}"`);
-  } else {
-    showToast('error', `No article found matching ID or query "${q}"`);
-  }
-}
-
-function applyHpArticleToSlot(article) {
-  if (!article) return;
-  const headlineInput = document.getElementById('hp-slot-headline-input');
-  const subtitleInput = document.getElementById('hp-slot-subtitle-input');
-  const linkInput = document.getElementById('hp-slot-link-input');
-  const imageInput = document.getElementById('hp-slot-image-input');
-  const tagInput = document.getElementById('hp-slot-tag-input');
-
-  if (headlineInput) headlineInput.value = article.title || '';
-  if (subtitleInput) subtitleInput.value = article.deck || article.subtitle || '';
-  if (linkInput) linkInput.value = article.slug ? `/article/${article.slug}` : `/article/${article.id}`;
-  if (imageInput && article.hero_img_url) imageInput.value = article.hero_img_url;
-  if (tagInput && article.section) tagInput.value = article.section.toUpperCase();
-
-  showHpSlotMatchedArticle(article);
-  updateHpSlotImagePreview();
-}
-
-function onHpArticleSelected(articleIdOrSlug) {
-  if (!articleIdOrSlug) {
-    clearHpSlotArticleSelection();
-    return;
-  }
-  const article = homepageArticlesList.find(a => a.id === articleIdOrSlug || a.slug === articleIdOrSlug) ||
-                  _allArticles.find(a => a.id === articleIdOrSlug || a.slug === articleIdOrSlug);
-  if (article) {
-    applyHpArticleToSlot(article);
-  }
-}
-
-function updateHpSlotImagePreview() {
-  const imgInput = document.getElementById('hp-slot-image-input');
-  const imgEl = document.getElementById('hp-slot-image-preview');
-  if (imgInput && imgEl) {
-    imgEl.src = imgInput.value.trim() || 'img1.png';
-  }
-}
-
-function saveHpSlotModal() {
-  const path = document.getElementById('hp-slot-path').value;
-  const headline = document.getElementById('hp-slot-headline-input').value.trim();
-  const subtitle = document.getElementById('hp-slot-subtitle-input') ? document.getElementById('hp-slot-subtitle-input').value.trim() : '';
-  const link = document.getElementById('hp-slot-link-input').value.trim();
-  const image = document.getElementById('hp-slot-image-input') ? document.getElementById('hp-slot-image-input').value.trim() : '';
-  const tag = document.getElementById('hp-slot-tag-input') ? document.getElementById('hp-slot-tag-input').value.trim() : '';
-  const enabled = document.getElementById('hp-slot-enabled-input').checked;
-
-  if (!headline) {
-    showToast('error', 'Headline / Title is required');
-    return;
-  }
-
-  pushHomepageHistory();
-
-  let slotData = getHpObjectByPath(path);
-  if (!slotData || typeof slotData !== 'object') {
-    slotData = {};
-    setHpObjectByPath(path, slotData);
-  }
-
-  const isBn = _homepageLang === 'bn';
-  slotData.title = headline;
-  if (path.includes('hero.main')) slotData.subtitle = subtitle;
-  else if (path.includes('sidebar') || path.includes('featured')) slotData.description = subtitle;
-
-  if (!isBn) {
-    slotData.href = link || '#';
-  }
-  if (!path.includes('subArticles')) slotData.imageUrl = image || 'img1.png';
-  if (path.includes('sidebar')) slotData.tag = tag;
-  slotData.enabled = enabled;
-
-  closeHpSlotModal();
-  renderActiveHpTab();
-  showToast('success', 'Homepage slot updated');
-
-}
-
-function closeHpSlotModal() {
-  const modal = document.getElementById('modal-homepage-slot');
-  if (modal) modal.setAttribute('hidden', '');
-}
-
-// ── EVENT MODAL CRUD ─────────────────────────────────────────────
-function openHpEventModal(id) {
-  const modal = document.getElementById('modal-homepage-event');
-  const titleEl = document.getElementById('modal-hp-event-title');
-  const editIdInput = document.getElementById('hp-event-edit-id');
-  const dateInput = document.getElementById('hp-event-date-input');
-  const titleInput = document.getElementById('hp-event-title-input');
-  const metaInput = document.getElementById('hp-event-meta-input');
-  const linkInput = document.getElementById('hp-event-link-input');
-  const enabledInput = document.getElementById('hp-event-enabled-input');
-  const linkLockNote = document.getElementById('hp-event-link-lock-note');
-  const isBn = _homepageLang === 'bn';
-
-  if (!modal) return;
-
-  if (id) {
-    const events = (homepageDraftConfig && homepageDraftConfig.eventsSection && homepageDraftConfig.eventsSection.events) || [];
-    const ev = events.find(e => e.id === id);
-    if (!ev) return;
-    titleEl.textContent = 'Edit Event';
-    editIdInput.value = ev.id;
-    dateInput.value = ev.date || '';
-    titleInput.value = ev.title || '';
-    metaInput.value = ev.meta || '';
-    if (linkInput) {
-      linkInput.value = ev.href || '';
-      linkInput.readOnly = isBn;
-      linkInput.style.opacity = isBn ? '0.55' : '1';
-      linkInput.style.backgroundColor = isBn ? '#f8fafc' : '';
-      linkInput.style.cursor = isBn ? 'not-allowed' : '';
-      linkInput.title = isBn ? '[Locked] Event URL is unified in backend and defined strictly in English' : '';
-    }
-    enabledInput.checked = ev.enabled !== false;
-  } else {
-    titleEl.textContent = 'Add Event';
-    editIdInput.value = '';
-    dateInput.value = 'Oct. 24, 2026';
-    titleInput.value = '';
-    metaInput.value = '4 p.m. Friday ■ Privatian Hall, Cambridge';
-    if (linkInput) {
-      linkInput.value = 'index.html#events';
-      linkInput.readOnly = isBn;
-      linkInput.style.opacity = isBn ? '0.55' : '1';
-      linkInput.style.backgroundColor = isBn ? '#f8fafc' : '';
-      linkInput.style.cursor = isBn ? 'not-allowed' : '';
-      linkInput.title = isBn ? '[Locked] Event URL is unified in backend and defined strictly in English' : '';
-    }
-    enabledInput.checked = true;
-  }
-  if (linkLockNote) linkLockNote.style.display = isBn ? 'block' : 'none';
-
-  modal.removeAttribute('hidden');
-  titleInput.focus();
-}
-
-function saveHpEventModal() {
-  const editId = document.getElementById('hp-event-edit-id').value;
-  const date = document.getElementById('hp-event-date-input').value.trim();
-  const title = document.getElementById('hp-event-title-input').value.trim();
-  const meta = document.getElementById('hp-event-meta-input').value.trim();
-  const link = document.getElementById('hp-event-link-input').value.trim();
-  const enabled = document.getElementById('hp-event-enabled-input').checked;
-  const isBn = _homepageLang === 'bn';
-
-  if (!title) {
-    showToast('error', 'Event Title is required');
-    return;
-  }
-
-  pushHomepageHistory();
-  if (!homepageDraftConfig.eventsSection) homepageDraftConfig.eventsSection = {};
-  if (!homepageDraftConfig.eventsSection.events) homepageDraftConfig.eventsSection.events = [];
-
-  const events = homepageDraftConfig.eventsSection.events;
-
-  if (editId) {
-    const ev = events.find(e => e.id === editId);
-    if (ev) {
-      ev.date = date;
-      ev.title = title;
-      ev.meta = meta;
-      if (!isBn) ev.href = link;
-      ev.enabled = enabled;
-    }
-  } else {
-    events.push({
-      id: 'ev-' + Date.now(),
-      date,
-      title,
-      meta,
-      href: link,
-      enabled
-    });
-  }
-
-  closeHpEventModal();
-  renderActiveHpTab();
-  showToast('success', editId ? 'Event updated' : 'Event added');
-
-}
-
-function deleteHpEvent(id) {
-  if (!homepageDraftConfig || !homepageDraftConfig.eventsSection || !homepageDraftConfig.eventsSection.events) return;
-  const ev = homepageDraftConfig.eventsSection.events.find(e => e.id === id);
-  pushHomepageHistory();
-  homepageDraftConfig.eventsSection.events = homepageDraftConfig.eventsSection.events.filter(e => e.id !== id);
-  renderActiveHpTab();
-  showToast('info', 'Event removed');
-
-}
-
-function moveHpEvent(id, dir) {
-  if (!homepageDraftConfig || !homepageDraftConfig.eventsSection || !homepageDraftConfig.eventsSection.events) return;
-  const items = homepageDraftConfig.eventsSection.events;
-  const idx = items.findIndex(e => e.id === id);
-  if (idx === -1) return;
-  const newIdx = idx + dir;
-  if (newIdx < 0 || newIdx >= items.length) return;
-  pushHomepageHistory();
-  const temp = items[idx];
-  items[idx] = items[newIdx];
-  items[newIdx] = temp;
-  renderActiveHpTab();
-  showToast('info', 'Event reordered');
-
-}
-
-function toggleHpEvent(id) {
-  if (!homepageDraftConfig || !homepageDraftConfig.eventsSection || !homepageDraftConfig.eventsSection.events) return;
-  const ev = homepageDraftConfig.eventsSection.events.find(e => e.id === id);
-  if (!ev) return;
-  pushHomepageHistory();
-  ev.enabled = ev.enabled === false ? true : false;
-  renderActiveHpTab();
-  showToast('info', ev.enabled ? 'Event enabled' : 'Event disabled');
-
-}
-
-function closeHpEventModal() {
-  const modal = document.getElementById('modal-homepage-event');
-  if (modal) modal.setAttribute('hidden', '');
-}
-
-// ── ALL NEWS COLUMN & SUB-ARTICLE HELPERS ─────────────────────────
-function onHpColumnLabelInput(colIdx, val) {
-  if (!homepageDraftConfig || !homepageDraftConfig.allNews || !homepageDraftConfig.allNews.columns) return;
-  pushHomepageHistory();
-  if (homepageDraftConfig.allNews.columns[colIdx]) {
-    homepageDraftConfig.allNews.columns[colIdx].label = val;
-  }
-}
-
-function onHpColumnSlugInput(colIdx, val) {
-  if (!homepageDraftConfig || !homepageDraftConfig.allNews || !homepageDraftConfig.allNews.columns) return;
-  pushHomepageHistory();
-  if (homepageDraftConfig.allNews.columns[colIdx]) {
-    homepageDraftConfig.allNews.columns[colIdx].sectionSlug = val;
-  }
-}
-
-function onHpSectionTitleInput(field, val) {
-  if (!homepageDraftConfig) return;
-  pushHomepageHistory();
-  if (field === 'eventsHeading' && homepageDraftConfig.eventsSection) {
-    homepageDraftConfig.eventsSection.eventsHeading = val;
-  } else if (field === 'seeAllText' && homepageDraftConfig.eventsSection) {
-    homepageDraftConfig.eventsSection.seeAllText = val;
-  } else if (field === 'seeAllHref' && homepageDraftConfig.eventsSection) {
-    homepageDraftConfig.eventsSection.seeAllHref = val;
-  } else if (field === 'allNewsHeading' && homepageDraftConfig.allNews) {
-    homepageDraftConfig.allNews.heading = val;
-  }
-}
-
-function addHpSubArticle(colIdx) {
-  if (!homepageDraftConfig || !homepageDraftConfig.allNews || !homepageDraftConfig.allNews.columns) return;
-  const col = homepageDraftConfig.allNews.columns[colIdx];
-  if (!col) return;
-  if (!Array.isArray(col.subArticles)) col.subArticles = [];
-
-  pushHomepageHistory();
-  col.subArticles.push({
-    id: 'sub-' + colIdx + '-' + Date.now(),
-    title: 'New Story Headline in ' + (col.label || 'Section'),
-    href: 'section.html?slug=' + (col.sectionSlug || 'community-heritage'),
-    enabled: true
-  });
-  renderActiveHpTab();
-  showToast('success', 'Sub-article headline added');
-
-}
-
-function deleteHpSubArticle(colIdx, subIdx) {
-  if (!homepageDraftConfig || !homepageDraftConfig.allNews || !homepageDraftConfig.allNews.columns) return;
-  const col = homepageDraftConfig.allNews.columns[colIdx];
-  if (!col || !Array.isArray(col.subArticles)) return;
-
-  pushHomepageHistory();
-  const removed = col.subArticles.splice(subIdx, 1)[0];
-  renderActiveHpTab();
-  showToast('info', 'Sub-article headline removed');
-
-}
-
-// ── SAVE HOMEPAGE SETTINGS TO SUPABASE DATABASE ──────────────────
-async function saveHomepageSettings() {
-  const saveBtn = document.getElementById('hp-save-btn');
-  const isBn = _homepageLang === 'bn';
-
-  if (saveBtn) saveBtn.disabled = true;
-  updateGlobalSyncStatus('syncing', 'Saving to database...');
-
-  try {
-    homepageDraftConfig.lang = _homepageLang;
-    const res = await _apiPost('/api/sections?action=homepage' + (isBn ? '&lang=bn' : ''), homepageDraftConfig);
-    appliedHomepageConfig = JSON.parse(JSON.stringify(homepageDraftConfig));
-    homepageUndoStack = [];
-    homepageRedoStack = [];
-    updateHomepageUndoRedoBtns();
-    updateGlobalSyncStatus('synced', 'Synced with database');
-    showToast('success', isBn ? 'বাংলা হোমপেজের পরিবর্তন সফলভাবে সংরক্ষিত ও প্রকাশিত হয়েছে!' : 'English Homepage changes published and synced with database!');
-
-    recordActivityLog({
-      action: 'layout.homepage_save',
-      category: 'layout',
-      summary: `Published Homepage Builder layout & curation updates (${isBn ? 'Bengali' : 'English'}) to database`,
-      target_id: isBn ? 'site_homepage_config_bn' : 'site_homepage_config',
-      target_name: isBn ? 'বাংলা হোমপেজ কনফিগারেশন' : 'Homepage Builder',
-      details: {
-        lang: _homepageLang,
-        heroTitle: homepageDraftConfig.hero?.main?.title,
-        eventsCount: (homepageDraftConfig.eventsSection?.events || []).length,
-        columnsCount: (homepageDraftConfig.allNews?.columns || []).length
-      }
-    });
-  } catch(err) {
-    console.warn('[Admin] saveHomepageSettings server error:', err.message);
-    appliedHomepageConfig = JSON.parse(JSON.stringify(homepageDraftConfig));
-    homepageUndoStack = [];
-    homepageRedoStack = [];
-    updateHomepageUndoRedoBtns();
-    updateGlobalSyncStatus('error', 'Error saving to database');
-    showToast('error', 'Failed to save homepage settings: ' + err.message);
-
-    recordActivityLog({
-      action: 'layout.homepage_save',
-      category: 'layout',
-      summary: `Saved Homepage Builder configuration (${isBn ? 'Bengali' : 'English'}, local cache fallback)`,
-      target_id: isBn ? 'site_homepage_config_bn' : 'site_homepage_config',
-      target_name: 'Homepage Builder',
-      details: { lang: _homepageLang, offlineFallback: true }
-    });
-  } finally {
-    if (saveBtn) saveBtn.disabled = false;
-  }
 }
 
 // Global Keyboard Shortcut for Undo/Redo in Homepage, Navigation Menu, and Footer Manager
