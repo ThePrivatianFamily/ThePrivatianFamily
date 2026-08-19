@@ -8,15 +8,29 @@
   <link id="privatian-shortcut-favicon" rel="shortcut icon" type="image/x-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%230a528e'/><text x='8' y='24' font-family='Georgia,serif' font-size='20' font-weight='bold' fill='white'>P</text></svg>" />
   <style id="privatian-fouc-guard">html, body { visibility: hidden !important; opacity: 0 !important; pointer-events: none !important; }</style>
   <script src="admin-auth.js"></script>
+  <link rel="preload" href="/fonts/hind-siliguri-400.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="preload" href="/fonts/hind-siliguri-600.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="preload" href="/fonts/hind-siliguri-700.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="preload" href="/fonts/noto-serif-bengali-400.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="preload" href="/fonts/noto-serif-bengali-600.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="preload" href="/fonts/noto-serif-bengali-700.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@300;400;600;700&family=Libre+Baskerville:wght@400;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="admin.css" />
-  <link rel="stylesheet" href="universal-media-modal.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Noto+Serif+Bengali:wght@400;600;700&family=Source+Sans+3:wght@300;400;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="admin.css?v=2.5" />
+  <link rel="stylesheet" href="universal-media-modal.css?v=2.5" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="supabase-config.js"></script>
+  <script src="supabase-config.js?v=2.5"></script>
 </head>
 <body>
+  <div class="font-preloader" aria-hidden="true" style="position:absolute;width:0;height:0;overflow:hidden;opacity:0;pointer-events:none;z-index:-999;">
+    <span style="font-family:'Noto Serif Bengali';font-weight:400;">দ্য প্রাইভেটিয়ান ফ্যামিলি অআইঈকখগ</span>
+    <span style="font-family:'Noto Serif Bengali';font-weight:600;">দ্য প্রাইভেটিয়ান ফ্যামিলি অআইঈকখগ</span>
+    <span style="font-family:'Noto Serif Bengali';font-weight:700;">দ্য প্রাইভেটিয়ান ফ্যামিলি অআইঈকখগ</span>
+    <span style="font-family:'Hind Siliguri';font-weight:400;">দ্য প্রাইভেটিয়ান ফ্যামিলি অআইঈকখগ</span>
+    <span style="font-family:'Hind Siliguri';font-weight:600;">দ্য প্রাইভেটিয়ান ফ্যামিলি অআইঈকখগ</span>
+    <span style="font-family:'Hind Siliguri';font-weight:700;">দ্য প্রাইভেটিয়ান ফ্যামিলি অআইঈকখগ</span>
+  </div>
 
   <!-- ══ SIDEBAR ══════════════════════════════════════════════════════════ -->
   <aside class="sidebar" id="sidebar">

@@ -720,7 +720,34 @@
     setMeta('meta[name="twitter:description"]', targetDesc);
   }
 
+  // ── ACTIVE BILINGUAL FONT PREWARMING ─────────────────────────
+  function preloadAllBilingualFonts() {
+    if (typeof document !== 'undefined' && document.fonts && document.fonts.load) {
+      try {
+        var fontsToWarm = [
+          '400 16px "Noto Serif Bengali"',
+          '600 16px "Noto Serif Bengali"',
+          '700 16px "Noto Serif Bengali"',
+          '400 16px "Hind Siliguri"',
+          '500 16px "Hind Siliguri"',
+          '600 16px "Hind Siliguri"',
+          '700 16px "Hind Siliguri"',
+          '400 16px "Libre Baskerville"',
+          '700 16px "Libre Baskerville"',
+          '300 16px "Source Sans 3"',
+          '400 16px "Source Sans 3"',
+          '600 16px "Source Sans 3"',
+          '700 16px "Source Sans 3"'
+        ];
+        fontsToWarm.forEach(function(f) {
+          document.fonts.load(f).catch(function() {});
+        });
+      } catch(e) {}
+    }
+  }
+
   // Auto initialize on load
+  preloadAllBilingualFonts();
   initLang();
 
   // Expose on window
@@ -738,6 +765,7 @@
     formatDisplayDate: formatDisplayDate,
     formatReadTime: formatReadTime,
     pickLang: pickLang,
+    preloadAllBilingualFonts: preloadAllBilingualFonts,
     DICTIONARY: DICTIONARY,
     STATIC_TEXT_MAP_BN: STATIC_TEXT_MAP_BN,
     STATIC_TEXT_MAP_EN: STATIC_TEXT_MAP_EN
