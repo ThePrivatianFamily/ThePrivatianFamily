@@ -12833,7 +12833,10 @@ function loadGoogleFontSpecimen(fontFamily) {
 }
 
 async function initFontsPage() {
-  await loadTypographySettings();
+  await Promise.all([
+    loadTypographySettings(),
+    fetchCustomFonts()
+  ]);
   renderTypographyEditor();
   updateTypographyLivePreview();
   switchFontPreviewMode(_fontPreviewMode);
@@ -12976,6 +12979,7 @@ function renderTypographyEditor() {
   const isBn = _currentTypographyLang === 'bn';
   const cfg = _typographyDrafts[_currentTypographyLang] || (isBn ? DEFAULT_TYPOGRAPHY_BN : DEFAULT_TYPOGRAPHY_EN);
   const fontList = isBn ? CURATED_FONTS_BN : CURATED_FONTS_EN;
+  const customFontsForLang = _customUploadedFonts.filter(f => f.lang === 'all' || f.lang === _currentTypographyLang);
 
   // Filter items
   const filteredMeta = FONT_AREAS_META.filter(item => {
@@ -13021,7 +13025,8 @@ function renderTypographyEditor() {
     const sampleText = isBn ? area.sample_bn : area.sample_en;
 
     loadGoogleFontSpecimen(cur.fontFamily);
-    const matchedFont = fontList.some(f => f.name.toLowerCase() === (cur.fontFamily || '').toLowerCase());
+    const matchedCurated = fontList.some(f => f.name.toLowerCase() === (cur.fontFamily || '').toLowerCase());
+    const matchedCustom = customFontsForLang.some(f => f.family.toLowerCase() === (cur.fontFamily || '').toLowerCase());
 
     html += `
       <div class="font-area-card" id="card-${key}">
@@ -13074,8 +13079,15 @@ function renderTypographyEditor() {
               <span>Font Family</span>
             </div>
             <select class="font-select-custom" onchange="onTypographyFieldChange('${key}', 'fontFamily', this.value)">
-              ${fontList.map(f => `<option value="${f.name}" ${cur.fontFamily === f.name ? 'selected' : ''}>${f.label}</option>`).join('')}
-              ${!matchedFont && cur.fontFamily ? `<option value="${cur.fontFamily}" selected>Custom: ${cur.fontFamily}</option>` : ''}
+              ${customFontsForLang.length > 0 ? `
+                <optgroup label="⭐ Uploaded Custom Fonts">
+                  ${customFontsForLang.map(f => `<option value="${f.family}" ${cur.fontFamily === f.family ? 'selected' : ''}>${f.name} (${(f.format || 'woff2').toUpperCase()})</option>`).join('')}
+                </optgroup>
+              ` : ''}
+              <optgroup label="${isBn ? 'বাংলা ফন্ট সমূহ (Curated Bengali)' : 'Curated Brand Fonts (Google Fonts)'}">
+                ${fontList.map(f => `<option value="${f.name}" ${cur.fontFamily === f.name ? 'selected' : ''}>${f.label}</option>`).join('')}
+              </optgroup>
+              ${!matchedCurated && !matchedCustom && cur.fontFamily ? `<option value="${cur.fontFamily}" selected>Custom: ${cur.fontFamily}</option>` : ''}
             </select>
           </div>
 
@@ -13593,6 +13605,471 @@ function resetSingleFontSection(key) {
   showToast('info', `${title} reset to brand default.`);
 }
 
+// ── CUSTOM FONT MANAGEMENT & UPLOADER ENGINE ─────────────────────────────
+let _customUploadedFonts = [];
+let _pendingFontUpload = null;
+let _fontUploadModalActiveTab = 'upload';
+let _fontLibrarySearchQuery = '';
+
+function _confirmModal(opts) {
+  if (!opts || typeof opts.onConfirm !== 'function') return;
+  const msg = `${opts.title || 'Confirmation'}\n\n${opts.body || 'Are you sure you want to proceed?'}`;
+  if (window.confirm(msg)) {
+    opts.onConfirm();
+  }
+}
+
+async function fetchCustomFonts() {
+  try {
+    const cached = localStorage.getItem('privatian_custom_fonts');
+    if (cached) {
+      _customUploadedFonts = JSON.parse(cached);
+      injectCustomFontFaces(_customUploadedFonts);
+      updateCustomFontsCountBadge();
+    }
+  } catch(e) {}
+
+  try {
+    const res = await fetch('/api/sections?action=custom_fonts');
+    if (res.ok) {
+      const data = await res.json();
+      if (data && Array.isArray(data.fonts)) {
+        _customUploadedFonts = data.fonts;
+        try { localStorage.setItem('privatian_custom_fonts', JSON.stringify(_customUploadedFonts)); } catch(e) {}
+        injectCustomFontFaces(_customUploadedFonts);
+        updateCustomFontsCountBadge();
+      }
+    }
+  } catch(e) {
+    console.warn('[Custom fonts load warning]:', e);
+  }
+}
+
+function injectCustomFontFaces(fonts) {
+  if (!Array.isArray(fonts) || fonts.length === 0) return;
+  let styleEl = document.getElementById('privatian-custom-font-faces');
+  if (!styleEl) {
+    styleEl = document.createElement('style');
+    styleEl.id = 'privatian-custom-font-faces';
+    document.head.appendChild(styleEl);
+  }
+
+  let cssRules = [];
+  fonts.forEach(f => {
+    if (!f.family || !f.fileData) return;
+    const formatStr = f.format === 'woff2' ? 'woff2' : (f.format === 'woff' ? 'woff' : (f.format === 'otf' ? 'opentype' : 'truetype'));
+    cssRules.push(`
+@font-face {
+  font-family: '${f.family}';
+  src: url('${f.fileData}') format('${formatStr}');
+  font-weight: ${f.weight || '400'};
+  font-style: ${f.style || 'normal'};
+  font-display: swap;
+}`);
+  });
+
+  styleEl.textContent = cssRules.join('\n');
+}
+
+function updateCustomFontsCountBadge() {
+  const badge = document.getElementById('custom-fonts-count-badge');
+  if (badge) badge.textContent = _customUploadedFonts.length;
+}
+
+function openFontUploadModal() {
+  const modal = document.getElementById('modal-font-upload');
+  if (!modal) return;
+  modal.hidden = false;
+  document.body.style.overflow = 'hidden';
+
+  switchFontUploadModalTab('upload');
+  updateCustomFontsCountBadge();
+  initFontDropzoneEvents();
+}
+
+function closeFontUploadModal() {
+  const modal = document.getElementById('modal-font-upload');
+  if (!modal) return;
+  modal.hidden = true;
+  document.body.style.overflow = '';
+  clearUploadedFontFile();
+}
+
+function switchFontUploadModalTab(tab) {
+  _fontUploadModalActiveTab = tab;
+  const btnUpload = document.getElementById('tab-btn-font-upload');
+  const btnLibrary = document.getElementById('tab-btn-font-library');
+  const tabUpload = document.getElementById('font-modal-tab-upload');
+  const tabLibrary = document.getElementById('font-modal-tab-library');
+
+  if (tab === 'upload') {
+    if (btnUpload) btnUpload.classList.add('active');
+    if (btnLibrary) btnLibrary.classList.remove('active');
+    if (tabUpload) tabUpload.style.display = 'block';
+    if (tabLibrary) tabLibrary.style.display = 'none';
+  } else {
+    if (btnUpload) btnUpload.classList.remove('active');
+    if (btnLibrary) btnLibrary.classList.add('active');
+    if (tabUpload) tabUpload.style.display = 'none';
+    if (tabLibrary) tabLibrary.style.display = 'block';
+    renderCustomFontsLibrary();
+  }
+}
+
+function initFontDropzoneEvents() {
+  const dropzone = document.getElementById('font-upload-dropzone');
+  if (!dropzone || dropzone._eventsBound) return;
+  dropzone._eventsBound = true;
+
+  ['dragenter', 'dragover'].forEach(eventName => {
+    dropzone.addEventListener(eventName, (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      dropzone.classList.add('dragover');
+    }, false);
+  });
+
+  ['dragleave', 'drop'].forEach(eventName => {
+    dropzone.addEventListener(eventName, (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      dropzone.classList.remove('dragover');
+    }, false);
+  });
+
+  dropzone.addEventListener('drop', (e) => {
+    const dt = e.dataTransfer;
+    const files = dt && dt.files;
+    if (files && files.length > 0) {
+      handleFontFileSelected(files[0]);
+    }
+  }, false);
+}
+
+function handleFontFileSelected(file) {
+  if (!file) return;
+
+  const validExts = ['.woff2', '.woff', '.ttf', '.otf'];
+  const ext = '.' + file.name.split('.').pop().toLowerCase();
+  if (!validExts.includes(ext)) {
+    showToast('error', 'Unsupported font format. Please upload .woff2, .woff, .ttf, or .otf');
+    return;
+  }
+
+  if (file.size > 10 * 1024 * 1024) {
+    showToast('error', 'Font file size is too large (maximum 10MB).');
+    return;
+  }
+
+  const format = ext.replace('.', '');
+  const fontNameGuess = file.name.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+
+  const nameInput = document.getElementById('upload-font-name-input');
+  if (nameInput && !nameInput.value.trim()) {
+    nameInput.value = fontNameGuess;
+  }
+
+  const reader = new FileReader();
+  reader.onload = async (e) => {
+    const fileDataUrl = e.target.result;
+    const arrayBuffer = await file.arrayBuffer();
+
+    _pendingFontUpload = {
+      file: file,
+      format: format,
+      fileData: fileDataUrl,
+      size: file.size,
+      rawBuffer: arrayBuffer
+    };
+
+    const dropEmpty = document.getElementById('font-dropzone-empty');
+    const dropLoaded = document.getElementById('font-dropzone-loaded');
+    const filenameEl = document.getElementById('font-loaded-filename');
+    const metaEl = document.getElementById('font-loaded-meta');
+
+    if (dropEmpty) dropEmpty.style.display = 'none';
+    if (dropLoaded) dropLoaded.style.display = 'flex';
+    if (filenameEl) filenameEl.textContent = file.name;
+    if (metaEl) {
+      const sizeKB = (file.size / 1024).toFixed(1);
+      metaEl.textContent = `${format.toUpperCase()} • ${sizeKB} KB • Ready for preview & installation`;
+    }
+
+    updateFontUploadLivePreview();
+  };
+  reader.readAsDataURL(file);
+}
+
+function clearUploadedFontFile() {
+  _pendingFontUpload = null;
+  const fileInput = document.getElementById('font-file-input');
+  if (fileInput) fileInput.value = '';
+
+  const dropEmpty = document.getElementById('font-dropzone-empty');
+  const dropLoaded = document.getElementById('font-dropzone-loaded');
+  const previewBox = document.getElementById('font-upload-preview-container');
+
+  if (dropEmpty) dropEmpty.style.display = 'block';
+  if (dropLoaded) dropLoaded.style.display = 'none';
+  if (previewBox) previewBox.style.display = 'none';
+}
+
+function updateFontUploadLivePreview() {
+  const previewBox = document.getElementById('font-upload-preview-container');
+  const specimenText = document.getElementById('font-upload-specimen-text');
+  const familyBadge = document.getElementById('font-preview-family-badge');
+  const nameInput = document.getElementById('upload-font-name-input');
+  const weightSelect = document.getElementById('upload-font-weight-select');
+  const styleSelect = document.getElementById('upload-font-style-select');
+
+  const familyName = (nameInput && nameInput.value.trim()) || 'PreviewFont';
+  const weight = weightSelect ? weightSelect.value : '400';
+  const style = styleSelect ? styleSelect.value : 'normal';
+
+  if (_pendingFontUpload && _pendingFontUpload.rawBuffer) {
+    if (previewBox) previewBox.style.display = 'block';
+    if (familyBadge) familyBadge.textContent = `Family: ${familyName}`;
+
+    try {
+      const tempFont = new FontFace(familyName, _pendingFontUpload.rawBuffer, {
+        weight: weight,
+        style: style
+      });
+      tempFont.load().then(loadedFont => {
+        document.fonts.add(loadedFont);
+        if (specimenText) {
+          specimenText.style.fontFamily = `"${familyName}", sans-serif`;
+          specimenText.style.fontWeight = weight;
+          specimenText.style.fontStyle = style;
+        }
+      }).catch(err => {
+        console.warn('[Font preview test error]:', err);
+      });
+    } catch(e) {}
+  } else if (previewBox) {
+    previewBox.style.display = 'none';
+  }
+}
+
+async function saveUploadedFont() {
+  const nameInput = document.getElementById('upload-font-name-input');
+  const langSelect = document.getElementById('upload-font-lang-select');
+  const weightSelect = document.getElementById('upload-font-weight-select');
+  const styleSelect = document.getElementById('upload-font-style-select');
+  const submitBtn = document.getElementById('btn-submit-font-upload');
+
+  const fontName = nameInput ? nameInput.value.trim() : '';
+  if (!fontName) {
+    showToast('error', 'Please enter a Font Family Name.');
+    if (nameInput) nameInput.focus();
+    return;
+  }
+
+  if (!_pendingFontUpload || !_pendingFontUpload.fileData) {
+    showToast('error', 'Please select or drop a font file (.woff2, .woff, .ttf, .otf).');
+    return;
+  }
+
+  const lang = langSelect ? langSelect.value : 'all';
+  const weight = weightSelect ? weightSelect.value : '400';
+  const style = styleSelect ? styleSelect.value : 'normal';
+
+  const fontRecord = {
+    id: `font_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+    name: fontName,
+    family: fontName,
+    lang: lang,
+    format: _pendingFontUpload.format,
+    weight: weight,
+    style: style,
+    fileData: _pendingFontUpload.fileData,
+    size: _pendingFontUpload.size,
+    uploadedAt: new Date().toISOString()
+  };
+
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = `<span class="spinner" style="width:14px;height:14px;border:2px solid #fff;border-top-color:transparent;border-radius:50%;display:inline-block;animation:spin 0.6s linear infinite;"></span> <span>Installing Font…</span>`;
+  }
+
+  try {
+    const res = await fetch('/api/sections?action=custom_fonts', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${sessionStorage.getItem('admin_token') || ''}`
+      },
+      body: JSON.stringify({ font: fontRecord })
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || 'Failed to save font');
+    }
+
+    const data = await res.json();
+    if (data && Array.isArray(data.fonts)) {
+      _customUploadedFonts = data.fonts;
+    } else {
+      _customUploadedFonts.unshift(fontRecord);
+    }
+
+    try { localStorage.setItem('privatian_custom_fonts', JSON.stringify(_customUploadedFonts)); } catch(e) {}
+
+    injectCustomFontFaces(_customUploadedFonts);
+    updateCustomFontsCountBadge();
+    renderTypographyEditor();
+    updateTypographyLivePreview();
+
+    showToast('success', `Font "${fontName}" uploaded & installed successfully!`);
+    clearUploadedFontFile();
+    if (nameInput) nameInput.value = '';
+    
+    switchFontUploadModalTab('library');
+  } catch(e) {
+    console.error(e);
+    showToast('error', e.message || 'Error uploading font');
+  } finally {
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.innerHTML = `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg> <span>Save & Install Font</span>`;
+    }
+  }
+}
+
+function renderCustomFontsLibrary() {
+  const container = document.getElementById('custom-fonts-list-container');
+  if (!container) return;
+
+  const query = (_fontLibrarySearchQuery || '').toLowerCase();
+  const list = _customUploadedFonts.filter(f => {
+    if (!query) return true;
+    return (f.name && f.name.toLowerCase().includes(query)) ||
+           (f.family && f.family.toLowerCase().includes(query)) ||
+           (f.format && f.format.toLowerCase().includes(query)) ||
+           (f.lang && f.lang.toLowerCase().includes(query));
+  });
+
+  if (list.length === 0) {
+    container.innerHTML = `
+      <div style="background:#f8fafc;border:1px dashed #cbd5e1;border-radius:10px;padding:36px 20px;text-align:center;">
+        <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="#94a3b8" stroke-width="1.5" style="margin:0 auto 10px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        <p style="font-size:13.5px;color:var(--text-secondary);font-weight:700;margin:0;">No custom fonts found</p>
+        <p style="font-size:12px;color:var(--text-muted);margin:4px 0 14px;">Upload your .woff2, .woff, or .ttf web fonts to see them listed here.</p>
+        <button type="button" class="btn btn--sm btn--primary" onclick="switchFontUploadModalTab('upload')">Upload Font Now</button>
+      </div>
+    `;
+    return;
+  }
+
+  let html = '';
+  list.forEach(f => {
+    const sizeKB = f.size ? `${(f.size / 1024).toFixed(1)} KB` : 'Embedded';
+    const langLabel = f.lang === 'bn' ? 'Bengali (বাংলা)' : (f.lang === 'en' ? 'English (EN)' : 'Universal (EN & BN)');
+    const sampleText = f.lang === 'bn' ? 'আমার সোনার বাংলা, আমি তোমায় ভালোবাসি।' : 'The quick brown fox jumps over the lazy dog.';
+    const uploadDate = f.uploadedAt ? new Date(f.uploadedAt).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }) : 'Installed';
+
+    html += `
+      <div class="custom-font-card" id="custom-font-card-${f.id}">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;">
+          <div>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <h4 style="margin:0;font-size:14.5px;font-weight:700;color:var(--text-primary);">${f.name}</h4>
+              <span class="custom-font-tag custom-font-tag--format">${(f.format || 'woff2').toUpperCase()}</span>
+              <span class="custom-font-tag custom-font-tag--lang">${langLabel}</span>
+              <span class="custom-font-tag custom-font-tag--size">${sizeKB}</span>
+            </div>
+            <div style="font-size:11px;color:var(--text-muted);margin-top:2px;">Font Family: <code>"${f.family}"</code> • Added: ${uploadDate}</div>
+          </div>
+          
+          <div style="display:flex;align-items:center;gap:6px;">
+            <button type="button" class="btn btn--xs btn--outline-primary" onclick="applyCustomFontToActiveCategory('${f.family}')" title="Apply this font to all open components" style="font-size:11px;padding:3px 8px;">
+              Apply
+            </button>
+            <button type="button" class="btn btn--xs btn--ghost" onclick="deleteCustomFont('${f.id}', '${f.name}')" title="Delete custom font" style="color:#dc2626;font-size:11px;padding:3px 8px;">
+              Delete
+            </button>
+          </div>
+        </div>
+
+        <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;padding:10px 14px;margin-top:4px;">
+          <p style="font-family:'${f.family}', sans-serif; font-size:17px; margin:0; color:#1e293b; line-height:1.4;">
+            ${sampleText}
+          </p>
+        </div>
+      </div>
+    `;
+  });
+
+  container.innerHTML = html;
+}
+
+function filterCustomFontsLibrary(val) {
+  _fontLibrarySearchQuery = val;
+  renderCustomFontsLibrary();
+}
+
+function applyCustomFontToActiveCategory(fontFamily) {
+  if (!fontFamily) return;
+  const isBn = _currentTypographyLang === 'bn';
+  if (!_typographyDrafts[_currentTypographyLang]) _typographyDrafts[_currentTypographyLang] = {};
+
+  let count = 0;
+  FONT_AREAS_META.forEach(area => {
+    if (_currentTypographyCategory === 'all' || area.category === _currentTypographyCategory) {
+      if (!_typographyDrafts[_currentTypographyLang][area.key]) {
+        _typographyDrafts[_currentTypographyLang][area.key] = JSON.parse(JSON.stringify(isBn ? (DEFAULT_TYPOGRAPHY_BN[area.key] || {}) : (DEFAULT_TYPOGRAPHY_EN[area.key] || {})));
+      }
+      _typographyDrafts[_currentTypographyLang][area.key].fontFamily = fontFamily;
+      count++;
+    }
+  });
+
+  renderTypographyEditor();
+  updateTypographyLivePreview();
+  showToast('success', `Applied "${fontFamily}" to ${count} typography component${count > 1 ? 's' : ''}.`);
+  closeFontUploadModal();
+}
+
+async function deleteCustomFont(id, name) {
+  _confirmModal({
+    title: `Delete Custom Font`,
+    body: `Are you sure you want to remove "${name}" from custom fonts? Components currently using this font will fall back to system fonts.`,
+    confirmText: 'Delete Font',
+    variant: 'danger',
+    onConfirm: async () => {
+      try {
+        const res = await fetch(`/api/sections?action=custom_fonts&id=${encodeURIComponent(id)}`, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${sessionStorage.getItem('admin_token') || ''}`
+          }
+        });
+
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err.error || 'Failed to delete font');
+        }
+
+        _customUploadedFonts = _customUploadedFonts.filter(f => f.id !== id);
+        try { localStorage.setItem('privatian_custom_fonts', JSON.stringify(_customUploadedFonts)); } catch(e) {}
+        
+        injectCustomFontFaces(_customUploadedFonts);
+        updateCustomFontsCountBadge();
+        renderCustomFontsLibrary();
+        renderTypographyEditor();
+        updateTypographyLivePreview();
+        showToast('success', `Font "${name}" deleted.`);
+      } catch(e) {
+        showToast('error', e.message || 'Error deleting font');
+      }
+    }
+  });
+}
+
+// Kick off custom fonts preload on load
+fetchCustomFonts();
+
 window.initFontsPage = initFontsPage;
 window.switchTypographyLang = switchTypographyLang;
 window.filterTypographyCategory = filterTypographyCategory;
@@ -13606,6 +14083,18 @@ window.updateTypographyLivePreview = updateTypographyLivePreview;
 window.saveTypographySettings = saveTypographySettings;
 window.resetTypographyToDefault = resetTypographyToDefault;
 window.resetSingleFontSection = resetSingleFontSection;
+window.openFontUploadModal = openFontUploadModal;
+window.closeFontUploadModal = closeFontUploadModal;
+window.switchFontUploadModalTab = switchFontUploadModalTab;
+window.handleFontFileSelected = handleFontFileSelected;
+window.clearUploadedFontFile = clearUploadedFontFile;
+window.updateFontUploadLivePreview = updateFontUploadLivePreview;
+window.saveUploadedFont = saveUploadedFont;
+window.renderCustomFontsLibrary = renderCustomFontsLibrary;
+window.filterCustomFontsLibrary = filterCustomFontsLibrary;
+window.applyCustomFontToActiveCategory = applyCustomFontToActiveCategory;
+window.deleteCustomFont = deleteCustomFont;
+
 
 
 

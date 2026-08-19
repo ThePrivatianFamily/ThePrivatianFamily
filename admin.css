@@ -6657,4 +6657,115 @@ i.spin {
   margin-bottom: 6px;
 }
 
+/* ── FONT UPLOAD MODAL & CUSTOM FONTS STYLING ────────────────────────── */
+.font-modal-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 12px 16px;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+.font-modal-tab svg {
+  color: #94a3b8;
+  transition: color 0.18s ease;
+}
+.font-modal-tab:hover {
+  color: var(--brand-navy, #0a528e);
+}
+.font-modal-tab.active {
+  color: var(--brand-navy, #0a528e);
+  border-bottom-color: var(--brand-navy, #0a528e);
+}
+.font-modal-tab.active svg {
+  color: var(--brand-navy, #0a528e);
+}
+
+.font-library-badge {
+  display: inline-block;
+  padding: 1px 7px;
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 10px;
+  background: #e0f2fe;
+  color: #0369a1;
+}
+
+.font-upload-dropzone {
+  border: 2px dashed #cbd5e1;
+  border-radius: 12px;
+  background: #f8fafc;
+  padding: 24px 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+.font-upload-dropzone:hover,
+.font-upload-dropzone.dragover {
+  border-color: var(--brand-navy, #0a528e);
+  background: #f0f7ff;
+}
+
+.font-upload-preview-box {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-left: 4px solid var(--brand-navy, #0a528e);
+  border-radius: 8px;
+  padding: 14px 16px;
+}
+
+.custom-font-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 14px 16px;
+  transition: all 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.custom-font-card:hover {
+  border-color: #cbd5e1;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.04);
+}
+
+.custom-font-badges {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.custom-font-tag {
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+.custom-font-tag--format {
+  background: #ede9fe;
+  color: #6d28d9;
+}
+.custom-font-tag--lang {
+  background: #e0f2fe;
+  color: #0369a1;
+}
+.custom-font-tag--size {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+
 

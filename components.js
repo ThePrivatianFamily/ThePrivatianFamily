@@ -2051,8 +2051,47 @@
       .catch(function() {});
   }
 
+  function injectCustomFontFacesOnSite(fonts) {
+    if (!Array.isArray(fonts) || fonts.length === 0) return;
+    var styleEl = document.getElementById('privatian-custom-font-faces');
+    if (!styleEl) {
+      styleEl = document.createElement('style');
+      styleEl.id = 'privatian-custom-font-faces';
+      document.head.appendChild(styleEl);
+    }
+
+    var cssRules = [];
+    fonts.forEach(function(f) {
+      if (!f.family || !f.fileData) return;
+      var formatStr = f.format === 'woff2' ? 'woff2' : (f.format === 'woff' ? 'woff' : (f.format === 'otf' ? 'opentype' : 'truetype'));
+      cssRules.push('@font-face {\n  font-family: \'' + f.family + '\';\n  src: url(\'' + f.fileData + '\') format(\'' + formatStr + '\');\n  font-weight: ' + (f.weight || '400') + ';\n  font-style: ' + (f.style || 'normal') + ';\n  font-display: swap;\n}');
+    });
+
+    styleEl.textContent = cssRules.join('\n');
+  }
+
+  function fetchCustomFontsFromAPI() {
+    try {
+      var cached = localStorage.getItem('privatian_custom_fonts');
+      if (cached) {
+        injectCustomFontFacesOnSite(JSON.parse(cached));
+      }
+    } catch(e) {}
+
+    fetch('/api/sections?action=custom_fonts')
+      .then(function(res) { return res.ok ? res.json() : null; })
+      .then(function(data) {
+        if (data && Array.isArray(data.fonts)) {
+          try { localStorage.setItem('privatian_custom_fonts', JSON.stringify(data.fonts)); } catch(e) {}
+          injectCustomFontFacesOnSite(data.fonts);
+        }
+      })
+      .catch(function() {});
+  }
+
   window.applyDynamicTypography = applyDynamicTypography;
   window.fetchTypographyFromAPI = fetchTypographyFromAPI;
+  window.fetchCustomFontsFromAPI = fetchCustomFontsFromAPI;
 
   // Try immediate execution if mount element already exists in DOM
   initHeader();
@@ -2063,6 +2102,7 @@
   fetchMenuFromAPI();
   fetchFooterFromAPI();
   fetchTypographyFromAPI();
+  fetchCustomFontsFromAPI();
 
   // ── Cloudflare Web Analytics ────────────────────────────────────────────
   var DEFAULT_CF_TOKEN = 'ce994487070d403ba18f466602524948';

@@ -2344,6 +2344,197 @@ module.exports = async function handler(req, res) {
     }
   }
 
+  // ── CUSTOM UPLOADED FONTS (GET / POST / DELETE) ───────────────────────────
+  if (action === 'custom_fonts') {
+    const fontsSettingsKey = 'site_custom_fonts';
+    const fallbackFontsId = '__custom_fonts_config__';
+
+    // GET: List all custom uploaded fonts
+    if (req.method === 'GET') {
+      let fontsList = [];
+      try {
+        const { data } = await sb.from('site_settings').select('value').eq('key', fontsSettingsKey).maybeSingle();
+        if (data && Array.isArray(data.value)) {
+          fontsList = data.value;
+        }
+      } catch(e) {}
+
+      if (fontsList.length === 0) {
+        try {
+          const { data: sData } = await sb.from('sections').select('name').eq('admin_id', fallbackFontsId).maybeSingle();
+          if (sData && sData.name) {
+            const parsed = JSON.parse(sData.name);
+            if (Array.isArray(parsed)) fontsList = parsed;
+          }
+        } catch(e) {}
+      }
+
+      return res.status(200).json({ ok: true, fonts: fontsList });
+    }
+
+    // POST: Upload and save a new custom font
+    if (req.method === 'POST') {
+      const session = await requireAuth(req, res);
+      if (!session) return;
+
+      const body = req.body || {};
+      const font = body.font || body;
+
+      if (!font || !font.name || !font.family || !font.fileData) {
+        return res.status(400).json({ error: 'Missing required font parameters (name, family, fileData)' });
+      }
+
+      const newFont = {
+        id: font.id || `font_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+        name: String(font.name).trim(),
+        family: String(font.family).trim(),
+        lang: font.lang || 'all',
+        format: font.format || 'woff2',
+        weight: font.weight || '400',
+        style: font.style || 'normal',
+        fileData: font.fileData,
+        size: font.size || 0,
+        uploadedAt: font.uploadedAt || new Date().toISOString()
+      };
+
+      let currentFonts = [];
+      try {
+        const { data } = await sb.from('site_settings').select('value').eq('key', fontsSettingsKey).maybeSingle();
+        if (data && Array.isArray(data.value)) currentFonts = data.value;
+      } catch(e) {}
+
+      if (currentFonts.length === 0) {
+        try {
+          const { data: sData } = await sb.from('sections').select('name').eq('admin_id', fallbackFontsId).maybeSingle();
+          if (sData && sData.name) {
+            const parsed = JSON.parse(sData.name);
+            if (Array.isArray(parsed)) currentFonts = parsed;
+          }
+        } catch(e) {}
+      }
+
+      const updatedFonts = currentFonts.filter(f => f.id !== newFont.id);
+      updatedFonts.unshift(newFont);
+
+      let saved = false;
+      try {
+        const { error: err } = await sb.from('site_settings').upsert({
+          key: fontsSettingsKey,
+          value: updatedFonts,
+          updated_at: new Date().toISOString()
+        }, { onConflict: 'key' });
+        if (!err) saved = true;
+      } catch(err) {}
+
+      if (!saved) {
+        try {
+          const { data: existing } = await sb.from('sections').select('id').eq('admin_id', fallbackFontsId).maybeSingle();
+          if (existing) {
+            await sb.from('sections').update({
+              name: JSON.stringify(updatedFonts),
+              slug: fallbackFontsId,
+              display_order: 9994,
+              is_active: false,
+              locked: true,
+              is_deleted: true
+            }).eq('admin_id', fallbackFontsId);
+          } else {
+            await sb.from('sections').insert({
+              admin_id: fallbackFontsId,
+              name: JSON.stringify(updatedFonts),
+              slug: fallbackFontsId,
+              display_order: 9994,
+              is_active: false,
+              locked: true,
+              is_deleted: true
+            });
+          }
+        } catch(err) {
+          console.warn('[DB custom font save error]:', err.message);
+        }
+      }
+
+      logActivity({
+        actor: session,
+        action: 'layout.font_upload',
+        category: 'layout',
+        summary: `${session.name || session.email} uploaded custom font: "${newFont.name}" (${newFont.format.toUpperCase()}, ${newFont.lang})`,
+        target_id: newFont.id,
+        target_name: newFont.name,
+        details: { family: newFont.family, format: newFont.format, lang: newFont.lang },
+        req
+      }).catch(() => {});
+
+      return res.status(200).json({ ok: true, font: newFont, fonts: updatedFonts });
+    }
+
+    // DELETE: Remove a custom font
+    if (req.method === 'DELETE') {
+      const session = await requireAuth(req, res);
+      if (!session) return;
+
+      const fontId = (req.query && req.query.id) || (req.body && req.body.id);
+      if (!fontId) {
+        return res.status(400).json({ error: 'Missing font ID to delete' });
+      }
+
+      let currentFonts = [];
+      try {
+        const { data } = await sb.from('site_settings').select('value').eq('key', fontsSettingsKey).maybeSingle();
+        if (data && Array.isArray(data.value)) currentFonts = data.value;
+      } catch(e) {}
+
+      if (currentFonts.length === 0) {
+        try {
+          const { data: sData } = await sb.from('sections').select('name').eq('admin_id', fallbackFontsId).maybeSingle();
+          if (sData && sData.name) {
+            const parsed = JSON.parse(sData.name);
+            if (Array.isArray(parsed)) currentFonts = parsed;
+          }
+        } catch(e) {}
+      }
+
+      const targetFont = currentFonts.find(f => f.id === fontId);
+      const updatedFonts = currentFonts.filter(f => f.id !== fontId);
+
+      let saved = false;
+      try {
+        const { error: err } = await sb.from('site_settings').upsert({
+          key: fontsSettingsKey,
+          value: updatedFonts,
+          updated_at: new Date().toISOString()
+        }, { onConflict: 'key' });
+        if (!err) saved = true;
+      } catch(err) {}
+
+      if (!saved) {
+        try {
+          await sb.from('sections').update({
+            name: JSON.stringify(updatedFonts),
+            slug: fallbackFontsId,
+            display_order: 9994,
+            is_active: false,
+            locked: true,
+            is_deleted: true
+          }).eq('admin_id', fallbackFontsId);
+        } catch(err) {}
+      }
+
+      logActivity({
+        actor: session,
+        action: 'layout.font_delete',
+        category: 'layout',
+        summary: `${session.name || session.email} deleted custom font: "${targetFont ? targetFont.name : fontId}"`,
+        target_id: fontId,
+        target_name: targetFont ? targetFont.name : 'Custom Font',
+        details: { fontId },
+        req
+      }).catch(() => {});
+
+      return res.status(200).json({ ok: true, deletedId: fontId, fonts: updatedFonts });
+    }
+  }
+
   // ── GET ─────────────────────────────────────────────────────────────────
   if (req.method === 'GET') {
     const statusParam = (req.query && req.query.status) || 'active';
