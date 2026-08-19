@@ -2148,16 +2148,7 @@ module.exports = async function handler(req, res) {
     const fallbackId = isBn ? '__typography_config_bn__' : '__typography_config__';
 
     const DEFAULT_TYPOGRAPHY_CONFIG = {
-      header_section: {
-        fontFamily: isBn ? 'Hind Siliguri' : 'Source Sans 3',
-        fontSize: isBn ? 14 : 13,
-        fontWeight: '600',
-        lineHeight: 1.2,
-        letterSpacing: isBn ? '0em' : '0.06em',
-        textTransform: isBn ? 'none' : 'uppercase',
-        fontStyle: 'normal'
-      },
-      subheader: {
+      header_topbar: {
         fontFamily: isBn ? 'Hind Siliguri' : 'Source Sans 3',
         fontSize: isBn ? 12.5 : 12,
         fontWeight: '400',
@@ -2166,7 +2157,16 @@ module.exports = async function handler(req, res) {
         textTransform: 'none',
         fontStyle: 'normal'
       },
-      menu: {
+      header_nav: {
+        fontFamily: isBn ? 'Hind Siliguri' : 'Source Sans 3',
+        fontSize: isBn ? 14 : 13,
+        fontWeight: '600',
+        lineHeight: 1.2,
+        letterSpacing: isBn ? '0em' : '0.06em',
+        textTransform: isBn ? 'none' : 'uppercase',
+        fontStyle: 'normal'
+      },
+      menu_drawer: {
         fontFamily: isBn ? 'Hind Siliguri' : 'Source Sans 3',
         fontSize: isBn ? 15.5 : 15,
         fontWeight: '600',
@@ -2193,6 +2193,15 @@ module.exports = async function handler(req, res) {
         textTransform: 'none',
         fontStyle: isBn ? 'normal' : 'italic'
       },
+      article_headings: {
+        fontFamily: isBn ? 'Noto Serif Bengali' : 'Libre Baskerville',
+        fontSize: isBn ? 23 : 24,
+        fontWeight: '700',
+        lineHeight: isBn ? 1.4 : 1.35,
+        letterSpacing: isBn ? '0em' : '-0.01em',
+        textTransform: 'none',
+        fontStyle: 'normal'
+      },
       article_body: {
         fontFamily: isBn ? 'Noto Serif Bengali' : 'Source Sans 3',
         fontSize: isBn ? 17.5 : 17,
@@ -2210,6 +2219,42 @@ module.exports = async function handler(req, res) {
         letterSpacing: '0em',
         textTransform: 'none',
         fontStyle: isBn ? 'normal' : 'italic'
+      },
+      article_meta: {
+        fontFamily: isBn ? 'Hind Siliguri' : 'Source Sans 3',
+        fontSize: isBn ? 13 : 12.5,
+        fontWeight: '600',
+        lineHeight: 1.4,
+        letterSpacing: isBn ? '0em' : '0.04em',
+        textTransform: isBn ? 'none' : 'uppercase',
+        fontStyle: 'normal'
+      },
+      section_headers: {
+        fontFamily: isBn ? 'Hind Siliguri' : 'Source Sans 3',
+        fontSize: isBn ? 25 : 26,
+        fontWeight: '700',
+        lineHeight: 1.3,
+        letterSpacing: isBn ? '0em' : '0.02em',
+        textTransform: isBn ? 'none' : 'uppercase',
+        fontStyle: 'normal'
+      },
+      card_titles: {
+        fontFamily: isBn ? 'Noto Serif Bengali' : 'Libre Baskerville',
+        fontSize: isBn ? 16.5 : 17,
+        fontWeight: '700',
+        lineHeight: 1.35,
+        letterSpacing: '0em',
+        textTransform: 'none',
+        fontStyle: 'normal'
+      },
+      footer_typography: {
+        fontFamily: isBn ? 'Hind Siliguri' : 'Source Sans 3',
+        fontSize: isBn ? 13.5 : 13,
+        fontWeight: '400',
+        lineHeight: 1.6,
+        letterSpacing: '0em',
+        textTransform: 'none',
+        fontStyle: 'normal'
       }
     };
 

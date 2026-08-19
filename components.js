@@ -11,6 +11,8 @@
   var HEADER_SETTINGS_KEY = 'privatian_header_settings';
   var MENU_SETTINGS_KEY = 'privatian_menu_settings';
   var FOOTER_SETTINGS_KEY = 'privatian_footer_settings';
+  var TYPOGRAPHY_SETTINGS_KEY = 'privatian_typography_settings';
+  var TYPOGRAPHY_SETTINGS_KEY_BN = 'privatian_typography_settings_bn';
 
   var DEFAULT_FOOTER_CONFIG = {
     sectionsTitle: 'Sections',
@@ -1835,47 +1837,59 @@
     var cssVars = [];
     var targetSelector = isBn ? 'html[lang="bn"], html.lang-bn, html[data-lang="bn"]' : ':root';
 
-    // 1. Header Section
-    if (config.header_section) {
-      var h = config.header_section;
-      if (h.fontFamily) {
-        loadGoogleFontFamily(h.fontFamily);
-        cssVars.push('--font-header-sec: "' + h.fontFamily + '", sans-serif;');
+    // 1. Header Topbar & Subheader
+    var hTop = config.header_topbar || config.subheader;
+    if (hTop) {
+      if (hTop.fontFamily) {
+        loadGoogleFontFamily(hTop.fontFamily);
+        cssVars.push('--font-header-topbar: "' + hTop.fontFamily + '", sans-serif;');
+        cssVars.push('--font-subheader: "' + hTop.fontFamily + '", sans-serif;');
       }
-      if (h.fontSize) cssVars.push('--font-header-sec-size: ' + h.fontSize + 'px;');
-      if (h.fontWeight) cssVars.push('--font-header-sec-weight: ' + h.fontWeight + ';');
-      if (h.letterSpacing) cssVars.push('--font-header-sec-spacing: ' + h.letterSpacing + ';');
-      if (h.textTransform) cssVars.push('--font-header-sec-transform: ' + h.textTransform + ';');
-      if (h.lineHeight) cssVars.push('--font-header-sec-lh: ' + h.lineHeight + ';');
+      if (hTop.fontSize) {
+        cssVars.push('--font-header-topbar-size: ' + hTop.fontSize + 'px;');
+        cssVars.push('--font-subheader-size: ' + hTop.fontSize + 'px;');
+      }
+      if (hTop.fontWeight) cssVars.push('--font-header-topbar-weight: ' + hTop.fontWeight + ';');
+      if (hTop.letterSpacing) cssVars.push('--font-header-topbar-spacing: ' + hTop.letterSpacing + ';');
+      if (hTop.lineHeight) cssVars.push('--font-header-topbar-lh: ' + hTop.lineHeight + ';');
     }
 
-    // 2. Subheader Bar
-    if (config.subheader) {
-      var sh = config.subheader;
-      if (sh.fontFamily) {
-        loadGoogleFontFamily(sh.fontFamily);
-        cssVars.push('--font-subheader: "' + sh.fontFamily + '", sans-serif;');
+    // 2. Header Navigation Links
+    var hNav = config.header_nav || config.header_section;
+    if (hNav) {
+      if (hNav.fontFamily) {
+        loadGoogleFontFamily(hNav.fontFamily);
+        cssVars.push('--font-header-nav: "' + hNav.fontFamily + '", sans-serif;');
+        cssVars.push('--font-header-sec: "' + hNav.fontFamily + '", sans-serif;');
       }
-      if (sh.fontSize) cssVars.push('--font-subheader-size: ' + sh.fontSize + 'px;');
-      if (sh.fontWeight) cssVars.push('--font-subheader-weight: ' + sh.fontWeight + ';');
-      if (sh.letterSpacing) cssVars.push('--font-subheader-spacing: ' + sh.letterSpacing + ';');
-      if (sh.lineHeight) cssVars.push('--font-subheader-lh: ' + sh.lineHeight + ';');
+      if (hNav.fontSize) {
+        cssVars.push('--font-header-nav-size: ' + hNav.fontSize + 'px;');
+        cssVars.push('--font-header-sec-size: ' + hNav.fontSize + 'px;');
+      }
+      if (hNav.fontWeight) cssVars.push('--font-header-nav-weight: ' + hNav.fontWeight + ';');
+      if (hNav.letterSpacing) cssVars.push('--font-header-nav-spacing: ' + hNav.letterSpacing + ';');
+      if (hNav.textTransform) cssVars.push('--font-header-nav-transform: ' + hNav.textTransform + ';');
+      if (hNav.lineHeight) cssVars.push('--font-header-nav-lh: ' + hNav.lineHeight + ';');
     }
 
     // 3. Navigation Menu / Drawer
-    if (config.menu) {
-      var m = config.menu;
-      if (m.fontFamily) {
-        loadGoogleFontFamily(m.fontFamily);
-        cssVars.push('--font-menu: "' + m.fontFamily + '", sans-serif;');
+    var mDraw = config.menu_drawer || config.menu;
+    if (mDraw) {
+      if (mDraw.fontFamily) {
+        loadGoogleFontFamily(mDraw.fontFamily);
+        cssVars.push('--font-menu-drawer: "' + mDraw.fontFamily + '", sans-serif;');
+        cssVars.push('--font-menu: "' + mDraw.fontFamily + '", sans-serif;');
       }
-      if (m.fontSize) cssVars.push('--font-menu-size: ' + m.fontSize + 'px;');
-      if (m.fontWeight) cssVars.push('--font-menu-weight: ' + m.fontWeight + ';');
-      if (m.lineHeight) cssVars.push('--font-menu-lh: ' + m.lineHeight + ';');
-      if (m.letterSpacing) cssVars.push('--font-menu-spacing: ' + m.letterSpacing + ';');
+      if (mDraw.fontSize) {
+        cssVars.push('--font-menu-drawer-size: ' + mDraw.fontSize + 'px;');
+        cssVars.push('--font-menu-size: ' + mDraw.fontSize + 'px;');
+      }
+      if (mDraw.fontWeight) cssVars.push('--font-menu-drawer-weight: ' + mDraw.fontWeight + ';');
+      if (mDraw.lineHeight) cssVars.push('--font-menu-drawer-lh: ' + mDraw.lineHeight + ';');
+      if (mDraw.letterSpacing) cssVars.push('--font-menu-drawer-spacing: ' + mDraw.letterSpacing + ';');
     }
 
-    // 4. Article Title
+    // 4. Article Title / H1
     if (config.article_title) {
       var at = config.article_title;
       if (at.fontFamily) {
@@ -1903,7 +1917,35 @@
       if (as.letterSpacing) cssVars.push('--font-art-subtitle-spacing: ' + as.letterSpacing + ';');
     }
 
-    // 6. Article Body Text
+    // 6. Article Meta & Byline
+    if (config.article_meta) {
+      var am = config.article_meta;
+      if (am.fontFamily) {
+        loadGoogleFontFamily(am.fontFamily);
+        cssVars.push('--font-art-meta: "' + am.fontFamily + '", sans-serif;');
+      }
+      if (am.fontSize) cssVars.push('--font-art-meta-size: ' + am.fontSize + 'px;');
+      if (am.fontWeight) cssVars.push('--font-art-meta-weight: ' + am.fontWeight + ';');
+      if (am.letterSpacing) cssVars.push('--font-art-meta-spacing: ' + am.letterSpacing + ';');
+      if (am.textTransform) cssVars.push('--font-art-meta-transform: ' + am.textTransform + ';');
+      if (am.lineHeight) cssVars.push('--font-art-meta-lh: ' + am.lineHeight + ';');
+    }
+
+    // 7. Article Subheadings (H2, H3, H4)
+    if (config.article_headings) {
+      var ah = config.article_headings;
+      if (ah.fontFamily) {
+        loadGoogleFontFamily(ah.fontFamily);
+        cssVars.push('--font-art-headings: "' + ah.fontFamily + '", serif;');
+      }
+      if (ah.fontSize) cssVars.push('--font-art-headings-size: ' + ah.fontSize + 'px;');
+      if (ah.fontWeight) cssVars.push('--font-art-headings-weight: ' + ah.fontWeight + ';');
+      if (ah.fontStyle) cssVars.push('--font-art-headings-style: ' + ah.fontStyle + ';');
+      if (ah.lineHeight) cssVars.push('--font-art-headings-lh: ' + ah.lineHeight + ';');
+      if (ah.letterSpacing) cssVars.push('--font-art-headings-spacing: ' + ah.letterSpacing + ';');
+    }
+
+    // 8. Article Body Text
     if (config.article_body) {
       var ab = config.article_body;
       if (ab.fontFamily) {
@@ -1917,7 +1959,7 @@
       if (ab.letterSpacing) cssVars.push('--font-art-body-spacing: ' + ab.letterSpacing + ';');
     }
 
-    // 7. Article Quote
+    // 9. Article Quote
     if (config.article_quote) {
       var aq = config.article_quote;
       if (aq.fontFamily) {
@@ -1929,6 +1971,47 @@
       if (aq.fontStyle) cssVars.push('--font-art-quote-style: ' + aq.fontStyle + ';');
       if (aq.lineHeight) cssVars.push('--font-art-quote-lh: ' + aq.lineHeight + ';');
       if (aq.letterSpacing) cssVars.push('--font-art-quote-spacing: ' + aq.letterSpacing + ';');
+    }
+
+    // 10. Section Headers
+    if (config.section_headers) {
+      var secH = config.section_headers;
+      if (secH.fontFamily) {
+        loadGoogleFontFamily(secH.fontFamily);
+        cssVars.push('--font-sec-headers: "' + secH.fontFamily + '", sans-serif;');
+      }
+      if (secH.fontSize) cssVars.push('--font-sec-headers-size: ' + secH.fontSize + 'px;');
+      if (secH.fontWeight) cssVars.push('--font-sec-headers-weight: ' + secH.fontWeight + ';');
+      if (secH.lineHeight) cssVars.push('--font-sec-headers-lh: ' + secH.lineHeight + ';');
+      if (secH.letterSpacing) cssVars.push('--font-sec-headers-spacing: ' + secH.letterSpacing + ';');
+      if (secH.textTransform) cssVars.push('--font-sec-headers-transform: ' + secH.textTransform + ';');
+    }
+
+    // 11. Card Titles
+    if (config.card_titles) {
+      var ct = config.card_titles;
+      if (ct.fontFamily) {
+        loadGoogleFontFamily(ct.fontFamily);
+        cssVars.push('--font-card-titles: "' + ct.fontFamily + '", serif;');
+      }
+      if (ct.fontSize) cssVars.push('--font-card-titles-size: ' + ct.fontSize + 'px;');
+      if (ct.fontWeight) cssVars.push('--font-card-titles-weight: ' + ct.fontWeight + ';');
+      if (ct.fontStyle) cssVars.push('--font-card-titles-style: ' + ct.fontStyle + ';');
+      if (ct.lineHeight) cssVars.push('--font-card-titles-lh: ' + ct.lineHeight + ';');
+      if (ct.letterSpacing) cssVars.push('--font-card-titles-spacing: ' + ct.letterSpacing + ';');
+    }
+
+    // 12. Footer Typography
+    if (config.footer_typography) {
+      var ft = config.footer_typography;
+      if (ft.fontFamily) {
+        loadGoogleFontFamily(ft.fontFamily);
+        cssVars.push('--font-footer: "' + ft.fontFamily + '", sans-serif;');
+      }
+      if (ft.fontSize) cssVars.push('--font-footer-size: ' + ft.fontSize + 'px;');
+      if (ft.fontWeight) cssVars.push('--font-footer-weight: ' + ft.fontWeight + ';');
+      if (ft.lineHeight) cssVars.push('--font-footer-lh: ' + ft.lineHeight + ';');
+      if (ft.letterSpacing) cssVars.push('--font-footer-spacing: ' + ft.letterSpacing + ';');
     }
 
     if (cssVars.length > 0) {
