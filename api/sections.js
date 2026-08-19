@@ -2141,6 +2141,164 @@ module.exports = async function handler(req, res) {
     }
   }
 
+  // ── TYPOGRAPHY & FONTS CONFIGURATION (GET / POST) ──────────────────────
+  if (action === 'typography') {
+    const isBn = (req.query && req.query.lang === 'bn') || (req.body && req.body.lang === 'bn');
+    const settingsKey = isBn ? 'site_typography_settings_bn' : 'site_typography_settings';
+    const fallbackId = isBn ? '__typography_config_bn__' : '__typography_config__';
+
+    const DEFAULT_TYPOGRAPHY_CONFIG = {
+      header_section: {
+        fontFamily: isBn ? 'Hind Siliguri' : 'Source Sans 3',
+        fontSize: isBn ? 14 : 13,
+        fontWeight: '600',
+        lineHeight: 1.2,
+        letterSpacing: isBn ? '0em' : '0.06em',
+        textTransform: isBn ? 'none' : 'uppercase',
+        fontStyle: 'normal'
+      },
+      subheader: {
+        fontFamily: isBn ? 'Hind Siliguri' : 'Source Sans 3',
+        fontSize: isBn ? 12.5 : 12,
+        fontWeight: '400',
+        lineHeight: 1.4,
+        letterSpacing: isBn ? '0em' : '0.02em',
+        textTransform: 'none',
+        fontStyle: 'normal'
+      },
+      menu: {
+        fontFamily: isBn ? 'Hind Siliguri' : 'Source Sans 3',
+        fontSize: isBn ? 15.5 : 15,
+        fontWeight: '600',
+        lineHeight: 1.4,
+        letterSpacing: '0em',
+        textTransform: 'none',
+        fontStyle: 'normal'
+      },
+      article_title: {
+        fontFamily: isBn ? 'Noto Serif Bengali' : 'Libre Baskerville',
+        fontSize: isBn ? 36 : 38,
+        fontWeight: '700',
+        lineHeight: isBn ? 1.3 : 1.25,
+        letterSpacing: isBn ? '0em' : '-0.02em',
+        textTransform: 'none',
+        fontStyle: 'normal'
+      },
+      article_subtitle: {
+        fontFamily: isBn ? 'Noto Serif Bengali' : 'Libre Baskerville',
+        fontSize: isBn ? 17.5 : 18,
+        fontWeight: '400',
+        lineHeight: isBn ? 1.55 : 1.5,
+        letterSpacing: '0em',
+        textTransform: 'none',
+        fontStyle: isBn ? 'normal' : 'italic'
+      },
+      article_body: {
+        fontFamily: isBn ? 'Noto Serif Bengali' : 'Source Sans 3',
+        fontSize: isBn ? 17.5 : 17,
+        fontWeight: '400',
+        lineHeight: isBn ? 1.8 : 1.75,
+        letterSpacing: '0em',
+        textTransform: 'none',
+        fontStyle: 'normal'
+      },
+      article_quote: {
+        fontFamily: isBn ? 'Noto Serif Bengali' : 'Libre Baskerville',
+        fontSize: isBn ? 19.5 : 20,
+        fontWeight: isBn ? '600' : '400',
+        lineHeight: isBn ? 1.6 : 1.55,
+        letterSpacing: '0em',
+        textTransform: 'none',
+        fontStyle: isBn ? 'normal' : 'italic'
+      }
+    };
+
+    if (req.method === 'GET') {
+      try {
+        const { data } = await sb.from('site_settings').select('value').eq('key', settingsKey).maybeSingle();
+        if (data && data.value) {
+          const merged = Object.assign({}, DEFAULT_TYPOGRAPHY_CONFIG, data.value);
+          return res.status(200).json(merged);
+        }
+      } catch(e) {}
+
+      // Fallback read from sections table
+      try {
+        const { data: sData } = await sb.from('sections').select('name').eq('admin_id', fallbackId).maybeSingle();
+        if (sData && sData.name) {
+          const parsed = JSON.parse(sData.name);
+          if (parsed && typeof parsed === 'object') {
+            const merged = Object.assign({}, DEFAULT_TYPOGRAPHY_CONFIG, parsed);
+            return res.status(200).json(merged);
+          }
+        }
+      } catch(e) {}
+
+      return res.status(200).json(DEFAULT_TYPOGRAPHY_CONFIG);
+    }
+
+    if (req.method === 'POST') {
+      const session = await requireAuth(req, res);
+      if (!session) return;
+
+      const body = req.body || {};
+      const typographyConfig = body.config || body;
+
+      const cleanConfig = Object.assign({}, DEFAULT_TYPOGRAPHY_CONFIG, typographyConfig);
+
+      let saved = false;
+      try {
+        const { error: err } = await sb.from('site_settings').upsert({
+          key: settingsKey,
+          value: cleanConfig,
+          updated_at: new Date().toISOString()
+        }, { onConflict: 'key' });
+        if (!err) saved = true;
+      } catch(err) {}
+
+      if (!saved) {
+        try {
+          const { data: existing } = await sb.from('sections').select('id').eq('admin_id', fallbackId).maybeSingle();
+          if (existing) {
+            await sb.from('sections').update({
+              name: JSON.stringify(cleanConfig),
+              slug: fallbackId,
+              display_order: 9993,
+              is_active: false,
+              locked: true,
+              is_deleted: true
+            }).eq('admin_id', fallbackId);
+          } else {
+            await sb.from('sections').insert({
+              admin_id: fallbackId,
+              name: JSON.stringify(cleanConfig),
+              slug: fallbackId,
+              display_order: 9993,
+              is_active: false,
+              locked: true,
+              is_deleted: true
+            });
+          }
+        } catch(err) {
+          console.warn('[DB typography save error]:', err.message);
+        }
+      }
+
+      logActivity({
+        actor: session,
+        action: 'layout.typography_save',
+        category: 'layout',
+        summary: `${session.name || session.email} updated Typography & Font settings (${isBn ? 'Bengali' : 'English'})`,
+        target_id: settingsKey,
+        target_name: 'Typography Settings',
+        details: { lang: isBn ? 'bn' : 'en' },
+        req
+      }).catch(() => {});
+
+      return res.status(200).json({ ok: true, data: cleanConfig });
+    }
+  }
+
   // ── GET ─────────────────────────────────────────────────────────────────
   if (req.method === 'GET') {
     const statusParam = (req.query && req.query.status) || 'active';

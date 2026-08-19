@@ -76,6 +76,54 @@
   --font-serif:       'Libre Baskerville', 'Noto Serif Bengali', Georgia, serif;
   --font-sans:        'Source Sans 3', 'Hind Siliguri', 'Helvetica Neue', Arial, sans-serif;
 
+  /* 7 Customizable Dynamic Typography Tokens */
+  --font-header-sec:           var(--font-sans);
+  --font-header-sec-size:      11.5px;
+  --font-header-sec-weight:    700;
+  --font-header-sec-transform: uppercase;
+  --font-header-sec-spacing:   0.08em;
+  --font-header-sec-lh:        1.2;
+
+  --font-subheader:            var(--font-sans);
+  --font-subheader-size:       12px;
+  --font-subheader-weight:     400;
+  --font-subheader-spacing:    0.02em;
+  --font-subheader-lh:         1.4;
+
+  --font-menu:                 var(--font-sans);
+  --font-menu-size:            17px;
+  --font-menu-weight:          600;
+  --font-menu-lh:              1.4;
+  --font-menu-spacing:         0em;
+
+  --font-art-title:            var(--font-serif);
+  --font-art-title-size:       38px;
+  --font-art-title-weight:     700;
+  --font-art-title-style:      normal;
+  --font-art-title-lh:         1.25;
+  --font-art-title-spacing:    -0.01em;
+
+  --font-art-subtitle:         var(--font-serif);
+  --font-art-subtitle-size:    18px;
+  --font-art-subtitle-weight:  400;
+  --font-art-subtitle-style:   italic;
+  --font-art-subtitle-lh:      1.55;
+  --font-art-subtitle-spacing: 0em;
+
+  --font-art-body:             var(--font-sans);
+  --font-art-body-size:        18px;
+  --font-art-body-weight:      400;
+  --font-art-body-style:       normal;
+  --font-art-body-lh:          1.78;
+  --font-art-body-spacing:     0em;
+
+  --font-art-quote:            var(--font-serif);
+  --font-art-quote-size:       19.5px;
+  --font-art-quote-weight:     400;
+  --font-art-quote-style:      italic;
+  --font-art-quote-lh:         1.7;
+  --font-art-quote-spacing:    0em;
+
   /* Layout */
   --max-width:        1280px;
   --header-h:         auto;
@@ -99,6 +147,38 @@ html[data-lang="bn"] {
   --font-serif: 'Noto Serif Bengali', 'SolaimanLipi', 'Kalpurush', 'Nirmala UI', 'Libre Baskerville', Georgia, serif;
   --font-sans:  'Hind Siliguri', 'SolaimanLipi', 'Kalpurush', 'Nirmala UI', 'Source Sans 3', 'Helvetica Neue', Arial, sans-serif;
   letter-spacing: normal !important;
+
+  --font-header-sec:           'Hind Siliguri', 'SolaimanLipi', var(--font-sans);
+  --font-header-sec-size:      13.5px;
+  --font-header-sec-transform: none;
+  --font-header-sec-spacing:   0em;
+
+  --font-subheader:            'Hind Siliguri', 'SolaimanLipi', var(--font-sans);
+  --font-subheader-size:       12.5px;
+  --font-subheader-spacing:    0em;
+
+  --font-menu:                 'Hind Siliguri', 'SolaimanLipi', var(--font-sans);
+  --font-menu-size:            16.5px;
+
+  --font-art-title:            'Noto Serif Bengali', 'Kalpurush', var(--font-serif);
+  --font-art-title-size:       36px;
+  --font-art-title-lh:         1.35;
+  --font-art-title-spacing:    0em;
+
+  --font-art-subtitle:         'Noto Serif Bengali', 'Kalpurush', var(--font-serif);
+  --font-art-subtitle-size:    17.5px;
+  --font-art-subtitle-style:   normal;
+  --font-art-subtitle-lh:      1.6;
+
+  --font-art-body:             'Noto Serif Bengali', 'Kalpurush', var(--font-serif);
+  --font-art-body-size:        18px;
+  --font-art-body-lh:          1.8;
+
+  --font-art-quote:            'Noto Serif Bengali', 'Kalpurush', var(--font-serif);
+  --font-art-quote-size:       19px;
+  --font-art-quote-weight:     600;
+  --font-art-quote-style:      normal;
+  --font-art-quote-lh:         1.65;
 }
 
 html[lang="bn"] .hero-headline,
@@ -108,15 +188,17 @@ html[lang="bn"] .id-title,
 html[lang="bn"] .article-title,
 html[lang="bn"] .sec-block-title,
 html[lang="bn"] .news-main-title {
-  line-height: 1.35;
-  letter-spacing: 0;
+  font-family: var(--font-art-title);
+  line-height: var(--font-art-title-lh, 1.35);
+  letter-spacing: var(--font-art-title-spacing, 0);
 }
 
 html[lang="bn"] .hero-subtitle,
 html[lang="bn"] .hero-sidebar-desc,
 html[lang="bn"] .article-subtitle,
 html[lang="bn"] .events-hero-sub {
-  line-height: 1.6;
+  font-family: var(--font-art-subtitle);
+  line-height: var(--font-art-subtitle-lh, 1.6);
 }
 
 .font-preloader {
@@ -476,10 +558,12 @@ body.menu-open, html.menu-open {
   margin-left: 6px;
 }
 .sub-link { 
-  font-family: var(--font-sans); 
-  font-size: 11.5px; 
-  font-weight: 700; 
-  letter-spacing: 0.08em; 
+  font-family: var(--font-header-sec, var(--font-sans)); 
+  font-size: var(--font-header-sec-size, 11.5px); 
+  font-weight: var(--font-header-sec-weight, 700); 
+  letter-spacing: var(--font-header-sec-spacing, 0.08em); 
+  text-transform: var(--font-header-sec-transform, uppercase);
+  line-height: var(--font-header-sec-lh, 1.2);
   color: var(--brand-navy); 
   padding: 0 18px; 
   height: 100%; 
@@ -614,9 +698,11 @@ body.menu-open, html.menu-open {
 .menu-section-list { display: flex; flex-direction: column; gap: 14px; }
 .menu-section-list li a { 
   display: inline-block;
-  font-family: var(--font-sans); 
-  font-size: 17px; 
-  font-weight: 600; 
+  font-family: var(--font-menu, var(--font-sans)); 
+  font-size: var(--font-menu-size, 17px); 
+  font-weight: var(--font-menu-weight, 600); 
+  line-height: var(--font-menu-lh, 1.4);
+  letter-spacing: var(--font-menu-spacing, 0em);
   color: var(--text-primary); 
   transition: color 0.18s ease, transform 0.18s ease; 
 }
@@ -638,9 +724,11 @@ body.menu-open, html.menu-open {
 .menu-explore-list { display: flex; flex-direction: column; gap: 12px; }
 .menu-explore-list li a { 
   display: inline-block;
-  font-family: var(--font-sans); 
-  font-size: 17px; 
-  font-weight: 600; 
+  font-family: var(--font-menu, var(--font-sans)); 
+  font-size: var(--font-menu-size, 17px); 
+  font-weight: var(--font-menu-weight, 600); 
+  line-height: var(--font-menu-lh, 1.4);
+  letter-spacing: var(--font-menu-spacing, 0em);
   color: var(--text-primary); 
   transition: color 0.18s ease, transform 0.18s ease; 
 }

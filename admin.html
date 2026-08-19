@@ -139,6 +139,16 @@
           </a>
         </li>
         <li>
+          <a href="#" class="sidebar-nav-item" data-page="fonts" id="nav-fonts">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="4 7 4 4 20 4 20 7"/>
+              <line x1="9" y1="20" x2="15" y2="20"/>
+              <line x1="12" y1="4" x2="12" y2="20"/>
+            </svg>
+            <span>Font Settings</span>
+          </a>
+        </li>
+        <li>
           <a href="#" class="sidebar-nav-item" data-page="settings" id="nav-settings">
             <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
               <circle cx="12" cy="12" r="3"/>
@@ -2058,6 +2068,126 @@
           <h3 style="font-size:15px;font-weight:600;color:#475569;margin-bottom:4px;">Trash is empty</h3>
           <p style="color:#94a3b8;font-size:13px;margin:0;">No deleted authors in the recycle bin.</p>
         </div>
+      </div>
+    </section>
+
+    <!-- PAGE: FONTS & TYPOGRAPHY SETTINGS STUDIO -->
+    <section class="page" id="page-fonts">
+      <!-- Fonts Studio Header -->
+      <div class="menu-mgr-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:12px;">
+        <div class="menu-mgr-title-wrap">
+          <h1 class="page-title" style="font-size:22px;font-weight:700;color:var(--text-primary);margin:0 0 4px;display:flex;align-items:center;gap:8px;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="22" height="22" style="color:var(--brand-navy,#0a528e);">
+              <polyline points="4 7 4 4 20 4 20 7"/>
+              <line x1="9" y1="20" x2="15" y2="20"/>
+              <line x1="12" y1="4" x2="12" y2="20"/>
+            </svg>
+            <span>Typography &amp; Font Settings Studio</span>
+          </h1>
+          <p class="page-subtitle" style="font-size:13px;color:var(--text-muted);margin:0;">
+            Customize font family, font size, weight, line-height, letter-spacing, and style across all 7 core website areas with live interactive preview.
+          </p>
+        </div>
+        <div class="menu-mgr-actions" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+          <!-- Language Tab Switcher -->
+          <div class="btn-group" style="display:inline-flex;border:1px solid #cbd5e1;border-radius:6px;overflow:hidden;background:#fff;">
+            <button type="button" class="btn btn--sm active" id="btn-font-lang-en" onclick="switchTypographyLang('en')" style="font-size:12px;padding:6px 14px;font-weight:600;">English Fonts</button>
+            <button type="button" class="btn btn--sm" id="btn-font-lang-bn" onclick="switchTypographyLang('bn')" style="font-size:12px;padding:6px 14px;font-weight:600;">বাংলা ফন্ট</button>
+          </div>
+          <button type="button" class="btn btn--ghost btn--sm" onclick="resetTypographyToDefault()" style="font-size:12.5px;padding:6px 14px;display:inline-flex;align-items:center;gap:6px;border:1px solid #cbd5e1;border-radius:6px;" title="Reset typography back to brand defaults">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+            Reset Default
+          </button>
+          <button type="button" class="btn btn--primary btn--sm" id="btn-save-typography-settings" onclick="saveTypographySettings()" style="font-size:12.5px;padding:7px 18px;display:inline-flex;align-items:center;gap:6px;border-radius:6px;font-weight:600;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" width="14" height="14"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+            Save Font Settings
+          </button>
+        </div>
+      </div>
+
+      <!-- Main Studio Layout: 2 Columns (Controls vs Live Interactive Preview) -->
+      <div class="settings-studio-grid" style="display:grid;grid-template-columns:1.15fr 0.85fr;gap:24px;align-items:start;">
+        
+        <!-- LEFT COLUMN: 7 Font Customization Panels -->
+        <div id="font-settings-form-col" style="display:flex;flex-direction:column;gap:18px;">
+          <!-- Rendered dynamically by admin.js based on active language (en/bn) -->
+        </div>
+
+        <!-- RIGHT COLUMN: Sticky Live Typography Preview Studio -->
+        <div class="card" style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:20px;box-shadow:0 2px 10px rgba(0,0,0,0.04);position:sticky;top:80px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;border-bottom:1px solid #f1f5f9;padding-bottom:10px;">
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#10b981;"></span>
+              <span style="font-size:12px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.05em;">Live Typography Preview</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:6px;">
+              <span id="font-preview-lang-pill" style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:12px;background:#e0f2fe;color:#0369a1;">English Mode</span>
+            </div>
+          </div>
+
+          <!-- Preview Stage Container -->
+          <div id="font-preview-stage" style="background:#ffffff;border:1px solid #cbd5e1;border-radius:8px;padding:18px;display:flex;flex-direction:column;gap:18px;max-height:calc(100vh - 180px);overflow-y:auto;">
+            
+            <!-- 1. Header Section Preview -->
+            <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;padding:12px 14px;">
+              <div style="font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;">1. Header Section Links</div>
+              <nav id="pv-header-sec" style="display:flex;gap:14px;flex-wrap:wrap;color:#0a528e;border-bottom:1px solid #e2e8f0;padding-bottom:8px;">
+                <span class="pv-sec-item" style="cursor:default;">FINDINGS</span>
+                <span class="pv-sec-item" style="cursor:default;">COMMUNITY &amp; HERITAGE</span>
+                <span class="pv-sec-item" style="cursor:default;">CULTURE</span>
+                <span class="pv-sec-item" style="cursor:default;">VALUES</span>
+              </nav>
+            </div>
+
+            <!-- 2. Subheader Bar Preview -->
+            <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;padding:12px 14px;">
+              <div style="font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;">2. Subheader Bar (Date &amp; Edition)</div>
+              <div id="pv-subheader" style="color:#2c4a6e;display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+                <span>Wednesday, August 19, 2026</span>
+                <span>•</span>
+                <span>Cambridge Edition</span>
+                <span>•</span>
+                <span>72°F Sunny</span>
+              </div>
+            </div>
+
+            <!-- 3. Navigation Drawer Menu Preview -->
+            <div style="background:#0d1f35;border-radius:6px;padding:14px;color:#fff;">
+              <div style="font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;">3. Drawer Menu Items</div>
+              <div id="pv-menu" style="display:flex;flex-direction:column;gap:8px;">
+                <div style="color:#e2e8f0;display:flex;justify-content:space-between;"><span>Explore The Privatian</span><span>→</span></div>
+                <div style="color:#e2e8f0;display:flex;justify-content:space-between;"><span>Article Archives &amp; News+</span><span>→</span></div>
+                <div style="color:#e2e8f0;display:flex;justify-content:space-between;"><span>Events &amp; Gatherings</span><span>→</span></div>
+              </div>
+            </div>
+
+            <!-- 4. Article Title Preview -->
+            <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;padding:14px;">
+              <div style="font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;">4. Article Title</div>
+              <h2 id="pv-art-title" style="color:#0d1f35;margin:0;">The Architecture of Living Heritage and Moral Purpose</h2>
+            </div>
+
+            <!-- 5. Article Subtitle / Deck Preview -->
+            <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;padding:14px;">
+              <div style="font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;">5. Article Subtitle / Deck</div>
+              <p id="pv-art-subtitle" style="color:#2c4a6e;margin:0;">How intergenerational traditions shape our civic identities and community legacy across modern centuries.</p>
+            </div>
+
+            <!-- 6. Article Body Text Preview -->
+            <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;padding:14px;">
+              <div style="font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;">6. Article Body Text</div>
+              <p id="pv-art-body" style="color:#0d1f35;margin:0;">Across generations, the enduring values of thoughtful scholarship and deliberate reflection have formed the foundation of the Privatian family ethos. In an era marked by rapid change, the preservation of intellectual dignity remains our primary beacon.</p>
+            </div>
+
+            <!-- 7. Article Quote / Blockquote Preview -->
+            <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;padding:14px;">
+              <div style="font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;">7. Article Quote</div>
+              <blockquote id="pv-art-quote" style="color:#0a528e;border-left:3px solid #0a528e;padding-left:14px;margin:0;">“Tradition is not the worship of ashes, but the preservation of fire.” <cite style="display:block;font-size:0.85em;color:#64748b;margin-top:6px;font-style:normal;">— Privatian Family Archives</cite></blockquote>
+            </div>
+
+          </div>
+        </div>
+
       </div>
     </section>
 

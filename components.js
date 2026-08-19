@@ -1797,6 +1797,180 @@
   window.initPrivatianHeader = initHeader;
   window.renderPrivatianHeader = initHeader;
 
+  // ── TYPOGRAPHY SETTINGS ENGINE ──────────────────────────────────────────
+  var TYPOGRAPHY_SETTINGS_KEY = 'privatian_typography_settings';
+  var TYPOGRAPHY_SETTINGS_KEY_BN = 'privatian_typography_settings_bn';
+  var _loadedGoogleFonts = {};
+
+  function loadGoogleFontFamily(fontFamily) {
+    if (!fontFamily || typeof fontFamily !== 'string') return;
+    var clean = fontFamily.split(',')[0].replace(/['"]/g, '').trim();
+    if (!clean || _loadedGoogleFonts[clean]) return;
+    
+    var systemFonts = ['Arial', 'Helvetica', 'Georgia', 'Times New Roman', 'Courier New', 'Verdana', 'Tahoma', 'Trebuchet MS', 'Impact', 'SolaimanLipi', 'Kalpurush', 'Nirmala UI'];
+    if (systemFonts.indexOf(clean) !== -1) return;
+
+    _loadedGoogleFonts[clean] = true;
+    var linkId = 'gfont-' + clean.toLowerCase().replace(/[^a-z0-9]/g, '-');
+    if (document.getElementById(linkId)) return;
+
+    var link = document.createElement('link');
+    link.id = linkId;
+    link.rel = 'stylesheet';
+    var fontQuery = encodeURIComponent(clean) + ':ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400;1,700';
+    link.href = 'https://fonts.googleapis.com/css2?family=' + fontQuery + '&display=swap';
+    document.head.appendChild(link);
+  }
+
+  function applyDynamicTypography(config, isBn) {
+    if (!config || typeof config !== 'object') return;
+    
+    var styleEl = document.getElementById('privatian-dynamic-typography');
+    if (!styleEl) {
+      styleEl = document.createElement('style');
+      styleEl.id = 'privatian-dynamic-typography';
+      document.head.appendChild(styleEl);
+    }
+
+    var cssVars = [];
+    var targetSelector = isBn ? 'html[lang="bn"], html.lang-bn, html[data-lang="bn"]' : ':root';
+
+    // 1. Header Section
+    if (config.header_section) {
+      var h = config.header_section;
+      if (h.fontFamily) {
+        loadGoogleFontFamily(h.fontFamily);
+        cssVars.push('--font-header-sec: "' + h.fontFamily + '", sans-serif;');
+      }
+      if (h.fontSize) cssVars.push('--font-header-sec-size: ' + h.fontSize + 'px;');
+      if (h.fontWeight) cssVars.push('--font-header-sec-weight: ' + h.fontWeight + ';');
+      if (h.letterSpacing) cssVars.push('--font-header-sec-spacing: ' + h.letterSpacing + ';');
+      if (h.textTransform) cssVars.push('--font-header-sec-transform: ' + h.textTransform + ';');
+      if (h.lineHeight) cssVars.push('--font-header-sec-lh: ' + h.lineHeight + ';');
+    }
+
+    // 2. Subheader Bar
+    if (config.subheader) {
+      var sh = config.subheader;
+      if (sh.fontFamily) {
+        loadGoogleFontFamily(sh.fontFamily);
+        cssVars.push('--font-subheader: "' + sh.fontFamily + '", sans-serif;');
+      }
+      if (sh.fontSize) cssVars.push('--font-subheader-size: ' + sh.fontSize + 'px;');
+      if (sh.fontWeight) cssVars.push('--font-subheader-weight: ' + sh.fontWeight + ';');
+      if (sh.letterSpacing) cssVars.push('--font-subheader-spacing: ' + sh.letterSpacing + ';');
+      if (sh.lineHeight) cssVars.push('--font-subheader-lh: ' + sh.lineHeight + ';');
+    }
+
+    // 3. Navigation Menu / Drawer
+    if (config.menu) {
+      var m = config.menu;
+      if (m.fontFamily) {
+        loadGoogleFontFamily(m.fontFamily);
+        cssVars.push('--font-menu: "' + m.fontFamily + '", sans-serif;');
+      }
+      if (m.fontSize) cssVars.push('--font-menu-size: ' + m.fontSize + 'px;');
+      if (m.fontWeight) cssVars.push('--font-menu-weight: ' + m.fontWeight + ';');
+      if (m.lineHeight) cssVars.push('--font-menu-lh: ' + m.lineHeight + ';');
+      if (m.letterSpacing) cssVars.push('--font-menu-spacing: ' + m.letterSpacing + ';');
+    }
+
+    // 4. Article Title
+    if (config.article_title) {
+      var at = config.article_title;
+      if (at.fontFamily) {
+        loadGoogleFontFamily(at.fontFamily);
+        cssVars.push('--font-art-title: "' + at.fontFamily + '", serif;');
+      }
+      if (at.fontSize) cssVars.push('--font-art-title-size: ' + at.fontSize + 'px;');
+      if (at.fontWeight) cssVars.push('--font-art-title-weight: ' + at.fontWeight + ';');
+      if (at.fontStyle) cssVars.push('--font-art-title-style: ' + at.fontStyle + ';');
+      if (at.lineHeight) cssVars.push('--font-art-title-lh: ' + at.lineHeight + ';');
+      if (at.letterSpacing) cssVars.push('--font-art-title-spacing: ' + at.letterSpacing + ';');
+    }
+
+    // 5. Article Subtitle / Deck
+    if (config.article_subtitle) {
+      var as = config.article_subtitle;
+      if (as.fontFamily) {
+        loadGoogleFontFamily(as.fontFamily);
+        cssVars.push('--font-art-subtitle: "' + as.fontFamily + '", serif;');
+      }
+      if (as.fontSize) cssVars.push('--font-art-subtitle-size: ' + as.fontSize + 'px;');
+      if (as.fontWeight) cssVars.push('--font-art-subtitle-weight: ' + as.fontWeight + ';');
+      if (as.fontStyle) cssVars.push('--font-art-subtitle-style: ' + as.fontStyle + ';');
+      if (as.lineHeight) cssVars.push('--font-art-subtitle-lh: ' + as.lineHeight + ';');
+      if (as.letterSpacing) cssVars.push('--font-art-subtitle-spacing: ' + as.letterSpacing + ';');
+    }
+
+    // 6. Article Body Text
+    if (config.article_body) {
+      var ab = config.article_body;
+      if (ab.fontFamily) {
+        loadGoogleFontFamily(ab.fontFamily);
+        cssVars.push('--font-art-body: "' + ab.fontFamily + '", sans-serif;');
+      }
+      if (ab.fontSize) cssVars.push('--font-art-body-size: ' + ab.fontSize + 'px;');
+      if (ab.fontWeight) cssVars.push('--font-art-body-weight: ' + ab.fontWeight + ';');
+      if (ab.fontStyle) cssVars.push('--font-art-body-style: ' + ab.fontStyle + ';');
+      if (ab.lineHeight) cssVars.push('--font-art-body-lh: ' + ab.lineHeight + ';');
+      if (ab.letterSpacing) cssVars.push('--font-art-body-spacing: ' + ab.letterSpacing + ';');
+    }
+
+    // 7. Article Quote
+    if (config.article_quote) {
+      var aq = config.article_quote;
+      if (aq.fontFamily) {
+        loadGoogleFontFamily(aq.fontFamily);
+        cssVars.push('--font-art-quote: "' + aq.fontFamily + '", serif;');
+      }
+      if (aq.fontSize) cssVars.push('--font-art-quote-size: ' + aq.fontSize + 'px;');
+      if (aq.fontWeight) cssVars.push('--font-art-quote-weight: ' + aq.fontWeight + ';');
+      if (aq.fontStyle) cssVars.push('--font-art-quote-style: ' + aq.fontStyle + ';');
+      if (aq.lineHeight) cssVars.push('--font-art-quote-lh: ' + aq.lineHeight + ';');
+      if (aq.letterSpacing) cssVars.push('--font-art-quote-spacing: ' + aq.letterSpacing + ';');
+    }
+
+    if (cssVars.length > 0) {
+      var cssRule = targetSelector + ' {\n  ' + cssVars.join('\n  ') + '\n}\n';
+      var currentContent = styleEl.textContent || '';
+      var regex = new RegExp(targetSelector.replace('[', '\\[').replace(']', '\\]').replace(/\*/g, '\\*') + '\\s*\\{[^}]*\\}', 'g');
+      if (regex.test(currentContent)) {
+        styleEl.textContent = currentContent.replace(regex, cssRule.trim());
+      } else {
+        styleEl.textContent = currentContent + '\n' + cssRule;
+      }
+    }
+  }
+
+  function fetchTypographyFromAPI() {
+    var isBn = (document.documentElement.lang === 'bn' || (typeof window.isBangla === 'function' && window.isBangla()));
+    var storageKey = isBn ? TYPOGRAPHY_SETTINGS_KEY_BN : TYPOGRAPHY_SETTINGS_KEY;
+    
+    // Apply cached immediately
+    try {
+      var cached = localStorage.getItem(storageKey);
+      if (cached) {
+        applyDynamicTypography(JSON.parse(cached), isBn);
+      }
+    } catch(e) {}
+
+    // Fetch background live
+    var url = '/api/sections?action=typography&lang=' + (isBn ? 'bn' : 'en');
+    fetch(url)
+      .then(function(res) { return res.ok ? res.json() : null; })
+      .then(function(data) {
+        if (data && typeof data === 'object') {
+          try { localStorage.setItem(storageKey, JSON.stringify(data)); } catch(e) {}
+          applyDynamicTypography(data, isBn);
+        }
+      })
+      .catch(function() {});
+  }
+
+  window.applyDynamicTypography = applyDynamicTypography;
+  window.fetchTypographyFromAPI = fetchTypographyFromAPI;
+
   // Try immediate execution if mount element already exists in DOM
   initHeader();
 
@@ -1805,6 +1979,7 @@
   fetchHeaderSettingsFromAPI();
   fetchMenuFromAPI();
   fetchFooterFromAPI();
+  fetchTypographyFromAPI();
 
   // ── Cloudflare Web Analytics ────────────────────────────────────────────
   var DEFAULT_CF_TOKEN = 'ce994487070d403ba18f466602524948';
@@ -1933,6 +2108,7 @@
       fetchHeaderSettingsFromAPI();
       fetchMenuFromAPI();
       fetchFooterFromAPI();
+      fetchTypographyFromAPI();
       applyLogoSettings();
       populateSections();
     } catch(e) {}

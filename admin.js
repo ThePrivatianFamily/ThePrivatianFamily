@@ -1659,6 +1659,7 @@ const PAGE_CONFIG = {
   articles:  { title: 'Articles',  breadcrumb: 'Articles' },
   authors:   { title: 'Authors Directory & Profiles', breadcrumb: 'Authors' },
   gallery:   { title: 'Media Gallery & Asset Library', breadcrumb: 'Gallery' },
+  fonts:     { title: 'Typography & Font Settings', breadcrumb: 'Font Settings' },
   settings:  { title: 'Settings',  breadcrumb: 'Settings' },
   access:    { title: 'Manage Access', breadcrumb: 'Manage Access' },
   activity:  { title: 'Activity Log & Audit Trail', breadcrumb: 'Activity Log' },
@@ -1699,6 +1700,7 @@ function navigateTo(page) {
   if (_currentAdminPage === 'articles')  { initArticlesPage(); }
   if (_currentAdminPage === 'authors')   { initAuthorsPage(); }
   if (_currentAdminPage === 'activity')  { loadActivityLogs(); }
+  if (_currentAdminPage === 'fonts')     { initFontsPage(); }
   if (_currentAdminPage === 'settings')  { initSettingsPage(); }
   if (_currentAdminPage === 'gallery')   {
     loadGalleryAssets();
@@ -12720,6 +12722,623 @@ window.onEmailFieldChange = onEmailFieldChange;
 window.updateEmailPreview = updateEmailPreview;
 window.saveEmailSettings = saveEmailSettings;
 window.resetEmailTemplateToDefault = resetEmailTemplateToDefault;
+
+/* ═══════════════════════════════════════════════════════════════
+   TYPOGRAPHY & FONT SETTINGS STUDIO
+   Comprehensive font customizer for 7 core areas with live preview
+═══════════════════════════════════════════════════════════════ */
+
+const CURATED_FONTS_EN = [
+  { name: 'Source Sans 3', label: 'Source Sans 3 (Modern Sans-Serif)' },
+  { name: 'Libre Baskerville', label: 'Libre Baskerville (Editorial Serif)' },
+  { name: 'Playfair Display', label: 'Playfair Display (Luxury High-Contrast Serif)' },
+  { name: 'Merriweather', label: 'Merriweather (Warm Editorial Serif)' },
+  { name: 'Lora', label: 'Lora (Contemporary Calligraphic Serif)' },
+  { name: 'Cinzel', label: 'Cinzel (Classical Roman Serif)' },
+  { name: 'Cinzel Decorative', label: 'Cinzel Decorative (Majestic Headline Serif)' },
+  { name: 'Inter', label: 'Inter (Clean Tech Sans-Serif)' },
+  { name: 'Roboto', label: 'Roboto (Neutral Sans-Serif)' },
+  { name: 'Montserrat', label: 'Montserrat (Geometric Sans-Serif)' },
+  { name: 'Crimson Text', label: 'Crimson Text (Traditional Book Serif)' },
+  { name: 'EB Garamond', label: 'EB Garamond (Renaissance Classical Serif)' },
+  { name: 'Georgia, serif', label: 'Georgia (System Serif)' },
+  { name: 'Helvetica Neue, Arial, sans-serif', label: 'Helvetica Neue / Arial (System Sans)' }
+];
+
+const CURATED_FONTS_BN = [
+  { name: 'Hind Siliguri', label: 'Hind Siliguri (হিন্দ শিলিগুড়ি - Modern News UI Sans)' },
+  { name: 'Noto Serif Bengali', label: 'Noto Serif Bengali (নোটো সেরিফ বাংলা - Literary & Elegant)' },
+  { name: 'SolaimanLipi, "Hind Siliguri", sans-serif', label: 'SolaimanLipi (সোলাইমান লিপি)' },
+  { name: 'Kalpurush, "Noto Serif Bengali", serif', label: 'Kalpurush (কালপুরুষ)' },
+  { name: 'Anek Bangla', label: 'Anek Bangla (অনেক বাংলা - Variable Modern Sans)' },
+  { name: 'Galada', label: 'Galada (গালাদা - Stylized Headline)' },
+  { name: 'Mina', label: 'Mina (মিনা - Clean Sans-Serif)' },
+  { name: 'Atma', label: 'Atma (আত্মা - Expressive)' },
+  { name: 'Nirmala UI, "Hind Siliguri", sans-serif', label: 'Nirmala UI (নির্মলা ইউআই - System)' }
+];
+
+const FONT_AREAS_META = [
+  {
+    key: 'header_section',
+    icon: '🏛️',
+    title_en: 'Header Section Links',
+    title_bn: 'হেডার সেকশন ফন্ট',
+    desc_en: 'Typography for main header navigation links, category buttons, and top section tabs.',
+    desc_bn: 'প্রধান হেডার নেভিগেশন লিংক, ক্যাটাগরি বাটন এবং টপ সেকশন ট্যাবের ফন্ট।',
+    previewSelector: '#pv-header-sec',
+    hasTransform: true,
+    hasStyle: false
+  },
+  {
+    key: 'subheader',
+    icon: '⏱️',
+    title_en: 'Subheader Bar (Date & Edition)',
+    title_bn: 'সাবহেডার বার ফন্ট',
+    desc_en: 'Date display, edition pill, location, and weather ticker styling.',
+    desc_bn: 'তারিখ, এডিশন ট্যাগ, অবস্থান ও আবহাওয়া প্রদর্শনের ফন্ট।',
+    previewSelector: '#pv-subheader',
+    hasTransform: false,
+    hasStyle: false
+  },
+  {
+    key: 'menu',
+    icon: '📋',
+    title_en: 'Navigation Drawer & Menu',
+    title_bn: 'মেনু ও নেভিগেশন ড্রয়ার ফন্ট',
+    desc_en: 'Full-screen slide-out drawer menu links and section labels.',
+    desc_bn: 'ফুল-স্ক্রিন স্লাইড-আউট ড্রয়ার মেনুর লিংক ও সেকশন শিরোনাম।',
+    previewSelector: '#pv-menu',
+    hasTransform: false,
+    hasStyle: false
+  },
+  {
+    key: 'article_title',
+    icon: '📰',
+    title_en: 'Article Title / Headlines',
+    title_bn: 'আর্টিকেল শিরোনাম (Headline) ফন্ট',
+    desc_en: 'Main story titles, hero headlines, and featured article lead headlines.',
+    desc_bn: 'মূল প্রতিবেদন ও নির্বাচিত খবরের বড় শিরোনামের ফন্ট ও সাইজ।',
+    previewSelector: '#pv-art-title',
+    hasTransform: false,
+    hasStyle: true
+  },
+  {
+    key: 'article_subtitle',
+    icon: '📑',
+    title_en: 'Article Subtitle / Deck',
+    title_bn: 'আর্টিকেল সাবটাইটেল (ডেক / স্ট্যান্ডফার্স্ট) ফন্ট',
+    desc_en: 'Article summary deck, standfirst introduction, and subheadings.',
+    desc_bn: 'প্রতিবেদনের সংক্ষিপ্ত ভূমিকা, ডেক ও সাবহেড লেখার ফন্ট।',
+    previewSelector: '#pv-art-subtitle',
+    hasTransform: false,
+    hasStyle: true
+  },
+  {
+    key: 'article_body',
+    icon: '📖',
+    title_en: 'Article Body Text',
+    title_bn: 'আর্টিকেল মূল বডি (Reading Text) ফন্ট',
+    desc_en: 'Main paragraph reading font, font size, and comfortable line height.',
+    desc_bn: 'নিবন্ধ ও প্রতিবেদন পড়ার মূল বডি প্যারাগ্রাফের ফন্ট ও লাইন-হাইট।',
+    previewSelector: '#pv-art-body',
+    hasTransform: false,
+    hasStyle: true
+  },
+  {
+    key: 'article_quote',
+    icon: '💬',
+    title_en: 'Article Quotes & Blockquotes',
+    title_bn: 'আর্টিকেল কোট / উদ্ধৃতি (Quotes) ফন্ট',
+    desc_en: 'Pull-quotes, blockquotes, citations, and highlight statements.',
+    desc_bn: 'উদ্ধৃতি, ব্লককোট, বক্তব্য ও সাইটেশন প্রদর্শনের ফন্ট ও স্টাইল।',
+    previewSelector: '#pv-art-quote',
+    hasTransform: false,
+    hasStyle: true
+  }
+];
+
+const DEFAULT_TYPOGRAPHY_EN = {
+  header_section: {
+    fontFamily: 'Source Sans 3',
+    fontSize: 13,
+    fontWeight: '600',
+    lineHeight: 1.2,
+    letterSpacing: '0.06em',
+    textTransform: 'uppercase',
+    fontStyle: 'normal'
+  },
+  subheader: {
+    fontFamily: 'Source Sans 3',
+    fontSize: 12,
+    fontWeight: '400',
+    lineHeight: 1.4,
+    letterSpacing: '0.02em',
+    textTransform: 'none',
+    fontStyle: 'normal'
+  },
+  menu: {
+    fontFamily: 'Source Sans 3',
+    fontSize: 15,
+    fontWeight: '600',
+    lineHeight: 1.4,
+    letterSpacing: '0em',
+    textTransform: 'none',
+    fontStyle: 'normal'
+  },
+  article_title: {
+    fontFamily: 'Libre Baskerville',
+    fontSize: 38,
+    fontWeight: '700',
+    lineHeight: 1.25,
+    letterSpacing: '-0.02em',
+    textTransform: 'none',
+    fontStyle: 'normal'
+  },
+  article_subtitle: {
+    fontFamily: 'Libre Baskerville',
+    fontSize: 18,
+    fontWeight: '400',
+    lineHeight: 1.5,
+    letterSpacing: '0em',
+    textTransform: 'none',
+    fontStyle: 'italic'
+  },
+  article_body: {
+    fontFamily: 'Source Sans 3',
+    fontSize: 17,
+    fontWeight: '400',
+    lineHeight: 1.75,
+    letterSpacing: '0em',
+    textTransform: 'none',
+    fontStyle: 'normal'
+  },
+  article_quote: {
+    fontFamily: 'Libre Baskerville',
+    fontSize: 20,
+    fontWeight: '400',
+    lineHeight: 1.55,
+    letterSpacing: '0em',
+    textTransform: 'none',
+    fontStyle: 'italic'
+  }
+};
+
+const DEFAULT_TYPOGRAPHY_BN = {
+  header_section: {
+    fontFamily: 'Hind Siliguri',
+    fontSize: 14,
+    fontWeight: '600',
+    lineHeight: 1.2,
+    letterSpacing: '0em',
+    textTransform: 'none',
+    fontStyle: 'normal'
+  },
+  subheader: {
+    fontFamily: 'Hind Siliguri',
+    fontSize: 12.5,
+    fontWeight: '400',
+    lineHeight: 1.4,
+    letterSpacing: '0em',
+    textTransform: 'none',
+    fontStyle: 'normal'
+  },
+  menu: {
+    fontFamily: 'Hind Siliguri',
+    fontSize: 15.5,
+    fontWeight: '600',
+    lineHeight: 1.4,
+    letterSpacing: '0em',
+    textTransform: 'none',
+    fontStyle: 'normal'
+  },
+  article_title: {
+    fontFamily: 'Noto Serif Bengali',
+    fontSize: 36,
+    fontWeight: '700',
+    lineHeight: 1.3,
+    letterSpacing: '0em',
+    textTransform: 'none',
+    fontStyle: 'normal'
+  },
+  article_subtitle: {
+    fontFamily: 'Noto Serif Bengali',
+    fontSize: 17.5,
+    fontWeight: '400',
+    lineHeight: 1.55,
+    letterSpacing: '0em',
+    textTransform: 'none',
+    fontStyle: 'normal'
+  },
+  article_body: {
+    fontFamily: 'Noto Serif Bengali',
+    fontSize: 17.5,
+    fontWeight: '400',
+    lineHeight: 1.8,
+    letterSpacing: '0em',
+    textTransform: 'none',
+    fontStyle: 'normal'
+  },
+  article_quote: {
+    fontFamily: 'Noto Serif Bengali',
+    fontSize: 19.5,
+    fontWeight: '600',
+    lineHeight: 1.6,
+    letterSpacing: '0em',
+    textTransform: 'none',
+    fontStyle: 'normal'
+  }
+};
+
+var _currentTypographyLang = 'en';
+var _typographyDrafts = {
+  en: JSON.parse(JSON.stringify(DEFAULT_TYPOGRAPHY_EN)),
+  bn: JSON.parse(JSON.stringify(DEFAULT_TYPOGRAPHY_BN))
+};
+var _isTypographyLoaded = false;
+
+async function initFontsPage() {
+  await loadTypographySettings();
+  renderTypographyEditor();
+  updateTypographyLivePreview();
+}
+
+async function loadTypographySettings() {
+  try {
+    const [resEn, resBn] = await Promise.all([
+      fetch('/api/sections?action=typography&lang=en', {
+        headers: { 'Authorization': `Bearer ${sessionStorage.getItem('admin_token') || ''}` }
+      }),
+      fetch('/api/sections?action=typography&lang=bn', {
+        headers: { 'Authorization': `Bearer ${sessionStorage.getItem('admin_token') || ''}` }
+      })
+    ]);
+
+    if (resEn.ok) {
+      const dataEn = await resEn.json();
+      if (dataEn && typeof dataEn === 'object') {
+        _typographyDrafts.en = Object.assign({}, DEFAULT_TYPOGRAPHY_EN, dataEn);
+      }
+    }
+    if (resBn.ok) {
+      const dataBn = await resBn.json();
+      if (dataBn && typeof dataBn === 'object') {
+        _typographyDrafts.bn = Object.assign({}, DEFAULT_TYPOGRAPHY_BN, dataBn);
+      }
+    }
+    _isTypographyLoaded = true;
+  } catch (e) {
+    console.warn('[Typography load error]:', e);
+  }
+}
+
+function switchTypographyLang(lang) {
+  _currentTypographyLang = lang === 'bn' ? 'bn' : 'en';
+  
+  const btnEn = document.getElementById('btn-font-lang-en');
+  const btnBn = document.getElementById('btn-font-lang-bn');
+  if (btnEn) btnEn.classList.toggle('active', _currentTypographyLang === 'en');
+  if (btnBn) btnBn.classList.toggle('active', _currentTypographyLang === 'bn');
+
+  const pill = document.getElementById('font-preview-lang-pill');
+  if (pill) {
+    pill.textContent = _currentTypographyLang === 'bn' ? 'বাংলা মোড' : 'English Mode';
+    pill.style.background = _currentTypographyLang === 'bn' ? '#fef3c7' : '#e0f2fe';
+    pill.style.color = _currentTypographyLang === 'bn' ? '#92400e' : '#0369a1';
+  }
+
+  renderTypographyEditor();
+  updateTypographyLivePreview();
+}
+
+function renderTypographyEditor() {
+  const container = document.getElementById('font-settings-form-col');
+  if (!container) return;
+
+  const isBn = _currentTypographyLang === 'bn';
+  const cfg = _typographyDrafts[_currentTypographyLang] || (isBn ? DEFAULT_TYPOGRAPHY_BN : DEFAULT_TYPOGRAPHY_EN);
+  const fontList = isBn ? CURATED_FONTS_BN : CURATED_FONTS_EN;
+
+  let html = '';
+
+  FONT_AREAS_META.forEach((area, idx) => {
+    const key = area.key;
+    const cur = cfg[key] || (isBn ? DEFAULT_TYPOGRAPHY_BN[key] : DEFAULT_TYPOGRAPHY_EN[key]);
+    const title = isBn ? area.title_bn : area.title_en;
+    const desc = isBn ? area.desc_bn : area.desc_en;
+
+    const matchedFont = fontList.some(f => f.name.toLowerCase() === (cur.fontFamily || '').toLowerCase());
+
+    html += `
+      <div class="card font-area-card" style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:18px;box-shadow:0 1px 3px rgba(0,0,0,0.03);">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;border-bottom:1px solid #f1f5f9;padding-bottom:10px;">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span style="font-size:18px;">${area.icon}</span>
+            <div>
+              <h3 style="font-size:14.5px;font-weight:700;color:var(--text-primary);margin:0;">${idx + 1}. ${title}</h3>
+              <p style="font-size:12px;color:var(--text-muted);margin:2px 0 0;">${desc}</p>
+            </div>
+          </div>
+          <span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:6px;background:#f1f5f9;color:#475569;">${key}</span>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1.5fr 1fr 1fr;gap:12px;margin-bottom:12px;">
+          <!-- Font Family Selection -->
+          <div class="form-group" style="margin:0;">
+            <label style="display:block;font-size:11.5px;font-weight:700;color:var(--text-secondary);margin-bottom:4px;">Font Family</label>
+            <select class="form-select" style="width:100%;font-size:12.5px;padding:7px 10px;border:1px solid #cbd5e1;border-radius:6px;" onchange="onTypographyFieldChange('${key}', 'fontFamily', this.value)">
+              ${fontList.map(f => `<option value="${f.name}" ${cur.fontFamily === f.name ? 'selected' : ''}>${f.label}</option>`).join('')}
+              ${!matchedFont && cur.fontFamily ? `<option value="${cur.fontFamily}" selected>Custom: ${cur.fontFamily}</option>` : ''}
+            </select>
+          </div>
+
+          <!-- Font Size (px) Slider & Input -->
+          <div class="form-group" style="margin:0;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+              <label style="font-size:11.5px;font-weight:700;color:var(--text-secondary);">Size (px)</label>
+              <span id="val-${key}-size" style="font-size:11.5px;font-weight:700;color:#0a528e;">${cur.fontSize}px</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:6px;">
+              <input type="range" min="10" max="64" step="0.5" value="${cur.fontSize}" style="width:100%;cursor:pointer;" oninput="onTypographyRangeChange('${key}', 'fontSize', this.value, 'px')">
+            </div>
+          </div>
+
+          <!-- Font Weight -->
+          <div class="form-group" style="margin:0;">
+            <label style="display:block;font-size:11.5px;font-weight:700;color:var(--text-secondary);margin-bottom:4px;">Weight</label>
+            <select class="form-select" style="width:100%;font-size:12.5px;padding:7px 10px;border:1px solid #cbd5e1;border-radius:6px;" onchange="onTypographyFieldChange('${key}', 'fontWeight', this.value)">
+              <option value="300" ${cur.fontWeight === '300' ? 'selected' : ''}>300 - Light</option>
+              <option value="400" ${cur.fontWeight === '400' ? 'selected' : ''}>400 - Regular</option>
+              <option value="500" ${cur.fontWeight === '500' ? 'selected' : ''}>500 - Medium</option>
+              <option value="600" ${cur.fontWeight === '600' ? 'selected' : ''}>600 - Semi-Bold</option>
+              <option value="700" ${cur.fontWeight === '700' ? 'selected' : ''}>700 - Bold</option>
+              <option value="800" ${cur.fontWeight === '800' ? 'selected' : ''}>800 - Extra Bold</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:${area.hasStyle || area.hasTransform ? '1fr 1fr 1fr' : '1fr 1fr'};gap:12px;">
+          <!-- Line Height Slider -->
+          <div class="form-group" style="margin:0;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+              <label style="font-size:11.5px;font-weight:700;color:var(--text-secondary);">Line Height</label>
+              <span id="val-${key}-lh" style="font-size:11.5px;font-weight:700;color:#0a528e;">${cur.lineHeight}</span>
+            </div>
+            <input type="range" min="1.0" max="2.4" step="0.05" value="${cur.lineHeight}" style="width:100%;cursor:pointer;" oninput="onTypographyRangeChange('${key}', 'lineHeight', this.value, '')">
+          </div>
+
+          <!-- Letter Spacing -->
+          <div class="form-group" style="margin:0;">
+            <label style="display:block;font-size:11.5px;font-weight:700;color:var(--text-secondary);margin-bottom:4px;">Letter Spacing</label>
+            <select class="form-select" style="width:100%;font-size:12.5px;padding:7px 10px;border:1px solid #cbd5e1;border-radius:6px;" onchange="onTypographyFieldChange('${key}', 'letterSpacing', this.value)">
+              <option value="-0.04em" ${cur.letterSpacing === '-0.04em' ? 'selected' : ''}>Tight (-0.04em)</option>
+              <option value="-0.02em" ${cur.letterSpacing === '-0.02em' ? 'selected' : ''}>Compact (-0.02em)</option>
+              <option value="0em" ${cur.letterSpacing === '0em' || cur.letterSpacing === '0' ? 'selected' : ''}>Normal (0em)</option>
+              <option value="0.02em" ${cur.letterSpacing === '0.02em' ? 'selected' : ''}>Slight (+0.02em)</option>
+              <option value="0.04em" ${cur.letterSpacing === '0.04em' ? 'selected' : ''}>Spaced (+0.04em)</option>
+              <option value="0.06em" ${cur.letterSpacing === '0.06em' ? 'selected' : ''}>Wide (+0.06em)</option>
+              <option value="0.08em" ${cur.letterSpacing === '0.08em' ? 'selected' : ''}>Extra Wide (+0.08em)</option>
+            </select>
+          </div>
+
+          ${area.hasStyle ? `
+          <!-- Font Style (Normal / Italic) -->
+          <div class="form-group" style="margin:0;">
+            <label style="display:block;font-size:11.5px;font-weight:700;color:var(--text-secondary);margin-bottom:4px;">Font Style</label>
+            <select class="form-select" style="width:100%;font-size:12.5px;padding:7px 10px;border:1px solid #cbd5e1;border-radius:6px;" onchange="onTypographyFieldChange('${key}', 'fontStyle', this.value)">
+              <option value="normal" ${cur.fontStyle === 'normal' ? 'selected' : ''}>Normal</option>
+              <option value="italic" ${cur.fontStyle === 'italic' ? 'selected' : ''}>Italic</option>
+            </select>
+          </div>` : ''}
+
+          ${area.hasTransform ? `
+          <!-- Text Transform -->
+          <div class="form-group" style="margin:0;">
+            <label style="display:block;font-size:11.5px;font-weight:700;color:var(--text-secondary);margin-bottom:4px;">Text Transform</label>
+            <select class="form-select" style="width:100%;font-size:12.5px;padding:7px 10px;border:1px solid #cbd5e1;border-radius:6px;" onchange="onTypographyFieldChange('${key}', 'textTransform', this.value)">
+              <option value="none" ${cur.textTransform === 'none' ? 'selected' : ''}>None</option>
+              <option value="uppercase" ${cur.textTransform === 'uppercase' ? 'selected' : ''}>UPPERCASE</option>
+              <option value="capitalize" ${cur.textTransform === 'capitalize' ? 'selected' : ''}>Capitalize</option>
+            </select>
+          </div>` : ''}
+        </div>
+      </div>
+    `;
+  });
+
+  container.innerHTML = html;
+}
+
+function onTypographyFieldChange(key, prop, value) {
+  if (!_typographyDrafts[_currentTypographyLang]) _typographyDrafts[_currentTypographyLang] = {};
+  if (!_typographyDrafts[_currentTypographyLang][key]) _typographyDrafts[_currentTypographyLang][key] = {};
+  _typographyDrafts[_currentTypographyLang][key][prop] = value;
+  updateTypographyLivePreview();
+}
+
+function onTypographyRangeChange(key, prop, value, unit) {
+  const parsed = parseFloat(value);
+  onTypographyFieldChange(key, prop, parsed);
+  const labelId = `val-${key}-${prop === 'fontSize' ? 'size' : 'lh'}`;
+  const label = document.getElementById(labelId);
+  if (label) label.textContent = `${parsed}${unit || ''}`;
+}
+
+function updateTypographyLivePreview() {
+  const isBn = _currentTypographyLang === 'bn';
+  const cfg = _typographyDrafts[_currentTypographyLang] || (isBn ? DEFAULT_TYPOGRAPHY_BN : DEFAULT_TYPOGRAPHY_EN);
+
+  // 1. Header Section Preview
+  const pvHdr = document.getElementById('pv-header-sec');
+  if (pvHdr && cfg.header_section) {
+    const c = cfg.header_section;
+    pvHdr.style.fontFamily = `"${c.fontFamily}", sans-serif`;
+    pvHdr.style.fontSize = `${c.fontSize}px`;
+    pvHdr.style.fontWeight = c.fontWeight || '600';
+    pvHdr.style.letterSpacing = c.letterSpacing || '0em';
+    pvHdr.style.textTransform = c.textTransform || 'none';
+    pvHdr.style.lineHeight = c.lineHeight || 1.2;
+    pvHdr.innerHTML = isBn
+      ? '<span class="pv-sec-item">অনুসন্ধিৎসু</span><span class="pv-sec-item">সমাজ ও ঐতিহ্য</span><span class="pv-sec-item">সংস্কৃতি</span><span class="pv-sec-item">মূল্যবোধ</span>'
+      : '<span class="pv-sec-item">FINDINGS</span><span class="pv-sec-item">COMMUNITY &amp; HERITAGE</span><span class="pv-sec-item">CULTURE</span><span class="pv-sec-item">VALUES</span>';
+  }
+
+  // 2. Subheader Bar Preview
+  const pvSubhdr = document.getElementById('pv-subheader');
+  if (pvSubhdr && cfg.subheader) {
+    const c = cfg.subheader;
+    pvSubhdr.style.fontFamily = `"${c.fontFamily}", sans-serif`;
+    pvSubhdr.style.fontSize = `${c.fontSize}px`;
+    pvSubhdr.style.fontWeight = c.fontWeight || '400';
+    pvSubhdr.style.letterSpacing = c.letterSpacing || '0em';
+    pvSubhdr.style.lineHeight = c.lineHeight || 1.4;
+    pvSubhdr.innerHTML = isBn
+      ? '<span>বুধবার, ১৯ আগস্ট ২০২৬</span><span>•</span><span>ক্যামব্রিজ সংস্করণ</span><span>•</span><span>২২° সে. রৌদ্রোজ্জ্বল</span>'
+      : '<span>Wednesday, August 19, 2026</span><span>•</span><span>Cambridge Edition</span><span>•</span><span>72°F Sunny</span>';
+  }
+
+  // 3. Navigation Drawer Menu Preview
+  const pvMenu = document.getElementById('pv-menu');
+  if (pvMenu && cfg.menu) {
+    const c = cfg.menu;
+    pvMenu.style.fontFamily = `"${c.fontFamily}", sans-serif`;
+    pvMenu.style.fontSize = `${c.fontSize}px`;
+    pvMenu.style.fontWeight = c.fontWeight || '600';
+    pvMenu.style.lineHeight = c.lineHeight || 1.4;
+    pvMenu.style.letterSpacing = c.letterSpacing || '0em';
+    pvMenu.innerHTML = isBn
+      ? '<div style="color:#e2e8f0;display:flex;justify-content:space-between;"><span>প্রাইভেটিয়ান ফ্যামিলি এক্সপ্লোর করুন</span><span>→</span></div><div style="color:#e2e8f0;display:flex;justify-content:space-between;"><span>নিবন্ধ আর্কাইভ ও নিউজ+</span><span>→</span></div><div style="color:#e2e8f0;display:flex;justify-content:space-between;"><span>ইভেন্ট ও সম্মিলন</span><span>→</span></div>'
+      : '<div style="color:#e2e8f0;display:flex;justify-content:space-between;"><span>Explore The Privatian</span><span>→</span></div><div style="color:#e2e8f0;display:flex;justify-content:space-between;"><span>Article Archives &amp; News+</span><span>→</span></div><div style="color:#e2e8f0;display:flex;justify-content:space-between;"><span>Events &amp; Gatherings</span><span>→</span></div>';
+  }
+
+  // 4. Article Title Preview
+  const pvTitle = document.getElementById('pv-art-title');
+  if (pvTitle && cfg.article_title) {
+    const c = cfg.article_title;
+    pvTitle.style.fontFamily = `"${c.fontFamily}", serif`;
+    pvTitle.style.fontSize = `${c.fontSize}px`;
+    pvTitle.style.fontWeight = c.fontWeight || '700';
+    pvTitle.style.fontStyle = c.fontStyle || 'normal';
+    pvTitle.style.lineHeight = c.lineHeight || 1.25;
+    pvTitle.style.letterSpacing = c.letterSpacing || 'normal';
+    pvTitle.textContent = isBn
+      ? 'জ্ঞান, ঐতিহ্য ও জীবনের মানবিক উৎকর্ষতার অবিচল সাধনা'
+      : 'The Architecture of Living Heritage and Moral Purpose';
+  }
+
+  // 5. Article Subtitle / Deck Preview
+  const pvSubtitle = document.getElementById('pv-art-subtitle');
+  if (pvSubtitle && cfg.article_subtitle) {
+    const c = cfg.article_subtitle;
+    pvSubtitle.style.fontFamily = `"${c.fontFamily}", serif`;
+    pvSubtitle.style.fontSize = `${c.fontSize}px`;
+    pvSubtitle.style.fontWeight = c.fontWeight || '400';
+    pvSubtitle.style.fontStyle = c.fontStyle || 'normal';
+    pvSubtitle.style.lineHeight = c.lineHeight || 1.5;
+    pvSubtitle.style.letterSpacing = c.letterSpacing || 'normal';
+    pvSubtitle.textContent = isBn
+      ? 'প্রজন্ম থেকে প্রজন্মান্তরে কীভাবে পারস্পরিক বিশ্বাস ও মূল্যবোধ আধুনিক যুগে আমাদের সামাজিক বন্ধন দৃঢ় রাখে।'
+      : 'How intergenerational traditions shape our civic identities and community legacy across modern centuries.';
+  }
+
+  // 6. Article Body Text Preview
+  const pvBody = document.getElementById('pv-art-body');
+  if (pvBody && cfg.article_body) {
+    const c = cfg.article_body;
+    pvBody.style.fontFamily = `"${c.fontFamily}", sans-serif`;
+    pvBody.style.fontSize = `${c.fontSize}px`;
+    pvBody.style.fontWeight = c.fontWeight || '400';
+    pvBody.style.fontStyle = c.fontStyle || 'normal';
+    pvBody.style.lineHeight = c.lineHeight || 1.75;
+    pvBody.style.letterSpacing = c.letterSpacing || 'normal';
+    pvBody.textContent = isBn
+      ? 'শতাব্দীর পর শতাব্দী ধরে প্রাইভেটিয়ান পরিবারের মূল ভিত্তি হিসেবে কাজ করেছে গভীর জ্ঞানানুশীলন ও আত্মিক শুদ্ধি। পরিবর্তনশীল বিশ্বের ঘূর্ণাবর্তে মানবিক মূল্যবোধ রক্ষা করাই আমাদের আজন্ম অঙ্গীকার।'
+      : 'Across generations, the enduring values of thoughtful scholarship and deliberate reflection have formed the foundation of the Privatian family ethos. In an era marked by rapid change, the preservation of intellectual dignity remains our primary beacon.';
+  }
+
+  // 7. Article Quote Preview
+  const pvQuote = document.getElementById('pv-art-quote');
+  if (pvQuote && cfg.article_quote) {
+    const c = cfg.article_quote;
+    pvQuote.style.fontFamily = `"${c.fontFamily}", serif`;
+    pvQuote.style.fontSize = `${c.fontSize}px`;
+    pvQuote.style.fontWeight = c.fontWeight || '400';
+    pvQuote.style.fontStyle = c.fontStyle || 'normal';
+    pvQuote.style.lineHeight = c.lineHeight || 1.55;
+    pvQuote.style.letterSpacing = c.letterSpacing || 'normal';
+    pvQuote.innerHTML = isBn
+      ? '“ঐতিহ্য মানে ভস্মের পূজা নয়, বরং শাশ্বত প্রদীপের শিখা প্রজ্বলিত রাখা।” <cite style="display:block;font-size:0.85em;color:#64748b;margin-top:6px;font-style:normal;">— প্রাইভেটিয়ান ফ্যামিলি আর্কাইভ</cite>'
+      : '“Tradition is not the worship of ashes, but the preservation of fire.” <cite style="display:block;font-size:0.85em;color:#64748b;margin-top:6px;font-style:normal;">— Privatian Family Archives</cite>';
+  }
+}
+
+async function saveTypographySettings() {
+  const saveBtn = document.getElementById('btn-save-typography-settings');
+  if (saveBtn) {
+    saveBtn.disabled = true;
+    saveBtn.innerHTML = `<span class="spinner" style="width:14px;height:14px;border:2px solid #fff;border-top-color:transparent;border-radius:50%;display:inline-block;animation:spin 0.6s linear infinite;"></span> Saving...`;
+  }
+
+  try {
+    const isBn = _currentTypographyLang === 'bn';
+    const configToSave = _typographyDrafts[_currentTypographyLang];
+
+    const res = await fetch(`/api/sections?action=typography&lang=${_currentTypographyLang}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${sessionStorage.getItem('admin_token') || ''}`
+      },
+      body: JSON.stringify({ config: configToSave })
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || 'Failed to save typography settings');
+    }
+
+    // Cache locally
+    const storageKey = isBn ? 'privatian_typography_settings_bn' : 'privatian_typography_settings';
+    try {
+      localStorage.setItem(storageKey, JSON.stringify(configToSave));
+    } catch(e) {}
+
+    showToast('success', `${isBn ? 'বাংলা' : 'English'} Typography & Font settings saved successfully!`);
+    updateGlobalSyncStatus();
+  } catch (e) {
+    console.error(e);
+    showToast('error', e.message || 'Error saving typography settings');
+  } finally {
+    if (saveBtn) {
+      saveBtn.disabled = false;
+      saveBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" width="14" height="14"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Save Font Settings`;
+    }
+  }
+}
+
+function resetTypographyToDefault() {
+  const isBn = _currentTypographyLang === 'bn';
+  _confirmModal({
+    title: `Reset ${isBn ? 'Bengali' : 'English'} Typography to Default`,
+    body: `Are you sure you want to revert all 7 font sections for ${isBn ? 'Bengali (বাংলা)' : 'English'} back to The Privatian Family brand default typography?`,
+    confirmText: 'Reset to Default',
+    variant: 'danger',
+    onConfirm: () => {
+      _typographyDrafts[_currentTypographyLang] = JSON.parse(JSON.stringify(isBn ? DEFAULT_TYPOGRAPHY_BN : DEFAULT_TYPOGRAPHY_EN));
+      renderTypographyEditor();
+      updateTypographyLivePreview();
+      showToast('info', `Typography reset to ${isBn ? 'Bengali' : 'English'} default settings.`);
+    }
+  });
+}
+
+window.initFontsPage = initFontsPage;
+window.switchTypographyLang = switchTypographyLang;
+window.onTypographyFieldChange = onTypographyFieldChange;
+window.onTypographyRangeChange = onTypographyRangeChange;
+window.updateTypographyLivePreview = updateTypographyLivePreview;
+window.saveTypographySettings = saveTypographySettings;
+window.resetTypographyToDefault = resetTypographyToDefault;
+
 
 
 

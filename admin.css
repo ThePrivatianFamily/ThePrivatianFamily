@@ -6129,3 +6129,28 @@ i.spin {
 .admin-loading-state--danger .admin-spinner-icon {
   color: #dc2626;
 }
+
+/* ── TYPOGRAPHY & FONT SETTINGS STUDIO ── */
+#page-fonts .font-area-card {
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+#page-fonts .font-area-card:hover {
+  border-color: #cbd5e1;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+#page-fonts input[type="range"] {
+  accent-color: var(--brand-navy, #0a528e);
+}
+#page-fonts .form-select:focus,
+#page-fonts input:focus {
+  border-color: var(--brand-navy, #0a528e);
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(10, 82, 142, 0.15);
+}
+#font-preview-stage::-webkit-scrollbar {
+  width: 6px;
+}
+#font-preview-stage::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
