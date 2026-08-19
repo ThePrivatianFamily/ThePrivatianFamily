@@ -2214,10 +2214,26 @@ function fmtDate(d, lang = _currentEditLang) {
   return d.toLocaleDateString('en-US', { timeZone: 'Asia/Dhaka', month: 'long', day: 'numeric', year: 'numeric' });
 }
 
-async function fetchAndPopulateAuthors(selectedId = null, authorName = null) {
+function renderAuthorSelectOptions(lang = _currentEditLang) {
   const select = g('ed-author-select');
   if (!select) return;
+  const isBn = lang === 'bn';
+  const defaultLabel = isBn ? 'লেখক নির্বাচন করুন...' : 'Select Author...';
+  select.title = isBn ? 'লেখক প্রোফাইল নির্বাচন করুন' : 'Select Author Profile';
 
+  let optionsHtml = `<option value="">${defaultLabel}</option>`;
+  if (Array.isArray(_authorsList) && _authorsList.length) {
+    optionsHtml += _authorsList.map(a => {
+      const displayName = isBn ? (a.name_bn || a.name || '') : (a.name || a.name_bn || '');
+      return `<option value="${escH(a.id)}">${escH(displayName)}</option>`;
+    }).join('');
+  }
+
+  select.innerHTML = optionsHtml;
+  select.value = _selectedAuthorId || '';
+}
+
+async function fetchAndPopulateAuthors(selectedId = null, authorName = null) {
   try {
     let authors = [];
     const sb = window._sb || (window.initSupabaseClient && window.initSupabaseClient());
@@ -2245,9 +2261,6 @@ async function fetchAndPopulateAuthors(selectedId = null, authorName = null) {
 
     _authorsList = authors;
 
-    select.innerHTML = '<option value="">Select Author...</option>' +
-      authors.map(a => `<option value="${escH(a.id)}">${escH(a.name)}${a.name_bn ? ` (${escH(a.name_bn)})` : ''}</option>`).join('');
-
     let match = null;
     if (selectedId) {
       match = _authorsList.find(a => a.id === selectedId);
@@ -2259,12 +2272,12 @@ async function fetchAndPopulateAuthors(selectedId = null, authorName = null) {
 
     if (match) {
       _selectedAuthorId = match.id;
-      select.value = match.id;
       applyAuthorToState(match, false);
     } else if (selectedId) {
-      select.value = selectedId;
       _selectedAuthorId = selectedId;
     }
+
+    renderAuthorSelectOptions(_currentEditLang);
   } catch(e) {
     console.warn('[Editor] Failed to fetch authors:', e);
   }
@@ -2299,10 +2312,12 @@ function applyAuthorToState(author, triggerSave = false) {
   _selectedAuthorId = author.id;
   _authorPhotoUrl = author.photo_url || '';
 
+  // Synchronously set English Author profile
   _langData.en.author = author.name || '';
   _langData.en.author_role = author.role || '';
   _langData.en.author_bio = author.bio || '';
 
+  // Synchronously set Bengali Author profile
   _langData.bn.author = author.name_bn || author.name || '';
   _langData.bn.author_role = author.role_bn || author.role || '';
   _langData.bn.author_bio = author.bio_bn || author.bio || '';
@@ -2319,7 +2334,9 @@ function applyAuthorToState(author, triggerSave = false) {
     DIRTY = true;
     lsSave();
     onInput();
-    toast(`Author set: ${author.name}`, 'ok');
+    const isBn = _currentEditLang === 'bn';
+    const toastName = isBn ? (author.name_bn || author.name) : (author.name || author.name_bn);
+    toast(isBn ? `লেখক নির্ধারিত: ${toastName}` : `Author set: ${toastName}`, 'ok');
   }
 }
 
@@ -2339,10 +2356,8 @@ function loadBufferToInputs(lang) {
   tx('bio-role', data.author_role || '—');
   tx('bio-desc', data.author_bio || '—');
 
-  const authSel = g('ed-author-select');
-  if (authSel && _selectedAuthorId) {
-    authSel.value = _selectedAuthorId;
-  }
+  // Render language-specific author options while keeping selected author ID in sync
+  renderAuthorSelectOptions(lang);
 
   if (_authorPhotoUrl) {
     showAuthorPhoto(_authorPhotoUrl);
