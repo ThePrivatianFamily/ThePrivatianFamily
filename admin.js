@@ -2341,14 +2341,19 @@ function initAccessPage() {
 }
 
 // ── Reusable confirmation & warning modal ───────────────────────
-function _confirmModal({ title, body, message, confirmText, confirmLabel, confirmColor, variant, danger, showCancel = true, onConfirm }) {
-  var _body    = body || message || '';
-  var _btnText = confirmText || confirmLabel || 'Confirm';
-  var _variant = variant || (danger === false ? 'success' : (danger === true ? 'danger' : 'navy'));
-  if (confirmColor && confirmColor === '#dc2626') _variant = 'danger';
-  else if (confirmColor && (confirmColor === '#d97706' || confirmColor === '#f59e0b')) _variant = 'warning';
-  else if (confirmColor && confirmColor === '#059669') _variant = 'success';
-  else if (confirmColor && confirmColor === '#7c3aed') _variant = 'purple';
+function _confirmModal(opts) {
+  if (!opts) return;
+  var title = opts.title || 'Confirmation';
+  var _body = opts.body || opts.message || '';
+  var _btnText = opts.confirmText || opts.confirmLabel || 'Confirm';
+  var _showCancel = (opts.showCancel !== false);
+  var _onConfirm = opts.onConfirm || function(){};
+  var _variant = opts.variant || (opts.danger === false ? 'success' : (opts.danger === true ? 'danger' : 'navy'));
+  
+  if (opts.confirmColor && opts.confirmColor === '#dc2626') _variant = 'danger';
+  else if (opts.confirmColor && (opts.confirmColor === '#d97706' || opts.confirmColor === '#f59e0b')) _variant = 'warning';
+  else if (opts.confirmColor && opts.confirmColor === '#059669') _variant = 'success';
+  else if (opts.confirmColor && opts.confirmColor === '#7c3aed') _variant = 'purple';
 
   var themes = {
     danger:  {
@@ -2403,23 +2408,27 @@ function _confirmModal({ title, body, message, confirmText, confirmLabel, confir
   var overlay = document.createElement('div');
   overlay.id = '_confirm-modal-overlay';
   overlay.style.cssText = 'position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;background:rgba(15,23,42,.6);backdrop-filter:blur(8px);animation:_cmFIn .15s ease;padding:20px;';
-  overlay.innerHTML = '<div class="_cm-card" style="background:#fff;border-radius:20px;padding:32px 28px 26px;max-width:440px;width:100%;box-shadow:0 25px 50px -12px rgba(0,0,0,.25),0 0 0 1px rgba(0,0,0,.06);text-align:center;position:relative;">'
+  overlay.innerHTML = '<div class="_cm-card" style="background:#fff;border-radius:20px;padding:32px 28px 26px;max-width:460px;width:100%;box-shadow:0 25px 50px -12px rgba(0,0,0,.25),0 0 0 1px rgba(0,0,0,.06);text-align:center;position:relative;">'
     + '<button id="_cm-x" style="position:absolute;top:16px;right:16px;background:none;border:none;cursor:pointer;color:#94a3b8;padding:6px;border-radius:8px;font-size:18px;line-height:1;transition:all .15s;" onmouseover="this.style.color=\'#334155\';this.style.background=\'#f1f5f9\';" onmouseout="this.style.color=\'#94a3b8\';this.style.background=\'none\';">&times;</button>'
     + '<div style="width:54px;height:54px;border-radius:14px;background:' + t.iconBg + ';border:1.5px solid ' + t.iconBorder + ';display:flex;align-items:center;justify-content:center;margin:0 auto 18px;">'
     + '<svg viewBox="0 0 24 24" fill="none" stroke="' + t.iconColor + '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="26" height="26">' + t.icon + '</svg></div>'
     + '<h3 style="font-size:18px;font-weight:700;color:#0f172a;margin:0 0 10px;letter-spacing:-.015em;">' + escapeHtml(title) + '</h3>'
     + '<div style="font-size:13.5px;color:#475569;line-height:1.6;margin:0 0 24px;">' + _body + '</div>'
     + '<div style="display:flex;gap:10px;justify-content:center;">'
-    + (showCancel ? '<button id="_cm-cancel" class="_cm-btn" style="background:#f8fafc;color:#475569;padding:10px 22px;border-radius:10px;font-size:13.5px;font-weight:600;border:1px solid #cbd5e1;">Cancel</button>' : '')
+    + (_showCancel ? '<button id="_cm-cancel" class="_cm-btn" style="background:#f8fafc;color:#475569;padding:10px 22px;border-radius:10px;font-size:13.5px;font-weight:600;border:1px solid #cbd5e1;">Cancel</button>' : '')
     + '<button id="_cm-ok" class="_cm-btn" style="background:' + t.btnBg + ';color:#fff;padding:10px 24px;border-radius:10px;font-size:13.5px;font-weight:700;box-shadow:' + t.btnShadow + ';min-width:120px;">' + escapeHtml(_btnText) + '</button>'
     + '</div></div>';
   document.body.appendChild(overlay);
+  
   var close = function(){ overlay.remove(); };
-  overlay.querySelector('#_cm-cancel').onclick = close;
-  overlay.querySelector('#_cm-x').onclick      = close;
-  overlay.querySelector('#_cm-ok').onclick     = function(){ close(); onConfirm(); };
+  var cancelBtn = overlay.querySelector('#_cm-cancel');
+  if (cancelBtn) cancelBtn.onclick = close;
+  var closeX = overlay.querySelector('#_cm-x');
+  if (closeX) closeX.onclick = close;
+  var okBtn = overlay.querySelector('#_cm-ok');
+  if (okBtn) okBtn.onclick = function(){ close(); if (typeof _onConfirm === 'function') _onConfirm(); };
   overlay.addEventListener('click', function(e){ if (e.target === overlay) close(); });
-  setTimeout(function(){ var ok=overlay.querySelector('#_cm-ok'); if(ok)ok.focus(); }, 50);
+  setTimeout(function(){ if (okBtn) okBtn.focus(); }, 50);
 }
 
 // ── Min-admins info popup ────────────────────────────────────────
@@ -2443,7 +2452,8 @@ function _minAdminPopup(extra) {
     title: 'Security Policy Requirement',
     body,
     confirmText: 'Understood',
-    variant: 'navy',
+    showCancel: false,
+    variant: 'warning',
     onConfirm: () => {}
   });
 }
@@ -13668,14 +13678,6 @@ let _customUploadedFonts = [];
 let _pendingFontUpload = null;
 let _fontUploadModalActiveTab = 'upload';
 let _fontLibrarySearchQuery = '';
-
-function _confirmModal(opts) {
-  if (!opts || typeof opts.onConfirm !== 'function') return;
-  const msg = `${opts.title || 'Confirmation'}\n\n${opts.body || 'Are you sure you want to proceed?'}`;
-  if (window.confirm(msg)) {
-    opts.onConfirm();
-  }
-}
 
 async function fetchCustomFonts() {
   try {
