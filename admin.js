@@ -2340,8 +2340,8 @@ function initAccessPage() {
   }
 }
 
-// ── Reusable confirmation modal ─────────────────────────────────
-function _confirmModal({ title, body, message, confirmText, confirmLabel, confirmColor, variant, danger, onConfirm }) {
+// ── Reusable confirmation & warning modal ───────────────────────
+function _confirmModal({ title, body, message, confirmText, confirmLabel, confirmColor, variant, danger, showCancel = true, onConfirm }) {
   var _body    = body || message || '';
   var _btnText = confirmText || confirmLabel || 'Confirm';
   var _variant = variant || (danger === false ? 'success' : (danger === true ? 'danger' : 'navy'));
@@ -2410,7 +2410,7 @@ function _confirmModal({ title, body, message, confirmText, confirmLabel, confir
     + '<h3 style="font-size:18px;font-weight:700;color:#0f172a;margin:0 0 10px;letter-spacing:-.015em;">' + escapeHtml(title) + '</h3>'
     + '<div style="font-size:13.5px;color:#475569;line-height:1.6;margin:0 0 24px;">' + _body + '</div>'
     + '<div style="display:flex;gap:10px;justify-content:center;">'
-    + '<button id="_cm-cancel" class="_cm-btn" style="background:#f8fafc;color:#475569;padding:10px 22px;border-radius:10px;font-size:13.5px;font-weight:600;border:1px solid #cbd5e1;">Cancel</button>'
+    + (showCancel ? '<button id="_cm-cancel" class="_cm-btn" style="background:#f8fafc;color:#475569;padding:10px 22px;border-radius:10px;font-size:13.5px;font-weight:600;border:1px solid #cbd5e1;">Cancel</button>' : '')
     + '<button id="_cm-ok" class="_cm-btn" style="background:' + t.btnBg + ';color:#fff;padding:10px 24px;border-radius:10px;font-size:13.5px;font-weight:700;box-shadow:' + t.btnShadow + ';min-width:120px;">' + escapeHtml(_btnText) + '</button>'
     + '</div></div>';
   document.body.appendChild(overlay);
@@ -3093,10 +3093,30 @@ async function addAdminEmail() {
   } catch(e) { showToast('error', e.message || 'Failed to add.'); }
 }
 
+// ── Helper: Count active Gmail Admins in local cache ──────────────
+function _countActiveGmailAdmins(excludeId) {
+  return (_rawAdminList || []).filter(a =>
+    a.id !== excludeId &&
+    a.status === 'active' &&
+    a.role === 'Admin' &&
+    (a.email || '').toLowerCase().endsWith('@gmail.com')
+  ).length;
+}
+
 // ── Change role ──────────────────────────────────────────────────
 function changeAdminRole(id, email, newRole) {
   const isPromote = (newRole === 'Admin');
   const targetTitle = isPromote ? 'Promote to Administrator' : 'Change to Moderator';
+
+  // Client-side guard: warn immediately if demoting an active Gmail Admin leaves < 2
+  if (!isPromote && email && email.toLowerCase().endsWith('@gmail.com')) {
+    const remaining = _countActiveGmailAdmins(id);
+    if (remaining < 2) {
+      _minAdminPopup('Cannot change role: Demoting this administrator would leave fewer than 2 active @gmail.com Admins.');
+      return;
+    }
+  }
+
   const targetBody = isPromote
     ? `Promote <strong>${escapeHtml(email)}</strong> to <strong>Administrator</strong>?<br><div style="margin-top:10px;font-size:12.5px;color:#5b21b6;background:#f5f3ff;border:1px solid #ddd6fe;border-radius:10px;padding:10px 14px;text-align:left;line-height:1.5;"><strong style="display:block;margin-bottom:2px;">Full Administrative Access:</strong> This user will receive unrestricted access including system settings, menus, header/footer, user access management, and activity logs.</div>`
     : `Change <strong>${escapeHtml(email)}</strong> to <strong>Moderator</strong>?<br><div style="margin-top:10px;font-size:12.5px;color:#92400e;background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:10px 14px;text-align:left;line-height:1.5;"><strong style="display:block;margin-bottom:2px;">Editorial Privileges Only:</strong> Their administrative privileges will be limited to writing/publishing articles, managing media, and curating Section Studio.</div>`;
@@ -3143,6 +3163,15 @@ function toggleAdminStatus(id, newStatus, email, role) {
   const isSuspending = (newStatus === 'suspended');
   const actionLabel = isSuspending ? 'Suspend' : 'Unsuspend';
 
+  // Client-side guard: warn immediately if suspending an active Gmail Admin leaves < 2
+  if (isSuspending && userRole === 'Admin' && email && email.toLowerCase().endsWith('@gmail.com')) {
+    const remaining = _countActiveGmailAdmins(id);
+    if (remaining < 2) {
+      _minAdminPopup('Cannot suspend: Suspending this administrator would leave fewer than 2 active @gmail.com Admins.');
+      return;
+    }
+  }
+
   const bodyHtml = isSuspending
     ? `Suspend access for ${roleLabel} <strong>${escapeHtml(email)}</strong>?<br><div style="margin-top:10px;font-size:12.5px;color:#92400e;background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:10px 14px;text-align:left;line-height:1.5;"><strong style="display:block;margin-bottom:2px;">Temporary Suspension:</strong> This account will be immediately blocked on their next session check. You can unsuspend and restore their access at any time.</div>`
     : `Restore active access for ${roleLabel} <strong>${escapeHtml(email)}</strong>?<br><div style="margin-top:10px;font-size:12.5px;color:#065f46;background:#ecfdf5;border:1px solid #a7f3d0;border-radius:10px;padding:10px 14px;text-align:left;line-height:1.5;"><strong style="display:block;margin-bottom:2px;">Immediate Access:</strong> This user will immediately regain full ${roleLabel} privileges upon next login.</div>`;
@@ -3186,6 +3215,15 @@ function removeAdmin(id, email, role) {
   const u = _rawAdminList.find(x => x.id === id || (email && x.email.toLowerCase() === email.toLowerCase()));
   const userRole = (role || (u && u.role) || 'User');
   const roleLabel = (userRole === 'Moderator' ? 'Moderator' : 'Admin');
+
+  // Client-side guard: warn immediately if removing an active Gmail Admin leaves < 2
+  if (userRole === 'Admin' && email && email.toLowerCase().endsWith('@gmail.com')) {
+    const remaining = _countActiveGmailAdmins(id);
+    if (remaining < 2) {
+      _minAdminPopup('Cannot remove: Moving this administrator to Recycle would leave fewer than 2 active @gmail.com Admins.');
+      return;
+    }
+  }
 
   _confirmModal({
     title:       `Remove ${roleLabel}`,
@@ -3280,6 +3318,24 @@ function purgeAdmin(id, email, role) {
     }
   });
 }
+
+// ── Export all access page functions to window object ──────────
+window.changeAdminRole = changeAdminRole;
+window.toggleAdminStatus = toggleAdminStatus;
+window.removeAdmin = removeAdmin;
+window.restoreAdmin = restoreAdmin;
+window.purgeAdmin = purgeAdmin;
+window.openAdminProfileModal = openAdminProfileModal;
+window.closeAdminProfileModal = closeAdminProfileModal;
+window.openProfileMediaPicker = openProfileMediaPicker;
+window.updateProfileModalAvatarLive = updateProfileModalAvatarLive;
+window.handleProfileModalFileUpload = handleProfileModalFileUpload;
+window.handleSaveAdminProfile = handleSaveAdminProfile;
+window.addAdminEmail = addAdminEmail;
+window.loadAccessList = loadAccessList;
+window.initAccessPage = initAccessPage;
+window._confirmModal = _confirmModal;
+window._minAdminPopup = _minAdminPopup;
 
 // ── Silent access check ──────────────────────────────────────────
 _lastAccessCheck = 0;
