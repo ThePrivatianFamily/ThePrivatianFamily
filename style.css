@@ -1514,9 +1514,7 @@ input[type="search"]::-ms-reveal {
   position: fixed;
   inset: 0;
   z-index: 99999;
-  background: rgba(10, 25, 47, 0.65);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
+  background: rgba(10, 25, 47, 0.6);
   display: flex;
   align-items: center;
   justify-content: center;
