@@ -1670,7 +1670,8 @@ const PAGE_CONFIG = {
   articles:  { title: 'Articles',  breadcrumb: 'Articles' },
   authors:   { title: 'Authors Directory & Profiles', breadcrumb: 'Authors' },
   gallery:   { title: 'Media Gallery & Asset Library', breadcrumb: 'Gallery' },
-  fonts:     { title: 'Typography & Font Settings', breadcrumb: 'Font Settings' },
+  fonts:     { title: 'Typography & Font Settings', breadcrumb: 'Fonts' },
+  campaigns: { title: 'Campaigns & Marketing Studio', breadcrumb: 'Campaigns' },
   settings:  { title: 'Settings',  breadcrumb: 'Settings' },
   access:    { title: 'Manage Access', breadcrumb: 'Manage Access' },
   activity:  { title: 'Activity Log & Audit Trail', breadcrumb: 'Activity Log' },
@@ -1712,6 +1713,7 @@ function navigateTo(page) {
   if (_currentAdminPage === 'authors')   { initAuthorsPage(); }
   if (_currentAdminPage === 'activity')  { loadActivityLogs(); }
   if (_currentAdminPage === 'fonts')     { initFontsPage(); }
+  if (_currentAdminPage === 'campaigns') { initCampaignsPage(); }
   if (_currentAdminPage === 'settings')  { initSettingsPage(); }
   if (_currentAdminPage === 'gallery')   {
     loadGalleryAssets();
@@ -14094,6 +14096,1047 @@ window.renderCustomFontsLibrary = renderCustomFontsLibrary;
 window.filterCustomFontsLibrary = filterCustomFontsLibrary;
 window.applyCustomFontToActiveCategory = applyCustomFontToActiveCategory;
 window.deleteCustomFont = deleteCustomFont;
+
+/* ═════════════════════════════════════════════════════════════════
+   CAMPAIGNS & MARKETING STUDIO CONTROLLER
+═════════════════════════════════════════════════════════════════ */
+var _campaignsList = [];
+var _activeCampaignFilter = 'all';
+var _activeCampaignFormatFilter = 'all';
+var _campaignSearchQuery = '';
+var _simCurrentLang = 'en';
+var _simCurrentDevice = 'desktop';
+var _currentEditingCampaignId = null;
+var _simUpdateDebounce = null;
+
+/**
+ * Initialize Campaigns Page
+ */
+function initCampaignsPage() {
+  loadCampaignsFromAPI(false);
+}
+
+/**
+ * Fetch Campaigns list from API
+ */
+async function loadCampaignsFromAPI(forceToast) {
+  var container = document.getElementById('campaigns-list-container');
+  if (container && _campaignsList.length === 0) {
+    container.innerHTML = `
+      <div class="campaigns-loading-state" style="padding:48px;text-align:center;color:#64748b;">
+        <div class="spinner" style="margin:0 auto 12px;"></div>
+        <p style="margin:0;font-size:14px;">Loading campaigns studio data...</p>
+      </div>`;
+  }
+
+  try {
+    var res = await fetch('/api/sections?action=campaigns');
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    var data = await res.json();
+    _campaignsList = Array.isArray(data.campaigns) ? data.campaigns : [];
+    
+    calculateCampaignKPIs();
+    renderCampaignsTable();
+
+    if (forceToast && typeof showToast === 'function') {
+      showToast('Campaigns data refreshed successfully', 'success');
+    }
+  } catch (err) {
+    console.error('Failed to load campaigns:', err);
+    if (container) {
+      container.innerHTML = `
+        <div style="padding:40px 20px;text-align:center;color:#ef4444;">
+          <p style="font-weight:600;margin-bottom:8px;">Failed to load campaigns from server</p>
+          <button type="button" class="btn btn--ghost btn--sm" onclick="loadCampaignsFromAPI(true)">Retry</button>
+        </div>`;
+    }
+    if (forceToast && typeof showToast === 'function') {
+      showToast('Error loading campaigns: ' + err.message, 'error');
+    }
+  }
+}
+
+/**
+ * Calculate KPI summary cards & pill counters
+ */
+function calculateCampaignKPIs() {
+  var total = 0;
+  var active = 0;
+  var scheduled = 0;
+  var paused = 0;
+  var expired = 0;
+  var trash = 0;
+  var impressions = 0;
+  var clicks = 0;
+
+  var now = new Date();
+
+  _campaignsList.forEach(function(c) {
+    if (c.deletedAt) {
+      trash++;
+      return;
+    }
+    total++;
+    impressions += (c.impressions || 0);
+    clicks += (c.clicks || 0);
+
+    var isExpired = c.endDate && new Date(c.endDate) < now;
+    var isScheduled = c.startDate && new Date(c.startDate) > now;
+
+    if (isExpired) {
+      expired++;
+    } else if (isScheduled) {
+      scheduled++;
+    } else if (c.status === 'active') {
+      active++;
+    } else {
+      paused++;
+    }
+  });
+
+  var ctr = impressions > 0 ? ((clicks / impressions) * 100).toFixed(2) : '0.00';
+
+  // Set KPI values in DOM
+  var elTotal = document.getElementById('kpi-total-campaigns');
+  var elSub = document.getElementById('kpi-sub-campaigns');
+  var elActive = document.getElementById('kpi-active-campaigns');
+  var elImpressions = document.getElementById('kpi-total-impressions');
+  var elClicks = document.getElementById('kpi-total-clicks');
+  var elCtr = document.getElementById('kpi-avg-ctr');
+
+  if (elTotal) elTotal.textContent = total;
+  if (elSub) elSub.textContent = active + ' active, ' + paused + ' paused';
+  if (elActive) elActive.textContent = active;
+  if (elImpressions) elImpressions.textContent = impressions.toLocaleString();
+  if (elClicks) elClicks.textContent = clicks.toLocaleString();
+  if (elCtr) elCtr.textContent = ctr + '%';
+
+  // Update Status Pill Counters
+  var pAll = document.getElementById('count-status-all');
+  var pActive = document.getElementById('count-status-active');
+  var pSched = document.getElementById('count-status-scheduled');
+  var pPaused = document.getElementById('count-status-paused');
+  var pExp = document.getElementById('count-status-expired');
+  var pTrash = document.getElementById('count-status-trash');
+
+  if (pAll) pAll.textContent = total;
+  if (pActive) pActive.textContent = active;
+  if (pSched) pSched.textContent = scheduled;
+  if (pPaused) pPaused.textContent = paused;
+  if (pExp) pExp.textContent = expired;
+  if (pTrash) pTrash.textContent = trash;
+}
+
+/**
+ * Filter by status pill
+ */
+function filterCampaignsByStatus(status) {
+  _activeCampaignFilter = status;
+  var pills = document.querySelectorAll('#campaigns-filter-status-group .cmp-filter-pill');
+  pills.forEach(function(p) {
+    p.classList.toggle('active', p.dataset.status === status);
+  });
+  renderCampaignsTable();
+}
+
+/**
+ * Apply Search and Format Filter
+ */
+function applyCampaignFilters() {
+  var formatEl = document.getElementById('campaigns-format-filter');
+  var searchEl = document.getElementById('campaigns-search-input');
+  _activeCampaignFormatFilter = formatEl ? formatEl.value : 'all';
+  _campaignSearchQuery = searchEl ? searchEl.value.trim().toLowerCase() : '';
+  renderCampaignsTable();
+}
+
+/**
+ * Render Campaigns Table
+ */
+function renderCampaignsTable() {
+  var container = document.getElementById('campaigns-list-container');
+  if (!container) return;
+
+  var now = new Date();
+  var filtered = _campaignsList.filter(function(c) {
+    // 1. Status Filter
+    if (_activeCampaignFilter === 'trash') {
+      if (!c.deletedAt) return false;
+    } else {
+      if (c.deletedAt) return false;
+      var isExpired = c.endDate && new Date(c.endDate) < now;
+      var isScheduled = c.startDate && new Date(c.startDate) > now;
+
+      if (_activeCampaignFilter === 'active' && (c.status !== 'active' || isExpired || isScheduled)) return false;
+      if (_activeCampaignFilter === 'scheduled' && !isScheduled) return false;
+      if (_activeCampaignFilter === 'paused' && (c.status !== 'paused' || isExpired || isScheduled)) return false;
+      if (_activeCampaignFilter === 'expired' && !isExpired) return false;
+    }
+
+    // 2. Format Filter
+    if (_activeCampaignFormatFilter !== 'all' && c.format !== _activeCampaignFormatFilter) {
+      return false;
+    }
+
+    // 3. Search Query
+    if (_campaignSearchQuery) {
+      var nameMatch = (c.name || '').toLowerCase().includes(_campaignSearchQuery);
+      var headMatch = (c.headline || '').toLowerCase().includes(_campaignSearchQuery);
+      var headBnMatch = (c.headline_bn || '').toLowerCase().includes(_campaignSearchQuery);
+      var badgeMatch = (c.badge || '').toLowerCase().includes(_campaignSearchQuery);
+      if (!nameMatch && !headMatch && !headBnMatch && !badgeMatch) return false;
+    }
+
+    return true;
+  });
+
+  if (filtered.length === 0) {
+    container.innerHTML = `
+      <div style="padding:56px 20px;text-align:center;color:#64748b;">
+        <div style="width:52px;height:52px;border-radius:50%;background:#f1f5f9;color:#94a3b8;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;">
+          <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.8">
+            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+          </svg>
+        </div>
+        <h4 style="font-size:15px;font-weight:700;color:#0f172a;margin:0 0 6px;">No Campaigns Found</h4>
+        <p style="font-size:13px;color:#64748b;margin:0 0 16px;max-width:380px;margin-left:auto;margin-right:auto;">
+          ${_campaignSearchQuery ? 'No campaigns match your search term or filter criteria.' : 'Create your first promotional popup, banner, or corner slide-in to engage your readers.'}
+        </p>
+        <button type="button" class="btn btn--primary btn--sm" onclick="openCampaignEditor()">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          <span>Create New Campaign</span>
+        </button>
+      </div>`;
+    return;
+  }
+
+  var formatLabels = {
+    popup_modal: 'Popup Lightbox',
+    topbar_banner: 'Sticky Banner',
+    slide_in_corner: 'Slide-in Card',
+    in_article_banner: 'In-Article Banner',
+    fullscreen_mat: 'Fullscreen Splash'
+  };
+
+  var placementLabels = {
+    everywhere: 'Everywhere',
+    homepage_only: 'Homepage Only',
+    all_articles: 'All Articles',
+    specific_section: 'Specific Section'
+  };
+
+  var rowsHtml = filtered.map(function(c) {
+    var isExpired = c.endDate && new Date(c.endDate) < now;
+    var isScheduled = c.startDate && new Date(c.startDate) > now;
+    var isActive = c.status === 'active' && !isExpired && !isScheduled && !c.deletedAt;
+
+    var statusBadgeClass = 'paused';
+    var statusLabel = 'Paused';
+    if (c.deletedAt) {
+      statusBadgeClass = 'expired';
+      statusLabel = 'Trash';
+    } else if (isExpired) {
+      statusBadgeClass = 'expired';
+      statusLabel = 'Expired';
+    } else if (isScheduled) {
+      statusBadgeClass = 'scheduled';
+      statusLabel = 'Scheduled';
+    } else if (c.status === 'active') {
+      statusBadgeClass = 'active';
+      statusLabel = 'Active Live';
+    }
+
+    var impressions = c.impressions || 0;
+    var clicks = c.clicks || 0;
+    var ctr = impressions > 0 ? ((clicks / impressions) * 100).toFixed(1) + '%' : '0.0%';
+
+    var isChecked = c.status === 'active' && !c.deletedAt;
+
+    return `
+      <tr data-campaign-id="${c.id}">
+        <!-- Toggle Switch -->
+        <td style="width:50px;">
+          ${c.deletedAt ? '<span style="font-size:11px;color:#94a3b8;">Trashed</span>' : `
+            <label class="cmp-toggle-label" title="Toggle active / paused">
+              <input type="checkbox" ${isChecked ? 'checked' : ''} onchange="toggleCampaignStatus('${c.id}', event)" />
+              <span class="cmp-toggle-slider"></span>
+            </label>
+          `}
+        </td>
+
+        <!-- Campaign Info -->
+        <td>
+          <div style="display:flex;align-items:center;gap:12px;">
+            ${c.imageUrl ? `
+              <img src="${c.imageUrl}" alt="" style="width:40px;height:40px;border-radius:8px;object-fit:cover;background:#f1f5f9;flex-shrink:0;border:1px solid #e2e8f0;" onerror="this.style.display='none'" />
+            ` : `
+              <div style="width:40px;height:40px;border-radius:8px;background:#f1f5f9;display:flex;align-items:center;justify-content:center;color:#94a3b8;flex-shrink:0;">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+              </div>
+            `}
+            <div style="min-width:0;">
+              <div style="display:flex;align-items:center;gap:6px;margin-bottom:2px;">
+                <span style="font-weight:700;color:#0f172a;font-size:13.5px;">${escapeHtml(c.name || 'Untitled Campaign')}</span>
+                ${c.badge ? `<span style="font-size:10px;font-weight:700;padding:1px 6px;border-radius:4px;background:#e0f2fe;color:#0369a1;">${escapeHtml(c.badge)}</span>` : ''}
+              </div>
+              <div style="font-size:12px;color:#64748b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:320px;">
+                ${escapeHtml(c.headline || c.subtitle || 'No headline')}
+              </div>
+            </div>
+          </div>
+        </td>
+
+        <!-- Format Badge -->
+        <td>
+          <span class="cmp-format-badge ${c.format || 'popup_modal'}">
+            ${formatLabels[c.format] || 'Popup Modal'}
+          </span>
+        </td>
+
+        <!-- Placement -->
+        <td>
+          <div style="font-size:12px;font-weight:600;color:#334155;">
+            ${placementLabels[c.placement] || 'Everywhere'}
+          </div>
+          <span style="font-size:11px;color:#94a3b8;">
+            ${c.trigger === 'scroll_depth' ? 'Scroll ' + (c.scrollPct || 50) + '%' : c.trigger === 'exit_intent' ? 'Exit-Intent' : (c.delaySeconds || 3) + 's Delay'}
+          </span>
+        </td>
+
+        <!-- Status -->
+        <td>
+          <span class="cmp-status-badge ${statusBadgeClass}">
+            ${statusLabel === 'Active Live' ? '<span class="pulse-dot-green"></span>' : ''}
+            <span>${statusLabel}</span>
+          </span>
+        </td>
+
+        <!-- Analytics Metrics -->
+        <td>
+          <div style="display:flex;flex-direction:column;gap:3px;">
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span class="cmp-metric-pill" title="Impressions">
+                <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                <span>${impressions.toLocaleString()}</span>
+              </span>
+              <span class="cmp-metric-pill" title="Clicks" style="color:#0a528e;">
+                <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h6v6"/><path d="M10 14L21 3"/></svg>
+                <span>${clicks.toLocaleString()}</span>
+              </span>
+            </div>
+            <div>
+              <span class="cmp-ctr-badge">${ctr} CTR</span>
+            </div>
+          </div>
+        </td>
+
+        <!-- Actions -->
+        <td style="text-align:right;">
+          <div class="cmp-row-actions">
+            ${c.deletedAt ? `
+              <button type="button" class="cmp-btn-icon" onclick="restoreCampaign('${c.id}')" title="Restore Campaign">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+              </button>
+              <button type="button" class="cmp-btn-icon danger" onclick="deleteCampaign('${c.id}', true)" title="Permanently Delete">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+              </button>
+            ` : `
+              <button type="button" class="cmp-btn-icon" onclick="openCampaignEditor('${c.id}')" title="Edit Campaign">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+              </button>
+              <button type="button" class="cmp-btn-icon" onclick="duplicateCampaign('${c.id}')" title="Duplicate Campaign">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+              </button>
+              <button type="button" class="cmp-btn-icon" onclick="resetCampaignStats('${c.id}')" title="Reset Impressions &amp; Clicks">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+              </button>
+              <button type="button" class="cmp-btn-icon danger" onclick="deleteCampaign('${c.id}', false)" title="Move to Trash">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+              </button>
+            `}
+          </div>
+        </td>
+      </tr>`;
+  }).join('');
+
+  container.innerHTML = `
+    <table class="cmp-table">
+      <thead>
+        <tr>
+          <th>Active</th>
+          <th>Campaign Details</th>
+          <th>Format</th>
+          <th>Placement &amp; Trigger</th>
+          <th>Status</th>
+          <th>Views &amp; Clicks</th>
+          <th style="text-align:right;">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${rowsHtml}
+      </tbody>
+    </table>`;
+}
+
+/**
+ * Toggle Campaign Status (Active / Paused)
+ */
+async function toggleCampaignStatus(id, event) {
+  try {
+    var res = await fetch('/api/sections?action=campaigns&id=' + encodeURIComponent(id), {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ toggleStatus: true })
+    });
+    var data = await res.json();
+    if (data.campaign) {
+      var idx = _campaignsList.findIndex(function(c) { return c.id === id; });
+      if (idx !== -1) {
+        _campaignsList[idx] = data.campaign;
+      }
+      calculateCampaignKPIs();
+      renderCampaignsTable();
+      if (typeof showToast === 'function') {
+        showToast('Campaign status updated to ' + data.campaign.status, 'success');
+      }
+    }
+  } catch (err) {
+    console.error('Failed to toggle status:', err);
+    if (typeof showToast === 'function') {
+      showToast('Error updating status: ' + err.message, 'error');
+    }
+  }
+}
+
+/**
+ * Reset Campaign Statistics
+ */
+async function resetCampaignStats(id) {
+  if (!confirm('Are you sure you want to reset all impressions and clicks analytics for this campaign?')) {
+    return;
+  }
+  try {
+    var res = await fetch('/api/sections?action=campaigns&id=' + encodeURIComponent(id), {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ resetStats: true })
+    });
+    var data = await res.json();
+    if (data.campaign) {
+      var idx = _campaignsList.findIndex(function(c) { return c.id === id; });
+      if (idx !== -1) {
+        _campaignsList[idx] = data.campaign;
+      }
+      calculateCampaignKPIs();
+      renderCampaignsTable();
+      if (typeof showToast === 'function') {
+        showToast('Analytics statistics reset to 0', 'success');
+      }
+    }
+  } catch (err) {
+    console.error('Failed to reset stats:', err);
+    if (typeof showToast === 'function') {
+      showToast('Error resetting stats: ' + err.message, 'error');
+    }
+  }
+}
+
+/**
+ * Duplicate an existing campaign
+ */
+async function duplicateCampaign(id) {
+  var orig = _campaignsList.find(function(c) { return c.id === id; });
+  if (!orig) return;
+
+  var clone = JSON.parse(JSON.stringify(orig));
+  clone.id = 'cmp_' + Date.now().toString(36);
+  clone.name = (clone.name || 'Campaign') + ' (Copy)';
+  clone.status = 'paused';
+  clone.impressions = 0;
+  clone.clicks = 0;
+  delete clone.deletedAt;
+
+  try {
+    var res = await fetch('/api/sections?action=campaigns', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(clone)
+    });
+    var data = await res.json();
+    if (data.campaign) {
+      _campaignsList.unshift(data.campaign);
+      calculateCampaignKPIs();
+      renderCampaignsTable();
+      if (typeof showToast === 'function') {
+        showToast('Campaign duplicated as draft', 'success');
+      }
+    }
+  } catch (err) {
+    console.error('Failed to duplicate campaign:', err);
+    if (typeof showToast === 'function') {
+      showToast('Error duplicating campaign: ' + err.message, 'error');
+    }
+  }
+}
+
+/**
+ * Delete Campaign (Soft Trash or Permanent)
+ */
+async function deleteCampaign(id, isPermanent) {
+  var promptMsg = isPermanent 
+    ? 'Are you sure you want to PERMANENTLY delete this campaign? This cannot be undone.'
+    : 'Move this campaign to Trash?';
+  if (!confirm(promptMsg)) return;
+
+  try {
+    var mode = isPermanent ? 'permanent' : 'soft';
+    var res = await fetch('/api/sections?action=campaigns&id=' + encodeURIComponent(id) + '&mode=' + mode, {
+      method: 'DELETE'
+    });
+    var data = await res.json();
+    if (data.success) {
+      if (isPermanent) {
+        _campaignsList = _campaignsList.filter(function(c) { return c.id !== id; });
+      } else {
+        var idx = _campaignsList.findIndex(function(c) { return c.id === id; });
+        if (idx !== -1) {
+          _campaignsList[idx].deletedAt = new Date().toISOString();
+        }
+      }
+      calculateCampaignKPIs();
+      renderCampaignsTable();
+      if (typeof showToast === 'function') {
+        showToast(isPermanent ? 'Campaign permanently deleted' : 'Campaign moved to Trash', 'success');
+      }
+    }
+  } catch (err) {
+    console.error('Failed to delete campaign:', err);
+    if (typeof showToast === 'function') {
+      showToast('Error deleting campaign: ' + err.message, 'error');
+    }
+  }
+}
+
+/**
+ * Restore campaign from trash
+ */
+async function restoreCampaign(id) {
+  try {
+    var res = await fetch('/api/sections?action=campaigns&id=' + encodeURIComponent(id), {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ restore: true })
+    });
+    var data = await res.json();
+    if (data.campaign) {
+      var idx = _campaignsList.findIndex(function(c) { return c.id === id; });
+      if (idx !== -1) {
+        _campaignsList[idx] = data.campaign;
+      }
+      calculateCampaignKPIs();
+      renderCampaignsTable();
+      if (typeof showToast === 'function') {
+        showToast('Campaign restored successfully', 'success');
+      }
+    }
+  } catch (err) {
+    console.error('Failed to restore campaign:', err);
+    if (typeof showToast === 'function') {
+      showToast('Error restoring campaign: ' + err.message, 'error');
+    }
+  }
+}
+
+/**
+ * Open Campaign Editor Modal (Create or Edit)
+ */
+function openCampaignEditor(id) {
+  _currentEditingCampaignId = id || null;
+  var modal = document.getElementById('modal-campaign-editor');
+  var titleEl = document.getElementById('campaign-modal-title');
+  var btnSaveLabel = document.getElementById('btn-save-campaign-label');
+
+  if (titleEl) titleEl.textContent = id ? 'Edit Campaign' : 'Create New Campaign';
+  if (btnSaveLabel) btnSaveLabel.textContent = id ? 'Update Campaign' : 'Save & Publish Campaign';
+
+  // Reset tab to 1
+  switchCampaignFormTab('creative');
+
+  if (id) {
+    var c = _campaignsList.find(function(item) { return item.id === id; });
+    if (c) {
+      document.getElementById('cmp-edit-id').value = c.id;
+      document.getElementById('cmp-input-name').value = c.name || '';
+      
+      // Radio format
+      var formatVal = c.format || 'popup_modal';
+      var rFormat = document.querySelector('input[name="cmp_format"][value="' + formatVal + '"]');
+      if (rFormat) rFormat.checked = true;
+      handleFormatChange(formatVal);
+
+      document.getElementById('cmp-input-badge').value = c.badge || '';
+      document.getElementById('cmp-input-badge-bn').value = c.badge_bn || '';
+      document.getElementById('cmp-input-headline').value = c.headline || '';
+      document.getElementById('cmp-input-headline-bn').value = c.headline_bn || '';
+      document.getElementById('cmp-input-subtitle').value = c.subtitle || '';
+      document.getElementById('cmp-input-subtitle-bn').value = c.subtitle_bn || '';
+      document.getElementById('cmp-input-image').value = c.imageUrl || '';
+      document.getElementById('cmp-input-cta-text').value = c.ctaText || 'Learn More';
+      document.getElementById('cmp-input-cta-text-bn').value = c.ctaText_bn || 'বিস্তারিত দেখুন';
+      document.getElementById('cmp-input-cta-url').value = c.ctaUrl || '/';
+      document.getElementById('cmp-input-cta-target').value = c.ctaTarget || '_self';
+      document.getElementById('cmp-input-cta-color').value = c.ctaColor || '#0a528e';
+      document.getElementById('cmp-input-cta-color-text').value = c.ctaColor || '#0a528e';
+      document.getElementById('cmp-input-sec-text').value = c.secondaryText || 'Dismiss';
+
+      // Countdown
+      var cdEnable = document.getElementById('cmp-input-countdown-enable');
+      if (cdEnable) {
+        cdEnable.checked = !!c.countdownDate;
+        toggleCountdownInputs();
+        if (c.countdownDate) {
+          document.getElementById('cmp-input-countdown-date').value = c.countdownDate;
+        }
+      }
+
+      // Placement
+      var placementVal = c.placement || 'everywhere';
+      var rPlacement = document.querySelector('input[name="cmp_placement"][value="' + placementVal + '"]');
+      if (rPlacement) rPlacement.checked = true;
+      handlePlacementChange(placementVal);
+
+      document.getElementById('cmp-input-lang').value = c.langScope || 'all';
+
+      // Triggers
+      var triggerVal = c.trigger || 'immediate';
+      var rTrigger = document.querySelector('input[name="cmp_trigger"][value="' + triggerVal + '"]');
+      if (rTrigger) rTrigger.checked = true;
+      handleTriggerChange(triggerVal);
+
+      document.getElementById('cmp-input-delay-slider').value = c.delaySeconds || 3;
+      document.getElementById('cmp-delay-num').textContent = (c.delaySeconds || 3) + 's';
+      document.getElementById('cmp-input-scroll-pct').value = c.scrollPct || '50';
+      document.getElementById('cmp-input-frequency').value = c.frequency || 'once_per_day';
+
+      // Schedule & Status
+      document.getElementById('cmp-input-status').value = c.status || 'active';
+      document.getElementById('cmp-input-start-date').value = c.startDate || '';
+      document.getElementById('cmp-input-end-date').value = c.endDate || '';
+    }
+  } else {
+    // Default values for new campaign
+    document.getElementById('cmp-edit-id').value = '';
+    document.getElementById('cmp-input-name').value = '';
+    
+    var rFormatDefault = document.querySelector('input[name="cmp_format"][value="popup_modal"]');
+    if (rFormatDefault) rFormatDefault.checked = true;
+    handleFormatChange('popup_modal');
+
+    document.getElementById('cmp-input-badge').value = 'Special Announcement';
+    document.getElementById('cmp-input-badge-bn').value = 'বিশেষ ঘোষণা';
+    document.getElementById('cmp-input-headline').value = 'The Privatian Archive: Volume II Is Now Available';
+    document.getElementById('cmp-input-headline-bn').value = 'দ্য প্রাইভেটিয়ান আর্কাইভ: ভলিউম ২ এখন উন্মুক্ত';
+    document.getElementById('cmp-input-subtitle').value = 'Explore historical archives, intellectual heritage essays, and rare family chronicles.';
+    document.getElementById('cmp-input-subtitle-bn').value = 'ঐতিহাসিক মহাফেজখানা ও জ্ঞানভিত্তিক পারিবারিক প্রবন্ধ পাঠ করুন।';
+    document.getElementById('cmp-input-image').value = 'img3.png';
+    document.getElementById('cmp-input-cta-text').value = 'Explore Archive';
+    document.getElementById('cmp-input-cta-text-bn').value = 'আর্কাইভ দেখুন';
+    document.getElementById('cmp-input-cta-url').value = '/';
+    document.getElementById('cmp-input-cta-target').value = '_self';
+    document.getElementById('cmp-input-cta-color').value = '#0a528e';
+    document.getElementById('cmp-input-cta-color-text').value = '#0a528e';
+    document.getElementById('cmp-input-sec-text').value = 'Dismiss';
+
+    var cdEnableDefault = document.getElementById('cmp-input-countdown-enable');
+    if (cdEnableDefault) {
+      cdEnableDefault.checked = false;
+      toggleCountdownInputs();
+    }
+
+    var rPlacementDefault = document.querySelector('input[name="cmp_placement"][value="everywhere"]');
+    if (rPlacementDefault) rPlacementDefault.checked = true;
+    handlePlacementChange('everywhere');
+
+    document.getElementById('cmp-input-lang').value = 'all';
+
+    var rTriggerDefault = document.querySelector('input[name="cmp_trigger"][value="immediate"]');
+    if (rTriggerDefault) rTriggerDefault.checked = true;
+    handleTriggerChange('immediate');
+
+    document.getElementById('cmp-input-delay-slider').value = 3;
+    document.getElementById('cmp-delay-num').textContent = '3s';
+    document.getElementById('cmp-input-scroll-pct').value = '50';
+    document.getElementById('cmp-input-frequency').value = 'once_per_day';
+    document.getElementById('cmp-input-status').value = 'active';
+    document.getElementById('cmp-input-start-date').value = '';
+    document.getElementById('cmp-input-end-date').value = '';
+  }
+
+  if (modal) modal.removeAttribute('hidden');
+  updateCampaignSimulatorPreview();
+}
+
+/**
+ * Close Campaign Editor Modal
+ */
+function closeCampaignEditor() {
+  var modal = document.getElementById('modal-campaign-editor');
+  if (modal) modal.setAttribute('hidden', '');
+  _currentEditingCampaignId = null;
+}
+
+/**
+ * Switch Tab in Campaign Modal
+ */
+function switchCampaignFormTab(tabKey) {
+  var btns = document.querySelectorAll('.cmp-form-tab-btn');
+  btns.forEach(function(btn) {
+    btn.classList.toggle('active', btn.dataset.tab === tabKey);
+  });
+
+  var panes = document.querySelectorAll('.cmp-tab-pane');
+  panes.forEach(function(pane) {
+    if (pane.id === 'cmp-pane-' + tabKey) {
+      pane.style.display = 'block';
+    } else {
+      pane.style.display = 'none';
+    }
+  });
+}
+
+/**
+ * Handle Format Card Switch
+ */
+function handleFormatChange(format) {
+  var cards = document.querySelectorAll('.cmp-format-card');
+  cards.forEach(function(c) {
+    var isMatch = c.dataset.format === format;
+    c.classList.toggle('active', isMatch);
+    var radio = c.querySelector('input[type="radio"]');
+    if (radio) radio.checked = isMatch;
+  });
+  triggerSimulatorUpdate();
+}
+
+/**
+ * Handle Placement Switch
+ */
+function handlePlacementChange(placement) {
+  var secWrap = document.getElementById('cmp-sections-picker-wrap');
+  if (secWrap) {
+    secWrap.style.display = (placement === 'specific_section') ? 'block' : 'none';
+  }
+}
+
+/**
+ * Handle Trigger Mode Switch
+ */
+function handleTriggerChange(trigger) {
+  var delayWrap = document.getElementById('cmp-trigger-delay-wrap');
+  var scrollWrap = document.getElementById('cmp-trigger-scroll-wrap');
+
+  if (delayWrap) delayWrap.style.display = (trigger === 'immediate') ? 'block' : 'none';
+  if (scrollWrap) scrollWrap.style.display = (trigger === 'scroll_depth') ? 'block' : 'none';
+}
+
+/**
+ * Toggle Countdown Date Inputs
+ */
+function toggleCountdownInputs() {
+  var cb = document.getElementById('cmp-input-countdown-enable');
+  var wrap = document.getElementById('cmp-countdown-fields');
+  if (wrap && cb) {
+    wrap.style.display = cb.checked ? 'block' : 'none';
+  }
+  triggerSimulatorUpdate();
+}
+
+/**
+ * Simulator Language Switcher
+ */
+function setSimulatorLang(lang) {
+  _simCurrentLang = lang;
+  var btnEn = document.getElementById('sim-lang-en');
+  var btnBn = document.getElementById('sim-lang-bn');
+  if (btnEn) btnEn.classList.toggle('active', lang === 'en');
+  if (btnBn) btnBn.classList.toggle('active', lang === 'bn');
+  updateCampaignSimulatorPreview();
+}
+
+/**
+ * Simulator Device Switcher (Desktop / Mobile)
+ */
+function setSimulatorDevice(device) {
+  _simCurrentDevice = device;
+  var screenEl = document.getElementById('campaign-simulator-screen');
+  var btnDesk = document.getElementById('sim-dev-desktop');
+  var btnMob = document.getElementById('sim-dev-mobile');
+
+  if (screenEl) screenEl.classList.toggle('mobile', device === 'mobile');
+  if (btnDesk) btnDesk.classList.toggle('active', device === 'desktop');
+  if (btnMob) btnMob.classList.toggle('active', device === 'mobile');
+}
+
+/**
+ * Media Picker trigger for campaign cover
+ */
+function openCampaignMediaPicker() {
+  if (typeof openGalleryModal === 'function') {
+    window._onGallerySelectCallback = function(url) {
+      var imgInput = document.getElementById('cmp-input-image');
+      if (imgInput) {
+        imgInput.value = url;
+        triggerSimulatorUpdate();
+      }
+    };
+    openGalleryModal();
+  } else {
+    var customUrl = prompt('Enter Image URL (e.g. img3.png or https://...):', document.getElementById('cmp-input-image').value || '');
+    if (customUrl !== null) {
+      document.getElementById('cmp-input-image').value = customUrl.trim();
+      triggerSimulatorUpdate();
+    }
+  }
+}
+
+/**
+ * Debounced Simulator Update
+ */
+function triggerSimulatorUpdate() {
+  clearTimeout(_simUpdateDebounce);
+  _simUpdateDebounce = setTimeout(updateCampaignSimulatorPreview, 80);
+}
+
+/**
+ * Render Live Campaign Simulator View
+ */
+function updateCampaignSimulatorPreview() {
+  var overlay = document.getElementById('campaign-simulator-overlay');
+  if (!overlay) return;
+
+  var rChecked = document.querySelector('input[name="cmp_format"]:checked');
+  var format = rChecked ? rChecked.value : 'popup_modal';
+
+  var isBn = _simCurrentLang === 'bn';
+  var badge = isBn ? (document.getElementById('cmp-input-badge-bn').value || document.getElementById('cmp-input-badge').value) : document.getElementById('cmp-input-badge').value;
+  var headline = isBn ? (document.getElementById('cmp-input-headline-bn').value || document.getElementById('cmp-input-headline').value) : document.getElementById('cmp-input-headline').value;
+  var subtitle = isBn ? (document.getElementById('cmp-input-subtitle-bn').value || document.getElementById('cmp-input-subtitle').value) : document.getElementById('cmp-input-subtitle').value;
+  var imageUrl = document.getElementById('cmp-input-image').value;
+  var ctaText = isBn ? (document.getElementById('cmp-input-cta-text-bn').value || document.getElementById('cmp-input-cta-text').value) : document.getElementById('cmp-input-cta-text').value;
+  var ctaColor = document.getElementById('cmp-input-cta-color').value || '#0a528e';
+  var secText = document.getElementById('cmp-input-sec-text').value || 'Dismiss';
+
+  var cdEnabled = document.getElementById('cmp-input-countdown-enable') && document.getElementById('cmp-input-countdown-enable').checked;
+
+  if (format === 'popup_modal') {
+    overlay.innerHTML = `
+      <div class="sim-popup-wrap">
+        <div class="sim-popup-card">
+          <button type="button" class="sim-popup-close-x" title="Close preview">✕</button>
+          ${imageUrl ? `<img src="${imageUrl}" alt="" class="sim-popup-img" onerror="this.style.display='none'" />` : ''}
+          <div class="sim-popup-body">
+            ${badge ? `<span class="sim-popup-badge">${escapeHtml(badge)}</span>` : ''}
+            <h3 class="sim-popup-title">${escapeHtml(headline || 'Exclusive Announcement')}</h3>
+            <p class="sim-popup-desc">${escapeHtml(subtitle || 'Sample campaign description text for visual simulation.')}</p>
+            ${cdEnabled ? `
+              <div style="background:#f1f5f9;border-radius:6px;padding:6px;margin-bottom:12px;display:flex;justify-content:center;gap:8px;font-size:11px;font-weight:700;color:#0f172a;">
+                <span>⏳ Limited Time:</span>
+                <span style="color:#0a528e;">02d 14h 32m 10s</span>
+              </div>
+            ` : ''}
+            <div style="display:flex;gap:8px;align-items:center;">
+              <button type="button" class="sim-popup-cta" style="background:${ctaColor};flex:1;">
+                ${escapeHtml(ctaText || 'Learn More')}
+              </button>
+            </div>
+            ${secText ? `
+              <div style="margin-top:8px;">
+                <span style="font-size:11px;color:#94a3b8;cursor:pointer;">${escapeHtml(secText)}</span>
+              </div>
+            ` : ''}
+          </div>
+        </div>
+      </div>`;
+  } else if (format === 'topbar_banner') {
+    overlay.innerHTML = `
+      <div class="sim-topbar-banner" style="background:${ctaColor};">
+        <div style="display:flex;align-items:center;gap:8px;min-width:0;">
+          ${badge ? `<span style="background:rgba(255,255,255,0.25);color:#fff;font-size:9.5px;font-weight:800;padding:2px 6px;border-radius:4px;white-space:nowrap;">${escapeHtml(badge)}</span>` : ''}
+          <span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:600;">${escapeHtml(headline || 'Announcement Banner')}</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
+          <a href="javascript:void(0)" class="sim-topbar-cta" style="color:${ctaColor};">${escapeHtml(ctaText || 'View')}</a>
+          <span style="cursor:pointer;font-size:12px;opacity:0.8;">✕</span>
+        </div>
+      </div>`;
+  } else if (format === 'slide_in_corner') {
+    overlay.innerHTML = `
+      <div class="sim-slidein-card">
+        ${imageUrl ? `<img src="${imageUrl}" alt="" class="sim-slidein-thumb" onerror="this.style.display='none'" />` : ''}
+        <div class="sim-slidein-info">
+          ${badge ? `<span style="font-size:8.5px;font-weight:800;color:#0a528e;text-transform:uppercase;">${escapeHtml(badge)}</span>` : ''}
+          <div class="sim-slidein-title">${escapeHtml(headline || 'Corner Notification')}</div>
+          <a href="javascript:void(0)" class="sim-slidein-cta" style="color:${ctaColor};">${escapeHtml(ctaText || 'Learn More')} →</a>
+        </div>
+        <span style="cursor:pointer;font-size:12px;color:#94a3b8;align-self:flex-start;">✕</span>
+      </div>`;
+  } else if (format === 'in_article_banner') {
+    overlay.innerHTML = `
+      <div style="width:100%;padding:16px;">
+        <div class="sim-inarticle-banner" style="border-left-color:${ctaColor};">
+          ${imageUrl ? `<img src="${imageUrl}" alt="" style="width:64px;height:64px;border-radius:6px;object-fit:cover;flex-shrink:0;" onerror="this.style.display='none'" />` : ''}
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:9.5px;font-weight:800;color:#0a528e;text-transform:uppercase;margin-bottom:2px;">
+              ${escapeHtml(badge || 'Special Dispatch')}
+            </div>
+            <div style="font-size:13px;font-weight:700;color:#0f172a;margin-bottom:4px;">
+              ${escapeHtml(headline || 'In-Article Promotional Banner')}
+            </div>
+            <div style="font-size:11px;color:#64748b;margin-bottom:8px;line-height:1.3;">
+              ${escapeHtml(subtitle || 'Seamlessly embedded between paragraphs in story pages.')}
+            </div>
+            <button type="button" style="background:${ctaColor};color:#fff;border:none;border-radius:4px;font-size:11px;font-weight:700;padding:4px 10px;cursor:pointer;">
+              ${escapeHtml(ctaText || 'Read More')}
+            </button>
+          </div>
+        </div>
+      </div>`;
+  } else if (format === 'fullscreen_mat') {
+    overlay.innerHTML = `
+      <div style="position:absolute;inset:0;background:radial-gradient(circle at center, #1e293b, #0f172a);color:#ffffff;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center;">
+        <button type="button" class="sim-popup-close-x" style="top:16px;right:16px;">✕</button>
+        ${badge ? `<span style="font-size:10px;font-weight:800;letter-spacing:0.1em;background:rgba(255,255,255,0.15);padding:3px 10px;border-radius:12px;margin-bottom:12px;">${escapeHtml(badge)}</span>` : ''}
+        <h2 style="font-family:'Playfair Display',serif;font-size:22px;font-weight:700;margin:0 0 10px;line-height:1.2;">${escapeHtml(headline || 'Fullscreen Welcome Experience')}</h2>
+        <p style="font-size:12px;color:#cbd5e1;max-width:320px;margin:0 0 18px;line-height:1.4;">${escapeHtml(subtitle || 'Premium announcement presentation for high-value stories or book launches.')}</p>
+        <button type="button" style="background:${ctaColor};color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;padding:10px 22px;cursor:pointer;box-shadow:0 4px 12px rgba(0,0,0,0.3);">
+          ${escapeHtml(ctaText || 'Get Started')}
+        </button>
+      </div>`;
+  }
+}
+
+/**
+ * Save / Publish Campaign from Editor
+ */
+async function saveCampaignFromEditor() {
+  var name = (document.getElementById('cmp-input-name').value || '').trim();
+  var headline = (document.getElementById('cmp-input-headline').value || '').trim();
+
+  if (!name) {
+    alert('Please enter a Campaign Internal Name.');
+    switchCampaignFormTab('creative');
+    document.getElementById('cmp-input-name').focus();
+    return;
+  }
+
+  if (!headline) {
+    alert('Please enter a Headline / Title for the campaign.');
+    switchCampaignFormTab('creative');
+    document.getElementById('cmp-input-headline').focus();
+    return;
+  }
+
+  var editId = document.getElementById('cmp-edit-id').value;
+  var rFormat = document.querySelector('input[name="cmp_format"]:checked');
+  var format = rFormat ? rFormat.value : 'popup_modal';
+
+  var rPlacement = document.querySelector('input[name="cmp_placement"]:checked');
+  var placement = rPlacement ? rPlacement.value : 'everywhere';
+
+  var rTrigger = document.querySelector('input[name="cmp_trigger"]:checked');
+  var trigger = rTrigger ? rTrigger.value : 'immediate';
+
+  var cdEnabled = document.getElementById('cmp-input-countdown-enable') && document.getElementById('cmp-input-countdown-enable').checked;
+  var cdDate = cdEnabled ? document.getElementById('cmp-input-countdown-date').value : '';
+
+  var payload = {
+    id: editId || ('cmp_' + Date.now().toString(36)),
+    name: name,
+    format: format,
+    badge: document.getElementById('cmp-input-badge').value.trim(),
+    badge_bn: document.getElementById('cmp-input-badge-bn').value.trim(),
+    headline: headline,
+    headline_bn: document.getElementById('cmp-input-headline-bn').value.trim(),
+    subtitle: document.getElementById('cmp-input-subtitle').value.trim(),
+    subtitle_bn: document.getElementById('cmp-input-subtitle-bn').value.trim(),
+    imageUrl: document.getElementById('cmp-input-image').value.trim(),
+    ctaText: document.getElementById('cmp-input-cta-text').value.trim() || 'Learn More',
+    ctaText_bn: document.getElementById('cmp-input-cta-text-bn').value.trim() || 'বিস্তারিত দেখুন',
+    ctaUrl: document.getElementById('cmp-input-cta-url').value.trim() || '/',
+    ctaTarget: document.getElementById('cmp-input-cta-target').value || '_self',
+    ctaColor: document.getElementById('cmp-input-cta-color').value || '#0a528e',
+    secondaryText: document.getElementById('cmp-input-sec-text').value.trim() || 'Dismiss',
+    countdownDate: cdDate,
+    placement: placement,
+    langScope: document.getElementById('cmp-input-lang').value || 'all',
+    trigger: trigger,
+    delaySeconds: parseInt(document.getElementById('cmp-input-delay-slider').value, 10) || 3,
+    scrollPct: parseInt(document.getElementById('cmp-input-scroll-pct').value, 10) || 50,
+    frequency: document.getElementById('cmp-input-frequency').value || 'once_per_day',
+    status: document.getElementById('cmp-input-status').value || 'active',
+    startDate: document.getElementById('cmp-input-start-date').value || '',
+    endDate: document.getElementById('cmp-input-end-date').value || ''
+  };
+
+  var btnSave = document.getElementById('btn-save-campaign');
+  if (btnSave) btnSave.disabled = true;
+
+  try {
+    var res = await fetch('/api/sections?action=campaigns', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    var data = await res.json();
+    if (data.campaign) {
+      var existingIdx = _campaignsList.findIndex(function(c) { return c.id === data.campaign.id; });
+      if (existingIdx !== -1) {
+        _campaignsList[existingIdx] = data.campaign;
+      } else {
+        _campaignsList.unshift(data.campaign);
+      }
+      calculateCampaignKPIs();
+      renderCampaignsTable();
+      closeCampaignEditor();
+
+      if (typeof showToast === 'function') {
+        showToast(editId ? 'Campaign updated successfully' : 'Campaign created & published!', 'success');
+      }
+    }
+  } catch (err) {
+    console.error('Failed to save campaign:', err);
+    if (typeof showToast === 'function') {
+      showToast('Error saving campaign: ' + err.message, 'error');
+    }
+  } finally {
+    if (btnSave) btnSave.disabled = false;
+  }
+}
+
+// Export Campaigns functions to Window
+window.initCampaignsPage = initCampaignsPage;
+window.loadCampaignsFromAPI = loadCampaignsFromAPI;
+window.filterCampaignsByStatus = filterCampaignsByStatus;
+window.applyCampaignFilters = applyCampaignFilters;
+window.toggleCampaignStatus = toggleCampaignStatus;
+window.resetCampaignStats = resetCampaignStats;
+window.duplicateCampaign = duplicateCampaign;
+window.deleteCampaign = deleteCampaign;
+window.restoreCampaign = restoreCampaign;
+window.openCampaignEditor = openCampaignEditor;
+window.closeCampaignEditor = closeCampaignEditor;
+window.switchCampaignFormTab = switchCampaignFormTab;
+window.handleFormatChange = handleFormatChange;
+window.handlePlacementChange = handlePlacementChange;
+window.handleTriggerChange = handleTriggerChange;
+window.toggleCountdownInputs = toggleCountdownInputs;
+window.setSimulatorLang = setSimulatorLang;
+window.setSimulatorDevice = setSimulatorDevice;
+window.openCampaignMediaPicker = openCampaignMediaPicker;
+window.triggerSimulatorUpdate = triggerSimulatorUpdate;
+window.updateCampaignSimulatorPreview = updateCampaignSimulatorPreview;
+window.saveCampaignFromEditor = saveCampaignFromEditor;
+
 
 
 

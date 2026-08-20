@@ -2226,27 +2226,338 @@
     } catch(e) {}
   }
 
+  // ── Public Promotional Campaigns & Marketing Engine ─────────────────────
+  var _activeRenderedCampaigns = {};
+
+  function recordCampaignStat(campaignId, statType) {
+    if (!campaignId || !statType) return;
+    try {
+      var payload = { id: campaignId, type: statType };
+      fetch('/api/sections?action=campaign_stat&id=' + encodeURIComponent(campaignId) + '&type=' + encodeURIComponent(statType), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+        keepalive: true
+      }).catch(function() {
+        if (navigator.sendBeacon) {
+          navigator.sendBeacon('/api/sections?action=campaign_stat&id=' + encodeURIComponent(campaignId) + '&type=' + encodeURIComponent(statType), new Blob([JSON.stringify(payload)], { type: 'application/json' }));
+        }
+      });
+    } catch(e) {}
+  }
+
+  function startCampaignCountdown(countdownDate, elDisplay) {
+    if (!countdownDate || !elDisplay) return;
+    var targetTime = new Date(countdownDate).getTime();
+    if (isNaN(targetTime)) return;
+
+    function update() {
+      var now = Date.now();
+      var diff = targetTime - now;
+      if (diff <= 0) {
+        elDisplay.textContent = 'Expired';
+        return;
+      }
+      var days = Math.floor(diff / (1000 * 60 * 60 * 24));
+      var hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      var mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+      var secs = Math.floor((diff % (1000 * 60)) / 1000);
+
+      var parts = [];
+      if (days > 0) parts.push(days + 'd');
+      parts.push((hours < 10 ? '0' : '') + hours + 'h');
+      parts.push((mins < 10 ? '0' : '') + mins + 'm');
+      parts.push((secs < 10 ? '0' : '') + secs + 's');
+      elDisplay.textContent = parts.join(' ');
+    }
+    update();
+    setInterval(update, 1000);
+  }
+
+  function renderPublicCampaign(c, currentLang) {
+    if (!c || !c.id || _activeRenderedCampaigns[c.id]) return;
+    _activeRenderedCampaigns[c.id] = true;
+
+    var isBn = currentLang === 'bn';
+    var badge = isBn ? (c.badge_bn || c.badge || '') : (c.badge || '');
+    var headline = isBn ? (c.headline_bn || c.headline || '') : (c.headline || '');
+    var subtitle = isBn ? (c.subtitle_bn || c.subtitle || '') : (c.subtitle || '');
+    var ctaText = isBn ? (c.ctaText_bn || c.ctaText || 'Learn More') : (c.ctaText || 'Learn More');
+    var ctaUrl = c.ctaUrl || '/';
+    var ctaTarget = c.ctaTarget || '_self';
+    var ctaColor = c.ctaColor || '#0a528e';
+    var secText = c.secondaryText || 'Dismiss';
+    var imageUrl = c.imageUrl || '';
+    var format = c.format || 'popup_modal';
+
+    function markDismissed() {
+      try {
+        if (c.frequency === 'once_per_session') {
+          sessionStorage.setItem('_pf_cmp_dismiss_' + c.id, '1');
+        } else if (c.frequency === 'once_per_day') {
+          localStorage.setItem('_pf_cmp_dismiss_' + c.id, String(Date.now()));
+        }
+      } catch(e) {}
+    }
+
+    if (format === 'popup_modal') {
+      var modalWrap = document.createElement('div');
+      modalWrap.className = 'pf-cmp-popup-overlay';
+      modalWrap.id = 'pf-cmp-modal-' + c.id;
+
+      var cdHtml = c.countdownDate ? `
+        <div class="pf-cmp-countdown">
+          <span>⏳ Limited Time:</span>
+          <span class="pf-cmp-countdown-val" id="pf-cd-val-${c.id}">00:00:00</span>
+        </div>` : '';
+
+      modalWrap.innerHTML = `
+        <div class="pf-cmp-popup-card">
+          <button type="button" class="pf-cmp-close-btn" title="Close">✕</button>
+          ${imageUrl ? `<img src="${imageUrl}" alt="" class="pf-cmp-popup-img" />` : ''}
+          <div class="pf-cmp-popup-body">
+            ${badge ? `<span class="pf-cmp-badge">${escapeHTML(badge)}</span>` : ''}
+            <h3 class="pf-cmp-title">${escapeHTML(headline)}</h3>
+            ${subtitle ? `<p class="pf-cmp-desc">${escapeHTML(subtitle)}</p>` : ''}
+            ${cdHtml}
+            <a href="${ctaUrl}" target="${ctaTarget}" class="pf-cmp-cta-btn" style="background:${ctaColor};">
+              ${escapeHTML(ctaText)}
+            </a>
+            ${secText ? `<button type="button" class="pf-cmp-secondary-btn">${escapeHTML(secText)}</button>` : ''}
+          </div>
+        </div>`;
+
+      document.body.appendChild(modalWrap);
+      recordCampaignStat(c.id, 'impression');
+
+      if (c.countdownDate) {
+        startCampaignCountdown(c.countdownDate, modalWrap.querySelector('#pf-cd-val-' + c.id));
+      }
+
+      // Smooth open
+      requestAnimationFrame(function() {
+        modalWrap.classList.add('active');
+      });
+
+      function closeModal() {
+        modalWrap.classList.remove('active');
+        markDismissed();
+        setTimeout(function() { modalWrap.remove(); }, 400);
+      }
+
+      modalWrap.querySelector('.pf-cmp-close-btn').addEventListener('click', closeModal);
+      var secBtn = modalWrap.querySelector('.pf-cmp-secondary-btn');
+      if (secBtn) secBtn.addEventListener('click', closeModal);
+      modalWrap.addEventListener('click', function(e) {
+        if (e.target === modalWrap) closeModal();
+      });
+
+      modalWrap.querySelector('.pf-cmp-cta-btn').addEventListener('click', function() {
+        recordCampaignStat(c.id, 'click');
+        markDismissed();
+      });
+
+    } else if (format === 'topbar_banner') {
+      var topbar = document.createElement('div');
+      topbar.className = 'pf-cmp-topbar-banner';
+      topbar.id = 'pf-cmp-topbar-' + c.id;
+      if (ctaColor) topbar.style.backgroundColor = ctaColor;
+
+      topbar.innerHTML = `
+        <div class="pf-cmp-topbar-content">
+          ${badge ? `<span class="pf-cmp-topbar-badge">${escapeHTML(badge)}</span>` : ''}
+          <span>${escapeHTML(headline)}</span>
+          <a href="${ctaUrl}" target="${ctaTarget}" class="pf-cmp-topbar-cta" style="color:${ctaColor};">${escapeHTML(ctaText)}</a>
+        </div>
+        <button type="button" class="pf-cmp-topbar-close" title="Dismiss">✕</button>`;
+
+      document.body.insertBefore(topbar, document.body.firstChild);
+      recordCampaignStat(c.id, 'impression');
+
+      topbar.querySelector('.pf-cmp-topbar-close').addEventListener('click', function() {
+        topbar.style.transition = 'all 0.3s ease';
+        topbar.style.opacity = '0';
+        topbar.style.transform = 'translateY(-100%)';
+        markDismissed();
+        setTimeout(function() { topbar.remove(); }, 350);
+      });
+
+      topbar.querySelector('.pf-cmp-topbar-cta').addEventListener('click', function() {
+        recordCampaignStat(c.id, 'click');
+        markDismissed();
+      });
+
+    } else if (format === 'slide_in_corner') {
+      var slidein = document.createElement('div');
+      slidein.className = 'pf-cmp-slidein-card';
+      slidein.id = 'pf-cmp-slidein-' + c.id;
+
+      slidein.innerHTML = `
+        ${imageUrl ? `<img src="${imageUrl}" alt="" class="pf-cmp-slidein-thumb" />` : ''}
+        <div class="pf-cmp-slidein-info">
+          ${badge ? `<div style="font-size:9.5px;font-weight:800;color:${ctaColor};text-transform:uppercase;margin-bottom:2px;">${escapeHTML(badge)}</div>` : ''}
+          <div class="pf-cmp-slidein-title">${escapeHTML(headline)}</div>
+          <a href="${ctaUrl}" target="${ctaTarget}" class="pf-cmp-slidein-cta" style="color:${ctaColor};">${escapeHTML(ctaText)} →</a>
+        </div>
+        <button type="button" class="pf-cmp-slidein-close" title="Close">✕</button>`;
+
+      document.body.appendChild(slidein);
+      recordCampaignStat(c.id, 'impression');
+
+      requestAnimationFrame(function() {
+        slidein.classList.add('active');
+      });
+
+      slidein.querySelector('.pf-cmp-slidein-close').addEventListener('click', function() {
+        slidein.classList.remove('active');
+        markDismissed();
+        setTimeout(function() { slidein.remove(); }, 400);
+      });
+
+      slidein.querySelector('.pf-cmp-slidein-cta').addEventListener('click', function() {
+        recordCampaignStat(c.id, 'click');
+        markDismissed();
+      });
+
+    } else if (format === 'in_article_banner') {
+      var artBody = document.querySelector('.article-body') || document.querySelector('.story-body') || document.querySelector('#article-content');
+      if (artBody) {
+        var banner = document.createElement('div');
+        banner.className = 'pf-cmp-inarticle-block';
+        banner.id = 'pf-cmp-inart-' + c.id;
+        if (ctaColor) banner.style.borderLeftColor = ctaColor;
+
+        banner.innerHTML = `
+          ${imageUrl ? `<img src="${imageUrl}" alt="" class="pf-cmp-inarticle-thumb" />` : ''}
+          <div class="pf-cmp-inarticle-content">
+            ${badge ? `<div style="font-size:10px;font-weight:800;color:${ctaColor};text-transform:uppercase;margin-bottom:3px;">${escapeHTML(badge)}</div>` : ''}
+            <h4 class="pf-cmp-inarticle-title">${escapeHTML(headline)}</h4>
+            ${subtitle ? `<p class="pf-cmp-inarticle-desc">${escapeHTML(subtitle)}</p>` : ''}
+            <a href="${ctaUrl}" target="${ctaTarget}" class="pf-cmp-inarticle-btn" style="background:${ctaColor};">${escapeHTML(ctaText)}</a>
+          </div>`;
+
+        // Insert after 2nd paragraph if available, otherwise append
+        var paras = artBody.querySelectorAll('p');
+        if (paras.length >= 3) {
+          paras[1].parentNode.insertBefore(banner, paras[1].nextSibling);
+        } else {
+          artBody.appendChild(banner);
+        }
+
+        recordCampaignStat(c.id, 'impression');
+
+        banner.querySelector('.pf-cmp-inarticle-btn').addEventListener('click', function() {
+          recordCampaignStat(c.id, 'click');
+          markDismissed();
+        });
+      }
+    }
+  }
+
+  function fetchAndRenderPublicCampaigns() {
+    if (typeof window === 'undefined' || !window.location) return;
+    var pathname = window.location.pathname || '/';
+
+    // Ignore admin and backend management pages
+    if (pathname.startsWith('/admin') || pathname.includes('admin-login') || pathname.includes('admin-article-editor')) return;
+
+    fetch('/api/sections?action=campaigns')
+      .then(function(res) { return res.ok ? res.json() : null; })
+      .then(function(data) {
+        if (!data || !Array.isArray(data.campaigns)) return;
+        var campaigns = data.campaigns;
+        var now = new Date();
+        var currentLang = (localStorage.getItem('privatian_lang') || navigator.language || 'en').startsWith('bn') ? 'bn' : 'en';
+
+        var isHomepage = pathname === '/' || pathname.endsWith('/index.html') || pathname.endsWith('/');
+        var isArticle = pathname.includes('article.html') || pathname.includes('/article/') || pathname.includes('post');
+
+        campaigns.forEach(function(c) {
+          if (!c || c.deletedAt || c.status !== 'active') return;
+
+          // Check Schedule
+          if (c.startDate && new Date(c.startDate) > now) return;
+          if (c.endDate && new Date(c.endDate) < now) return;
+
+          // Check Placement
+          if (c.placement === 'homepage_only' && !isHomepage) return;
+          if (c.placement === 'all_articles' && !isArticle) return;
+
+          // Check Language
+          if (c.langScope && c.langScope !== 'all' && c.langScope !== currentLang) return;
+
+          // Check Frequency
+          if (c.frequency === 'once_per_session') {
+            if (sessionStorage.getItem('_pf_cmp_dismiss_' + c.id)) return;
+          } else if (c.frequency === 'once_per_day') {
+            var lastDismiss = localStorage.getItem('_pf_cmp_dismiss_' + c.id);
+            if (lastDismiss && (Date.now() - Number(lastDismiss)) < 24 * 60 * 60 * 1000) return;
+          }
+
+          // Trigger Logic
+          var trigger = c.trigger || 'immediate';
+          var delay = (c.delaySeconds || 3) * 1000;
+
+          if (trigger === 'immediate') {
+            setTimeout(function() {
+              renderPublicCampaign(c, currentLang);
+            }, delay);
+          } else if (trigger === 'scroll_depth') {
+            var scrollTarget = c.scrollPct || 50;
+            var onScroll = function() {
+              var sTop = window.pageYOffset || document.documentElement.scrollTop;
+              var docHeight = document.documentElement.scrollHeight - window.innerHeight;
+              if (docHeight > 0) {
+                var pct = (sTop / docHeight) * 100;
+                if (pct >= scrollTarget) {
+                  window.removeEventListener('scroll', onScroll);
+                  renderPublicCampaign(c, currentLang);
+                }
+              }
+            };
+            window.addEventListener('scroll', onScroll, { passive: true });
+          } else if (trigger === 'exit_intent') {
+            var onMouseLeave = function(e) {
+              if (e.clientY <= 10) {
+                document.removeEventListener('mouseleave', onMouseLeave);
+                renderPublicCampaign(c, currentLang);
+              }
+            };
+            document.addEventListener('mouseleave', onMouseLeave);
+          }
+        });
+      })
+      .catch(function() {});
+  }
+
+  window.fetchAndRenderPublicCampaigns = fetchAndRenderPublicCampaigns;
+
   document.addEventListener('privatian:language-changed', function() {
     try {
       fetchHeaderSettingsFromAPI();
       fetchMenuFromAPI();
       fetchFooterFromAPI();
       fetchTypographyFromAPI();
+      fetchCustomFontsFromAPI();
+      fetchAndRenderPublicCampaigns();
       applyLogoSettings();
       populateSections();
     } catch(e) {}
   });
 
   if (document.readyState === 'complete' || document.readyState === 'interactive') {
-    init();
+    initHeader();
     trackPageView();
+    fetchAndRenderPublicCampaigns();
   } else {
     document.addEventListener('DOMContentLoaded', function() {
-      init();
+      initHeader();
       trackPageView();
+      fetchAndRenderPublicCampaigns();
     });
   }
 
 })();
+
 
 

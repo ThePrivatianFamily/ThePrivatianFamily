@@ -2535,6 +2535,384 @@ module.exports = async function handler(req, res) {
     }
   }
 
+  // ── CAMPAIGNS & MARKETING STUDIO (CRUD & PUBLIC DISTRIBUTION) ────────────
+  if (action === 'campaigns') {
+    const campaignsSettingsKey = 'site_campaigns_store';
+    const fallbackCampaignsId = '__site_campaigns_store__';
+
+    // GET: Retrieve campaigns list (Public filtered vs Admin full)
+    if (req.method === 'GET') {
+      let campaignsList = [];
+      try {
+        const { data } = await sb.from('site_settings').select('value').eq('key', campaignsSettingsKey).maybeSingle();
+        if (data && Array.isArray(data.value)) campaignsList = data.value;
+      } catch(e) {}
+
+      if (campaignsList.length === 0) {
+        try {
+          const { data: sData } = await sb.from('sections').select('name').eq('admin_id', fallbackCampaignsId).maybeSingle();
+          if (sData && sData.name) {
+            const parsed = JSON.parse(sData.name);
+            if (Array.isArray(parsed)) campaignsList = parsed;
+          }
+        } catch(e) {}
+      }
+
+      const scope = (req.query && req.query.scope) || '';
+      const isPublic = scope === 'public';
+
+      if (isPublic) {
+        const now = new Date().toISOString();
+        const activeCampaigns = campaignsList.filter(c => {
+          if (!c || c.isDeleted) return false;
+          if (c.status !== 'active') return false;
+          if (c.startDate && c.startDate > now) return false;
+          if (c.endDate && c.endDate < now) return false;
+          return true;
+        });
+        return res.status(200).json({ ok: true, campaigns: activeCampaigns });
+      }
+
+      // Admin view requires auth
+      const session = await requireAuth(req, res);
+      if (!session) return;
+
+      return res.status(200).json({ ok: true, campaigns: campaignsList });
+    }
+
+    // POST: Create a new campaign or bulk save
+    if (req.method === 'POST') {
+      const session = await requireAuth(req, res);
+      if (!session) return;
+
+      const body = req.body || {};
+      const newCampaign = body.campaign || body;
+
+      if (!newCampaign || !newCampaign.name) {
+        return res.status(400).json({ error: 'Missing required campaign name parameter' });
+      }
+
+      const now = new Date().toISOString();
+      const campaignItem = {
+        id: newCampaign.id || `cmp_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+        name: String(newCampaign.name).trim(),
+        format: newCampaign.format || 'popup_modal', // popup_modal | topbar_banner | slide_in_corner | in_article_banner | fullscreen_mat
+        status: newCampaign.status || 'active', // active | paused | draft
+        lang: newCampaign.lang || 'all', // all | en | bn
+        headline: newCampaign.headline || '',
+        headline_bn: newCampaign.headline_bn || '',
+        subtitle: newCampaign.subtitle || '',
+        subtitle_bn: newCampaign.subtitle_bn || '',
+        badge: newCampaign.badge || '',
+        badge_bn: newCampaign.badge_bn || '',
+        imageUrl: newCampaign.imageUrl || '',
+        ctaText: newCampaign.ctaText || 'Learn More',
+        ctaText_bn: newCampaign.ctaText_bn || 'বিস্তারিত দেখুন',
+        ctaUrl: newCampaign.ctaUrl || '/',
+        ctaTarget: newCampaign.ctaTarget || '_self',
+        ctaColor: newCampaign.ctaColor || '#0a528e',
+        secondaryText: newCampaign.secondaryText || 'Dismiss',
+        secondaryText_bn: newCampaign.secondaryText_bn || 'বন্ধ করুন',
+        placement: newCampaign.placement || 'everywhere', // everywhere | homepage_only | all_articles | specific_section | specific_articles
+        targetSections: Array.isArray(newCampaign.targetSections) ? newCampaign.targetSections : [],
+        targetArticleSlugs: Array.isArray(newCampaign.targetArticleSlugs) ? newCampaign.targetArticleSlugs : [],
+        triggerType: newCampaign.triggerType || 'immediate', // immediate | scroll_depth | exit_intent
+        triggerDelay: typeof newCampaign.triggerDelay === 'number' ? newCampaign.triggerDelay : 3,
+        scrollPercentage: typeof newCampaign.scrollPercentage === 'number' ? newCampaign.scrollPercentage : 50,
+        frequency: newCampaign.frequency || 'once_per_day', // always | once_per_session | once_per_day | once_per_week | until_dismissed
+        countdownEnabled: Boolean(newCampaign.countdownEnabled),
+        countdownEndDate: newCampaign.countdownEndDate || '',
+        startDate: newCampaign.startDate || '',
+        endDate: newCampaign.endDate || '',
+        impressions: Number(newCampaign.impressions) || 0,
+        clicks: Number(newCampaign.clicks) || 0,
+        isDeleted: false,
+        createdAt: newCampaign.createdAt || now,
+        updatedAt: now
+      };
+
+      let currentCampaigns = [];
+      try {
+        const { data } = await sb.from('site_settings').select('value').eq('key', campaignsSettingsKey).maybeSingle();
+        if (data && Array.isArray(data.value)) currentCampaigns = data.value;
+      } catch(e) {}
+
+      if (currentCampaigns.length === 0) {
+        try {
+          const { data: sData } = await sb.from('sections').select('name').eq('admin_id', fallbackCampaignsId).maybeSingle();
+          if (sData && sData.name) {
+            const parsed = JSON.parse(sData.name);
+            if (Array.isArray(parsed)) currentCampaigns = parsed;
+          }
+        } catch(e) {}
+      }
+
+      const existingIndex = currentCampaigns.findIndex(c => c.id === campaignItem.id);
+      if (existingIndex >= 0) {
+        campaignItem.impressions = currentCampaigns[existingIndex].impressions || campaignItem.impressions;
+        campaignItem.clicks = currentCampaigns[existingIndex].clicks || campaignItem.clicks;
+        campaignItem.createdAt = currentCampaigns[existingIndex].createdAt || campaignItem.createdAt;
+        currentCampaigns[existingIndex] = campaignItem;
+      } else {
+        currentCampaigns.unshift(campaignItem);
+      }
+
+      let saved = false;
+      try {
+        const { error: err } = await sb.from('site_settings').upsert({
+          key: campaignsSettingsKey,
+          value: currentCampaigns,
+          updated_at: now
+        }, { onConflict: 'key' });
+        if (!err) saved = true;
+      } catch(err) {}
+
+      if (!saved) {
+        try {
+          const { data: existing } = await sb.from('sections').select('id').eq('admin_id', fallbackCampaignsId).maybeSingle();
+          if (existing) {
+            await sb.from('sections').update({
+              name: JSON.stringify(currentCampaigns),
+              slug: fallbackCampaignsId,
+              display_order: 9993,
+              is_active: false,
+              locked: true,
+              is_deleted: true
+            }).eq('admin_id', fallbackCampaignsId);
+          } else {
+            await sb.from('sections').insert({
+              admin_id: fallbackCampaignsId,
+              name: JSON.stringify(currentCampaigns),
+              slug: fallbackCampaignsId,
+              display_order: 9993,
+              is_active: false,
+              locked: true,
+              is_deleted: true
+            });
+          }
+        } catch(err) {}
+      }
+
+      logActivity({
+        actor: session,
+        action: 'campaign.save',
+        category: 'campaign',
+        summary: `${session.name || session.email} saved campaign: "${campaignItem.name}" (${campaignItem.format}, ${campaignItem.status})`,
+        target_id: campaignItem.id,
+        target_name: campaignItem.name,
+        details: { format: campaignItem.format, status: campaignItem.status, placement: campaignItem.placement },
+        req
+      }).catch(() => {});
+
+      return res.status(200).json({ ok: true, campaign: campaignItem, campaigns: currentCampaigns });
+    }
+
+    // PUT: Update an existing campaign or toggle status
+    if (req.method === 'PUT') {
+      const session = await requireAuth(req, res);
+      if (!session) return;
+
+      const body = req.body || {};
+      const campaignId = (req.query && req.query.id) || body.id;
+      if (!campaignId) {
+        return res.status(400).json({ error: 'Missing campaign ID' });
+      }
+
+      let currentCampaigns = [];
+      try {
+        const { data } = await sb.from('site_settings').select('value').eq('key', campaignsSettingsKey).maybeSingle();
+        if (data && Array.isArray(data.value)) currentCampaigns = data.value;
+      } catch(e) {}
+
+      if (currentCampaigns.length === 0) {
+        try {
+          const { data: sData } = await sb.from('sections').select('name').eq('admin_id', fallbackCampaignsId).maybeSingle();
+          if (sData && sData.name) {
+            const parsed = JSON.parse(sData.name);
+            if (Array.isArray(parsed)) currentCampaigns = parsed;
+          }
+        } catch(e) {}
+      }
+
+      const target = currentCampaigns.find(c => c.id === campaignId);
+      if (!target) {
+        return res.status(404).json({ error: 'Campaign not found' });
+      }
+
+      const now = new Date().toISOString();
+      if (body.toggleStatus) {
+        target.status = target.status === 'active' ? 'paused' : 'active';
+      } else if (body.resetStats) {
+        target.impressions = 0;
+        target.clicks = 0;
+      } else if (body.campaign) {
+        Object.assign(target, body.campaign);
+      } else {
+        Object.assign(target, body);
+      }
+      target.updatedAt = now;
+
+      let saved = false;
+      try {
+        const { error: err } = await sb.from('site_settings').upsert({
+          key: campaignsSettingsKey,
+          value: currentCampaigns,
+          updated_at: now
+        }, { onConflict: 'key' });
+        if (!err) saved = true;
+      } catch(err) {}
+
+      if (!saved) {
+        try {
+          await sb.from('sections').update({
+            name: JSON.stringify(currentCampaigns),
+            slug: fallbackCampaignsId,
+            display_order: 9993,
+            is_active: false,
+            locked: true,
+            is_deleted: true
+          }).eq('admin_id', fallbackCampaignsId);
+        } catch(err) {}
+      }
+
+      logActivity({
+        actor: session,
+        action: 'campaign.update',
+        category: 'campaign',
+        summary: `${session.name || session.email} updated campaign: "${target.name}" (${target.status})`,
+        target_id: target.id,
+        target_name: target.name,
+        details: { status: target.status },
+        req
+      }).catch(() => {});
+
+      return res.status(200).json({ ok: true, campaign: target, campaigns: currentCampaigns });
+    }
+
+    // DELETE: Trash or permanently remove a campaign
+    if (req.method === 'DELETE') {
+      const session = await requireAuth(req, res);
+      if (!session) return;
+
+      const campaignId = (req.query && req.query.id) || (req.body && req.body.id);
+      const isPermanent = req.query && req.query.mode === 'permanent';
+
+      if (!campaignId) {
+        return res.status(400).json({ error: 'Missing campaign ID to delete' });
+      }
+
+      let currentCampaigns = [];
+      try {
+        const { data } = await sb.from('site_settings').select('value').eq('key', campaignsSettingsKey).maybeSingle();
+        if (data && Array.isArray(data.value)) currentCampaigns = data.value;
+      } catch(e) {}
+
+      if (currentCampaigns.length === 0) {
+        try {
+          const { data: sData } = await sb.from('sections').select('name').eq('admin_id', fallbackCampaignsId).maybeSingle();
+          if (sData && sData.name) {
+            const parsed = JSON.parse(sData.name);
+            if (Array.isArray(parsed)) currentCampaigns = parsed;
+          }
+        } catch(e) {}
+      }
+
+      const target = currentCampaigns.find(c => c.id === campaignId);
+      let updatedCampaigns = [];
+
+      if (isPermanent) {
+        updatedCampaigns = currentCampaigns.filter(c => c.id !== campaignId);
+      } else {
+        if (target) {
+          target.isDeleted = true;
+          target.deletedAt = new Date().toISOString();
+          target.status = 'paused';
+        }
+        updatedCampaigns = currentCampaigns;
+      }
+
+      const now = new Date().toISOString();
+      let saved = false;
+      try {
+        const { error: err } = await sb.from('site_settings').upsert({
+          key: campaignsSettingsKey,
+          value: updatedCampaigns,
+          updated_at: now
+        }, { onConflict: 'key' });
+        if (!err) saved = true;
+      } catch(err) {}
+
+      if (!saved) {
+        try {
+          await sb.from('sections').update({
+            name: JSON.stringify(updatedCampaigns),
+            slug: fallbackCampaignsId,
+            display_order: 9993,
+            is_active: false,
+            locked: true,
+            is_deleted: true
+          }).eq('admin_id', fallbackCampaignsId);
+        } catch(err) {}
+      }
+
+      logActivity({
+        actor: session,
+        action: isPermanent ? 'campaign.permanent_delete' : 'campaign.trash',
+        category: 'campaign',
+        summary: `${session.name || session.email} ${isPermanent ? 'permanently deleted' : 'moved to trash'} campaign: "${target ? target.name : campaignId}"`,
+        target_id: campaignId,
+        target_name: target ? target.name : 'Campaign',
+        details: { isPermanent },
+        req
+      }).catch(() => {});
+
+      return res.status(200).json({ ok: true, deletedId: campaignId, campaigns: updatedCampaigns });
+    }
+  }
+
+  // ── CAMPAIGN EVENT TRACKER (PUBLIC NON-BLOCKING BEACON) ──────────────────
+  if (action === 'campaign_event') {
+    const campaignId = (req.query && req.query.id) || (req.body && req.body.id);
+    const eventType = (req.query && req.query.type) || (req.body && req.body.type) || 'impression';
+
+    if (campaignId) {
+      const campaignsSettingsKey = 'site_campaigns_store';
+      const fallbackCampaignsId = '__site_campaigns_store__';
+
+      try {
+        let currentCampaigns = [];
+        const { data } = await sb.from('site_settings').select('value').eq('key', campaignsSettingsKey).maybeSingle();
+        if (data && Array.isArray(data.value)) currentCampaigns = data.value;
+
+        if (currentCampaigns.length === 0) {
+          const { data: sData } = await sb.from('sections').select('name').eq('admin_id', fallbackCampaignsId).maybeSingle();
+          if (sData && sData.name) {
+            const parsed = JSON.parse(sData.name);
+            if (Array.isArray(parsed)) currentCampaigns = parsed;
+          }
+        }
+
+        const target = currentCampaigns.find(c => c.id === campaignId);
+        if (target) {
+          if (eventType === 'click') {
+            target.clicks = (Number(target.clicks) || 0) + 1;
+          } else {
+            target.impressions = (Number(target.impressions) || 0) + 1;
+          }
+          target.updatedAt = new Date().toISOString();
+
+          await sb.from('site_settings').upsert({
+            key: campaignsSettingsKey,
+            value: currentCampaigns,
+            updated_at: new Date().toISOString()
+          }, { onConflict: 'key' }).catch(() => {});
+        }
+      } catch(e) {}
+    }
+
+    return res.status(200).json({ ok: true });
+  }
+
   // ── GET ─────────────────────────────────────────────────────────────────
   if (req.method === 'GET') {
     const statusParam = (req.query && req.query.status) || 'active';

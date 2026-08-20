@@ -1505,3 +1505,354 @@ input[type="search"]::-ms-reveal {
   color: #e0f2fe;
 }
 
+/* ═════════════════════════════════════════════════════════════════
+   PUBLIC PROMOTIONAL CAMPAIGNS & MARKETING NOTIFICATIONS
+═════════════════════════════════════════════════════════════════ */
+
+/* 1. Lightbox Popup Modal */
+.pf-cmp-popup-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  background: rgba(10, 25, 47, 0.65);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.35s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.35s;
+}
+.pf-cmp-popup-overlay.active {
+  opacity: 1;
+  visibility: visible;
+}
+.pf-cmp-popup-card {
+  position: relative;
+  width: 100%;
+  max-width: 480px;
+  background: #ffffff;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(0, 0, 0, 0.05);
+  transform: scale(0.92) translateY(12px);
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.pf-cmp-popup-overlay.active .pf-cmp-popup-card {
+  transform: scale(1) translateY(0);
+}
+.pf-cmp-popup-img {
+  width: 100%;
+  height: 200px;
+  object-fit: cover;
+  display: block;
+}
+.pf-cmp-popup-body {
+  padding: 28px 28px 24px;
+  text-align: center;
+}
+.pf-cmp-badge {
+  display: inline-block;
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #0a528e;
+  background: #e0f2fe;
+  padding: 3px 10px;
+  border-radius: 6px;
+  margin-bottom: 12px;
+}
+.pf-cmp-title {
+  font-family: var(--font-serif, 'Playfair Display', Georgia, serif);
+  font-size: 22px;
+  font-weight: 700;
+  color: #0f172a;
+  line-height: 1.3;
+  margin: 0 0 10px;
+}
+.pf-cmp-desc {
+  font-size: 14px;
+  color: #475569;
+  line-height: 1.55;
+  margin: 0 0 18px;
+}
+.pf-cmp-countdown {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 10px 14px;
+  margin-bottom: 20px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #0f172a;
+}
+.pf-cmp-countdown-val {
+  color: #0a528e;
+  font-feature-settings: "tnum";
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.05em;
+}
+.pf-cmp-cta-btn {
+  display: block;
+  width: 100%;
+  padding: 13px 20px;
+  border-radius: 10px;
+  background: #0a528e;
+  color: #ffffff !important;
+  font-size: 14.5px;
+  font-weight: 700;
+  text-decoration: none;
+  text-align: center;
+  transition: transform 0.15s ease, filter 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: 0 4px 14px rgba(10, 82, 142, 0.3);
+}
+.pf-cmp-cta-btn:hover {
+  filter: brightness(1.08);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(10, 82, 142, 0.4);
+}
+.pf-cmp-secondary-btn {
+  background: none;
+  border: none;
+  color: #94a3b8;
+  font-size: 12.5px;
+  font-weight: 500;
+  cursor: pointer;
+  margin-top: 12px;
+  transition: color 0.2s;
+  padding: 4px 8px;
+}
+.pf-cmp-secondary-btn:hover {
+  color: #475569;
+}
+.pf-cmp-close-btn {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(4px);
+  color: #ffffff;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 2;
+  transition: background 0.2s, transform 0.2s;
+}
+.pf-cmp-close-btn:hover {
+  background: rgba(15, 23, 42, 0.85);
+  transform: rotate(90deg);
+}
+
+/* 2. Top Sticky Announcement Banner */
+.pf-cmp-topbar-banner {
+  position: sticky;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 9998;
+  background: #0a528e;
+  color: #ffffff;
+  padding: 10px 20px;
+  font-size: 13.5px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  animation: pfCmpSlideDown 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+@keyframes pfCmpSlideDown {
+  from { transform: translateY(-100%); }
+  to { transform: translateY(0); }
+}
+.pf-cmp-topbar-content {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.pf-cmp-topbar-badge {
+  background: rgba(255, 255, 255, 0.22);
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  padding: 2px 7px;
+  border-radius: 4px;
+}
+.pf-cmp-topbar-cta {
+  display: inline-block;
+  background: #ffffff;
+  color: #0a528e !important;
+  font-size: 12.5px;
+  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: 6px;
+  text-decoration: none;
+  margin-left: 8px;
+  transition: background 0.15s, transform 0.15s;
+}
+.pf-cmp-topbar-cta:hover {
+  background: #f1f5f9;
+  transform: translateY(-1px);
+}
+.pf-cmp-topbar-close {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 18px;
+  cursor: pointer;
+  padding: 2px 6px;
+  line-height: 1;
+  transition: color 0.2s;
+}
+.pf-cmp-topbar-close:hover {
+  color: #ffffff;
+}
+
+/* 3. Floating Corner Slide-In */
+.pf-cmp-slidein-card {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 9997;
+  max-width: 360px;
+  background: #ffffff;
+  border-radius: 14px;
+  padding: 14px;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.18), 0 0 0 1px rgba(0, 0, 0, 0.06);
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  transform: translateX(120%);
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.pf-cmp-slidein-card.active {
+  transform: translateX(0);
+}
+.pf-cmp-slidein-thumb {
+  width: 60px;
+  height: 60px;
+  border-radius: 8px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+.pf-cmp-slidein-info {
+  flex: 1;
+  min-width: 0;
+}
+.pf-cmp-slidein-title {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 4px;
+  line-height: 1.3;
+}
+.pf-cmp-slidein-cta {
+  font-size: 12px;
+  font-weight: 700;
+  color: #0a528e;
+  text-decoration: none;
+}
+.pf-cmp-slidein-cta:hover {
+  text-decoration: underline;
+}
+.pf-cmp-slidein-close {
+  align-self: flex-start;
+  background: none;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  padding: 2px;
+}
+.pf-cmp-slidein-close:hover {
+  color: #0f172a;
+}
+
+/* 4. In-Article Native Sponsor Dispatch Banner */
+.pf-cmp-inarticle-block {
+  margin: 36px 0;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border: 1px solid #e2e8f0;
+  border-left: 4px solid #0a528e;
+  border-radius: 12px;
+  padding: 20px;
+  display: flex;
+  gap: 20px;
+  align-items: center;
+}
+.pf-cmp-inarticle-thumb {
+  width: 90px;
+  height: 90px;
+  border-radius: 8px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+.pf-cmp-inarticle-content {
+  flex: 1;
+  min-width: 0;
+}
+.pf-cmp-inarticle-title {
+  font-family: var(--font-serif, 'Playfair Display', Georgia, serif);
+  font-size: 18px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 6px;
+}
+.pf-cmp-inarticle-desc {
+  font-size: 13.5px;
+  color: #475569;
+  line-height: 1.5;
+  margin: 0 0 12px;
+}
+.pf-cmp-inarticle-btn {
+  display: inline-block;
+  background: #0a528e;
+  color: #ffffff !important;
+  font-size: 12.5px;
+  font-weight: 700;
+  padding: 7px 16px;
+  border-radius: 6px;
+  text-decoration: none;
+  transition: opacity 0.2s;
+}
+.pf-cmp-inarticle-btn:hover {
+  opacity: 0.9;
+}
+
+@media (max-width: 640px) {
+  .pf-cmp-popup-card {
+    max-width: 100%;
+  }
+  .pf-cmp-slidein-card {
+    left: 16px;
+    right: 16px;
+    bottom: 16px;
+    max-width: none;
+  }
+  .pf-cmp-inarticle-block {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .pf-cmp-inarticle-thumb {
+    width: 100%;
+    height: 140px;
+  }
+}
+
+

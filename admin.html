@@ -149,6 +149,15 @@
           </a>
         </li>
         <li>
+          <a href="#" class="sidebar-nav-item" data-page="campaigns" id="nav-campaigns">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+              <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+            </svg>
+            <span>Campaigns</span>
+          </a>
+        </li>
+        <li>
           <a href="#" class="sidebar-nav-item" data-page="settings" id="nav-settings">
             <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
               <circle cx="12" cy="12" r="3"/>
@@ -2491,6 +2500,606 @@
           <button type="button" class="btn btn--primary btn--sm" id="btn-submit-font-upload" onclick="saveUploadedFont()">
             <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
             <span>Save &amp; Install Font</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ PAGE: CAMPAIGNS & MARKETING STUDIO ═══════════════════════ -->
+    <section class="page" id="page-campaigns">
+      <!-- Campaigns Studio Header -->
+      <div class="menu-mgr-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:12px;">
+        <div class="menu-mgr-title-wrap">
+          <h1 class="page-title" style="font-size:22px;font-weight:700;color:var(--text-primary);margin:0 0 4px;display:flex;align-items:center;gap:8px;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="22" height="22" style="color:var(--brand-navy,#0a528e);">
+              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+              <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+            </svg>
+            <span>Campaigns &amp; Marketing Studio</span>
+          </h1>
+          <p class="page-subtitle" style="font-size:13px;color:var(--text-muted);margin:0;">Run, schedule, and monitor visual popup ads, announcement banners, corner slide-in widgets, and in-article promotional campaigns across the homepage and articles.</p>
+        </div>
+        <div class="menu-mgr-actions" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+          <button type="button" class="btn btn--ghost btn--sm" id="btn-refresh-campaigns" onclick="loadCampaignsFromAPI(true)" style="font-size:12.5px;padding:7px 14px;display:inline-flex;align-items:center;gap:6px;border:1px solid #cbd5e1;border-radius:6px;" title="Refresh campaigns &amp; analytics">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+            <span>Refresh</span>
+          </button>
+          <button type="button" class="btn btn--primary btn--sm" id="btn-open-create-campaign" onclick="openCampaignEditor()" style="font-size:12.5px;padding:7px 16px;display:inline-flex;align-items:center;gap:6px;border-radius:6px;font-weight:600;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" width="14" height="14"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            <span>Create Campaign</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- KPI Analytics Overview Cards -->
+      <div class="campaigns-kpi-grid">
+        <!-- Total Campaigns -->
+        <div class="campaign-kpi-card">
+          <div class="campaign-kpi-icon-wrap" style="background:#e0f2fe;color:#0369a1;">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+          </div>
+          <div class="campaign-kpi-info">
+            <span class="campaign-kpi-label">Total Campaigns</span>
+            <span class="campaign-kpi-value" id="kpi-total-campaigns">0</span>
+            <span class="campaign-kpi-sub" id="kpi-sub-campaigns">0 active, 0 paused</span>
+          </div>
+        </div>
+
+        <!-- Active Campaigns -->
+        <div class="campaign-kpi-card">
+          <div class="campaign-kpi-icon-wrap" style="background:#dcfce7;color:#15803d;">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          </div>
+          <div class="campaign-kpi-info">
+            <span class="campaign-kpi-label">Active Live</span>
+            <span class="campaign-kpi-value" id="kpi-active-campaigns" style="color:#15803d;">0</span>
+            <span class="campaign-kpi-sub" style="display:flex;align-items:center;gap:4px;"><span class="pulse-dot-green"></span> Serving across site</span>
+          </div>
+        </div>
+
+        <!-- Total Impressions -->
+        <div class="campaign-kpi-card">
+          <div class="campaign-kpi-icon-wrap" style="background:#f3e8ff;color:#7e22ce;">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          </div>
+          <div class="campaign-kpi-info">
+            <span class="campaign-kpi-label">Total Impressions</span>
+            <span class="campaign-kpi-value" id="kpi-total-impressions">0</span>
+            <span class="campaign-kpi-sub">Ad &amp; promo views</span>
+          </div>
+        </div>
+
+        <!-- Total Clicks -->
+        <div class="campaign-kpi-card">
+          <div class="campaign-kpi-icon-wrap" style="background:#ffedd5;color:#c2410c;">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h6v6"/><path d="M10 14L21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>
+          </div>
+          <div class="campaign-kpi-info">
+            <span class="campaign-kpi-label">Total Clicks</span>
+            <span class="campaign-kpi-value" id="kpi-total-clicks">0</span>
+            <span class="campaign-kpi-sub">CTA conversions</span>
+          </div>
+        </div>
+
+        <!-- Average CTR -->
+        <div class="campaign-kpi-card">
+          <div class="campaign-kpi-icon-wrap" style="background:#ecfdf5;color:#047857;">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+          </div>
+          <div class="campaign-kpi-info">
+            <span class="campaign-kpi-label">Average CTR</span>
+            <span class="campaign-kpi-value" id="kpi-avg-ctr">0.00%</span>
+            <span class="campaign-kpi-sub">Click-Through-Rate</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Filter & Search Toolbar -->
+      <div class="campaigns-toolbar">
+        <div class="campaigns-status-pills" id="campaigns-filter-status-group">
+          <button type="button" class="cmp-filter-pill active" data-status="all" onclick="filterCampaignsByStatus('all')">
+            <span>All</span>
+            <span class="cmp-pill-count" id="count-status-all">0</span>
+          </button>
+          <button type="button" class="cmp-filter-pill" data-status="active" onclick="filterCampaignsByStatus('active')">
+            <span>Active</span>
+            <span class="cmp-pill-count" id="count-status-active">0</span>
+          </button>
+          <button type="button" class="cmp-filter-pill" data-status="scheduled" onclick="filterCampaignsByStatus('scheduled')">
+            <span>Scheduled</span>
+            <span class="cmp-pill-count" id="count-status-scheduled">0</span>
+          </button>
+          <button type="button" class="cmp-filter-pill" data-status="paused" onclick="filterCampaignsByStatus('paused')">
+            <span>Paused / Draft</span>
+            <span class="cmp-pill-count" id="count-status-paused">0</span>
+          </button>
+          <button type="button" class="cmp-filter-pill" data-status="expired" onclick="filterCampaignsByStatus('expired')">
+            <span>Expired</span>
+            <span class="cmp-pill-count" id="count-status-expired">0</span>
+          </button>
+          <button type="button" class="cmp-filter-pill" data-status="trash" onclick="filterCampaignsByStatus('trash')">
+            <span>Trash</span>
+            <span class="cmp-pill-count" id="count-status-trash">0</span>
+          </button>
+        </div>
+
+        <div class="campaigns-search-and-format">
+          <!-- Format Filter Dropdown -->
+          <div class="cmp-select-wrapper">
+            <select id="campaigns-format-filter" class="form-control cmp-format-select" onchange="applyCampaignFilters()">
+              <option value="all">All Formats (Popups, Banners, Slide-ins)</option>
+              <option value="popup_modal">Popup Modal / Lightbox</option>
+              <option value="topbar_banner">Sticky Announcement Bar</option>
+              <option value="slide_in_corner">Slide-in Corner Widget</option>
+              <option value="in_article_banner">In-Article Sponsor Banner</option>
+              <option value="fullscreen_mat">Fullscreen Welcome Mat</option>
+            </select>
+          </div>
+
+          <!-- Search Input -->
+          <div class="cmp-search-box">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" id="campaigns-search-input" placeholder="Search campaigns by name, headline, or placement..." oninput="applyCampaignFilters()" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Campaigns List / Data Table Container -->
+      <div id="campaigns-list-container" class="campaigns-table-container">
+        <!-- Rendered dynamically by admin.js -->
+        <div class="campaigns-loading-state" style="padding:48px;text-align:center;color:#64748b;">
+          <div class="spinner" style="margin:0 auto 12px;"></div>
+          <p style="margin:0;font-size:14px;">Loading campaigns studio data...</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ CAMPAIGN CREATOR / EDITOR MODAL & VISUAL SIMULATOR ═════════ -->
+    <div id="modal-campaign-editor" class="campaign-modal-backdrop" hidden>
+      <div class="campaign-modal-dialog">
+        <!-- Modal Header -->
+        <div class="campaign-modal-header">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div class="campaign-modal-icon">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+              </svg>
+            </div>
+            <div>
+              <h3 class="campaign-modal-title" id="campaign-modal-title">Create New Campaign</h3>
+              <p class="campaign-modal-subtitle">Design your promotional popup, banner, or in-article campaign with live real-time simulation.</p>
+            </div>
+          </div>
+          <button type="button" class="btn-modal-close" onclick="closeCampaignEditor()" title="Close editor">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+
+        <!-- Modal Split Body: Left Editor / Right Simulator -->
+        <div class="campaign-modal-body-split">
+          
+          <!-- LEFT COLUMN: Form Steps & Configuration -->
+          <div class="campaign-editor-form-col">
+            <!-- Form Navigation Tabs -->
+            <div class="campaign-form-tabs">
+              <button type="button" class="cmp-form-tab-btn active" data-tab="creative" onclick="switchCampaignFormTab('creative')">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                <span>1. Creative &amp; Format</span>
+              </button>
+              <button type="button" class="cmp-form-tab-btn" data-tab="placement" onclick="switchCampaignFormTab('placement')">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+                <span>2. Placement &amp; Targeting</span>
+              </button>
+              <button type="button" class="cmp-form-tab-btn" data-tab="triggers" onclick="switchCampaignFormTab('triggers')">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 14 14"/></svg>
+                <span>3. Triggers &amp; Frequency</span>
+              </button>
+              <button type="button" class="cmp-form-tab-btn" data-tab="schedule" onclick="switchCampaignFormTab('schedule')">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                <span>4. Schedule</span>
+              </button>
+            </div>
+
+            <!-- Tab Content Container -->
+            <div class="campaign-form-scrollable">
+              <input type="hidden" id="cmp-edit-id" value="" />
+
+              <!-- TAB 1: CREATIVE & FORMAT -->
+              <div class="cmp-tab-pane active" id="cmp-pane-creative">
+                <!-- Campaign Name -->
+                <div class="form-group" style="margin-bottom:16px;">
+                  <label class="form-label" style="font-size:12.5px;font-weight:700;">Campaign Internal Name <span style="color:#ef4444;">*</span></label>
+                  <input type="text" id="cmp-input-name" class="form-control" placeholder="e.g. Summer Heritage Book Release Announcement" required oninput="triggerSimulatorUpdate()" />
+                  <span style="font-size:11.5px;color:#64748b;">Internal reference name shown in the admin dashboard.</span>
+                </div>
+
+                <!-- Format Selection Grid -->
+                <div class="form-group" style="margin-bottom:18px;">
+                  <label class="form-label" style="font-size:12.5px;font-weight:700;">Campaign Format &amp; Appearance <span style="color:#ef4444;">*</span></label>
+                  <div class="cmp-format-grid">
+                    <!-- Popup Modal -->
+                    <label class="cmp-format-card active" data-format="popup_modal">
+                      <input type="radio" name="cmp_format" value="popup_modal" checked onchange="handleFormatChange('popup_modal')" />
+                      <div class="cmp-format-card-inner">
+                        <div class="cmp-format-icon">
+                          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="3" width="20" height="14" rx="2"/><rect x="6" y="6" width="12" height="8" rx="1"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+                        </div>
+                        <span class="cmp-format-title">Popup Modal</span>
+                        <span class="cmp-format-desc">High-impact centered lightbox with backdrop blur &amp; cover image.</span>
+                      </div>
+                    </label>
+
+                    <!-- Sticky Topbar Banner -->
+                    <label class="cmp-format-card" data-format="topbar_banner">
+                      <input type="radio" name="cmp_format" value="topbar_banner" onchange="handleFormatChange('topbar_banner')" />
+                      <div class="cmp-format-card-inner">
+                        <div class="cmp-format-icon">
+                          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="3" width="20" height="18" rx="2"/><line x1="2" y1="7" x2="22" y2="7"/><line x1="6" y1="5" x2="10" y2="5"/></svg>
+                        </div>
+                        <span class="cmp-format-title">Sticky Banner</span>
+                        <span class="cmp-format-desc">Sits on top or bottom of the page without blocking reading.</span>
+                      </div>
+                    </label>
+
+                    <!-- Slide-in Corner Card -->
+                    <label class="cmp-format-card" data-format="slide_in_corner">
+                      <input type="radio" name="cmp_format" value="slide_in_corner" onchange="handleFormatChange('slide_in_corner')" />
+                      <div class="cmp-format-card-inner">
+                        <div class="cmp-format-icon">
+                          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="3" width="20" height="18" rx="2"/><rect x="11" y="11" width="9" height="8" rx="1"/></svg>
+                        </div>
+                        <span class="cmp-format-title">Slide-in Card</span>
+                        <span class="cmp-format-desc">Floats gently in bottom-right corner with thumbnail &amp; CTA.</span>
+                      </div>
+                    </label>
+
+                    <!-- In-Article Native Banner -->
+                    <label class="cmp-format-card" data-format="in_article_banner">
+                      <input type="radio" name="cmp_format" value="in_article_banner" onchange="handleFormatChange('in_article_banner')" />
+                      <div class="cmp-format-card-inner">
+                        <div class="cmp-format-icon">
+                          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><line x1="8" y1="8" x2="16" y2="8"/><rect x="7" y="11" width="10" height="4" rx="1" fill="currentColor" opacity="0.2"/><line x1="8" y1="18" x2="14" y2="18"/></svg>
+                        </div>
+                        <span class="cmp-format-title">In-Article Banner</span>
+                        <span class="cmp-format-desc">Embedded seamlessly between paragraphs inside article stories.</span>
+                      </div>
+                    </label>
+
+                    <!-- Fullscreen Welcome Mat -->
+                    <label class="cmp-format-card" data-format="fullscreen_mat">
+                      <input type="radio" name="cmp_format" value="fullscreen_mat" onchange="handleFormatChange('fullscreen_mat')" />
+                      <div class="cmp-format-card-inner">
+                        <div class="cmp-format-icon">
+                          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="3" width="20" height="18" rx="2"/><circle cx="12" cy="10" r="3"/><line x1="7" y1="17" x2="17" y2="17"/></svg>
+                        </div>
+                        <span class="cmp-format-title">Fullscreen Splash</span>
+                        <span class="cmp-format-desc">Luxury full-screen takeover for major announcements or book releases.</span>
+                      </div>
+                    </label>
+                  </div>
+                </div>
+
+                <!-- Eyebrow / Tag Badge -->
+                <div class="form-row-2">
+                  <div class="form-group">
+                    <label class="form-label" style="font-size:12px;font-weight:600;">Eyebrow / Badge (EN)</label>
+                    <input type="text" id="cmp-input-badge" class="form-control" placeholder="e.g. Special Announcement" oninput="triggerSimulatorUpdate()" />
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label" style="font-size:12px;font-weight:600;">Eyebrow / Badge (বাংলা)</label>
+                    <input type="text" id="cmp-input-badge-bn" class="form-control" placeholder="যেমন: বিশেষ ঘোষণা" oninput="triggerSimulatorUpdate()" />
+                  </div>
+                </div>
+
+                <!-- Main Headline -->
+                <div class="form-row-2">
+                  <div class="form-group">
+                    <label class="form-label" style="font-size:12px;font-weight:700;">Headline / Title (EN) <span style="color:#ef4444;">*</span></label>
+                    <input type="text" id="cmp-input-headline" class="form-control" placeholder="e.g. Exclusive: The Privatian Archive Volume II" required oninput="triggerSimulatorUpdate()" />
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label" style="font-size:12px;font-weight:700;">Headline / Title (বাংলা)</label>
+                    <input type="text" id="cmp-input-headline-bn" class="form-control" placeholder="যেমন: বিশেষ প্রকাশনা: দ্য প্রাইভেটিয়ান আর্কাইভ ভলিউম ২" oninput="triggerSimulatorUpdate()" />
+                  </div>
+                </div>
+
+                <!-- Subtitle / Description -->
+                <div class="form-row-2">
+                  <div class="form-group">
+                    <label class="form-label" style="font-size:12px;font-weight:600;">Description (EN)</label>
+                    <textarea id="cmp-input-subtitle" class="form-control" rows="2" placeholder="Discover rare historical manuscripts, intellectual family lineages, and private essays now available." oninput="triggerSimulatorUpdate()"></textarea>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label" style="font-size:12px;font-weight:600;">Description (বাংলা)</label>
+                    <textarea id="cmp-input-subtitle-bn" class="form-control" rows="2" placeholder="ঐতিহাসিক বিরল পাণ্ডুলিপি ও জ্ঞানভিত্তিক পারিবারিক ঐতিহ্যের সংকলন এখন উন্মুক্ত।" oninput="triggerSimulatorUpdate()"></textarea>
+                  </div>
+                </div>
+
+                <!-- Image URL & Gallery Selector -->
+                <div class="form-group" style="margin-bottom:16px;">
+                  <label class="form-label" style="font-size:12px;font-weight:600;">Cover / Thumbnail Image URL</label>
+                  <div style="display:flex;gap:8px;">
+                    <input type="text" id="cmp-input-image" class="form-control" placeholder="e.g. img3.png or https://..." oninput="triggerSimulatorUpdate()" />
+                    <button type="button" class="btn btn--ghost btn--sm" onclick="openCampaignMediaPicker()" style="white-space:nowrap;display:inline-flex;align-items:center;gap:4px;border:1px solid #cbd5e1;border-radius:6px;">
+                      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                      <span>Pick Image</span>
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Primary CTA Button Settings -->
+                <div class="form-row-2">
+                  <div class="form-group">
+                    <label class="form-label" style="font-size:12px;font-weight:700;">CTA Button Text (EN)</label>
+                    <input type="text" id="cmp-input-cta-text" class="form-control" value="Learn More" oninput="triggerSimulatorUpdate()" />
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label" style="font-size:12px;font-weight:700;">CTA Button Text (বাংলা)</label>
+                    <input type="text" id="cmp-input-cta-text-bn" class="form-control" value="বিস্তারিত দেখুন" oninput="triggerSimulatorUpdate()" />
+                  </div>
+                </div>
+
+                <div class="form-row-2">
+                  <div class="form-group">
+                    <label class="form-label" style="font-size:12px;font-weight:700;">CTA Destination Link URL</label>
+                    <input type="text" id="cmp-input-cta-url" class="form-control" placeholder="/article.html?slug=... or https://..." value="/" oninput="triggerSimulatorUpdate()" />
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label" style="font-size:12px;font-weight:600;">Link Target</label>
+                    <select id="cmp-input-cta-target" class="form-control" onchange="triggerSimulatorUpdate()">
+                      <option value="_self">Open in Same Tab (_self)</option>
+                      <option value="_blank">Open in New Tab (_blank)</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div class="form-row-2">
+                  <div class="form-group">
+                    <label class="form-label" style="font-size:12px;font-weight:600;">CTA Button Color</label>
+                    <div style="display:flex;align-items:center;gap:8px;">
+                      <input type="color" id="cmp-input-cta-color" value="#0a528e" style="width:36px;height:36px;padding:2px;border:1px solid #cbd5e1;border-radius:6px;cursor:pointer;" onchange="triggerSimulatorUpdate()" />
+                      <input type="text" id="cmp-input-cta-color-text" class="form-control" value="#0a528e" style="font-family:monospace;font-size:12px;" oninput="document.getElementById('cmp-input-cta-color').value=this.value;triggerSimulatorUpdate()" />
+                    </div>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label" style="font-size:12px;font-weight:600;">Secondary / Dismiss Text</label>
+                    <input type="text" id="cmp-input-sec-text" class="form-control" value="Dismiss" oninput="triggerSimulatorUpdate()" />
+                  </div>
+                </div>
+
+                <!-- Countdown Timer Switch -->
+                <div class="card" style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:12px;margin-top:12px;">
+                  <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12.5px;font-weight:600;margin:0;">
+                    <input type="checkbox" id="cmp-input-countdown-enable" onchange="toggleCountdownInputs()" />
+                    <span>Display Live Countdown Timer (Urgency / Limited Time)</span>
+                  </label>
+                  <div id="cmp-countdown-fields" style="display:none;margin-top:10px;">
+                    <label class="form-label" style="font-size:11.5px;font-weight:600;">Target Countdown End Date &amp; Time</label>
+                    <input type="datetime-local" id="cmp-input-countdown-date" class="form-control" onchange="triggerSimulatorUpdate()" />
+                  </div>
+                </div>
+              </div>
+
+              <!-- TAB 2: PLACEMENT & TARGETING -->
+              <div class="cmp-tab-pane" id="cmp-pane-placement" style="display:none;">
+                <!-- Placement Scope -->
+                <div class="form-group" style="margin-bottom:16px;">
+                  <label class="form-label" style="font-size:12.5px;font-weight:700;">Where should this campaign appear?</label>
+                  <div class="cmp-placement-options" style="display:flex;flex-direction:column;gap:8px;">
+                    <label class="cmp-radio-row">
+                      <input type="radio" name="cmp_placement" value="everywhere" checked onchange="handlePlacementChange('everywhere')" />
+                      <div>
+                        <strong>Everywhere on the Website</strong>
+                        <p style="margin:0;font-size:11.5px;color:#64748b;">Displays across Homepage, all Article reading pages, and Section categories.</p>
+                      </div>
+                    </label>
+
+                    <label class="cmp-radio-row">
+                      <input type="radio" name="cmp_placement" value="homepage_only" onchange="handlePlacementChange('homepage_only')" />
+                      <div>
+                        <strong>Homepage Only (index.html)</strong>
+                        <p style="margin:0;font-size:11.5px;color:#64748b;">Displays exclusively when readers visit the main landing page.</p>
+                      </div>
+                    </label>
+
+                    <label class="cmp-radio-row">
+                      <input type="radio" name="cmp_placement" value="all_articles" onchange="handlePlacementChange('all_articles')" />
+                      <div>
+                        <strong>All Article Reading Pages (article.html)</strong>
+                        <p style="margin:0;font-size:11.5px;color:#64748b;">Displays across any published story reading page.</p>
+                      </div>
+                    </label>
+
+                    <label class="cmp-radio-row">
+                      <input type="radio" name="cmp_placement" value="specific_section" onchange="handlePlacementChange('specific_section')" />
+                      <div>
+                        <strong>Specific Section / Category</strong>
+                        <p style="margin:0;font-size:11.5px;color:#64748b;">Only display when visitors browse selected topics (e.g. Culture, Heritage).</p>
+                      </div>
+                    </label>
+                  </div>
+                </div>
+
+                <!-- Specific Sections Checklist (Conditional) -->
+                <div id="cmp-sections-picker-wrap" style="display:none;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:12px;margin-bottom:16px;">
+                  <label class="form-label" style="font-size:12px;font-weight:700;margin-bottom:8px;">Select Target Sections:</label>
+                  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;" id="cmp-sections-checkbox-list">
+                    <label style="font-size:12px;display:flex;align-items:center;gap:6px;"><input type="checkbox" value="community-heritage" class="cmp-sec-cb" /> Community &amp; Heritage</label>
+                    <label style="font-size:12px;display:flex;align-items:center;gap:6px;"><input type="checkbox" value="culture" class="cmp-sec-cb" /> Culture &amp; Arts</label>
+                    <label style="font-size:12px;display:flex;align-items:center;gap:6px;"><input type="checkbox" value="findings" class="cmp-sec-cb" /> Privatian Findings</label>
+                    <label style="font-size:12px;display:flex;align-items:center;gap:6px;"><input type="checkbox" value="events" class="cmp-sec-cb" /> Events &amp; Gatherings</label>
+                  </div>
+                </div>
+
+                <!-- Language Targeting -->
+                <div class="form-group" style="margin-bottom:16px;">
+                  <label class="form-label" style="font-size:12.5px;font-weight:700;">Audience Language Scope</label>
+                  <select id="cmp-input-lang" class="form-control" onchange="triggerSimulatorUpdate()">
+                    <option value="all">Universal — Display to all readers (Auto-matches page language EN/BN)</option>
+                    <option value="en">English Only — Only show when viewing site in English</option>
+                    <option value="bn">Bengali Only (বাংলা) — Only show when viewing site in Bengali</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- TAB 3: TRIGGERS & FREQUENCY -->
+              <div class="cmp-tab-pane" id="cmp-pane-triggers" style="display:none;">
+                <!-- Trigger Mode -->
+                <div class="form-group" style="margin-bottom:16px;">
+                  <label class="form-label" style="font-size:12.5px;font-weight:700;">How should this campaign trigger?</label>
+                  <div class="cmp-placement-options" style="display:flex;flex-direction:column;gap:8px;">
+                    <label class="cmp-radio-row">
+                      <input type="radio" name="cmp_trigger" value="immediate" checked onchange="handleTriggerChange('immediate')" />
+                      <div>
+                        <strong>Time Delay After Page Load</strong>
+                        <p style="margin:0;font-size:11.5px;color:#64748b;">Triggers automatically after the visitor is on the page for a specified number of seconds.</p>
+                      </div>
+                    </label>
+
+                    <label class="cmp-radio-row">
+                      <input type="radio" name="cmp_trigger" value="scroll_depth" onchange="handleTriggerChange('scroll_depth')" />
+                      <div>
+                        <strong>Scroll Depth Percentage</strong>
+                        <p style="margin:0;font-size:11.5px;color:#64748b;">Triggers when the reader scrolls down a percentage of the page (e.g. 50%).</p>
+                      </div>
+                    </label>
+
+                    <label class="cmp-radio-row">
+                      <input type="radio" name="cmp_trigger" value="exit_intent" onchange="handleTriggerChange('exit_intent')" />
+                      <div>
+                        <strong>Exit-Intent (Desktop)</strong>
+                        <p style="margin:0;font-size:11.5px;color:#64748b;">Triggers when the visitor moves mouse towards the top browser bar to leave.</p>
+                      </div>
+                    </label>
+                  </div>
+                </div>
+
+                <!-- Trigger Delay Settings (Conditional) -->
+                <div id="cmp-trigger-delay-wrap" class="form-group" style="margin-bottom:16px;">
+                  <label class="form-label" style="font-size:12px;font-weight:600;">Delay Before Appearing (Seconds)</label>
+                  <div style="display:flex;align-items:center;gap:12px;">
+                    <input type="range" id="cmp-input-delay-slider" min="0" max="30" step="1" value="3" class="font-range-input" oninput="document.getElementById('cmp-delay-num').textContent=this.value+'s'" />
+                    <span id="cmp-delay-num" style="font-weight:700;font-size:13px;color:#0a528e;min-width:32px;">3s</span>
+                  </div>
+                </div>
+
+                <!-- Scroll Percentage Settings (Conditional) -->
+                <div id="cmp-trigger-scroll-wrap" class="form-group" style="display:none;margin-bottom:16px;">
+                  <label class="form-label" style="font-size:12px;font-weight:600;">Scroll Percentage Required</label>
+                  <select id="cmp-input-scroll-pct" class="form-control">
+                    <option value="25">25% (When user begins reading)</option>
+                    <option value="50" selected>50% (Halfway through the page)</option>
+                    <option value="75">75% (Near the bottom)</option>
+                  </select>
+                </div>
+
+                <!-- Frequency Capping -->
+                <div class="form-group" style="margin-bottom:16px;">
+                  <label class="form-label" style="font-size:12.5px;font-weight:700;">Frequency Capping &amp; Dismissal Memory</label>
+                  <select id="cmp-input-frequency" class="form-control">
+                    <option value="always">Always Show — Trigger on every visit/page view</option>
+                    <option value="once_per_session">Once Per Session — Show at most once per browser session</option>
+                    <option value="once_per_day" selected>Once Per 24 Hours — Show at most once daily per user (Recommended)</option>
+                    <option value="once_per_week">Once Per 7 Days — Show at most once a week per user</option>
+                    <option value="until_dismissed">Until Dismissed — Once closed, do not show again for 30 days</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- TAB 4: SCHEDULE & STATUS -->
+              <div class="cmp-tab-pane" id="cmp-pane-schedule" style="display:none;">
+                <!-- Status -->
+                <div class="form-group" style="margin-bottom:16px;">
+                  <label class="form-label" style="font-size:12.5px;font-weight:700;">Campaign Publishing Status</label>
+                  <select id="cmp-input-status" class="form-control">
+                    <option value="active">Active (Live and distributing)</option>
+                    <option value="paused">Paused / Draft (Hidden from visitors)</option>
+                  </select>
+                </div>
+
+                <!-- Start Date & End Date -->
+                <div class="form-row-2">
+                  <div class="form-group">
+                    <label class="form-label" style="font-size:12px;font-weight:600;">Start Date &amp; Time (Optional)</label>
+                    <input type="datetime-local" id="cmp-input-start-date" class="form-control" />
+                    <span style="font-size:11px;color:#64748b;">Leave empty to start immediately upon saving.</span>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label" style="font-size:12px;font-weight:600;">End Date &amp; Time (Optional)</label>
+                    <input type="datetime-local" id="cmp-input-end-date" class="form-control" />
+                    <span style="font-size:11px;color:#64748b;">Leave empty to run indefinitely.</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- RIGHT COLUMN: Live Interactive Visual Simulator -->
+          <div class="campaign-simulator-col">
+            <div class="campaign-simulator-header">
+              <div style="display:flex;align-items:center;gap:6px;">
+                <span class="pulse-dot-green"></span>
+                <span style="font-size:12px;font-weight:700;color:#0f172a;text-transform:uppercase;letter-spacing:0.04em;">Live Visual Simulator</span>
+              </div>
+              <div class="campaign-simulator-controls">
+                <!-- Lang Preview Switcher -->
+                <div class="cmp-sim-btn-group">
+                  <button type="button" class="cmp-sim-btn active" id="sim-lang-en" onclick="setSimulatorLang('en')">EN</button>
+                  <button type="button" class="cmp-sim-btn" id="sim-lang-bn" onclick="setSimulatorLang('bn')">বাংলা</button>
+                </div>
+                <!-- Device Viewport Switcher -->
+                <div class="cmp-sim-btn-group">
+                  <button type="button" class="cmp-sim-btn active" id="sim-dev-desktop" onclick="setSimulatorDevice('desktop')" title="Desktop View">
+                    <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+                  </button>
+                  <button type="button" class="cmp-sim-btn" id="sim-dev-mobile" onclick="setSimulatorDevice('mobile')" title="Mobile View">
+                    <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Simulator Canvas Screen Area -->
+            <div class="campaign-simulator-canvas-wrap">
+              <div class="campaign-simulator-screen" id="campaign-simulator-screen">
+                <!-- Background Mock Website Content -->
+                <div class="cmp-mock-site-bg">
+                  <div class="cmp-mock-topbar">
+                    <div class="cmp-mock-logo">THE PRIVATIAN</div>
+                    <div class="cmp-mock-navlinks">
+                      <span>Heritage</span><span>Culture</span><span>Findings</span><span>Events</span>
+                    </div>
+                  </div>
+                  <div class="cmp-mock-hero-article">
+                    <div class="cmp-mock-badge">FEATURED ESSAY</div>
+                    <div class="cmp-mock-h1">The Architectural Heritage of Enduring Family Legacies</div>
+                    <div class="cmp-mock-p"></div>
+                    <div class="cmp-mock-p" style="width:80%;"></div>
+                    <div class="cmp-mock-p" style="width:90%;"></div>
+                  </div>
+                </div>
+
+                <!-- LIVE INJECTED CAMPAIGN SIMULATION LAYER -->
+                <div id="campaign-simulator-overlay" class="cmp-sim-overlay">
+                  <!-- Rendered dynamically by updateCampaignSimulatorPreview() -->
+                </div>
+              </div>
+            </div>
+
+            <div class="campaign-simulator-footer-hint">
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+              <span>The preview updates in real-time as you tweak format, copy, images, and buttons.</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Modal Footer -->
+        <div class="campaign-modal-footer">
+          <button type="button" class="btn btn--ghost btn--sm" onclick="closeCampaignEditor()">Cancel</button>
+          <button type="button" class="btn btn--primary btn--sm" id="btn-save-campaign" onclick="saveCampaignFromEditor()">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+            <span id="btn-save-campaign-label">Save &amp; Publish Campaign</span>
           </button>
         </div>
       </div>
